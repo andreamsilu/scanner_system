@@ -10,11 +10,14 @@ return new class extends Migration
     {
         Schema::create('attendees', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('event_id')->constrained()->onDelete('cascade');
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email');
             $table->string('phone')->nullable();
-            $table->string('qr_token')->unique();
-            $table->boolean('scanned')->default(false);
+            $table->string('company')->nullable();
+            $table->string('position')->nullable();
+            $table->dateTime('registration_date');
+            $table->string('status')->default('registered');
             $table->timestamps();
         });
     }

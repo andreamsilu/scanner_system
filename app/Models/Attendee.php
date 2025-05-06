@@ -5,22 +5,31 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Attendee extends Model
 {
     use HasFactory;
 
     protected $fillable = [
+        'event_id',
         'name',
         'email',
         'phone',
-        'qr_token',
-        'scanned',
+        'company',
+        'position',
+        'registration_date',
+        'status',
     ];
 
     protected $casts = [
-        'scanned' => 'boolean',
+        'registration_date' => 'datetime',
     ];
+
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
 
     public function scanLogs(): HasMany
     {
