@@ -11,7 +11,10 @@ use App\Http\Controllers\QrScannerController;
 use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ActivityLogsController;
 use App\Http\Controllers\UserImportController;
-use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\EventController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -28,7 +31,7 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['web'])->group(function () {
     // Public routes that don't require authentication
     Route::get('/', function () {
-        return redirect('/login');
+        return redirect()->route('login');
     });
 
     Route::get('/register', [AttendeeRegistrationController::class, 'index'])->name('register');
@@ -38,13 +41,15 @@ Route::middleware(['web'])->group(function () {
 
     // Authentication routes
     Route::middleware('guest')->group(function () {
-        Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-        Route::post('/login', [LoginController::class, 'login'])->name('login.post');
+        Route::get('login', [AuthenticatedSessionController::class, 'create'])
+            ->name('login');
+        Route::post('login', [AuthenticatedSessionController::class, 'store']);
     });
 
     // Protected routes that require authentication
     Route::middleware('auth')->group(function () {
-        Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+        Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
+            ->name('logout');
         
         // Dashboard Routes
         Route::get('/dashboard', function () {
@@ -52,13 +57,16 @@ Route::middleware(['web'])->group(function () {
         })->name('dashboard');
         
         // Event Card Management
-        Route::get('/event-cards', [EventCardManagementController::class, 'index'])->name('event-cards');
+        Route::get('/event-cards', [EventCardManagementController::class, 'index'])->name('event-cards.index');
         Route::get('/event-cards/create', [EventCardManagementController::class, 'create'])->name('event-cards.create');
         Route::post('/event-cards', [EventCardManagementController::class, 'store'])->name('event-cards.store');
+        Route::get('/event-cards/{attendee}', [EventCardManagementController::class, 'show'])->name('event-cards.show');
         Route::get('/event-cards/{attendee}/edit', [EventCardManagementController::class, 'edit'])->name('event-cards.edit');
         Route::put('/event-cards/{attendee}', [EventCardManagementController::class, 'update'])->name('event-cards.update');
         Route::delete('/event-cards/{attendee}', [EventCardManagementController::class, 'destroy'])->name('event-cards.destroy');
         Route::get('/event-cards/{attendee}/download', [EventCardManagementController::class, 'download'])->name('event-cards.download');
+        Route::get('/event-cards/verify/{token}', [EventCardManagementController::class, 'verify'])
+            ->name('event-cards.verify');
         
         // Scan Log Management
         Route::get('/scan-logs', [ScanLogManagementController::class, 'index'])->name('scan-logs');
@@ -100,4 +108,11 @@ Route::middleware(['web'])->group(function () {
             Route::get('/users/import/template', [UserImportController::class, 'downloadTemplate'])->name('users.import.template');
         });
     });
+});
+
+// Resource Routes
+Route::middleware(['auth'])->group(function () {
+    Route::resource('users', UserController::class);
+    Route::resource('activity-logs', ActivityLogController::class);
+    Route::resource('events', EventController::class);
 });

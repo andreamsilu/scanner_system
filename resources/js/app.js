@@ -1,6 +1,10 @@
 import './bootstrap';
 import 'bootstrap';
 import '../css/app.css';
+import { FeedbackModal } from './feedback-modal';
+
+// Initialize feedback modal
+const feedbackModal = new FeedbackModal();
 
 // Initialize all tooltips
 const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
@@ -27,11 +31,20 @@ $(document).ajaxError(function(event, jqXHR, settings, error) {
             input.addClass('is-invalid');
             input.after(`<div class="invalid-feedback">${errors[key][0]}</div>`);
         });
+    } else if (jqXHR.status === 419) {
+        // Page Expired (CSRF token mismatch)
+        feedbackModal.show('Session Expired', 'Your session has expired. Please log in again.');
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 2000);
     } else if (jqXHR.status === 401) {
         // Unauthorized
-        window.location.href = '/login';
+        feedbackModal.show('Unauthorized', 'Please log in to continue.');
+        setTimeout(() => {
+            window.location.href = '/login';
+        }, 2000);
     } else {
         // Other errors
-        alert('An error occurred. Please try again.');
+        feedbackModal.show('Error', 'An error occurred. Please try again.');
     }
 });
