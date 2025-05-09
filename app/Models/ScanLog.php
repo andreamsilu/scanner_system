@@ -11,13 +11,36 @@ class ScanLog extends Model
     use HasFactory;
 
     protected $fillable = [
+        'event_id',
         'attendee_id',
+        'event_card_id',
+        'status',
         'scanned_by',
-        'device_info',
+        'notes'
     ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
+    ];
+
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(Event::class);
+    }
 
     public function attendee(): BelongsTo
     {
         return $this->belongsTo(Attendee::class);
+    }
+
+    public function eventCard(): BelongsTo
+    {
+        return $this->belongsTo(EventCard::class);
+    }
+
+    public function isSuccessful(): bool
+    {
+        return $this->status === 'success';
     }
 } 

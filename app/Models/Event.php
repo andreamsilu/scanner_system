@@ -18,15 +18,18 @@ class Event extends Model
         'description',
         'start_date',
         'end_date',
-        'venue',
-        'capacity',
+        'location',
         'status',
-        'banner'
+        'banner',
+        'capacity',
+        'registration_deadline'
     ];
 
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
+        'registration_deadline' => 'datetime',
+        'is_active' => 'boolean',
         'capacity' => 'integer'
     ];
 
@@ -80,8 +83,28 @@ class Event extends Model
         return $this->hasMany(Attendee::class);
     }
 
+    public function eventCards(): HasMany
+    {
+        return $this->hasMany(EventCard::class);
+    }
+
     public function scanLogs(): HasMany
     {
         return $this->hasMany(ScanLog::class);
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'active';
+    }
+
+    public function isUpcoming(): bool
+    {
+        return $this->start_date->isFuture();
+    }
+
+    public function isPast(): bool
+    {
+        return $this->end_date->isPast();
     }
 } 

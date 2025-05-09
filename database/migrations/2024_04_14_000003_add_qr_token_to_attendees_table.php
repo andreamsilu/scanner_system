@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('attendees', function (Blueprint $table) {
-            $table->string('qr_token')->unique()->after('position');
+            $table->string('qr_token')->after('position');
         });
     }
 

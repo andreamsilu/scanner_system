@@ -44,7 +44,7 @@ class UserImportController extends Controller
                 'name' => 'required|string|max:255',
                 'email' => 'required|email|max:255|unique:users',
                 'password' => 'required|string|min:8',
-                'role' => 'required|in:admin,user',
+                'role' => 'required|in:admin,scanner',
             ]);
 
             if ($validator->fails()) {
@@ -84,8 +84,8 @@ class UserImportController extends Controller
     {
         $csv = \League\Csv\Writer::createFromString('');
         $csv->insertOne(['name', 'email', 'password', 'role']);
-        $csv->insertOne(['John Doe', 'john@example.com', 'password123', 'user']);
         $csv->insertOne(['Admin User', 'admin@example.com', 'adminpass123', 'admin']);
+        $csv->insertOne(['Scanner User', 'scanner@example.com', 'scannerpass123', 'scanner']);
 
         return response($csv->toString(), 200, [
             'Content-Type' => 'text/csv',

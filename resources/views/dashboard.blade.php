@@ -107,8 +107,8 @@
                         <h5 class="card-title mb-0">Event Cards</h5>
                     </div>
                     <p class="card-text text-muted mb-4">Create and manage event cards for your attendees.</p>
-                    <a href="{{ route('event-cards.index') }}" class="btn btn-success">
-                        Manage Event Cards
+                    <a href="{{ route('events.index') }}" class="btn btn-success">
+                        View Events
                         <i class="fas fa-arrow-right ms-2"></i>
                     </a>
                 </div>

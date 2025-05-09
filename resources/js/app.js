@@ -41,7 +41,7 @@ $(document).ajaxError(function(event, jqXHR, settings, error) {
         // Unauthorized
         feedbackModal.show('Unauthorized', 'Please log in to continue.');
         setTimeout(() => {
-            window.location.href = '/login';
+        window.location.href = '/login';
         }, 2000);
     } else {
         // Other errors

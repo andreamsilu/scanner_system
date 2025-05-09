@@ -14,32 +14,42 @@
         <!-- Navigation Content -->
         <div class="collapse navbar-collapse" id="navbarContent">
             <!-- Navigation Links -->
-            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                <li class="nav-item">
-                    <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        <i class="bi bi-house-door me-2"></i>
+            <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
+                <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                    <i class="bi bi-speedometer2 me-2"></i>
+                    {{ __('Dashboard') }}
+                </x-nav-link>
+
+                <x-nav-link :href="route('events.index')" :active="request()->routeIs('events.*') || request()->routeIs('event-cards.*')">
+                    <i class="bi bi-calendar-event me-2"></i>
+                    {{ __('Events & Cards') }}
+                </x-nav-link>
+
+                <x-nav-link :href="route('activity-logs.index')" :active="request()->routeIs('activity-logs.*')">
+                    <i class="bi bi-list-check me-2"></i>
+                    {{ __('Activity Logs') }}
+                </x-nav-link>
+            </div>
+
+            <!-- Responsive Navigation Menu -->
+            <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
+                <div class="pt-2 pb-3 space-y-1">
+                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
+                        <i class="bi bi-speedometer2 me-2"></i>
                         {{ __('Dashboard') }}
-                    </x-nav-link>
-                </li>
-                <li class="nav-item">
-                    <x-nav-link :href="route('events.index')" :active="request()->routeIs('events.*')">
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('events.index')" :active="request()->routeIs('events.*') || request()->routeIs('event-cards.*')">
                         <i class="bi bi-calendar-event me-2"></i>
-                        {{ __('Events') }}
-                    </x-nav-link>
-                </li>
-                <li class="nav-item">
-                    <x-nav-link :href="route('event-cards.index')" :active="request()->routeIs('event-cards.*')">
-                        <i class="bi bi-credit-card me-2"></i>
-                        {{ __('Event Cards') }}
-                    </x-nav-link>
-                </li>
-                <li class="nav-item">
-                    <x-nav-link :href="route('activity-logs.index')" :active="request()->routeIs('activity-logs.*')">
+                        {{ __('Events & Cards') }}
+                    </x-responsive-nav-link>
+
+                    <x-responsive-nav-link :href="route('activity-logs.index')" :active="request()->routeIs('activity-logs.*')">
                         <i class="bi bi-list-check me-2"></i>
                         {{ __('Activity Logs') }}
-                    </x-nav-link>
-                </li>
-            </ul>
+                    </x-responsive-nav-link>
+                </div>
+            </div>
 
             <!-- User Dropdown -->
             <div class="dropdown">

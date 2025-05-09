@@ -4,6 +4,7 @@ namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -44,11 +45,35 @@ class User extends Authenticatable
         'password' => 'hashed',
     ];
 
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class);
+    }
+
+    public function hasRole(string $role): bool
+    {
+        return $this->roles()->where('name', $role)->exists();
+    }
+
     /**
      * Check if the user is an admin.
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->hasRole('admin');
+    }
+
+    /**
+     * Determine if the user is a scanner.
+     */
+    public function isScanner(): bool
+    {
+        return $this->hasRole('scanner');
+    }
+
+    public function assignRole(string $role): void
+    {
+        $roleModel = Role::where('name', $role)->firstOrFail();
+        $this->roles()->syncWithoutDetaching([$roleModel->id]);
     }
 }

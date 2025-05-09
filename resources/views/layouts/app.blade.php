@@ -166,19 +166,13 @@
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('events*') ? 'active' : '' }}" href="{{ route('events.index') }}">
+                                <a class="nav-link {{ request()->routeIs('events.*') || request()->routeIs('event-cards.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
                                     <i class="fas fa-calendar-alt"></i>
-                                    Events
+                                    Events & Cards
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('event-cards*') ? 'active' : '' }}" href="{{ route('event-cards.index') }}">
-                                    <i class="fas fa-id-card"></i>
-                                    Event Cards
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('activity-logs*') ? 'active' : '' }}" href="{{ route('activity-logs') }}">
+                                <a class="nav-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}" href="{{ route('activity-logs.index') }}">
                                     <i class="fas fa-history"></i>
                                     Activity Logs
                                 </a>

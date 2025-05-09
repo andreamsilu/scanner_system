@@ -10,14 +10,14 @@
                         <h5 class="mb-0">Scan Logs</h5>
                         <a href="{{ route('scan-logs.create') }}" class="btn btn-primary">
                             <i class="fas fa-plus me-2"></i>New Scan
-                        </a>
-                    </div>
+        </a>
+    </div>
                 </div>
                 <div class="card-body">
                     @if(session('success'))
                         <div class="alert alert-success">
                             {{ session('success') }}
-                        </div>
+                </div>
                     @endif
 
                     <!-- Filters -->
@@ -29,31 +29,31 @@
                                     <option value="{{ $event->id }}">{{ $event->name }}</option>
                                 @endforeach
                             </select>
-                        </div>
-                        <div class="col-md-3">
+        </div>
+        <div class="col-md-3">
                             <select class="form-select" id="statusFilter">
                                 <option value="">All Status</option>
                                 <option value="success">Success</option>
                                 <option value="failed">Failed</option>
                             </select>
-                        </div>
-                        <div class="col-md-3">
+        </div>
+        <div class="col-md-3">
                             <input type="date" class="form-control" id="dateFilter" placeholder="Filter by date">
-                        </div>
-                    </div>
+        </div>
+    </div>
 
-                    <div class="table-responsive">
+            <div class="table-responsive">
                         <table class="table table-hover" id="scanLogsTable">
                             <thead class="table-light">
                                 <tr>
                                     <th>Event</th>
                                     <th>User</th>
                                     <th>Status</th>
-                                    <th>Scanned At</th>
+                            <th>Scanned At</th>
                                     <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
+                        </tr>
+                    </thead>
+                    <tbody>
                                 @forelse($scanLogs as $log)
                                     <tr>
                                         <td>
@@ -105,20 +105,20 @@
                                                 </form>
                                             </div>
                                         </td>
-                                    </tr>
-                                @empty
-                                    <tr>
+                            </tr>
+                        @empty
+                            <tr>
                                         <td colspan="5" class="text-center py-4">
                                             <div class="text-muted">
                                                 <i class="fas fa-qrcode fa-2x mb-3"></i>
                                                 <p>No scan logs found</p>
                                             </div>
                                         </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
                 </div>
             </div>
         </div>

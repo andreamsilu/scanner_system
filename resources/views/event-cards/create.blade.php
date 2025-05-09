@@ -25,6 +25,19 @@
                             <i class="fas fa-chevron-right text-muted"></i>
                         </a>
 
+                        <!-- Attendees Page -->
+                        <a href="{{ route('event-cards.attendees', ['event' => $event->id]) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-users me-2 text-primary"></i>
+                                Attendees
+                                <span class="badge bg-primary rounded-pill ms-2">{{ $event->attendees_count ?? 0 }}</span>
+                                <small class="d-block text-muted mt-1">
+                                    <i class="fas fa-user-shield me-1"></i>Event organizers & admins
+                                </small>
+                            </div>
+                            <i class="fas fa-chevron-right text-muted"></i>
+                        </a>
+
                         <!-- All Cards -->
                         <a href="{{ route('event-cards.index', ['event' => $event->id]) }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
                             <div>
