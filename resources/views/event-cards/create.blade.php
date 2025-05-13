@@ -77,7 +77,7 @@
                                             <option value="">Choose an attendee...</option>
                                             @forelse($selectedEvent->attendees as $attendee)
                                                 <option value="{{ $attendee->id }}" {{ old('attendee_id') == $attendee->id ? 'selected' : '' }}>
-                                                    {{ $attendee->name }} ({{ $attendee->email }})
+                                                    {{ $attendee->name }} ({{ $attendee->email }}) - {{ ucfirst($attendee->ticket_type) }}
                                                 </option>
                                             @empty
                                                 <option value="" disabled>No attendees available for this event</option>
@@ -98,23 +98,6 @@
                                     </div>
                                 </div>
 
-                                <div class="col-md-6">
-                                    <div class="form-group mb-3">
-                                        <label for="type" class="form-label">Card Type</label>
-                                        <select name="type" id="type" class="form-select @error('type') is-invalid @enderror" required>
-                                            <option value="">Select card type...</option>
-                                            <option value="standard" {{ old('type') == 'standard' ? 'selected' : '' }}>Standard</option>
-                                            <option value="vip" {{ old('type') == 'vip' ? 'selected' : '' }}>VIP</option>
-                                            <option value="press" {{ old('type') == 'press' ? 'selected' : '' }}>Press</option>
-                                        </select>
-                                        @error('type')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
                                 <div class="col-md-6">
                                     <div class="form-group mb-3">
                                         <label for="status" class="form-label">Status</label>

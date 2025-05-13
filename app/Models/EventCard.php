@@ -26,6 +26,8 @@ class EventCard extends Model
         'used_at' => 'datetime'
     ];
 
+    protected $appends = ['ticket_type'];
+
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
@@ -39,6 +41,11 @@ class EventCard extends Model
     public function scanLogs(): HasMany
     {
         return $this->hasMany(ScanLog::class);
+    }
+
+    public function getTicketTypeAttribute(): string
+    {
+        return $this->attendee->ticket_type;
     }
 
     public function markAsUsed(): void

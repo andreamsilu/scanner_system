@@ -4,12 +4,20 @@ namespace App\Http\Controllers;
 
 use App\Models\EventCard;
 use App\Models\Event;
+use App\Services\EventCardService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 
 class EventCardController extends Controller
 {
+    protected $eventCardService;
+
+    public function __construct(EventCardService $eventCardService)
+    {
+        $this->eventCardService = $eventCardService;
+    }
+
     public function index(): View
     {
         $cards = EventCard::with(['event', 'attendee'])
@@ -56,13 +64,13 @@ class EventCardController extends Controller
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
             'attendee_id' => 'required|exists:attendees,id',
-            'token' => 'required|unique:event_cards,token',
             'is_active' => 'boolean',
         ]);
 
-        EventCard::create($validated);
+        $card = $this->eventCardService->createEventCard($validated);
 
-        return redirect()->route('event-cards.index')
+        return redirect()
+            ->route('event-cards.show', $card)
             ->with('success', 'Event card created successfully.');
     }
 
@@ -83,21 +91,22 @@ class EventCardController extends Controller
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
             'attendee_id' => 'required|exists:attendees,id',
-            'token' => 'required|unique:event_cards,token,' . $card->id,
             'is_active' => 'boolean',
         ]);
 
-        $card->update($validated);
+        $this->eventCardService->updateEventCard($card, $validated);
 
-        return redirect()->route('event-cards.index')
+        return redirect()
+            ->route('event-cards.show', $card)
             ->with('success', 'Event card updated successfully.');
     }
 
     public function destroy(EventCard $card): RedirectResponse
     {
-        $card->delete();
+        $this->eventCardService->deleteEventCard($card);
 
-        return redirect()->route('event-cards.index')
+        return redirect()
+            ->route('event-cards.index')
             ->with('success', 'Event card deleted successfully.');
     }
 
