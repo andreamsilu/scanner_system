@@ -32,7 +32,7 @@
                         <td>{{ $attendee->name }}</td>
                         <td>{{ $attendee->email }}</td>
                         <td>{{ $attendee->event->name }}</td>
-                        <td>{{ $attendee->ticketType->name }}</td>
+                        <td>{{ ucfirst($attendee->ticket_type) }}</td>
                         <td>
                             @if($attendee->status === 'registered')
                                 <span class="badge bg-primary">Registered</span>

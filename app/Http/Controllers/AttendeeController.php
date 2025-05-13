@@ -24,7 +24,7 @@ class AttendeeController extends Controller
 
     public function index(): View
     {
-        $attendees = Attendee::with(['event', 'ticketType'])
+        $attendees = Attendee::with(['event'])
             ->latest()
             ->paginate(15);
         return view('attendees.index', compact('attendees'));
@@ -33,8 +33,7 @@ class AttendeeController extends Controller
     public function create(): View
     {
         $events = Event::where('status', 'active')->get();
-        $ticketTypes = TicketType::all();
-        return view('attendees.create', compact('events', 'ticketTypes'));
+        return view('attendees.create', compact('events'));
     }
 
     public function store(Request $request): RedirectResponse
@@ -75,10 +74,13 @@ class AttendeeController extends Controller
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'ticket_type_id' => 'required|exists:ticket_types,id',
-            'status' => 'required|in:registered,checked_in,cancelled'
+            'email' => 'nullable|email|max:255',
+            'phone' => 'required|string|max:20',
+            'company' => 'nullable|string|max:255',
+            'position' => 'nullable|string|max:255',
+            'ticket_type' => 'required|string|in:regular,vip,early_bird',
+            'registration_date' => 'required|date',
+            'status' => 'required|string|in:registered,checked_in,cancelled'
         ]);
 
         $this->attendeeService->updateAttendee($attendee, $validated);
