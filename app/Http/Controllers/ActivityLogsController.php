@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\ActivityLog;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -49,7 +50,9 @@ class ActivityLogsController extends Controller
                 ->count() / 30, 1)
         ];
 
-        return view('activity-logs.index', compact('logs', 'stats'));
+        $users = User::all();
+
+        return view('activity-logs.index', compact('logs', 'stats', 'users'));
     }
 
     public function export(Request $request)

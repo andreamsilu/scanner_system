@@ -29,58 +29,87 @@
         <meta name="page-expired" content="true">
     @endif
 
-    <title>{{ config('app.name', 'Laravel') }}</title>
+    <title>{{ config('app.name', 'Event MG') }}</title>
 
     <!-- Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.bunny.net">
+    <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css" rel="stylesheet">
+    <link href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css" rel="stylesheet">
 
     <!-- Scripts -->
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Styles -->
     <style>
+        /* Base Styles */
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f8f9fa;
+            min-height: 100vh;
+            overflow-x: hidden;
         }
         
-        /* Sidebar Styles */
-        .sidebar {
-            position: fixed;
-            top: 56px; /* Height of navbar */
-            bottom: 0;
-            left: 0;
-            z-index: 100;
-            padding: 0;
-            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
-            background-color: #fff;
-            width: 250px;
-            transition: all 0.3s;
+        /* Layout Components */
+        .wrapper {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
         }
 
-        .sidebar-sticky {
-            position: relative;
+        .sidebar {
+            position: fixed;
             top: 0;
-            height: calc(100vh - 56px);
-            padding-top: .5rem;
-            overflow-x: hidden;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            min-width: 250px;
+            background-color: #fff;
+            box-shadow: inset -1px 0 0 rgba(0, 0, 0, .1);
+            z-index: 1040;
             overflow-y: auto;
         }
 
+        .content-wrapper {
+            margin-left: 250px;
+            width: calc(100% - 250px);
+            min-height: 100vh;
+            padding: 1.5rem;
+            padding-top: 75px;
+            background-color: #f8f9fa;
+        }
+
+        /* Top Navigation */
+        .navbar {
+            position: fixed;
+            top: 0;
+            right: 0;
+            left: 250px;
+            z-index: 1030;
+            height: 60px;
+            padding: 0.5rem 1rem;
+        }
+
+        /* Navigation Styles */
         .sidebar .nav-link {
             font-weight: 500;
             color: #333;
             padding: 0.75rem 1rem;
             display: flex;
             align-items: center;
+            transition: all 0.2s;
         }
 
         .sidebar .nav-link:hover {
@@ -99,116 +128,195 @@
             text-align: center;
         }
 
-        .sidebar-heading {
-            font-size: .75rem;
-            text-transform: uppercase;
+        /* User Profile Styles */
+        .user-profile {
             padding: 1rem;
-            color: #6c757d;
+            border-bottom: 1px solid #dee2e6;
+            text-align: center;
+        }
+
+        .user-profile img {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            margin-bottom: 0.5rem;
+        }
+
+        .user-profile .user-name {
             font-weight: 600;
+            margin-bottom: 0.25rem;
         }
 
-        /* Main Content Styles */
-        .main-content {
-            margin-left: 250px;
-            padding: 1.5rem;
-            transition: all 0.3s;
+        .user-profile .user-role {
+            font-size: 0.875rem;
+            color: #6c757d;
         }
 
+        /* Dropdown Styles */
+        .user-dropdown .dropdown-toggle {
+            display: flex;
+            align-items: center;
+            padding: 0.5rem;
+            color: #333;
+            text-decoration: none;
+        }
+
+        .user-dropdown .dropdown-toggle img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .user-dropdown .dropdown-menu {
+            min-width: 200px;
+            padding: 0.5rem 0;
+            margin: 0;
+            border: none;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+        }
+
+        .user-dropdown .dropdown-item {
+            padding: 0.5rem 1rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .user-dropdown .dropdown-item i {
+            width: 20px;
+            margin-right: 0.5rem;
+            color: #6c757d;
+        }
+
+        /* Responsive Styles */
         @media (max-width: 768px) {
             .sidebar {
-                margin-left: -250px;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
             }
             .sidebar.active {
+                transform: translateX(0);
+            }
+            .content-wrapper {
                 margin-left: 0;
+                width: 100%;
             }
-            .main-content {
-                margin-left: 0;
+            .navbar {
+                left: 0;
             }
-            .main-content.active {
-                margin-left: 250px;
-            }
-        }
-
-        /* Navbar Toggle Button */
-        .navbar-toggler-sidebar {
-            display: none;
-        }
-
-        @media (max-width: 768px) {
-            .navbar-toggler-sidebar {
-                display: block;
+            .navbar.active {
+                left: 250px;
             }
         }
     </style>
 </head>
 <body>
-    <div id="app">
-        @include('layouts.navigation')
-        
-        <div class="d-flex">
-            <!-- Sidebar -->
-            <nav class="sidebar">
-                <div class="sidebar-sticky">
-                    <div class="sidebar-heading">Main</div>
-                    <ul class="nav flex-column">
-                        <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}" href="{{ route('dashboard') }}">
-                                <i class="fas fa-home"></i>
-                                Dashboard
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav class="sidebar">
+            <div class="sidebar-sticky">
+                <!-- App Logo -->
+                <div class="text-center py-3">
+                    <h4 class="mb-0">{{ config('app.name', 'Event MG') }}</h4>
+                </div>
+
+                <!-- Navigation -->
+                @include('layouts.navigation')
+            </div>
+        </nav>
+
+        <!-- Top Navigation -->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
+            <div class="container-fluid">
+                <div class="d-flex align-items-center">
+                    <button class="navbar-toggler me-3" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+                    <h5 class="mb-0 d-none d-lg-block">@yield('title', 'Dashboard')</h5>
+                </div>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
+                                <div class="rounded-circle bg-primary bg-opacity-10 p-2 me-2">
+                                    <span class="text-primary fw-bold">
+                                        {{ substr(Auth::user()->name, 0, 1) }}
+                                    </span>
+                                </div>
+                                <span>{{ Auth::user()->name }}</span>
                             </a>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                <li>
+                                    <a class="dropdown-item d-flex align-items-center" href="{{ route('profile.edit') }}">
+                                        <i class="fas fa-user me-2 text-muted"></i>
+                                        Profile
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="dropdown-item d-flex align-items-center">
+                                            <i class="fas fa-sign-out-alt me-2 text-muted"></i>
+                                            Logout
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
                         </li>
-                        @if(auth()->user()->isAdmin())
-                            <div class="sidebar-heading">Administration</div>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('users*') ? 'active' : '' }}" href="{{ route('users') }}">
-                                    <i class="fas fa-users"></i>
-                                    Users
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('events.*') || request()->routeIs('event-cards.*') ? 'active' : '' }}" href="{{ route('events.index') }}">
-                                    <i class="fas fa-calendar-alt"></i>
-                                    Events & Cards
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}" href="{{ route('activity-logs.index') }}">
-                                    <i class="fas fa-history"></i>
-                                    Activity Logs
-                                </a>
-                            </li>
-                        @endif
                     </ul>
                 </div>
-            </nav>
+            </div>
+        </nav>
 
-            <!-- Main Content -->
-            <main class="main-content">
-                @yield('content')
-            </main>
+        <!-- Main Content -->
+        <div class="content-wrapper">
+            @yield('content')
         </div>
     </div>
 
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
-    <!-- Sidebar Toggle Script -->
+
+    <!-- DataTables JS -->
+    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
+    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
+
+    <!-- Flash Message Handler -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const sidebarToggle = document.querySelector('.navbar-toggler-sidebar');
-            const sidebar = document.querySelector('.sidebar');
-            const mainContent = document.querySelector('.main-content');
+            const flashMessage = document.querySelector('meta[name="flash-message"]');
+            const flashType = document.querySelector('meta[name="flash-type"]');
             
-            if (sidebarToggle) {
-                sidebarToggle.addEventListener('click', function() {
-                    sidebar.classList.toggle('active');
-                    mainContent.classList.toggle('active');
-                });
+            if (flashMessage && flashType) {
+                const message = flashMessage.getAttribute('content');
+                const type = flashType.getAttribute('content');
+                
+                // Create and show toast notification
+                const toast = document.createElement('div');
+                toast.className = `toast align-items-center text-white bg-${type} border-0 position-fixed top-0 end-0 m-3`;
+                toast.setAttribute('role', 'alert');
+                toast.setAttribute('aria-live', 'assertive');
+                toast.setAttribute('aria-atomic', 'true');
+                
+                toast.innerHTML = `
+                    <div class="d-flex">
+                        <div class="toast-body">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                `;
+                
+                document.body.appendChild(toast);
+                const bsToast = new bootstrap.Toast(toast);
+                bsToast.show();
             }
         });
     </script>
 
-    <!-- Feedback Modal -->
-    <x-feedback-modal />
+    @stack('scripts')
 </body>
 </html> 

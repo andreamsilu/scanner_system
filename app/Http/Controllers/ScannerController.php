@@ -21,37 +21,66 @@ class ScannerController extends Controller
             ->latest()
             ->take(5)
             ->get();
+        $checked_in_today = ScanLog::whereDate('created_at', today())->count();
 
         return view('scanner.dashboard', compact(
             'today_scans',
             'total_scans',
             'active_events',
-            'recent_scans'
+            'recent_scans',
+            'checked_in_today'
         ));
     }
 
-    public function history(Request $request): View
+    public function selectEvent(Event $event): View
     {
-        $scans = ScanLog::with(['attendee', 'event'])
-            ->when($request->start_date, fn($q) => $q->whereDate('created_at', '>=', $request->start_date))
-            ->when($request->end_date, fn($q) => $q->whereDate('created_at', '<=', $request->end_date))
-            ->when($request->event_id, fn($q) => $q->where('event_id', $request->event_id))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->latest()
-            ->paginate(15);
-
-        $events = Event::where('status', 'active')->get();
-
-        return view('scanner.history', compact('scans', 'events'));
+        // Store selected event in session
+        session(['selected_event_id' => $event->id]);
+        
+        return view('scanner.scan', compact('event'));
     }
 
-    public function validate(Request $request): JsonResponse
+    public function getSelectedEvent(): JsonResponse
+    {
+        $eventId = session('selected_event_id');
+        if (!$eventId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No event selected'
+            ]);
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Selected event not found'
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'event' => $event
+        ]);
+    }
+
+    public function validateToken(Request $request): JsonResponse
     {
         $request->validate([
             'token' => 'required|string'
         ]);
 
+        // Check if event is selected
+        $eventId = session('selected_event_id');
+        if (!$eventId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Please select an event first'
+            ]);
+        }
+
         $eventCard = EventCard::where('token', $request->token)
+            ->where('event_id', $eventId)
             ->where('is_active', true)
             ->where('is_used', false)
             ->first();
@@ -59,7 +88,7 @@ class ScannerController extends Controller
         if (!$eventCard) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid or already used QR code.'
+                'message' => 'Invalid QR code or QR code not for this event.'
             ]);
         }
 
@@ -75,8 +104,24 @@ class ScannerController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Check-in successful!'
+            'message' => 'Check-in successful!',
+            'attendee' => $eventCard->attendee
         ]);
+    }
+
+    public function history(Request $request): View
+    {
+        $scans = ScanLog::with(['attendee', 'event'])
+            ->when($request->start_date, fn($q) => $q->whereDate('created_at', '>=', $request->start_date))
+            ->when($request->end_date, fn($q) => $q->whereDate('created_at', '<=', $request->end_date))
+            ->when($request->event_id, fn($q) => $q->where('event_id', $request->event_id))
+            ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->latest()
+            ->paginate(15);
+
+        $events = Event::where('status', 'active')->get();
+
+        return view('scanner.history', compact('scans', 'events'));
     }
 
     public function exportHistory(Request $request)

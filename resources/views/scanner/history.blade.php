@@ -63,7 +63,7 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover mb-0">
+                <table id="scanHistoryTable" class="table table-hover mb-0">
                     <thead class="table-light">
                         <tr>
                             <th>Time</th>
@@ -71,6 +71,7 @@
                             <th>Event</th>
                             <th>Status</th>
                             <th>Scanned By</th>
+                            <th>Device Info</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,10 +86,11 @@
                                     </span>
                                 </td>
                                 <td>{{ $scan->scanned_by }}</td>
+                                <td>{{ $scan->device_info }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="5" class="text-center py-4">
+                                <td colspan="6" class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="fas fa-search fa-2x mb-3"></i>
                                         <p>No scan records found</p>
@@ -100,11 +102,103 @@
                 </table>
             </div>
         </div>
-        @if($scans->hasPages())
-        <div class="card-footer bg-white py-3">
-            {{ $scans->withQueryString()->links() }}
-        </div>
-        @endif
     </div>
 </div>
+
+@push('styles')
+<style>
+/* DataTables Custom Styling */
+.dataTables_wrapper .dataTables_length select {
+    padding: 0.25rem 2rem 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+}
+
+.dataTables_wrapper .dataTables_filter input {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    border: 1px solid #dee2e6;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    padding: 0.25rem 0.5rem;
+    margin: 0 0.25rem;
+    border-radius: 0.25rem;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+    background: #0d6efd;
+    color: white !important;
+    border: none;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: #0b5ed7;
+    color: white !important;
+    border: none;
+}
+
+/* Filter Form Styling */
+.form-control:focus, .form-select:focus {
+    border-color: #0d6efd;
+    box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
+}
+</style>
+@endpush
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    $('#scanHistoryTable').DataTable({
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        order: [[0, 'desc']],
+        language: {
+            search: "",
+            searchPlaceholder: "Search scan history...",
+            emptyTable: "No scan records found",
+            info: "Showing _START_ to _END_ of _TOTAL_ records",
+            infoEmpty: "Showing 0 to 0 of 0 records",
+            infoFiltered: "(filtered from _MAX_ total records)",
+            lengthMenu: "Show _MENU_ records per page",
+            paginate: {
+                first: '<i class="fas fa-angle-double-left"></i>',
+                previous: '<i class="fas fa-angle-left"></i>',
+                next: '<i class="fas fa-angle-right"></i>',
+                last: '<i class="fas fa-angle-double-right"></i>'
+            }
+        },
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+        columnDefs: [
+            { orderable: false, targets: -1 }
+        ],
+        responsive: true,
+        stateSave: true,
+        buttons: [
+            {
+                extend: 'collection',
+                text: '<i class="fas fa-download me-2"></i>Export',
+                buttons: [
+                    {
+                        extend: 'copy',
+                        text: '<i class="fas fa-copy me-2"></i>Copy',
+                        className: 'btn btn-secondary'
+                    },
+                    {
+                        extend: 'excel',
+                        text: '<i class="fas fa-file-excel me-2"></i>Excel',
+                        className: 'btn btn-success'
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="fas fa-file-pdf me-2"></i>PDF',
+                        className: 'btn btn-danger'
+                    }
+                ]
+            }
+        ]
+    });
+});
+</script>
+@endpush
 @endsection 

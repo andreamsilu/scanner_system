@@ -1,83 +1,91 @@
-<nav class="navbar navbar-expand-lg navbar-light bg-white">
-    <div class="container">
-        <!-- Logo -->
-        <a class="navbar-brand d-flex align-items-center" href="{{ route('dashboard') }}">
-            <x-application-logo class="d-block h-10 w-auto fill-current text-primary" />
-            <span class="ms-2 fs-5 fw-semibold text-dark">{{ config('app.name', 'Laravel') }}</span>
-        </a>
+<div class="nav flex-column">
+    @auth
+        @if(auth()->user()->hasRole('admin'))
+            <!-- Dashboard -->
+            <a href="{{ route('dashboard') }}" class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
+                <i class="fas fa-tachometer-alt"></i>
+                <span>Dashboard</span>
+            </a>
 
-        <!-- Mobile Toggle Button -->
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+            <!-- Events Section -->
+            <a href="{{ route('events.index') }}" class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Events</span>
+            </a>
 
-        <!-- Navigation Content -->
-        <div class="collapse navbar-collapse" id="navbarContent">
-            <!-- Navigation Links -->
-            <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                    <i class="bi bi-speedometer2 me-2"></i>
-                    {{ __('Dashboard') }}
-                </x-nav-link>
+            <!-- Event Cards Section -->
+            <a href="{{ route('event-cards.index') }}" class="nav-link {{ request()->routeIs('event-cards.*') ? 'active' : '' }}">
+                <i class="fas fa-id-card"></i>
+                <span>Event Cards</span>
+            </a>
 
-                <x-nav-link :href="route('events.index')" :active="request()->routeIs('events.*') || request()->routeIs('event-cards.*')">
-                    <i class="bi bi-calendar-event me-2"></i>
-                    {{ __('Events & Cards') }}
-                </x-nav-link>
+            <!-- Attendees Section -->
+            <a href="{{ route('attendees.index') }}" class="nav-link {{ request()->routeIs('attendees.*') ? 'active' : '' }}">
+                <i class="fas fa-users"></i>
+                <span>Attendees</span>
+            </a>
 
-                <x-nav-link :href="route('activity-logs.index')" :active="request()->routeIs('activity-logs.*')">
-                    <i class="bi bi-list-check me-2"></i>
-                    {{ __('Activity Logs') }}
-                </x-nav-link>
-            </div>
+            <!-- Users Section -->
+            <a href="{{ route('users.index') }}" class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
+                <i class="fas fa-user-cog"></i>
+                <span>Users</span>
+            </a>
 
-            <!-- Responsive Navigation Menu -->
-            <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-                <div class="pt-2 pb-3 space-y-1">
-                    <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
-                        <i class="bi bi-speedometer2 me-2"></i>
-                        {{ __('Dashboard') }}
-                    </x-responsive-nav-link>
+            <!-- Activity Logs -->
+            <a href="{{ route('activity-logs.index') }}" class="nav-link {{ request()->routeIs('activity-logs.*') ? 'active' : '' }}">
+                <i class="fas fa-history"></i>
+                <span>Activity Logs</span>
+            </a>
+        @endif
 
-                    <x-responsive-nav-link :href="route('events.index')" :active="request()->routeIs('events.*') || request()->routeIs('event-cards.*')">
-                        <i class="bi bi-calendar-event me-2"></i>
-                        {{ __('Events & Cards') }}
-                    </x-responsive-nav-link>
+        @if(auth()->user()->hasRole('scanner'))
+            <!-- Scanner Section -->
+            <a href="{{ route('scanner.dashboard') }}" class="nav-link {{ request()->routeIs('scanner.*') ? 'active' : '' }}">
+                <i class="fas fa-qrcode"></i>
+                <span>Scanner</span>
+            </a>
 
-                    <x-responsive-nav-link :href="route('activity-logs.index')" :active="request()->routeIs('activity-logs.*')">
-                        <i class="bi bi-list-check me-2"></i>
-                        {{ __('Activity Logs') }}
-                    </x-responsive-nav-link>
-                </div>
-            </div>
+            <!-- Scan History -->
+            <a href="{{ route('scanner.history') }}" class="nav-link {{ request()->routeIs('scanner.history') ? 'active' : '' }}">
+                <i class="fas fa-history"></i>
+                <span>History</span>
+            </a>
 
-            <!-- User Dropdown -->
-            <div class="dropdown">
-                <button class="btn btn-link text-dark text-decoration-none dropdown-toggle d-flex align-items-center" type="button" id="userDropdown" data-bs-toggle="dropdown">
-                    <div class="rounded-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 32px; height: 32px;">
-                        {{ substr(Auth::user()->name, 0, 1) }}
-                    </div>
-                    <span class="ms-2">{{ Auth::user()->name }}</span>
-                </button>
-                <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                        <a class="dropdown-item" href="{{ route('profile.edit') }}">
-                            <i class="bi bi-person me-2"></i>
-                            {{ __('Profile') }}
-                        </a>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="dropdown-item text-danger">
-                                <i class="bi bi-box-arrow-right me-2"></i>
-                                {{ __('Log Out') }}
-                            </button>
-                        </form>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</nav> 
+            <!-- Export Data -->
+            <a href="{{ route('scanner.export') }}" class="nav-link {{ request()->routeIs('scanner.export') ? 'active' : '' }}">
+                <i class="fas fa-file-export"></i>
+                <span>Export Data</span>
+            </a>
+        @endif
+    @endauth
+</div>
+
+<style>
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    color: #333;
+    transition: all 0.3s;
+}
+
+.nav-link:hover {
+    color: #0d6efd;
+    background-color: #f8f9fa;
+}
+
+.nav-link.active {
+    color: #0d6efd;
+    background-color: #e9ecef;
+}
+
+.nav-link i {
+    width: 20px;
+    margin-right: 0.5rem;
+    text-align: center;
+}
+
+.nav-link span {
+    font-weight: 500;
+}
+</style> 

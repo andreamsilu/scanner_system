@@ -12,6 +12,14 @@ use App\Http\Controllers\UserManagementController;
 use App\Http\Controllers\ActivityLogsController;
 use App\Http\Controllers\UserImportController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\ConfirmablePasswordController;
+use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\EmailVerificationPromptController;
+use App\Http\Controllers\Auth\NewPasswordController;
+use App\Http\Controllers\Auth\PasswordController;
+use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\EventController;
@@ -33,121 +41,136 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['web'])->group(function () {
     // Public routes that don't require authentication
     Route::get('/', function () {
-        return view('welcome');
+        return redirect()->route('login');
     });
 
-    Route::get('/register', [AttendeeRegistrationController::class, 'index'])->name('register');
-    Route::post('/register', [AttendeeRegistrationController::class, 'store'])->name('register.store');
-    Route::get('/event-card/{attendee}', [EventCardController::class, 'show'])->name('event-card');
-    Route::get('/event-card/{attendee}/download', [EventCardController::class, 'download'])->name('event-card.download');
-
-    // Authentication routes
+    // Authentication routes for guests
     Route::middleware('guest')->group(function () {
+        Route::get('register', [RegisteredUserController::class, 'create'])
+            ->name('register');
+        Route::post('register', [RegisteredUserController::class, 'store']);
         Route::get('login', [AuthenticatedSessionController::class, 'create'])
             ->name('login');
         Route::post('login', [AuthenticatedSessionController::class, 'store']);
+        Route::get('forgot-password', [PasswordResetLinkController::class, 'create'])
+            ->name('password.request');
+        Route::post('forgot-password', [PasswordResetLinkController::class, 'store'])
+            ->name('password.email');
+        Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
+            ->name('password.reset');
+        Route::post('reset-password', [NewPasswordController::class, 'store'])
+            ->name('password.store');
     });
 
     // Protected routes that require authentication
     Route::middleware('auth')->group(function () {
+        // Email verification routes
+        Route::get('verify-email', [EmailVerificationPromptController::class, '__invoke'])
+            ->name('verification.notice');
+        Route::get('verify-email/{id}/{hash}', [VerifyEmailController::class, '__invoke'])
+            ->middleware(['signed', 'throttle:6,1'])
+            ->name('verification.verify');
+        Route::post('email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+            ->middleware('throttle:6,1')
+            ->name('verification.send');
+
+        // Password management routes
+        Route::get('confirm-password', [ConfirmablePasswordController::class, 'show'])
+            ->name('password.confirm');
+        Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
+        Route::put('password', [PasswordController::class, 'update'])
+            ->name('password.update');
+
+        // Logout route
         Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
             ->name('logout');
-        
+
         // Dashboard Routes
         Route::get('/dashboard', function () {
             return view('dashboard');
         })->name('dashboard');
-        
-        // Event Card Management
-        Route::get('/event-cards', [EventCardManagementController::class, 'index'])->name('event-cards.index');
-        Route::get('/event-cards/create', [EventCardManagementController::class, 'create'])->name('event-cards.create');
-        Route::post('/event-cards', [EventCardManagementController::class, 'store'])->name('event-cards.store');
-        Route::get('/event-cards/{attendee}', [EventCardManagementController::class, 'show'])->name('event-cards.show');
-        Route::get('/event-cards/{attendee}/edit', [EventCardManagementController::class, 'edit'])->name('event-cards.edit');
-        Route::put('/event-cards/{attendee}', [EventCardManagementController::class, 'update'])->name('event-cards.update');
-        Route::delete('/event-cards/{attendee}', [EventCardManagementController::class, 'destroy'])->name('event-cards.destroy');
-        Route::get('/event-cards/{attendee}/download', [EventCardManagementController::class, 'download'])->name('event-cards.download');
-        Route::get('/event-cards/verify/{token}', [EventCardManagementController::class, 'verify'])
-            ->name('event-cards.verify');
-        
-        // Scan Log Management
-        Route::get('/scan-logs', [ScanLogManagementController::class, 'index'])->name('scan-logs');
-        Route::get('/scan-logs/export', [ScanLogManagementController::class, 'export'])->name('scan-logs.export');
-        
-        // Analytics
-        Route::get('/analytics', [AnalyticsController::class, 'index'])->name('analytics');
-        
-        // QR Scanner
-        Route::get('/scanner', [QrScannerController::class, 'index'])->name('scanner');
-        Route::post('/scanner/validate', [QrScannerController::class, 'validateToken'])->name('scanner.validate');
-        
+
+        // Admin Routes
+        Route::middleware('role:admin')->group(function () {
+            // Events Management
+            Route::prefix('events')->name('events.')->group(function () {
+                Route::get('/', [EventController::class, 'index'])->name('index');
+                Route::get('/create', [EventController::class, 'create'])->name('create');
+                Route::post('/', [EventController::class, 'store'])->name('store');
+                Route::get('/{event}', [EventController::class, 'show'])->name('show');
+                Route::get('/{event}/edit', [EventController::class, 'edit'])->name('edit');
+                Route::put('/{event}', [EventController::class, 'update'])->name('update');
+                Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
+                Route::get('/{event}/attendees', [EventController::class, 'attendees'])->name('attendees');
+                Route::get('/{event}/cards', [EventController::class, 'cards'])->name('cards');
+            });
+
+            // Event Cards Management
+            Route::prefix('event-cards')->name('event-cards.')->group(function () {
+                Route::get('/', [EventCardController::class, 'index'])->name('index');
+                Route::get('/create', [EventCardController::class, 'create'])->name('create');
+                Route::post('/', [EventCardController::class, 'store'])->name('store');
+                Route::get('/{card}', [EventCardController::class, 'show'])->name('show');
+                Route::get('/{card}/edit', [EventCardController::class, 'edit'])->name('edit');
+                Route::put('/{card}', [EventCardController::class, 'update'])->name('update');
+                Route::delete('/{card}', [EventCardController::class, 'destroy'])->name('destroy');
+                Route::get('/{card}/download', [EventCardController::class, 'download'])->name('download');
+                Route::get('/verify/{token}', [EventCardController::class, 'verify'])->name('verify');
+            });
+
+            // Attendees Management
+            Route::prefix('attendees')->name('attendees.')->group(function () {
+                Route::get('/', [AttendeeController::class, 'index'])->name('index');
+                Route::get('/create', [AttendeeController::class, 'create'])->name('create');
+                Route::post('/', [AttendeeController::class, 'store'])->name('store');
+                Route::get('/{attendee}', [AttendeeController::class, 'show'])->name('show');
+                Route::get('/{attendee}/edit', [AttendeeController::class, 'edit'])->name('edit');
+                Route::put('/{attendee}', [AttendeeController::class, 'update'])->name('update');
+                Route::delete('/{attendee}', [AttendeeController::class, 'destroy'])->name('destroy');
+                Route::get('/bulk-upload', [AttendeeController::class, 'bulkUploadForm'])->name('bulk-upload');
+                Route::post('/bulk-upload', [AttendeeController::class, 'bulkUpload'])->name('bulk-upload.store');
+                Route::get('/download-template', [AttendeeController::class, 'downloadTemplate'])->name('download-template');
+            });
+
+            // Activity Logs Management
+            Route::prefix('activity-logs')->name('activity-logs.')->group(function () {
+                Route::get('/', [ActivityLogsController::class, 'index'])->name('index');
+                Route::get('/export', [ActivityLogsController::class, 'export'])->name('export');
+            });
+
+            // Users Management
+            Route::prefix('users')->name('users.')->group(function () {
+                Route::get('/', [UserController::class, 'index'])->name('index');
+                Route::get('/create', [UserController::class, 'create'])->name('create');
+                Route::post('/', [UserController::class, 'store'])->name('store');
+                Route::get('/{user}', [UserController::class, 'show'])->name('show');
+                Route::get('/{user}/edit', [UserController::class, 'edit'])->name('edit');
+                Route::put('/{user}', [UserController::class, 'update'])->name('update');
+                Route::delete('/{user}', [UserController::class, 'destroy'])->name('destroy');
+            });
+        });
+
+        // Scanner Routes
+        Route::middleware('role:scanner')->group(function () {
+            Route::get('/scanner', [ScannerController::class, 'dashboard'])->name('scanner.dashboard');
+            Route::get('/scanner/history', [ScannerController::class, 'history'])->name('scanner.history');
+            Route::post('/scanner/validate', [ScannerController::class, 'validate'])->name('scanner.validate');
+            Route::get('/scanner/export', [ScannerController::class, 'exportHistory'])->name('scanner.export');
+        });
+
         // Profile Management
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-
-        // Admin Routes
-        Route::middleware('role:admin')->group(function () {
-            Route::get('/admin/dashboard', function () {
-                return view('admin.dashboard');
-            })->name('admin.dashboard');
-            
-            // User Management
-            Route::get('/users', [UserManagementController::class, 'index'])->name('users');
-            Route::get('/users/create', [UserManagementController::class, 'create'])->name('users.create');
-            Route::post('/users', [UserManagementController::class, 'store'])->name('users.store');
-            Route::get('/users/{user}/edit', [UserManagementController::class, 'edit'])->name('users.edit');
-            Route::put('/users/{user}', [UserManagementController::class, 'update'])->name('users.update');
-            Route::delete('/users/{user}', [UserManagementController::class, 'destroy'])->name('users.destroy');
-            
-            // Activity Logs
-            Route::get('/activity-logs', [ActivityLogsController::class, 'index'])->name('activity-logs');
-            Route::get('/activity-logs/export', [ActivityLogsController::class, 'export'])->name('activity-logs.export');
-            
-            // User Import
-            Route::get('/users/import', [UserImportController::class, 'index'])->name('users.import');
-            Route::post('/users/import', [UserImportController::class, 'import'])->name('users.import.store');
-            Route::get('/users/import/template', [UserImportController::class, 'downloadTemplate'])->name('users.import.template');
-        });
     });
 });
 
-// Resource Routes
-Route::middleware(['auth'])->group(function () {
-    Route::resource('users', UserController::class);
-    Route::resource('activity-logs', ActivityLogController::class);
-    Route::resource('events', EventController::class);
-
-    // Event Cards Routes
-    Route::prefix('events/{event}/cards')->name('event-cards.')->group(function () {
-        Route::get('/', [EventCardController::class, 'index'])->name('index');
-        Route::get('/create', [EventCardController::class, 'create'])->name('create');
-        Route::post('/', [EventCardController::class, 'store'])->name('store');
-        Route::get('/{attendee}', [EventCardController::class, 'show'])->name('show');
-        Route::get('/{attendee}/edit', [EventCardController::class, 'edit'])->name('edit');
-        Route::put('/{attendee}', [EventCardController::class, 'update'])->name('update');
-        Route::delete('/{attendee}', [EventCardController::class, 'destroy'])->name('destroy');
-        Route::get('/{attendee}/download', [EventCardController::class, 'download'])->name('download');
-        Route::get('/import', [EventCardController::class, 'import'])->name('import');
-        Route::post('/import', [EventCardController::class, 'importStore'])->name('import.store');
-        Route::get('/export', [EventCardController::class, 'export'])->name('export');
-        Route::get('/access', [EventCardController::class, 'access'])->name('access');
-        Route::get('/checkin', [EventCardController::class, 'checkin'])->name('checkin');
-        Route::get('/attendees', [EventCardController::class, 'attendees'])->name('attendees');
-    });
-
-    // Admin routes
-    Route::middleware(['role:admin'])->group(function () {
-        Route::resource('attendees', AttendeeController::class);
-    });
-
-    // Scanner routes
-    Route::middleware(['role:scanner'])->group(function () {
-        Route::get('/scanner', [ScannerController::class, 'dashboard'])->name('scanner.dashboard');
-        Route::get('/scanner/history', [ScannerController::class, 'history'])->name('scanner.history');
-        Route::post('/scanner/validate', [ScannerController::class, 'validate'])->name('scanner.validate');
-        Route::get('/scanner/export', [ScannerController::class, 'exportHistory'])->name('scanner.export');
-    });
+Route::middleware(['auth', 'role:scanner'])->prefix('scanner')->name('scanner.')->group(function () {
+    Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
+    Route::get('/history', [ScannerController::class, 'history'])->name('history');
+    Route::post('/validate', [ScannerController::class, 'validateToken'])->name('validate');
+    Route::get('/event/{event}/select', [ScannerController::class, 'selectEvent'])->name('select-event');
+    Route::get('/event/selected', [ScannerController::class, 'getSelectedEvent'])->name('selected-event');
 });
 
-require __DIR__.'/auth.php';
+Route::get('/scanners', [ScannerController::class, 'index'])->name('scanners.index');

@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-use App\Domain\Events\ValueObjects\EventDate;
-use App\Domain\Events\ValueObjects\EventStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,50 +16,25 @@ class Event extends Model
         'description',
         'start_date',
         'end_date',
+        'venue',
         'location',
         'status',
-        'banner',
         'capacity',
-        'registration_deadline'
+        'registration_deadline',
+        'is_public',
+        'created_by'
     ];
 
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'registration_deadline' => 'datetime',
+        'is_public' => 'boolean',
         'is_active' => 'boolean',
         'capacity' => 'integer'
     ];
 
-    public function getStartDateAttribute($value): EventDate
-    {
-        return new EventDate($this->asDateTime($value));
-    }
-
-    public function setStartDateAttribute($value): void
-    {
-        $this->attributes['start_date'] = $value instanceof EventDate ? $value->getValue() : $value;
-    }
-
-    public function getEndDateAttribute($value): EventDate
-    {
-        return new EventDate($this->asDateTime($value));
-    }
-
-    public function setEndDateAttribute($value): void
-    {
-        $this->attributes['end_date'] = $value instanceof EventDate ? $value->getValue() : $value;
-    }
-
-    public function getStatusAttribute($value): EventStatus
-    {
-        return EventStatus::fromString($value);
-    }
-
-    public function setStatusAttribute($value): void
-    {
-        $this->attributes['status'] = $value instanceof EventStatus ? $value->getValue() : $value;
-    }
+    protected $appends = ['status_badge'];
 
     public function getBannerUrlAttribute(): ?string
     {
@@ -75,7 +48,12 @@ class Event extends Model
 
     public function getStatusBadgeAttribute(): string
     {
-        return $this->status->getBadgeClass();
+        return match($this->status) {
+            'active' => '<span class="badge bg-success">Active</span>',
+            'completed' => '<span class="badge bg-info">Completed</span>',
+            'cancelled' => '<span class="badge bg-danger">Cancelled</span>',
+            default => '<span class="badge bg-secondary">Draft</span>'
+        };
     }
 
     public function attendees(): HasMany
@@ -83,7 +61,7 @@ class Event extends Model
         return $this->hasMany(Attendee::class);
     }
 
-    public function eventCards(): HasMany
+    public function cards(): HasMany
     {
         return $this->hasMany(EventCard::class);
     }
@@ -106,5 +84,26 @@ class Event extends Model
     public function isPast(): bool
     {
         return $this->end_date->isPast();
+    }
+
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function getFormattedDateRangeAttribute(): string
+    {
+        if (!$this->start_date || !$this->end_date) {
+            return 'No dates set';
+        }
+
+        $start = $this->start_date->format('M d, Y');
+        $end = $this->end_date->format('M d, Y');
+
+        if ($this->start_date->isSameDay($this->end_date)) {
+            return $start;
+        }
+
+        return "$start - $end";
     }
 } 

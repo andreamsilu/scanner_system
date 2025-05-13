@@ -1,85 +1,183 @@
-@extends('layouts.scanner')
+@extends('layouts.app')
 
 @section('content')
-<div class="py-12">
-    <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-        <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-            <div class="p-6 text-gray-900">
-                <h2 class="text-2xl font-semibold mb-4">Scanner Dashboard</h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                    <!-- Today's Scans Card -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-blue-100 text-blue-500">
-                                <i class="fas fa-qrcode text-2xl"></i>
-                            </div>
-                            <div class="ml-4">
-                                <h3 class="text-lg font-semibold text-gray-700">Today's Scans</h3>
-                                <p class="text-3xl font-bold text-gray-900">{{ $today_scans }}</p>
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="display-6 fw-bold text-dark mb-1">Scanner Dashboard</h2>
+                    <p class="text-muted mb-0">Select an event to start scanning</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-qrcode text-primary fa-2x"></i>
                             </div>
                         </div>
-                    </div>
-
-                    <!-- Total Scans Card -->
-                    <div class="bg-white rounded-lg shadow p-6">
-                        <div class="flex items-center">
-                            <div class="p-3 rounded-full bg-green-100 text-green-500">
-                                <i class="fas fa-history text-2xl"></i>
-                            </div>
-                            <div class="ml-4">
-                                <h3 class="text-lg font-semibold text-gray-700">Total Scans</h3>
-                                <p class="text-3xl font-bold text-gray-900">{{ $total_scans }}</p>
-                            </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Today's Scans</h6>
+                            <h4 class="mb-0">{{ $today_scans }}</h4>
                         </div>
                     </div>
                 </div>
-
-                <!-- QR Scanner -->
-                <div class="bg-white rounded-lg shadow mb-8">
-                    <div class="p-6">
-                        <h3 class="text-lg font-semibold text-gray-700 mb-4">QR Scanner</h3>
-                        <div id="qr-reader" class="w-full max-w-md mx-auto"></div>
-                        <div id="qr-reader-results" class="mt-4 text-center"></div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-success bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-check-circle text-success fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total Scans</h6>
+                            <h4 class="mb-0">{{ $total_scans }}</h4>
+                        </div>
                     </div>
                 </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-info bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-calendar-alt text-info fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Active Events</h6>
+                            <h4 class="mb-0">{{ $active_events->count() }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                <i class="fas fa-users text-warning fa-2x"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Checked In Today</h6>
+                            <h4 class="mb-0">{{ $checked_in_today }}</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <!-- Recent Scans -->
-                <div class="bg-white rounded-lg shadow">
-                    <div class="p-6">
-                        <h3 class="text-lg font-semibold text-gray-700 mb-4">Recent Scans</h3>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50">
+    <!-- Active Events -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Select Event to Scan</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        @forelse($active_events as $event)
+                            <div class="col-md-4 mb-4">
+                                <div class="card h-100 border">
+                                    <div class="card-body">
+                                        <h5 class="card-title">{{ $event->name }}</h5>
+                                        <p class="text-muted mb-3">
+                                            <i class="fas fa-calendar me-2"></i>
+                                            {{ $event->start_date->format('M d, Y') }}
+                                        </p>
+                                        <p class="text-muted mb-3">
+                                            <i class="fas fa-map-marker-alt me-2"></i>
+                                            {{ $event->venue }}
+                                        </p>
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <span class="badge bg-success">Active</span>
+                                            <a href="{{ route('scanner.select-event', $event) }}" class="btn btn-primary">
+                                                <i class="fas fa-qrcode me-2"></i>
+                                                Start Scanning
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="col-12">
+                                <div class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                        <h5>No Active Events</h5>
+                                        <p class="mb-0">There are no active events to scan at the moment.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Scans -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Recent Scans</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0" id="recentScansTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Event</th>
+                                    <th>Attendee</th>
+                                    <th>Status</th>
+                                    <th>Scanned By</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($recent_scans as $scan)
                                     <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Time</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendee</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="bg-white divide-y divide-gray-200">
-                                    @foreach($recent_scans as $scan)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $scan->created_at->format('M d, Y h:i A') }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ $scan->event->name }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                            {{ $scan->attendee->name }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $scan->status === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                        <td>{{ $scan->created_at->format('h:i A') }}</td>
+                                        <td>{{ $scan->attendee->event->name }}</td>
+                                        <td>{{ $scan->attendee->name }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ $scan->status === 'success' ? 'success' : 'danger' }}">
                                                 {{ ucfirst($scan->status) }}
                                             </span>
                                         </td>
+                                        <td>{{ $scan->scanned_by }}</td>
                                     </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="text-center py-4">
+                                            <div class="text-muted">
+                                                <i class="fas fa-history fa-2x mb-3"></i>
+                                                <p class="mb-0">No scans found</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -88,47 +186,18 @@
 </div>
 
 @push('scripts')
-<script src="https://unpkg.com/html5-qrcode"></script>
 <script>
-    function onScanSuccess(decodedText, decodedResult) {
-        // Play success sound
-        const audio = new Audio('/sounds/success.mp3');
-        audio.play();
-
-        // Send to server
-        fetch('/scanner/validate', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-            },
-            body: JSON.stringify({ token: decodedText })
-        })
-        .then(response => response.json())
-        .then(data => {
-            const resultDiv = document.getElementById('qr-reader-results');
-            resultDiv.innerHTML = `
-                <div class="p-4 rounded-lg ${data.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
-                    ${data.message}
-                </div>
-            `;
-        })
-        .catch(error => {
-            console.error('Error:', error);
+    $(document).ready(function() {
+        $('#recentScansTable').DataTable({
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "All"]],
+            order: [[0, 'desc']],
+            language: {
+                search: "",
+                searchPlaceholder: "Search scans..."
+            }
         });
-    }
-
-    function onScanFailure(error) {
-        // Handle scan failure
-        console.warn(`QR code scan error: ${error}`);
-    }
-
-    let html5QrcodeScanner = new Html5QrcodeScanner(
-        "qr-reader",
-        { fps: 10, qrbox: {width: 250, height: 250} },
-        false
-    );
-    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    });
 </script>
 @endpush
 @endsection 
