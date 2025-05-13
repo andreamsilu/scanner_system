@@ -14,6 +14,17 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 class AttendeeService
 {
     /**
+     * Create a new attendee
+     */
+    public function createAttendee(array $data): Attendee
+    {
+        // Generate a unique QR token
+        $data['qr_token'] = bin2hex(random_bytes(16));
+        
+        return Attendee::create($data);
+    }
+
+    /**
      * Process bulk upload of attendees
      */
     public function processBulkUpload(UploadedFile $file, int $eventId): array
@@ -42,6 +53,7 @@ class AttendeeService
                         'ticket_type' => $row['ticket_type'] ?? 'regular',
                         'status' => $row['status'] ?? 'pending',
                         'registration_date' => now(),
+                        'qr_token' => bin2hex(random_bytes(16))
                     ]);
                     
                     $results['success']++;

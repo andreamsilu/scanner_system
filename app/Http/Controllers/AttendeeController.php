@@ -42,10 +42,13 @@ class AttendeeController extends Controller
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id',
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:20',
-            'ticket_type_id' => 'required|exists:ticket_types,id',
-            'status' => 'required|in:registered,checked_in,cancelled'
+            'email' => 'nullable|email|max:255',
+            'phone' => 'required|string|max:20',
+            'company' => 'nullable|string|max:255',
+            'position' => 'nullable|string|max:255',
+            'ticket_type' => 'required|string|in:regular,vip,early_bird',
+            'registration_date' => 'required|date',
+            'status' => 'required|string|in:registered,checked_in,cancelled',
         ]);
 
         $attendee = $this->attendeeService->createAttendee($validated);

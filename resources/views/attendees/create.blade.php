@@ -25,7 +25,7 @@
 
                     <div class="col-md-6 mb-3">
                         <label for="email" class="form-label">Email</label>
-                        <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}" required>
+                        <input type="email" class="form-control @error('email') is-invalid @enderror" id="email" name="email" value="{{ old('email') }}">
                         @error('email')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -35,6 +35,22 @@
                         <label for="phone" class="form-label">Phone</label>
                         <input type="tel" class="form-control @error('phone') is-invalid @enderror" id="phone" name="phone" value="{{ old('phone') }}" required>
                         @error('phone')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="company" class="form-label">Company</label>
+                        <input type="text" class="form-control @error('company') is-invalid @enderror" id="company" name="company" value="{{ old('company') }}">
+                        @error('company')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6 mb-3">
+                        <label for="position" class="form-label">Position</label>
+                        <input type="text" class="form-control @error('position') is-invalid @enderror" id="position" name="position" value="{{ old('position') }}">
+                        @error('position')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
                     </div>
@@ -57,8 +73,7 @@
                     <div class="col-md-6 mb-3">
                         <label for="ticket_type" class="form-label">Ticket Type</label>
                         <select class="form-select @error('ticket_type') is-invalid @enderror" id="ticket_type" name="ticket_type" required>
-                            <option value="">Select Ticket Type</option>
-                            <option value="regular" {{ old('ticket_type') == 'regular' ? 'selected' : '' }}>Regular</option>
+                            <option value="regular" {{ old('ticket_type', 'regular') == 'regular' ? 'selected' : '' }}>Regular</option>
                             <option value="vip" {{ old('ticket_type') == 'vip' ? 'selected' : '' }}>VIP</option>
                             <option value="early_bird" {{ old('ticket_type') == 'early_bird' ? 'selected' : '' }}>Early Bird</option>
                         </select>
@@ -68,10 +83,18 @@
                     </div>
 
                     <div class="col-md-6 mb-3">
+                        <label for="registration_date" class="form-label">Registration Date</label>
+                        <input type="datetime-local" class="form-control @error('registration_date') is-invalid @enderror" id="registration_date" name="registration_date" value="{{ old('registration_date', now()->format('Y-m-d\TH:i')) }}" required>
+                        @error('registration_date')
+                            <div class="invalid-feedback">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="col-md-6 mb-3">
                         <label for="status" class="form-label">Status</label>
                         <select class="form-select @error('status') is-invalid @enderror" id="status" name="status" required>
-                            <option value="pending" {{ old('status') == 'pending' ? 'selected' : '' }}>Pending</option>
-                            <option value="confirmed" {{ old('status') == 'confirmed' ? 'selected' : '' }}>Confirmed</option>
+                            <option value="registered" {{ old('status', 'registered') == 'registered' ? 'selected' : '' }}>Registered</option>
+                            <option value="checked_in" {{ old('status') == 'checked_in' ? 'selected' : '' }}>Checked In</option>
                             <option value="cancelled" {{ old('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                         </select>
                         @error('status')

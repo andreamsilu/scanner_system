@@ -16,9 +16,12 @@ class Attendee extends Model
         'name',
         'email',
         'phone',
+        'company',
+        'position',
         'ticket_type',
         'status',
-        'registration_date'
+        'registration_date',
+        'qr_token'
     ];
 
     protected $casts = [
