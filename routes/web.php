@@ -164,7 +164,6 @@ Route::middleware(['web'])->group(function () {
         Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     });
 });
-
 Route::middleware(['auth', 'role:scanner'])->prefix('scanner')->name('scanner.')->group(function () {
     Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
     Route::get('/history', [ScannerController::class, 'history'])->name('history');
@@ -174,3 +173,4 @@ Route::middleware(['auth', 'role:scanner'])->prefix('scanner')->name('scanner.')
 });
 
 Route::get('/scanners', [ScannerController::class, 'index'])->name('scanners.index');
+
