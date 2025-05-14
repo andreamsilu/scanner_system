@@ -22,6 +22,7 @@ return new class extends Migration
             $table->enum('status', ['registered', 'checked_in', 'cancelled'])->default('registered');
             $table->string('ticket_type')->default('regular');
             $table->timestamp('checked_in_at')->nullable();
+            $table->string('position')->nullable();
             $table->timestamps();
         });
     }

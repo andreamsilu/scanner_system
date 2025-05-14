@@ -18,8 +18,10 @@ return new class extends Migration
             $table->dateTime('start_date');
             $table->dateTime('end_date');
             $table->string('venue');
+            $table->integer('capacity');
             $table->string('location')->nullable();
-            $table->string('status')->default('draft');
+            $table->enum('status', ['draft', 'published', 'cancelled'])->default('draft');
+            $table->string('banner')->nullable();
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
         });

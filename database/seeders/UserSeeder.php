@@ -18,19 +18,20 @@ class UserSeeder extends Seeder
             'role' => 'admin',
         ]);
 
-        // Create scanner users
+        // Create scanner user
         User::create([
-            'name' => 'Scanner User 1',
-            'email' => 'scanner1@example.com',
+            'name' => 'Scanner User',
+            'email' => 'scanner@example.com',
             'password' => Hash::make('password'),
             'role' => 'scanner',
         ]);
 
+        // Create regular user
         User::create([
-            'name' => 'Scanner User 2',
-            'email' => 'scanner2@example.com',
+            'name' => 'Regular User',
+            'email' => 'user@example.com',
             'password' => Hash::make('password'),
-            'role' => 'scanner',
+            'role' => 'user',
         ]);
     }
 } 

@@ -12,6 +12,7 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use League\Csv\Reader;
+use Illuminate\Support\Facades\Validator;
 
 class AttendeeController extends Controller
 {
@@ -22,167 +23,149 @@ class AttendeeController extends Controller
         $this->attendeeService = $attendeeService;
     }
 
+    /**
+     * Display a listing of the attendees.
+     */
     public function index(): View
     {
-        $attendees = Attendee::with(['event'])
+        $attendees = Attendee::with('events')
             ->latest()
             ->paginate(15);
+
         return view('attendees.index', compact('attendees'));
     }
 
-    public function create(): View
+    /**
+     * Show the form for creating a new attendee.
+     */
+    public function create(Event $event): View
     {
-        $events = Event::where('status', 'active')->get();
-        return view('attendees.create', compact('events'));
+        return view('attendees.create', compact('event'));
     }
 
-    public function store(Request $request): RedirectResponse
+    /**
+     * Store a newly created attendee in storage.
+     */
+    public function store(Request $request, Event $event): RedirectResponse
     {
         $validated = $request->validate([
-            'event_id' => 'required|exists:events,id',
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'required|string|max:20',
-            'company' => 'nullable|string|max:255',
-            'position' => 'nullable|string|max:255',
-            'ticket_type' => 'required|string|in:regular,vip,early_bird',
-            'registration_date' => 'required|date',
-            'status' => 'required|string|in:registered,checked_in,cancelled',
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'registration_status' => 'required|in:registered,checked_in,cancelled',
+            'notes' => 'nullable|string',
         ]);
 
-        $attendee = $this->attendeeService->createAttendee($validated);
+        $attendee = $event->attendees()->create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'phone' => $validated['phone'],
+            'registration_status' => $validated['registration_status'],
+            'notes' => $validated['notes'],
+            'registered_at' => now(),
+        ]);
 
         return redirect()
-            ->route('attendees.show', $attendee)
-            ->with('success', 'Attendee created successfully.');
+            ->route('events.attendees', $event)
+            ->with('success', 'Attendee added successfully.');
     }
 
-    public function show(Attendee $attendee): View
+    /**
+     * Display the specified attendee.
+     */
+    public function show(Event $event, Attendee $attendee): View
     {
-        return view('attendees.show', compact('attendee'));
+        return view('attendees.show', compact('event', 'attendee'));
     }
 
-    public function edit(Attendee $attendee): View
+    /**
+     * Show the form for editing the specified attendee.
+     */
+    public function edit(Event $event, Attendee $attendee): View
     {
-        $events = Event::where('status', 'active')->get();
-        $ticketTypes = TicketType::all();
-        return view('attendees.edit', compact('attendee', 'events', 'ticketTypes'));
+        return view('attendees.edit', compact('event', 'attendee'));
     }
 
-    public function update(Request $request, Attendee $attendee): RedirectResponse
+    /**
+     * Update the specified attendee in storage.
+     */
+    public function update(Request $request, Event $event, Attendee $attendee): RedirectResponse
     {
         $validated = $request->validate([
-            'event_id' => 'required|exists:events,id',
             'name' => 'required|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'required|string|max:20',
-            'company' => 'nullable|string|max:255',
-            'position' => 'nullable|string|max:255',
-            'ticket_type' => 'required|string|in:regular,vip,early_bird',
-            'registration_date' => 'required|date',
-            'status' => 'required|string|in:registered,checked_in,cancelled'
+            'email' => 'required|email|max:255',
+            'phone' => 'nullable|string|max:20',
+            'registration_status' => 'required|in:registered,checked_in,cancelled',
+            'notes' => 'nullable|string',
         ]);
 
-        $this->attendeeService->updateAttendee($attendee, $validated);
+        $attendee->update($validated);
 
         return redirect()
-            ->route('attendees.show', $attendee)
+            ->route('events.attendees', $event)
             ->with('success', 'Attendee updated successfully.');
     }
 
-    public function destroy(Attendee $attendee): RedirectResponse
+    /**
+     * Remove the specified attendee from storage.
+     */
+    public function destroy(Event $event, Attendee $attendee): RedirectResponse
     {
-        $this->attendeeService->deleteAttendee($attendee);
+        $attendee->delete();
 
         return redirect()
-            ->route('attendees.index')
-            ->with('success', 'Attendee deleted successfully.');
+            ->route('events.attendees', $event)
+            ->with('success', 'Attendee removed successfully.');
     }
 
-    public function bulkUploadForm(): View
+    /**
+     * Show the form for bulk uploading attendees.
+     */
+    public function showBulkUploadForm(Event $event): View
     {
-        $recentUploads = DB::table('attendee_imports')
-            ->latest()
-            ->take(5)
-            ->get();
-
-        return view('attendees.bulk-upload', compact('recentUploads'));
+        return view('attendees.bulk-upload', compact('event'));
     }
 
-    public function bulkUpload(Request $request): RedirectResponse
+    /**
+     * Process the bulk upload of attendees.
+     */
+    public function bulkUpload(Request $request, Event $event): RedirectResponse
     {
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:10240'
+            'file' => 'required|file|mimes:csv,txt|max:10240',
         ]);
 
+        $file = $request->file('file');
+        $path = $file->getRealPath();
+        
+        $handle = fopen($path, 'r');
+        $header = fgetcsv($handle);
+        
+        DB::beginTransaction();
         try {
-            $csv = Reader::createFromPath($request->file('csv_file')->getPathname());
-            $csv->setHeaderOffset(0);
-
-            $records = $csv->getRecords();
-            $totalRecords = 0;
-            $successCount = 0;
-            $errorCount = 0;
-            $errors = [];
-
-            DB::beginTransaction();
-
-            foreach ($records as $offset => $record) {
-                $totalRecords++;
-
-                try {
-                    $validated = $this->validateRecord($record);
-                    $this->attendeeService->createAttendee($validated);
-                    $successCount++;
-                } catch (\Exception $e) {
-                    $errorCount++;
-                    $errors[] = "Row {$offset}: " . $e->getMessage();
-                }
+            while ($row = fgetcsv($handle)) {
+                $data = array_combine($header, $row);
+                
+                $event->attendees()->create([
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'phone' => $data['phone'] ?? null,
+                    'registration_status' => 'registered',
+                    'registered_at' => now(),
+                ]);
             }
-
-            // Log the import
-            DB::table('attendee_imports')->insert([
-                'total_records' => $totalRecords,
-                'success_count' => $successCount,
-                'error_count' => $errorCount,
-                'status' => $errorCount === 0 ? 'completed' : 'completed_with_errors',
-                'errors' => json_encode($errors),
-                'created_at' => now(),
-                'updated_at' => now()
-            ]);
-
+            
             DB::commit();
-
-            $message = "Import completed. {$successCount} records imported successfully.";
-            if ($errorCount > 0) {
-                $message .= " {$errorCount} records failed.";
-            }
-
             return redirect()
-                ->route('attendees.index')
-                ->with('success', $message)
-                ->with('import_errors', $errors);
-
+                ->route('events.attendees', $event)
+                ->with('success', 'Attendees uploaded successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('Bulk upload failed: ' . $e->getMessage());
-
-            return redirect()
-                ->back()
-                ->with('error', 'Failed to process the file. Please check the file format and try again.');
+            return back()
+                ->with('error', 'Error uploading attendees. Please check your file format.');
+        } finally {
+            fclose($handle);
         }
-    }
-
-    protected function validateRecord(array $record): array
-    {
-        return [
-            'event_id' => $record['event_id'],
-            'name' => $record['name'],
-            'email' => $record['email'],
-            'phone' => $record['phone'] ?? null,
-            'ticket_type_id' => $record['ticket_type_id'],
-            'status' => $record['status']
-        ];
     }
 
     public function downloadTemplate()

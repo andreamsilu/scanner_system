@@ -7,32 +7,40 @@ use App\Models\ScanLog;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\View\View;
+use Illuminate\Http\RedirectResponse;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(): View|RedirectResponse
     {
-        $stats = [
-            'total_attendees' => Attendee::count(),
-            'scanned_attendees' => Attendee::where('scanned', true)->count(),
-            'total_scans' => ScanLog::count(),
-            'total_users' => User::count(),
-        ];
+        $user = Auth::user();
+        
+        if ($user->role === 'admin') {
+            return redirect()->route('admin.dashboard');
+        } elseif ($user->role === 'scanner') {
+            return redirect()->route('scanner.dashboard');
+        }
+        
+        return redirect()->route('welcome');
+    }
 
-        $recentScans = ScanLog::with('attendee')
-            ->latest()
-            ->take(5)
-            ->get();
+    public function adminDashboard(): View
+    {
+        if (Auth::user()->role !== 'admin') {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        return view('dashboard.admin');
+    }
 
-        $dailyScans = ScanLog::select(
-            DB::raw('DATE(created_at) as date'),
-            DB::raw('count(*) as total')
-        )
-        ->groupBy('date')
-        ->orderBy('date', 'desc')
-        ->take(7)
-        ->get();
-
-        return view('dashboard.index', compact('stats', 'recentScans', 'dailyScans'));
+    public function scannerDashboard(): View
+    {
+        if (Auth::user()->role !== 'scanner') {
+            abort(403, 'Unauthorized action.');
+        }
+        
+        return view('dashboard.scanner');
     }
 } 

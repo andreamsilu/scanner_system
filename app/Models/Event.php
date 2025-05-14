@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class Event extends Model
 {
@@ -14,24 +15,17 @@ class Event extends Model
     protected $fillable = [
         'name',
         'description',
+        'location',
         'start_date',
         'end_date',
-        'venue',
-        'location',
-        'status',
         'capacity',
-        'registration_deadline',
-        'is_public',
-        'created_by'
+        'status',
     ];
 
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
-        'registration_deadline' => 'datetime',
-        'is_public' => 'boolean',
-        'is_active' => 'boolean',
-        'capacity' => 'integer'
+        'capacity' => 'integer',
     ];
 
     protected $appends = ['status_badge'];
@@ -56,14 +50,42 @@ class Event extends Model
         };
     }
 
-    public function attendees(): HasMany
+    public function attendees()
     {
         return $this->hasMany(Attendee::class);
     }
 
-    public function cards(): HasMany
+    public function tickets()
     {
-        return $this->hasMany(EventCard::class);
+        return $this->hasMany(Ticket::class);
+    }
+
+    public function getAttendeesWithTickets()
+    {
+        return $this->attendees()->with('ticket')->get();
+    }
+
+    public function getAvailableTickets()
+    {
+        return $this->tickets()->whereDoesntHave('attendee')->get();
+    }
+
+    public function assignTicketToAttendee(Attendee $attendee, Ticket $ticket)
+    {
+        if ($ticket->event_id !== $this->id) {
+            throw new \Exception('Ticket does not belong to this event');
+        }
+
+        if ($ticket->attendee) {
+            throw new \Exception('Ticket is already assigned');
+        }
+
+        $attendee->assignTicket($ticket);
+    }
+
+    public function scans()
+    {
+        return $this->hasMany(Scan::class);
     }
 
     public function scanLogs(): HasMany
@@ -82,9 +104,34 @@ class Event extends Model
             ->using(EventScanner::class);
     }
 
-    public function isActive(): bool
+    public function isActive()
     {
         return $this->status === 'active';
+    }
+
+    public function isDraft()
+    {
+        return $this->status === 'draft';
+    }
+
+    public function isCancelled()
+    {
+        return $this->status === 'cancelled';
+    }
+
+    public function getAvailableCapacity()
+    {
+        return $this->capacity - $this->attendees()->count();
+    }
+
+    public function hasAvailableCapacity()
+    {
+        return $this->getAvailableCapacity() > 0;
+    }
+
+    public function getRegistrationProgress()
+    {
+        return ($this->attendees()->count() / $this->capacity) * 100;
     }
 
     public function isUpcoming(): bool

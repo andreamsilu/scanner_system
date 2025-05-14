@@ -26,7 +26,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('event_id')->constrained()->onDelete('cascade');
             $table->foreignId('scanner_id')->constrained()->onDelete('cascade');
-            $table->foreignId('assigned_by')->constrained('users')->onDelete('set null');
+            $table->foreignId('assigned_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamp('assigned_at');
             $table->timestamps();
         });

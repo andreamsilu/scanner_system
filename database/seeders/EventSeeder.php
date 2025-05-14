@@ -3,44 +3,39 @@
 namespace Database\Seeders;
 
 use App\Models\Event;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class EventSeeder extends Seeder
 {
     public function run(): void
     {
-        $events = [
-            [
-                'title' => 'Tech Conference 2024',
-                'description' => 'Annual technology conference featuring the latest innovations and industry leaders.',
-                'start_date' => now()->addDays(30),
-                'end_date' => now()->addDays(32),
-                'location' => 'Convention Center, New York',
-                'capacity' => 500,
-                'status' => 'active',
-            ],
-            [
-                'title' => 'Business Networking Event',
-                'description' => 'Networking event for business professionals and entrepreneurs.',
-                'start_date' => now()->addDays(15),
-                'end_date' => now()->addDays(15),
-                'location' => 'Grand Hotel, Chicago',
-                'capacity' => 200,
-                'status' => 'active',
-            ],
-            [
-                'title' => 'Workshop: Digital Marketing',
-                'description' => 'Hands-on workshop covering the latest digital marketing strategies.',
-                'start_date' => now()->addDays(45),
-                'end_date' => now()->addDays(46),
-                'location' => 'Business Center, San Francisco',
-                'capacity' => 100,
-                'status' => 'active',
-            ],
-        ];
+        $admin = User::where('role', 'admin')->first();
 
-        foreach ($events as $event) {
-            Event::create($event);
-        }
+        Event::create([
+            'name' => 'Tech Conference 2024',
+            'description' => 'Annual technology conference featuring the latest innovations.',
+            'start_date' => now()->addDays(30),
+            'end_date' => now()->addDays(32),
+            'venue' => 'Convention Center',
+            'capacity' => 500,
+            'location' => '123 Tech Street, Silicon Valley',
+            'status' => 'published',
+            'is_public' => true,
+            'created_by' => $admin->id,
+        ]);
+
+        Event::create([
+            'name' => 'Startup Meetup',
+            'description' => 'Networking event for startups and investors.',
+            'start_date' => now()->addDays(15),
+            'end_date' => now()->addDays(15),
+            'venue' => 'Innovation Hub',
+            'capacity' => 200,
+            'location' => '456 Startup Avenue, Tech City',
+            'status' => 'published',
+            'is_public' => true,
+            'created_by' => $admin->id,
+        ]);
     }
 } 

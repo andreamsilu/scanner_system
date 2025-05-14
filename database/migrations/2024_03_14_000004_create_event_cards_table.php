@@ -15,10 +15,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('event_id')->constrained()->onDelete('cascade');
             $table->foreignId('attendee_id')->constrained()->onDelete('cascade');
-            $table->string('card_number')->unique();
-            $table->string('status')->default('active');
-            $table->timestamp('issued_at');
-            $table->timestamp('expires_at')->nullable();
+            $table->string('token')->unique();
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_used')->default(false);
             $table->timestamps();
         });
     }

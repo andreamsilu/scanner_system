@@ -8,14 +8,16 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
 use App\Models\Scanner;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 
 class EventController extends Controller
 {
     public function index(): View
     {
-        $events = Event::with('creator')
+        $events = Event::withCount(['attendees', 'tickets'])
             ->latest()
-            ->paginate(15);
+            ->paginate(10);
 
         return view('events.index', compact('events'));
     }
@@ -27,36 +29,27 @@ class EventController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        try {
-            $validated = $this->validateEvent($request);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'location' => 'required|string|max:255',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'capacity' => 'required|integer|min:1',
+            'status' => ['required', Rule::in(['draft', 'active', 'cancelled'])],
+        ]);
 
-            $validated['created_by'] = auth()->id();
-            $validated['is_public'] = $request->boolean('is_public', false);
+        $event = Event::create($validated);
 
-            $event = Event::create($validated);
-
-            Log::info('Event created successfully', ['event_id' => $event->id]);
-
-            return redirect()
-                ->route('events.show', $event)
-                ->with('success', 'Event created successfully.');
-        } catch (\Exception $e) {
-            Log::error('Failed to create event', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return back()
-                ->withInput()
-                ->with('error', 'Failed to create event. Please try again.');
-        }
+        return redirect()
+            ->route('events.show', $event)
+            ->with('success', 'Event created successfully.');
     }
 
     public function show(Event $event): View
     {
-        $event->load(['creator', 'attendees', 'cards']);
-        $scannerUsers = \App\Models\User::where('role', 'scanner')->get();
-        return view('events.show', compact('event', 'scannerUsers'));
+        $event->load(['attendees', 'tickets']);
+        return view('events.show', compact('event'));
     }
 
     public function edit(Event $event): View
@@ -66,70 +59,66 @@ class EventController extends Controller
 
     public function update(Request $request, Event $event): RedirectResponse
     {
-        try {
-            $validated = $this->validateEvent($request);
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'location' => 'required|string|max:255',
+            'start_date' => 'required|date',
+            'end_date' => 'required|date|after:start_date',
+            'capacity' => 'required|integer|min:1',
+            'status' => ['required', Rule::in(['draft', 'active', 'cancelled'])],
+        ]);
 
-            $validated['is_public'] = $request->boolean('is_public', false);
+        $event->update($validated);
 
-            $event->update($validated);
-
-            Log::info('Event updated successfully', ['event_id' => $event->id]);
-
-            return redirect()
-                ->route('events.show', $event)
-                ->with('success', 'Event updated successfully.');
-        } catch (\Exception $e) {
-            Log::error('Failed to update event', [
-                'event_id' => $event->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return back()
-                ->withInput()
-                ->with('error', 'Failed to update event. Please try again.');
-        }
+        return redirect()
+            ->route('events.show', $event)
+            ->with('success', 'Event updated successfully.');
     }
 
     public function destroy(Event $event): RedirectResponse
     {
-        try {
+        DB::transaction(function () use ($event) {
+            $event->tickets()->delete();
+            $event->attendees()->detach();
             $event->delete();
+        });
 
-            Log::info('Event deleted successfully', ['event_id' => $event->id]);
-
-            return redirect()
-                ->route('events.index')
-                ->with('success', 'Event deleted successfully.');
-        } catch (\Exception $e) {
-            Log::error('Failed to delete event', [
-                'event_id' => $event->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return back()->with('error', 'Failed to delete event. Please try again.');
-        }
+        return redirect()
+            ->route('events.index')
+            ->with('success', 'Event deleted successfully.');
     }
 
     public function attendees(Event $event): View
     {
         $attendees = $event->attendees()
-            ->with('user')
+            ->with('ticket')
             ->latest()
-            ->paginate(15);
+            ->paginate(20);
 
         return view('events.attendees', compact('event', 'attendees'));
     }
 
-    public function cards(Event $event): View
+    public function tickets(Event $event): View
     {
-        $cards = $event->cards()
+        $tickets = $event->tickets()
             ->with('attendee')
             ->latest()
-            ->paginate(15);
+            ->paginate(20);
 
-        return view('events.cards', compact('event', 'cards'));
+        return view('events.tickets', compact('event', 'tickets'));
+    }
+
+    public function allAttendees(): View
+    {
+        $attendees = \App\Models\Attendee::with(['events' => function($query) {
+                $query->select('events.id', 'name')
+                    ->withPivot('registration_status', 'registered_at');
+            }, 'ticket'])
+            ->latest()
+            ->paginate(20);
+
+        return view('attendees.index', compact('attendees'));
     }
 
     public function getAttendees(Event $event)
@@ -205,20 +194,5 @@ class EventController extends Controller
         ]);
 
         return redirect()->back()->with('success', 'Scanner updated successfully.');
-    }
-
-    protected function validateEvent(Request $request)
-    {
-        return $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after_or_equal:start_date',
-            'venue' => 'required|string|max:255',
-            'location' => 'required|string|max:255',
-            'status' => 'required|in:draft,active,completed,cancelled',
-            'capacity' => 'required|integer|min:1',
-            'is_public' => 'boolean'
-        ]);
     }
 }

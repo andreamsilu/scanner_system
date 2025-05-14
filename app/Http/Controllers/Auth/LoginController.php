@@ -26,7 +26,7 @@ class LoginController extends Controller
             'ip' => $request->ip()
         ]);
 
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (Auth::attempt($credentials)) {
             $user = Auth::user();
             Log::info('Login successful', [
                 'user_id' => $user->id,
@@ -50,7 +50,7 @@ class LoginController extends Controller
 
         return back()->withErrors([
             'email' => 'The provided credentials do not match our records.',
-        ])->withInput($request->only('email'));
+        ])->onlyInput('email');
     }
 
     public function logout(Request $request)

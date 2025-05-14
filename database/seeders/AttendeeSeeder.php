@@ -4,28 +4,40 @@ namespace Database\Seeders;
 
 use App\Models\Attendee;
 use App\Models\Event;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class AttendeeSeeder extends Seeder
 {
     public function run(): void
     {
-        $events = Event::all();
+        $event = Event::first();
+        $user = User::where('role', 'user')->first();
 
-        foreach ($events as $event) {
-            // Create 10 attendees for each event
-            for ($i = 0; $i < 10; $i++) {
-                Attendee::create([
-                    'event_id' => $event->id,
-                    'name' => fake()->name(),
-                    'email' => fake()->unique()->safeEmail(),
-                    'phone' => fake()->phoneNumber(),
-                    'company' => fake()->company(),
-                    'position' => fake()->jobTitle(),
-                    'registration_date' => now(),
-                    'status' => 'registered',
-                ]);
-            }
-        }
+        Attendee::create([
+            'user_id' => $user->id,
+            'event_id' => $event->id,
+            'name' => 'John Doe',
+            'email' => 'john@example.com',
+            'phone' => '9876543210',
+            'ticket_number' => 'TICKET001',
+            'status' => 'registered',
+            'ticket_type' => 'regular',
+            'position' => 'Developer',
+            'qr_token' => 'qr_token_001',
+        ]);
+
+        Attendee::create([
+            'user_id' => null,
+            'event_id' => $event->id,
+            'name' => 'Jane Smith',
+            'email' => 'jane@example.com',
+            'phone' => '9876543211',
+            'ticket_number' => 'TICKET002',
+            'status' => 'registered',
+            'ticket_type' => 'vip',
+            'position' => 'Designer',
+            'qr_token' => 'qr_token_002',
+        ]);
     }
 } 
