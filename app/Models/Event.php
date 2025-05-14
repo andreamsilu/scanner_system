@@ -71,6 +71,17 @@ class Event extends Model
         return $this->hasMany(ScanLog::class);
     }
 
+    /**
+     * Get the scanners assigned to this event.
+     */
+    public function scanners()
+    {
+        return $this->belongsToMany(Scanner::class, 'event_scanner')
+            ->withTimestamps()
+            ->withPivot(['assigned_at', 'assigned_by'])
+            ->using(EventScanner::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';

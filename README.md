@@ -1,63 +1,211 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Event Ticketing System
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A robust web-based platform for managing events, attendees, and ticket verification using QR codes.
 
-## About Laravel
+## 🚀 Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+### Core Functionality
+- Role-based authentication (Admin, Scanner)
+- Event management and creation
+- Attendee registration (manual and bulk)
+- QR code ticket generation and management
+- Real-time ticket verification
+- Comprehensive analytics dashboard
+- Scan logging and reporting
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### Security Features
+- Secure UUID-based ticket tokens
+- Role-based access control
+- Duplicate scan prevention
+- Immutable audit logs
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 🏗️ System Architecture
 
-## Learning Laravel
+### Technology Stack
+- **Backend**: Laravel 10+
+- **Database**: MySQL 8+
+- **Frontend**: Bootstrap 5
+- **Hosting**: Laravel Forge/Vapor
+- **Storage**: Public/S3 for QR codes
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### MVC Architecture Implementation
+```
+app/
+├── Http/
+│   ├── Controllers/    # Application controllers
+│   ├── Middleware/     # HTTP middleware
+│   └── Requests/       # Form requests
+├── Models/             # Eloquent models
+├── Services/           # Business logic services
+├── Repositories/       # Data access layer
+└── View/              # View composers
+resources/
+├── views/             # Blade templates
+│   ├── admin/         # Admin views
+│   ├── scanner/       # Scanner views
+│   └── layouts/       # Layout templates
+├── js/                # JavaScript files
+└── css/               # CSS files
+database/
+├── migrations/        # Database migrations
+└── seeders/          # Database seeders
+routes/
+├── web.php           # Web routes
+└── api.php           # API routes
+```
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+## 👥 User Roles
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### Admin
+- Full system access
+- Event management
+- Attendee registration
+- Analytics and reporting
+- Scanner assignment
 
-## Laravel Sponsors
+### Scanner
+- Event-specific access
+- Ticket verification
+- Basic analytics view
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 📋 Core Modules
 
-### Premium Partners
+### Authentication & Roles
+- Secure login system
+- Role-based access control
+- Session management
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development/)**
-- **[Active Logic](https://activelogic.com)**
+### Event Management
+- CRUD operations for events
+- Scanner assignment
+- Event configuration
 
-## Contributing
+### Attendee Management
+- Manual registration
+- Bulk upload functionality
+- QR code generation
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Ticket Management
+- Unique QR code generation
+- Ticket re-generation
+- Export capabilities
 
-## Code of Conduct
+### Scanner Dashboard
+- QR code scanning
+- Manual verification
+- Real-time status updates
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+### Analytics & Reporting
+- Attendance statistics
+- Check-in tracking
+- Export functionality
 
-## Security Vulnerabilities
+## 🔄 Key User Flows
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+### Admin Flow
+1. Login
+2. Create/Manage Events
+3. Register Attendees
+4. Generate/Distribute Tickets
+5. View Analytics
 
-## License
+### Scanner Flow
+1. Login
+2. Access Event Dashboard
+3. Scan/Verify Tickets
+4. View Status Updates
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
-# scanner_system
-# scanner_system
+## 🔮 Future Enhancements
+
+### Planned Features
+- Payment gateway integration
+- Email/SMS notifications
+- Mobile scanning application
+- Real-time statistics
+- Check-out functionality
+- Advanced role management
+
+## 🛠️ Development Setup
+
+### Prerequisites
+- PHP 8.1+
+- Composer
+- MySQL 8+
+- Node.js & NPM
+
+### Installation
+1. Clone the repository
+```bash
+git clone [repository-url]
+```
+
+2. Install dependencies
+```bash
+composer install
+npm install
+```
+
+3. Configure environment
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+4. Run migrations
+```bash
+php artisan migrate
+```
+
+5. Start development server
+```bash
+php artisan serve
+```
+
+## 📊 Database Schema
+
+### Core Entities
+- Users
+- Events
+- Ticket Types
+- Attendees
+- Tickets
+- Scan Logs
+
+### Key Relationships
+- One scanner per event
+- Event has many attendees
+- One ticket per attendee
+
+## 🔒 Security Measures
+
+- UUID-based ticket tokens
+- Role-based access control
+- Duplicate scan prevention
+- Immutable audit logs
+- Regular security updates
+
+## 🚀 Deployment
+
+### Production Requirements
+- Laravel Forge or Vapor hosting
+- SSL certification
+- Regular backups
+- Monitoring setup
+
+### Maintenance
+- Regular security updates
+- Database optimization
+- Performance monitoring
+- Backup verification
+
+## 📝 License
+
+[License Type] - See LICENSE file for details
+
+## 👥 Contributing
+
+Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.
+
+## 📞 Support
+
+For support, email [support-email] or create an issue in the repository.

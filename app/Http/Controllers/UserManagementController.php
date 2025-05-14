@@ -29,15 +29,22 @@ class UserManagementController extends Controller
             'role' => ['required', 'string', 'in:admin,scanner'],
         ]);
 
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'role' => $validated['role'],
-        ]);
+        try {
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'role' => $validated['role'],
+                'is_active' => true,
+            ]);
 
-        return redirect()->route('users')
-            ->with('success', 'User created successfully.');
+            return redirect()->route('users.index')
+                ->with('success', 'User created successfully.');
+        } catch (\Exception $e) {
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to create user: ' . $e->getMessage());
+        }
     }
 
     public function edit(User $user)

@@ -4,69 +4,44 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
+use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
      * Display the login view.
      */
-    public function create()
+    public function create(): View
     {
-        if (Auth::check()) {
-            Log::info('User already authenticated, redirecting to dashboard', [
-                'user' => Auth::user()->email
-            ]);
-            return redirect()->route('dashboard');
-        }
-
-        Log::info('Showing login form');
         return view('auth.login');
     }
 
     /**
      * Handle an incoming authentication request.
      */
-    public function store(LoginRequest $request)
+    public function store(LoginRequest $request): RedirectResponse
     {
-        try {
-            $request->authenticate();
-            $request->session()->regenerate();
+        $request->authenticate();
 
-            Log::info('User authenticated successfully', [
-                'user' => Auth::user()->email
-            ]);
+        $request->session()->regenerate();
 
-            return redirect()->intended(route('dashboard'));
-        } catch (\Exception $e) {
-            Log::error('Authentication failed', [
-                'email' => $request->email,
-                'error' => $e->getMessage()
-            ]);
-
-            return back()->withErrors([
-                'email' => 'The provided credentials do not match our records.',
-            ])->onlyInput('email');
-        }
+        return redirect()->intended(route('dashboard', absolute: false));
     }
 
     /**
      * Destroy an authenticated session.
      */
-    public function destroy(Request $request)
+    public function destroy(Request $request): RedirectResponse
     {
-        $user = Auth::user();
-        
         Auth::guard('web')->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
 
-        Log::info('User logged out', [
-            'user' => $user ? $user->email : 'unknown'
-        ]);
+        $request->session()->invalidate();
+
+        $request->session()->regenerateToken();
 
         return redirect('/');
     }
-} 
+}

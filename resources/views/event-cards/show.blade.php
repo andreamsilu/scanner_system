@@ -31,19 +31,19 @@
                                     <div class="row mb-4">
                                         <div class="col-md-3 text-center">
                                             <div class="avatar-circle bg-primary text-white mx-auto" style="width: 100px; height: 100px; font-size: 40px;">
-                                                {{ strtoupper(substr($attendee->name, 0, 1)) }}
+                                                {{ strtoupper(substr($card->attendee->name, 0, 1)) }}
                                             </div>
                                         </div>
                                         <div class="col-md-9">
-                                            <h4 class="mb-2">{{ $attendee->name }}</h4>
+                                            <h4 class="mb-2">{{ $card->attendee->name }}</h4>
                                             <p class="text-muted mb-2">
-                                                <i class="fas fa-briefcase me-2"></i>{{ $attendee->position ?? 'No Position' }}
+                                                <i class="fas fa-briefcase me-2"></i>{{ $card->attendee->position ?? 'No Position' }}
                                             </p>
                                             <p class="text-muted mb-2">
-                                                <i class="fas fa-building me-2"></i>{{ $attendee->company ?? 'No Company' }}
+                                                <i class="fas fa-building me-2"></i>{{ $card->attendee->company ?? 'No Company' }}
                                             </p>
                                             <div class="d-flex gap-2">
-                                                @if($attendee->scanned)
+                                                @if($card->attendee->scanned)
                                                     <span class="badge bg-success px-3 py-2">
                                                         <i class="fas fa-check me-1"></i>Confirmed
                                                     </span>
@@ -53,7 +53,7 @@
                                                     </span>
                                                 @endif
                                                 <span class="badge bg-info px-3 py-2">
-                                                    <i class="fas fa-calendar me-1"></i>{{ $attendee->registration_date->format('M d, Y') }}
+                                                    <i class="fas fa-calendar me-1"></i>{{ $card->attendee->registration_date->format('M d, Y') }}
                                                 </span>
                                             </div>
                                         </div>
@@ -68,13 +68,13 @@
                                                     <label class="text-muted d-block mb-1">
                                                         <i class="fas fa-envelope me-2"></i>Email
                                                     </label>
-                                                    <p class="mb-0">{{ $attendee->email }}</p>
+                                                    <p class="mb-0">{{ $card->attendee->email }}</p>
                                                 </div>
                                                 <div class="mb-3">
                                                     <label class="text-muted d-block mb-1">
                                                         <i class="fas fa-phone me-2"></i>Phone
                                                     </label>
-                                                    <p class="mb-0">{{ $attendee->phone ?? 'Not provided' }}</p>
+                                                    <p class="mb-0">{{ $card->attendee->phone ?? 'Not provided' }}</p>
                                                 </div>
                                             </div>
                                         </div>
@@ -106,13 +106,13 @@
                                 <div class="card-body text-center">
                                     <h6 class="text-primary mb-3">Entry Pass</h6>
                                     <div class="qr-container bg-white p-4 rounded mb-3">
-                                        {!! QrCode::size(200)->format('svg')->generate(route('event-cards.verify', $attendee->qr_token)) !!}
+                                        {!! QrCode::size(200)->format('svg')->generate(route('event-cards.verify', $card->attendee->qr_token)) !!}
                                     </div>
                                     <p class="text-muted small mb-2">Scan this QR code at the venue</p>
                                     <div class="ticket-info bg-white p-3 rounded">
-                                        <p class="mb-1"><strong>Ticket ID:</strong> {{ $attendee->qr_token }}</p>
+                                        <p class="mb-1"><strong>Ticket ID:</strong> {{ $card->attendee->qr_token }}</p>
                                         <p class="mb-0"><strong>Status:</strong> 
-                                            @if($attendee->scanned)
+                                            @if($card->attendee->scanned)
                                                 <span class="text-success">Confirmed</span>
                                             @else
                                                 <span class="text-warning">Pending</span>
@@ -131,15 +131,15 @@
                                 <div class="card-body">
                                     <h6 class="text-primary mb-3">Card Actions</h6>
                                     <div class="d-flex gap-2">
-                                        <a href="{{ route('event-cards.edit', $attendee) }}" 
+                                        <a href="{{ route('event-cards.edit', $card->attendee) }}" 
                                             class="btn btn-primary">
                                             <i class="fas fa-edit me-2"></i>Edit Invitation
                                         </a>
-                                        <a href="{{ route('event-cards.download', $attendee) }}" 
+                                        <a href="{{ route('event-cards.download', $card->attendee) }}" 
                                             class="btn btn-success">
                                             <i class="fas fa-download me-2"></i>Download PDF
                                         </a>
-                                        <form action="{{ route('event-cards.destroy', $attendee) }}" 
+                                        <form action="{{ route('event-cards.destroy', $card->attendee) }}" 
                                             method="POST" 
                                             class="d-inline"
                                             onsubmit="return confirm('Are you sure you want to delete this invitation?');">

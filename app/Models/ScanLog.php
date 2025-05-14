@@ -14,29 +14,46 @@ class ScanLog extends Model
         'event_id',
         'attendee_id',
         'event_card_id',
+        'scanner_id',
         'status',
-        'scanned_by',
-        'notes'
+        'notes',
+        'scan_time'
     ];
 
     protected $casts = [
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'scan_time' => 'datetime'
     ];
 
+    /**
+     * Get the event that owns the scan log.
+     */
     public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
+    /**
+     * Get the attendee that owns the scan log.
+     */
     public function attendee(): BelongsTo
     {
         return $this->belongsTo(Attendee::class);
     }
 
+    /**
+     * Get the event card that owns the scan log.
+     */
     public function eventCard(): BelongsTo
     {
         return $this->belongsTo(EventCard::class);
+    }
+
+    /**
+     * Get the scanner that owns the scan log.
+     */
+    public function scanner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'scanner_id');
     }
 
     public function isSuccessful(): bool

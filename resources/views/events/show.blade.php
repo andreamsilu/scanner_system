@@ -109,6 +109,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Scanner Assignment Section -->
+            @include('events.partials.scanner-assignment')
         </div>
     </div>
 </div>

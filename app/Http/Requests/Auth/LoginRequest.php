@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Support\Facades\Log;
 
 class LoginRequest extends FormRequest
 {
@@ -23,7 +22,7 @@ class LoginRequest extends FormRequest
     /**
      * Get the validation rules that apply to the request.
      *
-     * @return array<string, \Illuminate\Contracts\Validation\Rule|array|string>
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
@@ -42,18 +41,8 @@ class LoginRequest extends FormRequest
     {
         $this->ensureIsNotRateLimited();
 
-        Log::info('Attempting authentication', [
-            'email' => $this->email,
-            'ip' => $this->ip()
-        ]);
-
-        if (!Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
+        if (! Auth::attempt($this->only('email', 'password'), $this->boolean('remember'))) {
             RateLimiter::hit($this->throttleKey());
-
-            Log::warning('Authentication failed', [
-                'email' => $this->email,
-                'ip' => $this->ip()
-            ]);
 
             throw ValidationException::withMessages([
                 'email' => trans('auth.failed'),
@@ -61,11 +50,6 @@ class LoginRequest extends FormRequest
         }
 
         RateLimiter::clear($this->throttleKey());
-
-        Log::info('Authentication successful', [
-            'email' => $this->email,
-            'ip' => $this->ip()
-        ]);
     }
 
     /**
@@ -75,19 +59,13 @@ class LoginRequest extends FormRequest
      */
     public function ensureIsNotRateLimited(): void
     {
-        if (!RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
+        if (! RateLimiter::tooManyAttempts($this->throttleKey(), 5)) {
             return;
         }
 
         event(new Lockout($this));
 
         $seconds = RateLimiter::availableIn($this->throttleKey());
-
-        Log::warning('Login attempt rate limited', [
-            'email' => $this->email,
-            'ip' => $this->ip(),
-            'seconds' => $seconds
-        ]);
 
         throw ValidationException::withMessages([
             'email' => trans('auth.throttle', [
@@ -102,6 +80,6 @@ class LoginRequest extends FormRequest
      */
     public function throttleKey(): string
     {
-        return Str::transliterate(Str::lower($this->input('email')).'|'.$this->ip());
+        return Str::transliterate(Str::lower($this->string('email')).'|'.$this->ip());
     }
-} 
+}
