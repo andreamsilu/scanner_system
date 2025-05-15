@@ -6,15 +6,15 @@
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">{{ $event->name }}</h2>
-        <div>
+                        <div>
             <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary me-2">
                 <i class="bi bi-pencil me-2"></i>Edit Event
-            </a>
+                            </a>
             <a href="{{ route('events.index') }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-2"></i>Back to Events
-            </a>
-        </div>
-    </div>
+                            </a>
+                        </div>
+                    </div>
 
     <div class="row g-4">
         <div class="col-md-8">
@@ -33,8 +33,8 @@
                                 <label class="form-label text-muted">Capacity</label>
                                 <p class="mb-0">{{ number_format($event->capacity) }} attendees</p>
                             </div>
-                        </div>
-                        <div class="col-md-6">
+                                </div>
+                                <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label text-muted">Start Date</label>
                                 <p class="mb-0">{{ $event->start_date->format('F j, Y g:i A') }}</p>
@@ -44,8 +44,8 @@
                             <div class="mb-3">
                                 <label class="form-label text-muted">End Date</label>
                                 <p class="mb-0">{{ $event->end_date->format('F j, Y g:i A') }}</p>
-                            </div>
-                        </div>
+                                    </div>
+                                </div>
                         <div class="col-12">
                             <div class="mb-3">
                                 <label class="form-label text-muted">Description</label>
@@ -165,6 +165,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Scanner Assignment Section -->
+            @include('events.partials.scanner-assignment')
         </div>
     </div>
 </div>

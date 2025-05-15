@@ -5,79 +5,79 @@
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h2 class="display-6 fw-bold text-dark mb-1">Scanner Dashboard</h2>
-                    <p class="text-muted mb-0">Select an event to start scanning</p>
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        <img src="{{ asset('images/logo.png') }}" 
+                             alt="Event System Logo" 
+                             class="system-logo" 
+                             style="height: 60px; width: auto;">
+                    </div>
+                    <div>
+                        <h2 class="display-6 fw-bold text-dark mb-1">Scanner Dashboard</h2>
+                        <p class="text-muted mb-0">Select an event to start scanning</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- Statistics Cards -->
-    <div class="row mb-4">
+    <div class="row g-4 mb-4">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="bg-primary bg-opacity-10 p-3 rounded">
-                                <i class="fas fa-qrcode text-primary fa-2x"></i>
-                            </div>
+                        <div class="p-3 rounded-circle bg-primary-100 text-primary-600 me-3">
+                            <i class="fas fa-qrcode fa-2x"></i>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="text-muted mb-1">Today's Scans</h6>
-                            <h4 class="mb-0">{{ $today_scans }}</h4>
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Today's Scans</h6>
+                            <h2 class="card-title mb-0">{{ $today_scans }}</h2>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="bg-success bg-opacity-10 p-3 rounded">
-                                <i class="fas fa-check-circle text-success fa-2x"></i>
-                            </div>
+                        <div class="p-3 rounded-circle bg-success-100 text-success-600 me-3">
+                            <i class="fas fa-check-circle fa-2x"></i>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="text-muted mb-1">Total Scans</h6>
-                            <h4 class="mb-0">{{ $total_scans }}</h4>
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Total Scans</h6>
+                            <h2 class="card-title mb-0">{{ $total_scans }}</h2>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="bg-info bg-opacity-10 p-3 rounded">
-                                <i class="fas fa-calendar-alt text-info fa-2x"></i>
-                            </div>
+                        <div class="p-3 rounded-circle bg-info-100 text-info-600 me-3">
+                            <i class="fas fa-calendar-check fa-2x"></i>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="text-muted mb-1">Active Events</h6>
-                            <h4 class="mb-0">{{ $active_events->count() }}</h4>
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Checked In Today</h6>
+                            <h2 class="card-title mb-0">{{ $checked_in_today }}</h2>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm h-100">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="bg-warning bg-opacity-10 p-3 rounded">
-                                <i class="fas fa-users text-warning fa-2x"></i>
-                            </div>
+                        <div class="p-3 rounded-circle bg-purple-100 text-purple-600 me-3">
+                            <i class="fas fa-calendar-alt fa-2x"></i>
                         </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="text-muted mb-1">Checked In Today</h6>
-                            <h4 class="mb-0">{{ $checked_in_today }}</h4>
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Assigned Events</h6>
+                            <h2 class="card-title mb-0">{{ $assigned_events->count() }}</h2>
                         </div>
                     </div>
                 </div>
@@ -85,16 +85,16 @@
         </div>
     </div>
 
-    <!-- Active Events -->
+    <!-- Assigned Events -->
     <div class="row">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">Select Event to Scan</h5>
+                    <h5 class="card-title mb-0">Your Assigned Events</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
-                        @forelse($active_events as $event)
+                        @forelse($assigned_events as $event)
                             <div class="col-md-4 mb-4">
                                 <div class="card h-100 border">
                                     <div class="card-body">
@@ -122,8 +122,8 @@
                                 <div class="text-center py-5">
                                     <div class="text-muted">
                                         <i class="fas fa-calendar-times fa-3x mb-3"></i>
-                                        <h5>No Active Events</h5>
-                                        <p class="mb-0">There are no active events to scan at the moment.</p>
+                                        <h5>No Assigned Events</h5>
+                                        <p class="mb-0">You have not been assigned to any events yet.</p>
                                     </div>
                                 </div>
                             </div>
@@ -138,40 +138,42 @@
     <div class="row mt-4">
         <div class="col-12">
             <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Recent Scans</h5>
+                    <a href="{{ route('scanner.history') }}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-history me-2"></i>
+                        View History
+                    </a>
                 </div>
                 <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-hover mb-0" id="recentScansTable">
+                        <table class="table table-hover mb-0">
                             <thead class="table-light">
                                 <tr>
                                     <th>Time</th>
                                     <th>Event</th>
                                     <th>Attendee</th>
                                     <th>Status</th>
-                                    <th>Scanned By</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($recent_scans as $scan)
                                     <tr>
                                         <td>{{ $scan->created_at->format('h:i A') }}</td>
-                                        <td>{{ $scan->attendee->event->name }}</td>
+                                        <td>{{ $scan->event->name }}</td>
                                         <td>{{ $scan->attendee->name }}</td>
                                         <td>
                                             <span class="badge bg-{{ $scan->status === 'success' ? 'success' : 'danger' }}">
                                                 {{ ucfirst($scan->status) }}
                                             </span>
                                         </td>
-                                        <td>{{ $scan->scanned_by }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center py-4">
+                                        <td colspan="4" class="text-center py-4">
                                             <div class="text-muted">
-                                                <i class="fas fa-history fa-2x mb-3"></i>
-                                                <p class="mb-0">No scans found</p>
+                                                <i class="fas fa-qrcode fa-2x mb-3"></i>
+                                                <p class="mb-0">No recent scans found.</p>
                                             </div>
                                         </td>
                                     </tr>
@@ -184,6 +186,23 @@
         </div>
     </div>
 </div>
+
+@push('styles')
+<style>
+    .system-logo {
+        object-fit: contain;
+        transition: transform 0.2s ease-in-out;
+    }
+    .system-logo:hover {
+        transform: scale(1.05);
+    }
+    @media (max-width: 768px) {
+        .system-logo {
+            height: 40px !important;
+        }
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>

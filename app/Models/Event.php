@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 class Event extends Model
 {
@@ -50,12 +51,12 @@ class Event extends Model
         };
     }
 
-    public function attendees()
+    public function attendees(): HasMany
     {
         return $this->hasMany(Attendee::class);
     }
 
-    public function tickets()
+    public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
     }
@@ -88,9 +89,9 @@ class Event extends Model
         return $this->hasMany(Scan::class);
     }
 
-    public function scanLogs(): HasMany
+    public function scanLogs(): HasManyThrough
     {
-        return $this->hasMany(ScanLog::class);
+        return $this->hasManyThrough(ScanLog::class, Ticket::class, 'event_id', 'ticket_id');
     }
 
     /**

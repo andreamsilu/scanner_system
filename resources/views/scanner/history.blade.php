@@ -6,7 +6,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <h2 class="display-6 fw-bold text-dark">Scan History</h2>
-                <a href="{{ route('scanner.export') }}" class="btn btn-primary">
+                <a href="{{ route('scanner.history.export') }}" class="btn btn-primary">
                     <i class="fas fa-download me-2"></i>
                     Export
                 </a>
@@ -19,16 +19,18 @@
         <div class="card-body">
             <form action="{{ route('scanner.history') }}" method="GET" class="row g-3">
                 <div class="col-md-3">
-                    <label class="form-label">Start Date</label>
-                    <input type="date" class="form-control" name="start_date" value="{{ request('start_date') }}">
+                    <label for="start_date" class="form-label">Start Date</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" 
+                           value="{{ request('start_date') }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">End Date</label>
-                    <input type="date" class="form-control" name="end_date" value="{{ request('end_date') }}">
+                    <label for="end_date" class="form-label">End Date</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" 
+                           value="{{ request('end_date') }}">
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Event</label>
-                    <select class="form-select" name="event_id">
+                    <label for="event_id" class="form-label">Event</label>
+                    <select class="form-select" id="event_id" name="event_id">
                         <option value="">All Events</option>
                         @foreach($events as $event)
                             <option value="{{ $event->id }}" {{ request('event_id') == $event->id ? 'selected' : '' }}>
@@ -38,8 +40,8 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label class="form-label">Status</label>
-                    <select class="form-select" name="status">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
                         <option value="">All Status</option>
                         <option value="success" {{ request('status') == 'success' ? 'selected' : '' }}>Success</option>
                         <option value="failed" {{ request('status') == 'failed' ? 'selected' : '' }}>Failed</option>
@@ -48,11 +50,11 @@
                 <div class="col-12">
                     <button type="submit" class="btn btn-primary">
                         <i class="fas fa-filter me-2"></i>
-                        Filter
+                        Apply Filters
                     </button>
-                    <a href="{{ route('scanner.history') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('scanner.history') }}" class="btn btn-secondary">
                         <i class="fas fa-times me-2"></i>
-                        Clear
+                        Clear Filters
                     </a>
                 </div>
             </form>
@@ -61,17 +63,16 @@
 
     <!-- Scan History Table -->
     <div class="card border-0 shadow-sm">
-        <div class="card-body p-0">
+        <div class="card-body">
             <div class="table-responsive">
-                <table id="scanHistoryTable" class="table table-hover mb-0">
-                    <thead class="table-light">
+                <table class="table table-hover">
+                    <thead>
                         <tr>
-                            <th>Time</th>
+                            <th>Date & Time</th>
                             <th>Attendee</th>
                             <th>Event</th>
                             <th>Status</th>
                             <th>Scanned By</th>
-                            <th>Device Info</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -86,20 +87,23 @@
                                     </span>
                                 </td>
                                 <td>{{ $scan->scanned_by }}</td>
-                                <td>{{ $scan->device_info }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-4">
+                                <td colspan="5" class="text-center py-4">
                                     <div class="text-muted">
-                                        <i class="fas fa-search fa-2x mb-3"></i>
-                                        <p>No scan records found</p>
+                                        <i class="fas fa-history fa-2x mb-3"></i>
+                                        <p class="mb-0">No scan history found</p>
                                     </div>
                                 </td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
+            </div>
+
+            <div class="d-flex justify-content-center mt-4">
+                {{ $scans->links() }}
             </div>
         </div>
     </div>

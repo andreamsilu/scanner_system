@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Scanner extends Model
 {
@@ -16,8 +17,7 @@ class Scanner extends Model
         'name',
         'email',
         'phone',
-        'is_active',
-        'last_active_at'
+        'status',
     ];
 
     protected $casts = [
@@ -62,13 +62,14 @@ class Scanner extends Model
     /**
      * Create a scanner from a user.
      */
-    public static function createFromUser(User $user): self
+    public static function createFromUser($user)
     {
         return static::create([
             'user_id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
-            'is_active' => true
+            'phone' => $user->phone,
+            'status' => 'active'
         ]);
     }
 }

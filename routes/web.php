@@ -10,6 +10,9 @@ use App\Http\Controllers\ScanController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\Auth\EmailVerificationRequest;
+use Illuminate\Http\Request;
 
 // Authentication Routes
 Route::get('/', function () {
@@ -33,60 +36,91 @@ Route::middleware('auth')->group(function () {
         
         // Events Management
         Route::middleware(['auth', 'role:admin'])->group(function () {
-            Route::get('/events', [EventController::class, 'index'])->name('events.index');
-            Route::get('/events/create', [EventController::class, 'create'])->name('events.create');
-            Route::post('/events', [EventController::class, 'store'])->name('events.store');
-            Route::get('/events/{event}', [EventController::class, 'show'])->name('events.show');
-            Route::get('/events/{event}/edit', [EventController::class, 'edit'])->name('events.edit');
-            Route::put('/events/{event}', [EventController::class, 'update'])->name('events.update');
-            Route::delete('/events/{event}', [EventController::class, 'destroy'])->name('events.destroy');
+            Route::prefix('events')->name('events.')->group(function () {
+                Route::get('/', [EventController::class, 'index'])->name('index');
+                Route::get('/create', [EventController::class, 'create'])->name('create');
+                Route::post('/', [EventController::class, 'store'])->name('store');
+                Route::get('/{event}', [EventController::class, 'show'])->name('show');
+                Route::get('/{event}/edit', [EventController::class, 'edit'])->name('edit');
+                Route::put('/{event}', [EventController::class, 'update'])->name('update');
+                Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
+                
+                // Event tickets management
+                Route::get('/{event}/tickets', [EventController::class, 'tickets'])->name('tickets');
+                Route::post('/{event}/tickets/generate', [TicketController::class, 'generate'])->name('tickets.generate');
+                Route::patch('/{event}/tickets/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('tickets.deactivate');
+                Route::get('/{event}/tickets/{ticket}/print', [TicketController::class, 'print'])->name('tickets.print');
+                Route::get('/{event}/tickets/{ticket}/export', [TicketController::class, 'export'])->name('tickets.export');
+                
+                // Scanner Assignment Routes
+                Route::post('/{event}/scanners/assign', [EventController::class, 'assignScanner'])->name('scanners.assign');
+                Route::delete('/{event}/scanners/{scanner}', [EventController::class, 'removeScanner'])->name('scanners.remove');
+                Route::put('/{event}/scanners/{scanner}', [EventController::class, 'updateScanner'])->name('scanners.update');
 
-            // Event tickets routes
-            Route::get('events/{event}/tickets', [EventController::class, 'tickets'])->name('events.tickets');
-            Route::post('events/{event}/tickets/generate', [TicketController::class, 'generate'])->name('tickets.generate');
-            Route::patch('tickets/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('tickets.deactivate');
-            Route::get('tickets/{ticket}/print', [TicketController::class, 'print'])->name('tickets.print');
-            Route::get('tickets/{ticket}/export', [TicketController::class, 'export'])->name('tickets.export');
-            Route::resource('tickets', TicketController::class);
+                // Event attendees routes
+                Route::get('/{event}/attendees', [EventController::class, 'attendees'])->name('attendees');
+                Route::get('/{event}/attendees/create', [AttendeeController::class, 'create'])->name('attendees.create');
+                Route::post('/{event}/attendees', [AttendeeController::class, 'store'])->name('attendees.store');
+                Route::get('/{event}/attendees/{attendee}', [AttendeeController::class, 'show'])->name('attendees.show');
+                Route::get('/{event}/attendees/{attendee}/edit', [AttendeeController::class, 'edit'])->name('attendees.edit');
+                Route::put('/{event}/attendees/{attendee}', [AttendeeController::class, 'update'])->name('attendees.update');
+                Route::delete('/{event}/attendees/{attendee}', [AttendeeController::class, 'destroy'])->name('attendees.destroy');
+                Route::get('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUploadForm'])->name('attendees.bulk-upload');
+                Route::post('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUpload'])->name('attendees.bulk-upload.store');
+            });
+            
+            // Scanners Management
+            Route::resource('scanners', ScannerController::class);
 
-            // Event attendees routes
-            Route::get('/events/{event}/attendees', [EventController::class, 'attendees'])->name('events.attendees');
-            Route::get('/events/{event}/attendees/create', [AttendeeController::class, 'create'])->name('events.attendees.create');
-            Route::post('/events/{event}/attendees', [AttendeeController::class, 'store'])->name('events.attendees.store');
-            Route::get('/events/{event}/attendees/{attendee}', [AttendeeController::class, 'show'])->name('events.attendees.show');
-            Route::get('/events/{event}/attendees/{attendee}/edit', [AttendeeController::class, 'edit'])->name('events.attendees.edit');
-            Route::put('/events/{event}/attendees/{attendee}', [AttendeeController::class, 'update'])->name('events.attendees.update');
-            Route::delete('/events/{event}/attendees/{attendee}', [AttendeeController::class, 'destroy'])->name('events.attendees.destroy');
-            Route::get('/events/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUploadForm'])->name('events.attendees.bulk-upload');
-            Route::post('/events/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUpload'])->name('events.attendees.bulk-upload.store');
+            // Reports
+            Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
+            Route::get('reports/attendance', [ReportController::class, 'attendance'])->name('reports.attendance');
+            Route::get('reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
         });
         
-        // Scanners Management
-        Route::resource('scanners', ScannerController::class);
+        // Scanner Routes
+        Route::middleware(['auth', 'role:scanner'])->prefix('scanner')->name('scanner.')->group(function () {
+            Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
+            Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
+            Route::get('/events/{event}/scan', [ScanController::class, 'index'])->name('scan.index');
+            Route::post('/scan/validate', [ScanController::class, 'scan'])->name('scan.validate');
+            Route::get('/scan/{event}/{scan}', [ScanController::class, 'show'])->name('scan.show');
+            Route::get('/history', [ScannerController::class, 'history'])->name('history');
+            Route::get('/history/export', [ScannerController::class, 'exportHistory'])->name('history.export');
+        });
 
-        // Reports
-        Route::get('reports', [ReportController::class, 'index'])->name('reports.index');
-        Route::get('reports/attendance', [ReportController::class, 'attendance'])->name('reports.attendance');
-        Route::get('reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
-    });
-    
-    // Scanner Routes
-    Route::middleware('role:scanner')->group(function () {
-        Route::get('/scanner/dashboard', [DashboardController::class, 'scannerDashboard'])->name('scanner.dashboard');
-        Route::get('/scanner/events', [ScannerController::class, 'events'])->name('scanner.events.index');
-        Route::get('/scanner/scan', [ScanController::class, 'index'])->name('scanner.scan.index');
-        Route::get('/scanner/history', [ScanController::class, 'history'])->name('scanner.history.index');
-    });
+        // Profile routes
+        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
 
-    // Scan routes
-    Route::prefix('events/{event}/scans')->name('events.scans.')->group(function () {
-        Route::post('/', [ScanController::class, 'scan'])->name('scan');
-        Route::get('/', [ScanController::class, 'index'])->name('index');
-        Route::get('{scan}', [ScanController::class, 'show'])->name('show');
-    });
+        // User Management Routes
+        Route::middleware(['auth'])->group(function () {
+            Route::get('/users', [UserController::class, 'index'])->name('users.index');
+            Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
+            Route::post('/users', [UserController::class, 'store'])->name('users.store');
+            Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+            Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('users.edit');
+            Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
+            Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
+            Route::patch('/users/{id}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle-status');
+            Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
+        });
 
-    // Profile routes
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+        // Email Verification Routes
+        Route::get('/email/verify', function () {
+            return view('auth.verify-email');
+        })->name('verification.notice');
+
+        Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+            $request->fulfill();
+            return redirect('/')->with('status', 'email-verified');
+        })->middleware(['auth', 'signed'])->name('verification.verify');
+
+        Route::post('/email/verification-notification', function (Request $request) {
+            $request->user()->sendEmailVerificationNotification();
+            return back()->with('status', 'verification-link-sent');
+        })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+    });
 });

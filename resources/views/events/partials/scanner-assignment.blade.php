@@ -75,63 +75,218 @@
 
 <!-- Assign Scanner Modal -->
 <div class="modal fade" id="assignScannerModal" tabindex="-1" aria-labelledby="assignScannerModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <form action="{{ route('events.scanners.assign', $event) }}" method="POST">
                 @csrf
                 <div class="modal-header">
-                    <h5 class="modal-title" id="assignScannerModalLabel">Assign Scanner</h5>
+                    <h5 class="modal-title" id="assignScannerModalLabel">
+                        <i class="bi bi-person-plus me-2"></i>Assign Scanner
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="scanner_id" class="form-label">Select Scanner</label>
-                        <select class="form-select" id="scanner_id" name="scanner_id" required>
-                            <option value="">Choose a scanner...</option>
-                            @foreach($scannerUsers->whereNotIn('id', $event->scanners->pluck('user_id')) as $scanner)
-                                <option value="{{ $scanner->id }}">{{ $scanner->name }} ({{ $scanner->email }})</option>
-                            @endforeach
-                        </select>
-                    </div>
+                    @if($scannerUsers->whereNotIn('id', $event->scanners->pluck('user_id'))->isEmpty())
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            No available scanners to assign. All scanner users are already assigned to this event.
+                        </div>
+                    @else
+                        <div class="mb-3">
+                            <label for="scanner_id" class="form-label">Select Scanner</label>
+                            <select class="form-select" id="scanner_id" name="scanner_id" required>
+                                <option value="">Choose a scanner...</option>
+                                @foreach($scannerUsers->whereNotIn('id', $event->scanners->pluck('user_id')) as $scanner)
+                                    <option value="{{ $scanner->id }}" 
+                                            data-email="{{ $scanner->email }}"
+                                            data-status="{{ $scanner->is_active ? 'Active' : 'Inactive' }}"
+                                            data-last-active="{{ $scanner->last_active_at?->diffForHumans() ?? 'Never' }}">
+                                        {{ $scanner->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div id="scannerDetails" class="card d-none">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Email:</strong>
+                                            <span id="scannerEmail"></span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Status:</strong>
+                                            <span id="scannerStatus"></span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Last Active:</strong>
+                                            <span id="scannerLastActive"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Assign Scanner</button>
+                    @if(!$scannerUsers->whereNotIn('id', $event->scanners->pluck('user_id'))->isEmpty())
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-plus me-2"></i>Assign Scanner
+                        </button>
+                    @endif
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const scannerSelect = document.getElementById('scanner_id');
+    const scannerDetails = document.getElementById('scannerDetails');
+    const scannerEmail = document.getElementById('scannerEmail');
+    const scannerStatus = document.getElementById('scannerStatus');
+    const scannerLastActive = document.getElementById('scannerLastActive');
+
+    if (scannerSelect) {
+        scannerSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            
+            if (this.value) {
+                scannerEmail.textContent = selectedOption.dataset.email;
+                scannerStatus.textContent = selectedOption.dataset.status;
+                scannerLastActive.textContent = selectedOption.dataset.lastActive;
+                
+                // Add status badge
+                const statusClass = selectedOption.dataset.status === 'Active' ? 'success' : 'secondary';
+                scannerStatus.innerHTML = `<span class="badge bg-${statusClass}">${selectedOption.dataset.status}</span>`;
+                
+                scannerDetails.classList.remove('d-none');
+            } else {
+                scannerDetails.classList.add('d-none');
+            }
+        });
+    }
+});
+</script>
+@endpush
+
 <!-- Edit Scanner Modals -->
 @foreach($event->scanners as $scanner)
 <div class="modal fade" id="editScannerModal{{ $scanner->id }}" tabindex="-1" aria-labelledby="editScannerModalLabel{{ $scanner->id }}" aria-hidden="true">
-    <div class="modal-dialog">
+    <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <form action="{{ route('events.scanners.update', [$event, $scanner]) }}" method="POST">
+            <form action="{{ route('scanners.update', [$event, $scanner]) }}" method="POST">
                 @csrf
                 @method('PUT')
                 <div class="modal-header">
-                    <h5 class="modal-title" id="editScannerModalLabel{{ $scanner->id }}">Change Scanner</h5>
+                    <h5 class="modal-title" id="editScannerModalLabel{{ $scanner->id }}">
+                        <i class="bi bi-person-gear me-2"></i>Change Scanner
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="new_scanner_id{{ $scanner->id }}" class="form-label">Select New Scanner</label>
-                        <select class="form-select" id="new_scanner_id{{ $scanner->id }}" name="new_scanner_id" required>
-                            <option value="">Choose a scanner...</option>
-                            @foreach($scannerUsers->whereNotIn('id', $event->scanners->pluck('user_id')) as $newScanner)
-                                <option value="{{ $newScanner->id }}">{{ $newScanner->name }} ({{ $newScanner->email }})</option>
-                            @endforeach
-                        </select>
+                    <div class="alert alert-info mb-3">
+                        <i class="bi bi-info-circle me-2"></i>
+                        Current Scanner: <strong>{{ $scanner->name }}</strong>
                     </div>
+                    
+                    @php
+                        $availableScanners = $scannerUsers->whereNotIn('id', $event->scanners->pluck('user_id'));
+                    @endphp
+                    
+                    @if($availableScanners->isEmpty())
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            No available scanners to replace the current one.
+                        </div>
+                    @else
+                        <div class="mb-3">
+                            <label for="new_scanner_id{{ $scanner->id }}" class="form-label">Select New Scanner</label>
+                            <select class="form-select" id="new_scanner_id{{ $scanner->id }}" name="new_scanner_id" required>
+                                <option value="">Choose a scanner...</option>
+                                @foreach($availableScanners as $newScanner)
+                                    <option value="{{ $newScanner->id }}"
+                                            data-email="{{ $newScanner->email }}"
+                                            data-status="{{ $newScanner->is_active ? 'Active' : 'Inactive' }}"
+                                            data-last-active="{{ $newScanner->last_active_at?->diffForHumans() ?? 'Never' }}">
+                                        {{ $newScanner->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <div id="newScannerDetails{{ $scanner->id }}" class="card d-none">
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Email:</strong>
+                                            <span id="newScannerEmail{{ $scanner->id }}"></span>
+                                        </p>
+                                        <p class="mb-2">
+                                            <strong>Status:</strong>
+                                            <span id="newScannerStatus{{ $scanner->id }}"></span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <p class="mb-2">
+                                            <strong>Last Active:</strong>
+                                            <span id="newScannerLastActive{{ $scanner->id }}"></span>
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Scanner</button>
+                    @if(!$availableScanners->isEmpty())
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-person-gear me-2"></i>Update Scanner
+                        </button>
+                    @endif
                 </div>
             </form>
         </div>
     </div>
 </div>
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const newScannerSelect = document.getElementById('new_scanner_id{{ $scanner->id }}');
+    const newScannerDetails = document.getElementById('newScannerDetails{{ $scanner->id }}');
+    const newScannerEmail = document.getElementById('newScannerEmail{{ $scanner->id }}');
+    const newScannerStatus = document.getElementById('newScannerStatus{{ $scanner->id }}');
+    const newScannerLastActive = document.getElementById('newScannerLastActive{{ $scanner->id }}');
+
+    if (newScannerSelect) {
+        newScannerSelect.addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            
+            if (this.value) {
+                newScannerEmail.textContent = selectedOption.dataset.email;
+                newScannerStatus.textContent = selectedOption.dataset.status;
+                newScannerLastActive.textContent = selectedOption.dataset.lastActive;
+                
+                // Add status badge
+                const statusClass = selectedOption.dataset.status === 'Active' ? 'success' : 'secondary';
+                newScannerStatus.innerHTML = `<span class="badge bg-${statusClass}">${selectedOption.dataset.status}</span>`;
+                
+                newScannerDetails.classList.remove('d-none');
+            } else {
+                newScannerDetails.classList.add('d-none');
+            }
+        });
+    }
+});
+</script>
+@endpush
 @endforeach 

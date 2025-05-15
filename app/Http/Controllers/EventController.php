@@ -48,8 +48,9 @@ class EventController extends Controller
 
     public function show(Event $event): View
     {
-        $event->load(['attendees', 'tickets']);
-        return view('events.show', compact('event'));
+        $event->load(['attendees', 'tickets', 'scanners']);
+        $scannerUsers = \App\Models\User::role('scanner')->get();
+        return view('events.show', compact('event', 'scannerUsers'));
     }
 
     public function edit(Event $event): View

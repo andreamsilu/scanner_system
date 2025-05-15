@@ -9,24 +9,44 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Response;
 use Illuminate\View\View;
+use App\Models\User;
+use Illuminate\Support\Facades\Hash;
 
 class ScannerController extends Controller
 {
     public function dashboard(): View
     {
-        $today_scans = ScanLog::whereDate('created_at', today())->count();
-        $total_scans = ScanLog::count();
-        $active_events = Event::where('status', 'active')->get();
+        $user = auth()->user();
+        $scanner = $user->scanner;
+        
+        $today_scans = ScanLog::whereDate('created_at', today())
+            ->where('scanned_by', $user->email)
+            ->count();
+        
+        $total_scans = ScanLog::where('scanned_by', $user->email)->count();
+        
+        $assigned_events = $scanner ? $scanner->events()
+            ->where('status', 'active')
+            ->where(function($query) {
+                $query->where('start_date', '>=', now())
+                    ->orWhere('end_date', '>=', now());
+            })
+            ->get() : collect();
+        
         $recent_scans = ScanLog::with(['attendee', 'event'])
+            ->where('scanned_by', $user->email)
             ->latest()
             ->take(5)
             ->get();
-        $checked_in_today = ScanLog::whereDate('created_at', today())->count();
+        
+        $checked_in_today = ScanLog::whereDate('created_at', today())
+            ->where('scanned_by', $user->email)
+            ->count();
 
         return view('scanner.dashboard', compact(
             'today_scans',
             'total_scans',
-            'active_events',
+            'assigned_events',
             'recent_scans',
             'checked_in_today'
         ));
@@ -37,7 +57,7 @@ class ScannerController extends Controller
         // Store selected event in session
         session(['selected_event_id' => $event->id]);
         
-        return view('scanner.scan', compact('event'));
+        return redirect()->route('scanner.scan.index', ['event' => $event->id]);
     }
 
     public function getSelectedEvent(): JsonResponse
@@ -70,12 +90,23 @@ class ScannerController extends Controller
             'token' => 'required|string'
         ]);
 
+        $user = auth()->user();
+        $scanner = $user->scanner;
+
         // Check if event is selected
         $eventId = session('selected_event_id');
         if (!$eventId) {
             return response()->json([
                 'success' => false,
                 'message' => 'Please select an event first'
+            ]);
+        }
+
+        // Verify scanner is assigned to this event
+        if (!$scanner || !$scanner->events()->where('events.id', $eventId)->exists()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not authorized to scan for this event.'
             ]);
         }
 
@@ -97,7 +128,7 @@ class ScannerController extends Controller
             'attendee_id' => $eventCard->attendee_id,
             'event_card_id' => $eventCard->id,
             'status' => 'success',
-            'scanned_by' => auth()->user()->email
+            'scanned_by' => $user->email
         ]);
 
         $eventCard->markAsUsed();
@@ -111,15 +142,23 @@ class ScannerController extends Controller
 
     public function history(Request $request): View
     {
-        $scans = ScanLog::with(['attendee', 'event'])
+        $user = auth()->user();
+        $scanner = $user->scanner;
+        
+        $query = ScanLog::with(['attendee', 'event'])
+            ->where('scanned_by', $user->email)
             ->when($request->start_date, fn($q) => $q->whereDate('created_at', '>=', $request->start_date))
             ->when($request->end_date, fn($q) => $q->whereDate('created_at', '<=', $request->end_date))
             ->when($request->event_id, fn($q) => $q->where('event_id', $request->event_id))
-            ->when($request->status, fn($q) => $q->where('status', $request->status))
-            ->latest()
-            ->paginate(15);
+            ->when($request->status, fn($q) => $q->where('status', $request->status));
 
-        $events = Event::where('status', 'active')->get();
+        // If scanner is assigned to specific events, only show those events
+        if ($scanner) {
+            $query->whereIn('event_id', $scanner->events()->pluck('events.id'));
+        }
+
+        $scans = $query->latest()->paginate(15);
+        $events = $scanner ? $scanner->events()->where('status', 'active')->get() : collect();
 
         return view('scanner.history', compact('scans', 'events'));
     }
@@ -167,5 +206,84 @@ class ScannerController extends Controller
             'Content-Type' => 'text/csv',
             'Content-Disposition' => 'attachment; filename="' . $filename . '"',
         ]);
+    }
+
+    public function index(): View
+    {
+        $scanners = User::role('scanner')->paginate(10);
+        return view('scanners.index', compact('scanners'));
+    }
+
+    public function create(): View
+    {
+        return view('scanners.create');
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+        ]);
+
+        $user->assignRole('scanner');
+
+        return redirect()->route('scanners.index')
+            ->with('success', 'Scanner created successfully.');
+    }
+
+    public function show(User $scanner): View
+    {
+        return view('scanners.show', compact('scanner'));
+    }
+
+    public function edit(User $scanner): View
+    {
+        return view('scanners.edit', compact('scanner'));
+    }
+
+    public function update(Request $request, User $scanner)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|string|email|max:255|unique:users,email,' . $scanner->id,
+        ]);
+
+        $scanner->update($validated);
+
+        return redirect()->route('scanners.index')
+            ->with('success', 'Scanner updated successfully.');
+    }
+
+    public function destroy(User $scanner)
+    {
+        $scanner->delete();
+
+        return redirect()->route('scanners.index')
+            ->with('success', 'Scanner deleted successfully.');
+    }
+
+    public function events(): View
+    {
+        $user = auth()->user();
+        $scanner = $user->scanner;
+        
+        $events = $scanner ? $scanner->events()
+            ->where('status', 'active')
+            ->where(function($query) {
+                $query->where('start_date', '>=', now())
+                    ->orWhere('end_date', '>=', now());
+            })
+            ->orderBy('start_date')
+            ->paginate(10) : collect();
+
+        return view('scanner.events.index', compact('events'));
     }
 } 

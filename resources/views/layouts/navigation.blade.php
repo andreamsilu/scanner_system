@@ -98,6 +98,13 @@
                             <i class="bi bi-file-earmark-text me-2"></i> Reports
                         </a>
                     </li>
+
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active bg-light' : '' }}" 
+                           href="{{ route('users.index') }}">
+                            <i class="bi bi-people me-2"></i> User Management
+                        </a>
+                    </li>
                 @endif
 
                 @if(auth()->user()->role === 'scanner')
@@ -105,20 +112,13 @@
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active bg-light' : '' }}" 
                            href="{{ route('scanner.events.index') }}">
-                            <i class="bi bi-calendar-check me-2"></i> My Events
-                        </a>
-                    </li>
-
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('scanner.scan.*') ? 'active bg-light' : '' }}" 
-                           href="{{ route('scanner.scan.index') }}">
                             <i class="bi bi-upc-scan me-2"></i> Scan Tickets
                         </a>
                     </li>
 
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active bg-light' : '' }}" 
-                           href="{{ route('scanner.history.index') }}">
+                           href="{{ route('scanner.history') }}">
                             <i class="bi bi-clock-history me-2"></i> Scan History
                         </a>
                     </li>

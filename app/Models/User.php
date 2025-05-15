@@ -8,8 +8,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Support\Facades\Event;
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
@@ -23,7 +25,6 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role',
         'is_active',
     ];
 
@@ -48,9 +49,26 @@ class User extends Authenticatable
         'is_active' => 'boolean',
     ];
 
+    protected static function booted()
+    {
+        static::updated(function ($user) {
+            // Check if the user was just assigned the scanner role
+            if ($user->isScanner() && !$user->scanner) {
+                Scanner::createFromUser($user);
+            }
+        });
+    }
+
     public function roles(): BelongsToMany
     {
         return $this->belongsToMany(Role::class);
+    }
+
+    public function scopeRole($query, $role)
+    {
+        return $query->whereHas('roles', function($q) use ($role) {
+            $q->where('slug', $role);
+        });
     }
 
     public function attendees()
@@ -65,7 +83,7 @@ class User extends Authenticatable
 
     public function hasRole(string $role): bool
     {
-        return $this->roles()->where('name', $role)->exists();
+        return $this->roles()->where('slug', $role)->exists();
     }
 
     /**
@@ -84,9 +102,17 @@ class User extends Authenticatable
         return $this->hasRole('scanner');
     }
 
+    /**
+     * Get the scanner record associated with the user.
+     */
+    public function scanner()
+    {
+        return $this->hasOne(Scanner::class);
+    }
+
     public function assignRole(string $role): void
     {
-        $roleModel = Role::where('name', $role)->firstOrFail();
+        $roleModel = Role::where('slug', $role)->firstOrFail();
         $this->roles()->syncWithoutDetaching([$roleModel->id]);
     }
 }

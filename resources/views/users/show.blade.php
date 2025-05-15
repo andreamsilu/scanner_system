@@ -32,18 +32,20 @@
                                 <tr>
                                     <th>Roles</th>
                                     <td>
-                                        @foreach($user->roles as $role)
-                                            <span class="badge badge-primary">{{ $role->name }}</span>
-                                        @endforeach
+                                        @forelse($user->roles as $role)
+                                            <span class="badge bg-primary me-1">{{ $role->name }}</span>
+                                        @empty
+                                            <span class="text-muted">No roles assigned</span>
+                                        @endforelse
                                     </td>
                                 </tr>
                                 <tr>
                                     <th>Account Status</th>
                                     <td>
                                         @if($user->is_active)
-                                            <span class="badge badge-success">Active</span>
+                                            <span class="badge bg-success">Active</span>
                                         @else
-                                            <span class="badge badge-danger">Inactive</span>
+                                            <span class="badge bg-danger">Inactive</span>
                                         @endif
                                     </td>
                                 </tr>
@@ -57,6 +59,30 @@
                                 </tr>
                             </table>
                         </div>
+                        
+                        @if($user->activityLogs->isNotEmpty())
+                        <div class="col-md-6">
+                            <h4>Recent Activity</h4>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Activity</th>
+                                            <th>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($user->activityLogs as $log)
+                                            <tr>
+                                                <td>{{ $log->description }}</td>
+                                                <td>{{ $log->created_at->format('M d, Y H:i A') }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        @endif
                     </div>
                 </div>
             </div>

@@ -6,49 +6,49 @@
 <div class="container-fluid px-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="mb-0">{{ $event->name }} - Attendees</h2>
-        <div>
+                        <div>
             <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
                 <i class="bi bi-person-plus me-2"></i>Add Attendee
-            </a>
+                            </a>
             <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
                 <i class="bi bi-arrow-left me-2"></i>Back to Event
-            </a>
-        </div>
-    </div>
+                            </a>
+                        </div>
+                    </div>
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
+                </div>
     @endif
 
     <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover" id="attendeesTable">
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Phone</th>
-                            <th>Status</th>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="attendeesTable">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Phone</th>
+                                    <th>Status</th>
                             <th>Ticket</th>
                             <th>Registered At</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($attendees as $attendee)
-                            <tr>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse($attendees as $attendee)
+                                    <tr>
                                 <td>{{ $attendee->name }}</td>
-                                <td>{{ $attendee->email }}</td>
+                                        <td>{{ $attendee->email }}</td>
                                 <td>{{ $attendee->phone ?? 'N/A' }}</td>
-                                <td>
+                                        <td>
                                     <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'info') }}">
                                         {{ ucfirst($attendee->registration_status) }}
-                                    </span>
-                                </td>
+                                            </span>
+                                        </td>
                                 <td>
                                     @if($attendee->ticket)
                                         <span class="badge bg-primary">{{ $attendee->ticket->ticket_id }}</span>
@@ -57,8 +57,8 @@
                                     @endif
                                 </td>
                                 <td>{{ $attendee->registered_at ? $attendee->registered_at->format('M j, Y g:i A') : 'N/A' }}</td>
-                                <td>
-                                    <div class="btn-group">
+                                        <td>
+                                            <div class="btn-group">
                                         <a href="{{ route('events.attendees.show', [$event, $attendee]) }}" 
                                            class="btn btn-sm btn-outline-primary"
                                            title="View Details">
@@ -92,29 +92,29 @@
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                                                     <form action="{{ route('events.attendees.destroy', [$event, $attendee]) }}" method="POST" class="d-inline">
-                                                        @csrf
-                                                        @method('DELETE')
+                                                    @csrf
+                                                    @method('DELETE')
                                                         <button type="submit" class="btn btn-danger">Delete Attendee</button>
-                                                    </form>
+                                                </form>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
                                 <td colspan="7" class="text-center py-4">
                                     <p class="text-muted mb-0">No attendees registered yet.</p>
                                 </td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
 
             <div class="d-flex justify-content-end mt-4">
-                {{ $attendees->links() }}
+                        {{ $attendees->links() }}
             </div>
         </div>
     </div>
