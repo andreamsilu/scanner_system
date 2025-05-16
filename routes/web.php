@@ -15,6 +15,14 @@ use App\Http\Controllers\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 
 // Authentication Routes
+/* Removed (or commented out) the fallback route (or any route named 'welcome') so that if a user (or a seeder) tries to redirect to route('welcome') (or GET /) then a 404 (or a fallback) is returned (and no "Route [welcome] not defined" error is thrown). */
+/*
+Route::get('/', function () {
+    return view('welcome');
+})->name('welcome');
+*/
+
+/* (New fallback (or root) route (GET /) so that if a user (or a seeder) tries to GET / (or redirect to route('welcome')) then the user is redirected (using redirect()->route('login')) (so that no "Route [welcome] not defined" error is thrown).) */
 Route::get('/', function () {
     return redirect()->route('login');
 });

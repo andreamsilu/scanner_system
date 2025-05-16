@@ -30,13 +30,9 @@
                                     <td>{{ $user->email }}</td>
                                 </tr>
                                 <tr>
-                                    <th>Roles</th>
+                                    <th>Role</th>
                                     <td>
-                                        @forelse($user->roles as $role)
-                                            <span class="badge bg-primary me-1">{{ $role->name }}</span>
-                                        @empty
-                                            <span class="text-muted">No roles assigned</span>
-                                        @endforelse
+                                        <span class="badge bg-primary">{{ ucfirst($user->role) }}</span>
                                     </td>
                                 </tr>
                                 <tr>

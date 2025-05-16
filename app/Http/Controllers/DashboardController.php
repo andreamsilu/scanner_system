@@ -17,18 +17,23 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        if ($user->role === 'admin') {
+        $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
+        $scannerRoleId = DB::table('roles')->where('name', 'scanner')->value('id');
+        $userRoles = DB::table('user_role')->where('user_id', $user->id)->pluck('role_id')->toArray();
+        if (in_array($adminRoleId, $userRoles)) {
             return redirect()->route('admin.dashboard');
-        } elseif ($user->role === 'scanner') {
+        } elseif (in_array($scannerRoleId, $userRoles)) {
             return redirect()->route('scanner.dashboard');
+        } else {
+            abort(403, 'Unauthorized action.');
         }
-        
-        return redirect()->route('welcome');
     }
 
     public function adminDashboard(): View
     {
-        if (Auth::user()->role !== 'admin') {
+        $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
+        $userRoles = DB::table('user_role')->where('user_id', Auth::id())->pluck('role_id')->toArray();
+        if (!in_array($adminRoleId, $userRoles)) {
             abort(403, 'Unauthorized action.');
         }
         
@@ -37,7 +42,9 @@ class DashboardController extends Controller
 
     public function scannerDashboard(): View
     {
-        if (Auth::user()->role !== 'scanner') {
+        $scannerRoleId = DB::table('roles')->where('name', 'scanner')->value('id');
+        $userRoles = DB::table('user_role')->where('user_id', Auth::id())->pluck('role_id')->toArray();
+        if (!in_array($scannerRoleId, $userRoles)) {
             abort(403, 'Unauthorized action.');
         }
         

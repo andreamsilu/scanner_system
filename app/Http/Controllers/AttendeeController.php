@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Attendee;
 use App\Models\Event;
 use App\Models\TicketType;
-use App\Services\AttendeeService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -16,13 +15,6 @@ use Illuminate\Support\Facades\Validator;
 
 class AttendeeController extends Controller
 {
-    protected $attendeeService;
-
-    public function __construct(AttendeeService $attendeeService)
-    {
-        $this->attendeeService = $attendeeService;
-    }
-
     /**
      * Display a listing of the attendees.
      */
@@ -50,24 +42,50 @@ class AttendeeController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
+            'email' => 'required|string|email|max:255',
             'phone' => 'nullable|string|max:20',
-            'registration_status' => 'required|in:registered,checked_in,cancelled',
-            'notes' => 'nullable|string',
+            'position' => 'nullable|string|max:255'
         ]);
 
-        $attendee = $event->attendees()->create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'phone' => $validated['phone'],
-            'registration_status' => $validated['registration_status'],
-            'notes' => $validated['notes'],
-            'registered_at' => now(),
-        ]);
+        try {
+            DB::beginTransaction();
 
-        return redirect()
-            ->route('events.attendees', $event)
-            ->with('success', 'Attendee added successfully.');
+            // Check if attendee already exists for this event
+            $existingAttendee = $event->attendees()
+                ->where('email', $validated['email'])
+                ->first();
+
+            if ($existingAttendee) {
+                throw new \Exception('An attendee with this email already exists for this event.');
+            }
+
+            // Create attendee
+            $attendee = $event->attendees()->create($validated);
+
+            // Create ticket for attendee
+            $ticket = $attendee->ticket()->create([
+                'event_id' => $event->id,
+                'type' => 'regular',
+                'status' => 'active'
+            ]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('events.attendees', $event)
+                ->with('success', 'Attendee registered successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Attendee registration failed', [
+                'error' => $e->getMessage(),
+                'event_id' => $event->id,
+                'data' => $validated
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
     }
 
     /**
@@ -111,11 +129,31 @@ class AttendeeController extends Controller
      */
     public function destroy(Event $event, Attendee $attendee): RedirectResponse
     {
-        $attendee->delete();
+        try {
+            DB::beginTransaction();
+            
+            // Delete associated ticket first
+            if ($attendee->ticket) {
+                $attendee->ticket->delete();
+            }
+            
+            $attendee->delete();
+            
+            DB::commit();
 
-        return redirect()
-            ->route('events.attendees', $event)
-            ->with('success', 'Attendee removed successfully.');
+            return redirect()
+                ->route('events.attendees', $event)
+                ->with('success', 'Attendee removed successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Attendee deletion failed', [
+                'error' => $e->getMessage(),
+                'attendee_id' => $attendee->id,
+                'event_id' => $event->id
+            ]);
+
+            return back()->with('error', 'Failed to remove attendee. Please try again.');
+        }
     }
 
     /**
@@ -143,31 +181,78 @@ class AttendeeController extends Controller
         
         DB::beginTransaction();
         try {
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+
             while ($row = fgetcsv($handle)) {
-                $data = array_combine($header, $row);
-                
-                $event->attendees()->create([
-                    'name' => $data['name'],
-                    'email' => $data['email'],
-                    'phone' => $data['phone'] ?? null,
-                    'registration_status' => 'registered',
-                    'registered_at' => now(),
-                ]);
+                try {
+                    $data = array_combine($header, $row);
+                    
+                    // Validate required fields
+                    if (empty($data['name']) || empty($data['email'])) {
+                        throw new \Exception('Name and email are required');
+                    }
+
+                    // Check for duplicate email
+                    $exists = $event->attendees()
+                        ->where('email', $data['email'])
+                        ->exists();
+
+                    if ($exists) {
+                        throw new \Exception('Duplicate email: ' . $data['email']);
+                    }
+
+                    // Create attendee
+                    $attendee = $event->attendees()->create([
+                        'name' => $data['name'],
+                        'email' => $data['email'],
+                        'phone' => $data['phone'] ?? null,
+                        'position' => $data['position'] ?? null
+                    ]);
+
+                    // Create ticket
+                    $attendee->ticket()->create([
+                        'event_id' => $event->id,
+                        'type' => $data['ticket_type'] ?? 'regular',
+                        'status' => 'active'
+                    ]);
+
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $errorCount++;
+                    $errors[] = "Row " . ($successCount + $errorCount) . ": " . $e->getMessage();
+                }
             }
             
             DB::commit();
+
+            $message = "Upload completed. Successfully imported {$successCount} attendees.";
+            if ($errorCount > 0) {
+                $message .= " Failed to import {$errorCount} attendees.";
+            }
+
             return redirect()
                 ->route('events.attendees', $event)
-                ->with('success', 'Attendees uploaded successfully.');
+                ->with('success', $message)
+                ->with('errors', $errors);
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Bulk upload failed', [
+                'error' => $e->getMessage(),
+                'event_id' => $event->id
+            ]);
+
             return back()
-                ->with('error', 'Error uploading attendees. Please check your file format.');
+                ->with('error', 'Error processing file. Please check the format and try again.');
         } finally {
             fclose($handle);
         }
     }
 
+    /**
+     * Download the bulk upload template.
+     */
     public function downloadTemplate()
     {
         $headers = [
@@ -179,10 +264,10 @@ class AttendeeController extends Controller
             $file = fopen('php://output', 'w');
             
             // Add headers
-            fputcsv($file, ['event_id', 'name', 'email', 'phone', 'ticket_type_id', 'status']);
+            fputcsv($file, ['name', 'email', 'phone', 'position', 'ticket_type']);
             
-            // Add sample data
-            fputcsv($file, ['1', 'John Doe', 'john@example.com', '1234567890', '1', 'registered']);
+            // Add example row
+            fputcsv($file, ['John Doe', 'john@example.com', '+1234567890', 'Developer', 'regular']);
             
             fclose($file);
         };

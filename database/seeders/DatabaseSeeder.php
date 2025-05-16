@@ -11,13 +11,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seed roles first
+        $this->call(RoleSeeder::class);
+        // Then seed users and assign roles
+        $this->call(ScannerSeeder::class);
+
         $this->call([
-            RoleSeeder::class,
             UserSeeder::class,
             EventSeeder::class,
-            ScannerSeeder::class,
-            AttendeeSeeder::class,
-            EventCardSeeder::class,
             TicketTypeSeeder::class,
             ActivityLogSeeder::class,
         ]);

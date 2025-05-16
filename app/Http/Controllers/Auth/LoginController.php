@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class LoginController extends Controller
 {
@@ -36,11 +37,16 @@ class LoginController extends Controller
 
             $request->session()->regenerate();
 
-            if ($user->role === 'admin') {
-                return redirect()->intended('/admin/dashboard');
+            $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
+            $scannerRoleId = DB::table('roles')->where('name', 'scanner')->value('id');
+            $userRoles = DB::table('user_role')->where('user_id', $user->id)->pluck('role_id')->toArray();
+            if (in_array($adminRoleId, $userRoles)) {
+                return redirect()->intended(route('admin.dashboard'));
+            } elseif (in_array($scannerRoleId, $userRoles)) {
+                return redirect()->intended(route('scanner.dashboard'));
+            } else {
+                abort(403, 'Unauthorized action.');
             }
-
-            return redirect()->intended('/dashboard');
         }
 
         Log::warning('Login failed', [
@@ -58,6 +64,6 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
-        return redirect('/');
+        return redirect()->route('login');
     }
 } 

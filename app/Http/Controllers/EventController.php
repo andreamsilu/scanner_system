@@ -10,6 +10,7 @@ use Illuminate\Http\RedirectResponse;
 use App\Models\Scanner;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
+use App\Models\User;
 
 class EventController extends Controller
 {
@@ -138,17 +139,11 @@ class EventController extends Controller
 
         $user = \App\Models\User::findOrFail($request->scanner_id);
         
-        // Create or get scanner record
-        $scanner = \App\Models\Scanner::firstOrCreate(
-            ['user_id' => $user->id],
-            [
-                'name' => $user->name,
-                'email' => $user->email,
-                'is_active' => true
-            ]
-        );
+        if (!$user->isScanner()) {
+            return redirect()->back()->with('error', 'Selected user is not a scanner.');
+        }
 
-        $event->scanners()->attach($scanner->id, [
+        $event->scanners()->attach($user->id, [
             'assigned_by' => auth()->id(),
             'assigned_at' => now()
         ]);
@@ -159,8 +154,12 @@ class EventController extends Controller
     /**
      * Remove a scanner from the event.
      */
-    public function removeScanner(Event $event, Scanner $scanner)
+    public function removeScanner(Event $event, User $scanner)
     {
+        if (!$scanner->isScanner()) {
+            return redirect()->back()->with('error', 'Selected user is not a scanner.');
+        }
+
         $event->scanners()->detach($scanner->id);
 
         return redirect()->back()->with('success', 'Scanner removed successfully.');
@@ -169,23 +168,21 @@ class EventController extends Controller
     /**
      * Update a scanner assignment.
      */
-    public function updateScanner(Event $event, Scanner $scanner, Request $request)
+    public function updateScanner(Event $event, User $scanner, Request $request)
     {
         $request->validate([
             'new_scanner_id' => 'required|exists:users,id'
         ]);
 
-        $newUser = \App\Models\User::findOrFail($request->new_scanner_id);
+        $newScanner = \App\Models\User::findOrFail($request->new_scanner_id);
         
-        // Create or get new scanner record
-        $newScanner = \App\Models\Scanner::firstOrCreate(
-            ['user_id' => $newUser->id],
-            [
-                'name' => $newUser->name,
-                'email' => $newUser->email,
-                'is_active' => true
-            ]
-        );
+        if (!$newScanner->isScanner()) {
+            return redirect()->back()->with('error', 'Selected user is not a scanner.');
+        }
+
+        if (!$scanner->isScanner()) {
+            return redirect()->back()->with('error', 'Current user is not a scanner.');
+        }
 
         // Remove old scanner and attach new one
         $event->scanners()->detach($scanner->id);

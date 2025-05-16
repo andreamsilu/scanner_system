@@ -14,7 +14,7 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
 {
     public function collection()
     {
-        return User::with('roles')->get();
+        return User::all();
     }
 
     public function headings(): array
@@ -23,7 +23,7 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
             'ID',
             'Name',
             'Email',
-            'Roles',
+            'Role',
             'Status',
             'Created At',
             'Last Updated'
@@ -36,7 +36,7 @@ class UsersExport implements FromCollection, WithHeadings, WithMapping, ShouldAu
             $user->id,
             $user->name,
             $user->email,
-            $user->roles->pluck('name')->implode(', '),
+            ucfirst($user->role),
             $user->is_active ? 'Active' : 'Inactive',
             $user->created_at->format('Y-m-d H:i:s'),
             $user->updated_at->format('Y-m-d H:i:s')

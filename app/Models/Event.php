@@ -95,14 +95,14 @@ class Event extends Model
     }
 
     /**
-     * Get the scanners assigned to this event.
+     * Get the scanners (users with scanner role) assigned to this event.
      */
     public function scanners()
     {
-        return $this->belongsToMany(Scanner::class, 'event_scanner')
+        return $this->belongsToMany(User::class, 'event_scanner', 'event_id', 'scanner_id')
+            ->where('role', 'scanner')
             ->withTimestamps()
-            ->withPivot(['assigned_at', 'assigned_by'])
-            ->using(EventScanner::class);
+            ->withPivot(['assigned_at', 'assigned_by']);
     }
 
     public function isActive()

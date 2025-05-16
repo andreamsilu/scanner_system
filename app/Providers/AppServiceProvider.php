@@ -2,8 +2,6 @@
 
 namespace App\Providers;
 
-use App\Domain\Events\Services\EventService;
-use App\Domain\Events\Services\EventServiceInterface;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -13,7 +11,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(EventServiceInterface::class, EventService::class);
+        //
     }
 
     /**

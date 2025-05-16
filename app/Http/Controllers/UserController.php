@@ -3,78 +3,68 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
-use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rules\Password;
 use App\Exports\UsersExport;
 use Maatwebsite\Excel\Facades\Excel;
 
 class UserController extends Controller
 {
-    protected $userService;
-
-    public function __construct(UserService $userService)
+    /**
+     * Display a listing of the users.
+     */
+    public function index(): View
     {
-        $this->userService = $userService;
-        $this->middleware('auth');
-        $this->middleware('role:admin')->except(['show', 'edit', 'update']);
+        $users = User::with('roles')
+            ->latest()
+            ->paginate(15);
+
+        return view('users.index', compact('users'));
     }
 
-    public function index(Request $request): View
-    {
-        $query = User::with(['roles', 'activityLogs'])
-            ->when($request->search, function($q) use ($request) {
-                $q->where(function($query) use ($request) {
-                    $query->where('name', 'like', "%{$request->search}%")
-                        ->orWhere('email', 'like', "%{$request->search}%");
-                });
-            })
-            ->when($request->role, function($q) use ($request) {
-                $q->whereHas('roles', function($query) use ($request) {
-                    $query->where('id', $request->role);
-                });
-            })
-            ->when($request->status !== null, function($q) use ($request) {
-                $q->where('is_active', $request->status);
-            });
-
-        $users = $query->latest()->paginate(15)->withQueryString();
-        $roles = \App\Models\Role::all();
-
-        return view('users.index', compact('users', 'roles'));
-    }
-
+    /**
+     * Show the form for creating a new user.
+     */
     public function create(): View
     {
-        $roles = \App\Models\Role::all();
-        return view('users.create', compact('roles'));
+        return view('users.create');
     }
 
+    /**
+     * Store a newly created user in storage.
+     */
     public function store(Request $request): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
-            'roles' => 'required|array',
-            'roles.*' => 'exists:roles,id',
-            'is_active' => 'boolean'
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'confirmed', Password::defaults()],
+            'role' => ['required', 'string', 'in:admin,scanner,organizer'],
         ]);
 
         try {
-            $user = $this->userService->createUser($validated);
-            
-            Log::info('User created', [
-                'user_id' => $user->id,
-                'created_by' => auth()->id()
+            DB::beginTransaction();
+
+            $user = User::create([
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
             ]);
 
+            $user->assignRole($validated['role']);
+
+            DB::commit();
+
             return redirect()
-                ->route('users.show', $user)
+                ->route('users.index')
                 ->with('success', 'User created successfully.');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('User creation failed', [
                 'error' => $e->getMessage(),
                 'data' => $validated
@@ -86,49 +76,51 @@ class UserController extends Controller
         }
     }
 
-    public function show(int $id): View
+    /**
+     * Show the form for editing the specified user.
+     */
+    public function edit(User $user): View
     {
-        $user = User::with(['roles', 'activityLogs' => function($query) {
-            $query->latest()->take(10);
-        }])->findOrFail($id);
-
-        return view('users.show', compact('user'));
+        return view('users.edit', compact('user'));
     }
 
-    public function edit(int $id): View
-    {
-        $user = $this->userService->getUserById($id);
-        $roles = \App\Models\Role::all();
-        
-        return view('users.edit', compact('user', 'roles'));
-    }
-
-    public function update(Request $request, int $id): RedirectResponse
+    /**
+     * Update the specified user in storage.
+     */
+    public function update(Request $request, User $user): RedirectResponse
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $id,
-            'password' => 'nullable|string|min:8|confirmed',
-            'roles' => 'required|array',
-            'roles.*' => 'exists:roles,id',
-            'is_active' => 'boolean'
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
+            'password' => ['nullable', 'confirmed', Password::defaults()],
+            'role' => ['required', 'string', 'in:admin,scanner,organizer'],
         ]);
 
         try {
-            $user = $this->userService->updateUser($id, $validated);
+            DB::beginTransaction();
+
+            $user->name = $validated['name'];
+            $user->email = $validated['email'];
             
-            Log::info('User updated', [
-                'user_id' => $user->id,
-                'updated_by' => auth()->id()
-            ]);
+            if (!empty($validated['password'])) {
+                $user->password = Hash::make($validated['password']);
+            }
+
+            $user->save();
+
+            // Update role
+            $user->syncRoles([$validated['role']]);
+
+            DB::commit();
 
             return redirect()
-                ->route('users.show', $user)
+                ->route('users.index')
                 ->with('success', 'User updated successfully.');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('User update failed', [
                 'error' => $e->getMessage(),
-                'user_id' => $id,
+                'user_id' => $user->id,
                 'data' => $validated
             ]);
 
@@ -138,48 +130,65 @@ class UserController extends Controller
         }
     }
 
-    public function destroy(int $id): RedirectResponse
+    /**
+     * Remove the specified user from storage.
+     */
+    public function destroy(User $user): RedirectResponse
     {
         try {
-            $this->userService->deleteUser($id);
-            
-            Log::info('User deleted', [
-                'user_id' => $id,
-                'deleted_by' => auth()->id()
-            ]);
+            DB::beginTransaction();
+
+            // Prevent self-deletion
+            if ($user->id === auth()->id()) {
+                throw new \Exception('You cannot delete your own account.');
+            }
+
+            $user->delete();
+
+            DB::commit();
 
             return redirect()
                 ->route('users.index')
                 ->with('success', 'User deleted successfully.');
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('User deletion failed', [
                 'error' => $e->getMessage(),
-                'user_id' => $id
+                'user_id' => $user->id
             ]);
 
-            return back()->with('error', 'Failed to delete user. Please try again.');
+            return back()->with('error', $e->getMessage());
         }
     }
 
-    public function toggleStatus(int $id): RedirectResponse
+    /**
+     * Toggle user status (active/inactive).
+     */
+    public function toggleStatus(User $user): RedirectResponse
     {
         try {
-            $user = $this->userService->toggleUserStatus($id);
-            
-            Log::info('User status toggled', [
-                'user_id' => $id,
-                'new_status' => $user->is_active,
-                'toggled_by' => auth()->id()
-            ]);
+            DB::beginTransaction();
 
-            return back()->with('success', 'User status updated successfully.');
+            // Prevent self-deactivation
+            if ($user->id === auth()->id()) {
+                throw new \Exception('You cannot deactivate your own account.');
+            }
+
+            $user->is_active = !$user->is_active;
+            $user->save();
+
+            DB::commit();
+
+            $status = $user->is_active ? 'activated' : 'deactivated';
+            return back()->with('success', "User {$status} successfully.");
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('User status toggle failed', [
                 'error' => $e->getMessage(),
-                'user_id' => $id
+                'user_id' => $user->id
             ]);
 
-            return back()->with('error', 'Failed to update user status. Please try again.');
+            return back()->with('error', $e->getMessage());
         }
     }
 

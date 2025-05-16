@@ -208,9 +208,25 @@ class ScannerController extends Controller
         ]);
     }
 
+    public function events(): View
+    {
+        $user = auth()->user();
+        
+        $events = $user->events()
+            ->where('status', 'active')
+            ->where(function($query) {
+                $query->where('start_date', '>=', now())
+                    ->orWhere('end_date', '>=', now());
+            })
+            ->orderBy('start_date')
+            ->paginate(10);
+
+        return view('scanner.events.index', compact('events'));
+    }
+
     public function index(): View
     {
-        $scanners = User::role('scanner')->paginate(10);
+        $scanners = User::where('role', 'scanner')->paginate(10);
         return view('scanners.index', compact('scanners'));
     }
 
@@ -231,9 +247,8 @@ class ScannerController extends Controller
             'name' => $validated['name'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
+            'role' => 'scanner'
         ]);
-
-        $user->assignRole('scanner');
 
         return redirect()->route('scanners.index')
             ->with('success', 'Scanner created successfully.');
@@ -241,16 +256,26 @@ class ScannerController extends Controller
 
     public function show(User $scanner): View
     {
+        if (!$scanner->isScanner()) {
+            abort(404);
+        }
         return view('scanners.show', compact('scanner'));
     }
 
     public function edit(User $scanner): View
     {
+        if (!$scanner->isScanner()) {
+            abort(404);
+        }
         return view('scanners.edit', compact('scanner'));
     }
 
     public function update(Request $request, User $scanner)
     {
+        if (!$scanner->isScanner()) {
+            abort(404);
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users,email,' . $scanner->id,
@@ -264,26 +289,13 @@ class ScannerController extends Controller
 
     public function destroy(User $scanner)
     {
+        if (!$scanner->isScanner()) {
+            abort(404);
+        }
+
         $scanner->delete();
 
         return redirect()->route('scanners.index')
             ->with('success', 'Scanner deleted successfully.');
-    }
-
-    public function events(): View
-    {
-        $user = auth()->user();
-        $scanner = $user->scanner;
-        
-        $events = $scanner ? $scanner->events()
-            ->where('status', 'active')
-            ->where(function($query) {
-                $query->where('start_date', '>=', now())
-                    ->orWhere('end_date', '>=', now());
-            })
-            ->orderBy('start_date')
-            ->paginate(10) : collect();
-
-        return view('scanner.events.index', compact('events'));
     }
 } 

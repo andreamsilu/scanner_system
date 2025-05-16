@@ -25,6 +25,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
+        'role',
         'is_active',
     ];
 
@@ -59,18 +60,6 @@ class User extends Authenticatable implements MustVerifyEmail
         });
     }
 
-    public function roles(): BelongsToMany
-    {
-        return $this->belongsToMany(Role::class);
-    }
-
-    public function scopeRole($query, $role)
-    {
-        return $query->whereHas('roles', function($q) use ($role) {
-            $q->where('slug', $role);
-        });
-    }
-
     public function attendees()
     {
         return $this->hasMany(Attendee::class);
@@ -81,9 +70,12 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(ActivityLog::class);
     }
 
+    /**
+     * Check if the user has a specific role.
+     */
     public function hasRole(string $role): bool
     {
-        return $this->roles()->where('slug', $role)->exists();
+        return $this->role === $role;
     }
 
     /**
@@ -91,7 +83,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isAdmin(): bool
     {
-        return $this->hasRole('admin');
+        return $this->role === 'admin';
     }
 
     /**
@@ -99,20 +91,30 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isScanner(): bool
     {
-        return $this->hasRole('scanner');
+        return $this->role === 'scanner';
     }
 
     /**
-     * Get the scanner record associated with the user.
+     * Get the scans performed by this user.
      */
-    public function scanner()
+    public function scans()
     {
-        return $this->hasOne(Scanner::class);
+        return $this->hasMany(Scan::class, 'scanner_id');
     }
 
+    /**
+     * Get the scan logs performed by this user.
+     */
+    public function scanLogs()
+    {
+        return $this->hasMany(ScanLog::class, 'scanner_id');
+    }
+
+    /**
+     * Assign a role to the user.
+     */
     public function assignRole(string $role): void
     {
-        $roleModel = Role::where('slug', $role)->firstOrFail();
-        $this->roles()->syncWithoutDetaching([$roleModel->id]);
+        $this->update(['role' => $role]);
     }
 }

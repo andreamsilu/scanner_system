@@ -89,9 +89,7 @@
                                 </td>
                                 <td>{{ $user->email }}</td>
                                 <td>
-                                    @foreach($user->roles as $role)
-                                        <span class="badge bg-info me-1">{{ $role->name }}</span>
-                                    @endforeach
+                                    <span class="badge bg-info">{{ ucfirst($user->role) }}</span>
                                 </td>
                                 <td>
                                     @if($user->id !== auth()->id())

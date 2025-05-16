@@ -4,101 +4,166 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Ticket extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'ticket_id',
         'event_id',
-        'user_id',
-        'status',
+        'attendee_id',
+        'ticket_number',
+        'token',
+        'qr_code',
         'type',
-        'last_scanned_at'
+        'status',
+        'used_at',
+        'cancelled_at'
     ];
 
     protected $casts = [
-        'last_scanned_at' => 'datetime'
+        'used_at' => 'datetime',
+        'cancelled_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime'
     ];
 
-    public function event()
+    /**
+     * Get the event that the ticket belongs to.
+     */
+    public function event(): BelongsTo
     {
         return $this->belongsTo(Event::class);
     }
 
-    public function attendee()
+    /**
+     * Get the attendee that owns the ticket.
+     */
+    public function attendee(): BelongsTo
     {
-        return $this->hasOne(Attendee::class);
+        return $this->belongsTo(Attendee::class);
     }
 
-    public function scans()
+    /**
+     * Get the scan logs for this ticket.
+     */
+    public function scanLogs(): HasMany
     {
-        return $this->hasMany(Scan::class);
+        return $this->hasMany(ScanLog::class);
     }
 
-    public function last_scan()
+    /**
+     * Get the last scan for this ticket.
+     */
+    public function lastScan()
     {
-        return $this->hasOne(Scan::class)->latest();
+        return $this->scanLogs()->latest()->first();
     }
 
-    public function getIsActiveAttribute()
+    /**
+     * Check if the ticket is active.
+     */
+    public function isActive(): bool
     {
         return $this->status === 'active';
     }
 
-    public function isActive()
-    {
-        return $this->status === 'active';
-    }
-
-    public function isUsed()
+    /**
+     * Check if the ticket has been used.
+     */
+    public function isUsed(): bool
     {
         return $this->status === 'used';
     }
 
-    public function isDeactivated()
+    /**
+     * Check if the ticket has been cancelled.
+     */
+    public function isCancelled(): bool
     {
-        return $this->status === 'deactivated';
+        return $this->status === 'cancelled';
     }
 
-    public function activate()
+    /**
+     * Mark the ticket as used.
+     */
+    public function markAsUsed(): bool
     {
-        $this->update(['status' => 'active']);
+        return $this->update([
+            'status' => 'used',
+            'used_at' => now()
+        ]);
     }
 
-    public function deactivate()
+    /**
+     * Mark the ticket as cancelled.
+     */
+    public function markAsCancelled(): bool
     {
-        $this->update(['status' => 'deactivated']);
+        return $this->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now()
+        ]);
     }
 
-    public function markAsUsed()
+    /**
+     * Generate a unique 6-digit token.
+     */
+    public static function generateUniqueToken(): string
     {
-        $this->update(['status' => 'used']);
+        do {
+            $token = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        } while (self::where('token', $token)->exists());
+
+        return $token;
     }
 
-    public function isAssigned()
+    /**
+     * Generate a unique ticket number.
+     */
+    public static function generateTicketNumber(): string
     {
-        return $this->attendee !== null;
+        do {
+            $number = 'TICKET-' . strtoupper(Str::random(8));
+        } while (self::where('ticket_number', $number)->exists());
+
+        return $number;
     }
 
-    public function assignToAttendee(Attendee $attendee)
+    /**
+     * Generate QR code data for the ticket.
+     */
+    public function generateQrCode(): string
     {
-        if ($this->isAssigned()) {
-            throw new \Exception('Ticket is already assigned');
-        }
+        $data = [
+            'ticket_id' => $this->id,
+            'token' => $this->token,
+            'event_id' => $this->event_id
+        ];
 
-        if ($attendee->event_id !== $this->event_id) {
-            throw new \Exception('Attendee does not belong to this event');
-        }
-
-        $attendee->assignTicket($this);
+        return json_encode($data);
     }
 
-    public function unassignFromAttendee()
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
     {
-        if ($this->attendee) {
-            $this->attendee->removeTicket();
-        }
+        parent::boot();
+
+        static::creating(function ($ticket) {
+            if (empty($ticket->token)) {
+                $ticket->token = self::generateUniqueToken();
+            }
+            if (empty($ticket->ticket_number)) {
+                $ticket->ticket_number = self::generateTicketNumber();
+            }
+            if (empty($ticket->qr_code)) {
+                $ticket->qr_code = $ticket->generateQrCode();
+            }
+        });
     }
 } 

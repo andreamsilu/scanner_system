@@ -44,25 +44,18 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label">Roles</label>
-                            <div class="row">
+                            <label for="role" class="form-label">Role</label>
+                            <select class="form-select @error('role') is-invalid @enderror" 
+                                    id="role" name="role" required>
+                                <option value="">Select Role</option>
                                 @foreach($roles as $role)
-                                    <div class="col-md-4">
-                                        <div class="form-check">
-                                            <input type="checkbox" 
-                                                   class="form-check-input @error('roles') is-invalid @enderror" 
-                                                   id="role_{{ $role->id }}" 
-                                                   name="roles[]" 
-                                                   value="{{ $role->id }}"
-                                                   {{ in_array($role->id, old('roles', $user->roles->pluck('id')->toArray())) ? 'checked' : '' }}>
-                                            <label class="form-check-label" for="role_{{ $role->id }}">
-                                                {{ $role->name }}
-                                            </label>
-                                        </div>
-                                    </div>
+                                    <option value="{{ $role }}" 
+                                            {{ old('role', $user->role) === $role ? 'selected' : '' }}>
+                                        {{ ucfirst($role) }}
+                                    </option>
                                 @endforeach
-                            </div>
-                            @error('roles')
+                            </select>
+                            @error('role')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>

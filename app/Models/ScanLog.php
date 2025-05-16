@@ -12,9 +12,10 @@ class ScanLog extends Model
 
     protected $fillable = [
         'scanner_id',
-        'attendee_id',
         'ticket_id',
-        'scanned_at'
+        'scanned_at',
+        'status',
+        'notes'
     ];
 
     protected $casts = [
@@ -24,19 +25,11 @@ class ScanLog extends Model
     ];
 
     /**
-     * Get the scanner that performed the scan.
+     * Get the scanner (user) that performed the scan.
      */
     public function scanner(): BelongsTo
     {
-        return $this->belongsTo(Scanner::class);
-    }
-
-    /**
-     * Get the attendee that was scanned.
-     */
-    public function attendee(): BelongsTo
-    {
-        return $this->belongsTo(Attendee::class);
+        return $this->belongsTo(User::class, 'scanner_id');
     }
 
     /**
@@ -53,5 +46,51 @@ class ScanLog extends Model
     public function event()
     {
         return $this->ticket->event();
+    }
+
+    /**
+     * Get the attendee through the ticket.
+     */
+    public function attendee()
+    {
+        return $this->ticket->attendee();
+    }
+
+    /**
+     * Check if the scan was successful.
+     */
+    public function isSuccessful(): bool
+    {
+        return $this->status === 'success';
+    }
+
+    /**
+     * Check if the scan was invalid.
+     */
+    public function isInvalid(): bool
+    {
+        return $this->status === 'invalid';
+    }
+
+    /**
+     * Check if the scan was duplicate.
+     */
+    public function isDuplicate(): bool
+    {
+        return $this->status === 'duplicate';
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($scanLog) {
+            if (empty($scanLog->scanned_at)) {
+                $scanLog->scanned_at = now();
+            }
+        });
     }
 } 
