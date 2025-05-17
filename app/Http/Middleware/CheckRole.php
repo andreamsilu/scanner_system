@@ -14,13 +14,30 @@ class CheckRole
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
      */
-    public function handle(Request $request, Closure $next, $role): Response
+    public function handle(Request $request, Closure $next, ...$roles): Response
     {
         if (!Auth::check()) {
             return redirect()->route('login');
         }
 
-        if (!Auth::user()->hasRole($role)) {
+        $user = Auth::user();
+        $hasRole = false;
+
+        // Split roles if they are comma-separated
+        $roleList = collect($roles)->flatMap(function ($role) {
+            return explode(',', $role);
+        })->map(function ($role) {
+            return trim($role);
+        });
+
+        foreach ($roleList as $role) {
+            if ($user->hasRole($role)) {
+                $hasRole = true;
+                break;
+            }
+        }
+
+        if (!$hasRole) {
             abort(403, 'Unauthorized action.');
         }
 

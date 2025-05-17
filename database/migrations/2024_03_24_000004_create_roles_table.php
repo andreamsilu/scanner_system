@@ -8,18 +8,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        // Create roles table (if it does not already exist) (with columns id, name (unique), created_at, updated_at)
+        // Create roles table (if it does not already exist)
         if (!Schema::hasTable('roles')) {
             Schema::create('roles', function (Blueprint $table) {
                 $table->id();
                 $table->string('name')->unique();
+                $table->string('slug')->unique();
+                $table->text('description')->nullable();
+                $table->string('guard_name')->default('web');
                 $table->timestamps();
             });
         }
 
-        // Create pivot table (user_role) (with columns user_id, role_id, created_at, updated_at) (if it does not already exist)
-        if (!Schema::hasTable('user_role')) {
-            Schema::create('user_role', function (Blueprint $table) {
+        // Create pivot table (role_user) (if it does not already exist)
+        if (!Schema::hasTable('role_user')) {
+            Schema::create('role_user', function (Blueprint $table) {
                 $table->unsignedBigInteger('user_id');
                 $table->unsignedBigInteger('role_id');
                 $table->timestamps();
@@ -32,11 +35,11 @@ return new class extends Migration
 
     public function down(): void
     {
-        // Drop pivot table (user_role) (if it exists)
-        if (Schema::hasTable('user_role')) {
-            Schema::dropIfExists('user_role');
+        // Drop pivot table (role_user) (if it exists)
+        if (Schema::hasTable('role_user')) {
+            Schema::dropIfExists('role_user');
         }
-        // Drop roles table (if it exists) (and if you want to remove it on rollback)
+        // Drop roles table (if it exists)
         if (Schema::hasTable('roles')) {
             Schema::dropIfExists('roles');
         }

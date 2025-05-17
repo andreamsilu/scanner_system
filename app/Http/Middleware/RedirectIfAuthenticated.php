@@ -23,12 +23,10 @@ class RedirectIfAuthenticated
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 $user = Auth::guard($guard)->user();
-                $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
-                $scannerRoleId = DB::table('roles')->where('name', 'scanner')->value('id');
-                $userRoles = DB::table('user_role')->where('user_id', $user->id)->pluck('role_id')->toArray();
-                if (in_array($adminRoleId, $userRoles)) {
+                
+                if ($user->hasRole('admin')) {
                     return redirect()->intended(route('admin.dashboard'));
-                } elseif (in_array($scannerRoleId, $userRoles)) {
+                } elseif ($user->hasRole('scanner')) {
                     return redirect()->intended(route('scanner.dashboard'));
                 } else {
                     abort(403, 'Unauthorized action.');

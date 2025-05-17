@@ -38,6 +38,17 @@ Route::middleware('auth')->group(function () {
     // Dashboard Routes
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
+    // Scanner Routes (accessible to both admin and scanner roles)
+    Route::middleware(['role:admin,scanner'])->prefix('scanner')->name('scanner.')->group(function () {
+        Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
+        Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
+        Route::get('/events/{event}/scan', [ScanController::class, 'index'])->name('scan.index');
+        Route::post('/scan/validate', [ScanController::class, 'scan'])->name('scan.validate');
+        Route::get('/scan/{event}/{scan}', [ScanController::class, 'show'])->name('scan.show');
+        Route::get('/history', [ScannerController::class, 'history'])->name('history');
+        Route::get('/history/export', [ScannerController::class, 'exportHistory'])->name('history.export');
+    });
+
     // Admin Routes
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
@@ -86,17 +97,6 @@ Route::middleware('auth')->group(function () {
             Route::get('reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
         });
         
-        // Scanner Routes (allow admin to access scanner routes if they are also assigned the scanner role)
-        Route::middleware(['auth'])->prefix('scanner')->name('scanner.')->group(function () {
-            Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
-            Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
-            Route::get('/events/{event}/scan', [ScanController::class, 'index'])->name('scan.index');
-            Route::post('/scan/validate', [ScanController::class, 'scan'])->name('scan.validate');
-            Route::get('/scan/{event}/{scan}', [ScanController::class, 'show'])->name('scan.show');
-            Route::get('/history', [ScannerController::class, 'history'])->name('history');
-            Route::get('/history/export', [ScannerController::class, 'exportHistory'])->name('history.export');
-        });
-
         // Profile routes
         Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
         Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');

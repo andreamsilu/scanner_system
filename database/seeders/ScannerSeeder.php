@@ -30,20 +30,20 @@ class ScannerSeeder extends Seeder
             ],
         ]);
 
-        // (Re-)assign (or upsert) the "admin" role (from the roles table) to the user (admin@gmail.com) (using the pivot (user_role) table) (so that (for example) if the roles (or the pivot) are not assigned (or are deleted) then the seeder (re-)assigns them.)
+        // (Re-)assign (or upsert) the "admin" role (from the roles table) to the user (admin@gmail.com) (using the pivot (role_user) table) (so that (for example) if the roles (or the pivot) are not assigned (or are deleted) then the seeder (re-)assigns them.)
         $adminRoleId = DB::table('roles')->where('name', 'admin')->value('id');
         $adminUserId = DB::table('users')->where('email', 'admin@gmail.com')->value('id');
         if ($adminRoleId && $adminUserId) {
-            DB::table('user_role')->insertOrIgnore([
+            DB::table('role_user')->insertOrIgnore([
                 ['user_id' => $adminUserId, 'role_id' => $adminRoleId, 'created_at' => now(), 'updated_at' => now()],
             ]);
         }
 
-        // (Re-)assign (or upsert) the "scanner" role (from the roles table) to the user (scanner@gmail.com) (using the pivot (user_role) table) (so that (for example) if the roles (or the pivot) are not assigned (or are deleted) then the seeder (re-)assigns them.)
+        // (Re-)assign (or upsert) the "scanner" role (from the roles table) to the user (scanner@gmail.com) (using the pivot (role_user) table) (so that (for example) if the roles (or the pivot) are not assigned (or are deleted) then the seeder (re-)assigns them.)
         $scannerRoleId = DB::table('roles')->where('name', 'scanner')->value('id');
         $scannerUserId = DB::table('users')->where('email', 'scanner@gmail.com')->value('id');
         if ($scannerRoleId && $scannerUserId) {
-            DB::table('user_role')->insertOrIgnore([
+            DB::table('role_user')->insertOrIgnore([
                 ['user_id' => $scannerUserId, 'role_id' => $scannerRoleId, 'created_at' => now(), 'updated_at' => now()],
             ]);
         }
