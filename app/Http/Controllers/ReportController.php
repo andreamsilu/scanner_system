@@ -19,14 +19,22 @@ class ReportController extends Controller
             'active_events' => Event::where('status', 'active')->count(),
             'total_attendees' => Attendee::count(),
             'total_scans' => ScanLog::count(),
-            'successful_scans' => ScanLog::whereNotNull('attendee_id')->count(),
-            'failed_scans' => ScanLog::whereNull('attendee_id')->count(),
+            'successful_scans' => ScanLog::whereHas('ticket', function ($query) {
+                $query->where('status', 'used');
+            })->count(),
+            'failed_scans' => ScanLog::whereHas('ticket', function ($query) {
+                $query->where('status', '!=', 'used');
+            })->orWhereDoesntHave('ticket')->count(),
         ];
 
         // Get recent events with attendance
         $recent_events = Event::withCount([
             'attendees',
-            'scanLogs'
+            'scanLogs' => function ($query) {
+                $query->whereHas('ticket', function ($q) {
+                    $q->where('status', 'used');
+                });
+            }
         ])
         ->latest()
         ->take(5)
@@ -36,8 +44,16 @@ class ReportController extends Controller
         $daily_scans = ScanLog::select(
             DB::raw('DATE(scanned_at) as date'),
             DB::raw('COUNT(*) as total'),
-            DB::raw('SUM(CASE WHEN attendee_id IS NOT NULL THEN 1 ELSE 0 END) as successful'),
-            DB::raw('SUM(CASE WHEN attendee_id IS NULL THEN 1 ELSE 0 END) as failed')
+            DB::raw('SUM(CASE WHEN EXISTS (
+                SELECT 1 FROM tickets 
+                WHERE tickets.id = scan_logs.ticket_id 
+                AND tickets.status = "used"
+            ) THEN 1 ELSE 0 END) as successful'),
+            DB::raw('SUM(CASE WHEN NOT EXISTS (
+                SELECT 1 FROM tickets 
+                WHERE tickets.id = scan_logs.ticket_id 
+                AND tickets.status = "used"
+            ) THEN 1 ELSE 0 END) as failed')
         )
         ->groupBy('date')
         ->orderBy('date', 'desc')

@@ -83,22 +83,20 @@
                     </a>
                 </li>
 
-                @if(auth()->user()->role === 'admin')
-                    <!-- Admin Menu -->
+                {{-- Admin Menu --}}
+                @if(auth()->user()->isAdmin())
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('events.*') ? 'active bg-light' : '' }}" 
                            href="{{ route('events.index') }}">
                             <i class="bi bi-calendar-event me-2"></i> Events
                         </a>
                     </li>
-
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('reports.*') ? 'active bg-light' : '' }}" 
                            href="{{ route('reports.index') }}">
                             <i class="bi bi-file-earmark-text me-2"></i> Reports
                         </a>
                     </li>
-
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('users.*') ? 'active bg-light' : '' }}" 
                            href="{{ route('users.index') }}">
@@ -107,15 +105,14 @@
                     </li>
                 @endif
 
-                @if(auth()->user()->role === 'scanner')
-                    <!-- Scanner Menu -->
+                {{-- Scanner Menu: show for both scanner and admin --}}
+                @if(auth()->user()->isScanner() || auth()->user()->isAdmin())
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active bg-light' : '' }}" 
                            href="{{ route('scanner.events.index') }}">
                             <i class="bi bi-upc-scan me-2"></i> Scan Tickets
                         </a>
                     </li>
-
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active bg-light' : '' }}" 
                            href="{{ route('scanner.history') }}">

@@ -33,12 +33,15 @@ class EventController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
+            'venue' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
             'capacity' => 'required|integer|min:1',
             'status' => ['required', Rule::in(['draft', 'active', 'cancelled'])],
         ]);
+
+        $validated['created_by'] = auth()->id();
 
         $event = Event::create($validated);
 
@@ -50,7 +53,9 @@ class EventController extends Controller
     public function show(Event $event): View
     {
         $event->load(['attendees', 'tickets', 'scanners']);
-        $scannerUsers = \App\Models\User::role('scanner')->get();
+        $scannerUsers = \App\Models\User::whereHas('roles', function ($query) {
+            $query->where('name', 'scanner');
+        })->get();
         return view('events.show', compact('event', 'scannerUsers'));
     }
 
@@ -64,6 +69,7 @@ class EventController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'required|string',
+            'venue' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',

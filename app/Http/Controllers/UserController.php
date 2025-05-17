@@ -24,7 +24,9 @@ class UserController extends Controller
             ->latest()
             ->paginate(15);
 
-        return view('users.index', compact('users'));
+        $roles = \App\Models\Role::all();
+
+        return view('users.index', compact('users', 'roles'));
     }
 
     /**

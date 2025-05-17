@@ -25,6 +25,12 @@
                         <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label text-muted">Venue</label>
+                                <p class="mb-0">{{ $event->venue }}</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted">Location</label>
                                 <p class="mb-0">{{ $event->location }}</p>
                             </div>
                         </div>
@@ -33,8 +39,8 @@
                                 <label class="form-label text-muted">Capacity</label>
                                 <p class="mb-0">{{ number_format($event->capacity) }} attendees</p>
                             </div>
-                                </div>
-                                <div class="col-md-6">
+                        </div>
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label class="form-label text-muted">Start Date</label>
                                 <p class="mb-0">{{ $event->start_date->format('F j, Y g:i A') }}</p>
@@ -44,8 +50,8 @@
                             <div class="mb-3">
                                 <label class="form-label text-muted">End Date</label>
                                 <p class="mb-0">{{ $event->end_date->format('F j, Y g:i A') }}</p>
-                                    </div>
-                                </div>
+                            </div>
+                        </div>
                         <div class="col-12">
                             <div class="mb-3">
                                 <label class="form-label text-muted">Description</label>

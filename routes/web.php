@@ -86,8 +86,8 @@ Route::middleware('auth')->group(function () {
             Route::get('reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
         });
         
-        // Scanner Routes
-        Route::middleware(['auth', 'role:scanner'])->prefix('scanner')->name('scanner.')->group(function () {
+        // Scanner Routes (allow admin to access scanner routes if they are also assigned the scanner role)
+        Route::middleware(['auth'])->prefix('scanner')->name('scanner.')->group(function () {
             Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
             Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
             Route::get('/events/{event}/scan', [ScanController::class, 'index'])->name('scan.index');

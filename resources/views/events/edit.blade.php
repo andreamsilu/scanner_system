@@ -35,7 +35,22 @@
 
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="location" class="form-label">Venue <span class="text-danger">*</span></label>
+                            <label for="venue" class="form-label">Venue <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control @error('venue') is-invalid @enderror" 
+                                   id="venue" 
+                                   name="venue" 
+                                   value="{{ old('venue', $event->venue) }}" 
+                                   required>
+                            @error('venue')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
                             <input type="text" 
                                    class="form-control @error('location') is-invalid @enderror" 
                                    id="location" 

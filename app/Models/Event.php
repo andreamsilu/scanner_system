@@ -16,11 +16,13 @@ class Event extends Model
     protected $fillable = [
         'name',
         'description',
+        'venue',
         'location',
         'start_date',
         'end_date',
         'capacity',
         'status',
+        'created_by',
     ];
 
     protected $casts = [
@@ -100,7 +102,9 @@ class Event extends Model
     public function scanners()
     {
         return $this->belongsToMany(User::class, 'event_scanner', 'event_id', 'scanner_id')
-            ->where('role', 'scanner')
+            ->whereHas('roles', function ($query) {
+                $query->where('name', 'scanner');
+            })
             ->withTimestamps()
             ->withPivot(['assigned_at', 'assigned_by']);
     }
