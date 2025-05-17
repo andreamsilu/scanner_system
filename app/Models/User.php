@@ -10,6 +10,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\DB;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -25,7 +26,6 @@ class User extends Authenticatable implements MustVerifyEmail
         'name',
         'email',
         'password',
-        'role',
         'is_active',
     ];
 
@@ -71,11 +71,20 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the roles that belong to the user.
+     */
+    public function roles(): BelongsToMany
+    {
+        return $this->belongsToMany(Role::class, 'user_role')
+            ->withTimestamps();
+    }
+
+    /**
      * Check if the user has a specific role.
      */
     public function hasRole(string $role): bool
     {
-        return $this->role === $role;
+        return $this->roles()->where('name', $role)->exists();
     }
 
     /**
@@ -83,7 +92,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isAdmin(): bool
     {
-        return $this->role === 'admin';
+        return $this->hasRole('admin');
     }
 
     /**
@@ -91,7 +100,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function isScanner(): bool
     {
-        return $this->role === 'scanner';
+        return $this->hasRole('scanner');
     }
 
     /**
@@ -115,6 +124,32 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function assignRole(string $role): void
     {
-        $this->update(['role' => $role]);
+        $roleId = DB::table('roles')->where('name', $role)->value('id');
+        if ($roleId) {
+            $this->roles()->syncWithoutDetaching([$roleId]);
+        }
+    }
+
+    /**
+     * Remove a role from the user.
+     */
+    public function removeRole(string $role): void
+    {
+        $roleId = DB::table('roles')->where('name', $role)->value('id');
+        if ($roleId) {
+            $this->roles()->detach($roleId);
+        }
+    }
+
+    /**
+     * Sync the user's roles.
+     */
+    public function syncRoles(array $roles): void
+    {
+        $roleIds = DB::table('roles')
+            ->whereIn('name', $roles)
+            ->pluck('id')
+            ->toArray();
+        $this->roles()->sync($roleIds);
     }
 }
