@@ -120,6 +120,16 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
+     * Get the events that this user (scanner) is assigned to.
+     */
+    public function events(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Event::class, 'event_scanner', 'scanner_id', 'event_id')
+            ->withTimestamps()
+            ->withPivot(['assigned_at', 'assigned_by']);
+    }
+
+    /**
      * Assign a role to the user.
      */
     public function assignRole(string $role): void

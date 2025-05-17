@@ -93,6 +93,13 @@ class AttendeeController extends Controller
      */
     public function show(Event $event, Attendee $attendee): View
     {
+        $attendee->load([
+            'event',
+            'ticket.scanLogs' => function($query) {
+                $query->with('scanner')->latest();
+            }
+        ]);
+        
         return view('attendees.show', compact('event', 'attendee'));
     }
 

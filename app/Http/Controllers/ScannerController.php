@@ -20,10 +20,10 @@ class ScannerController extends Controller
         $scanner = $user->scanner;
         
         $today_scans = ScanLog::whereDate('created_at', today())
-            ->where('scanned_by', $user->email)
+            ->where('scanner_id', $user->id)
             ->count();
         
-        $total_scans = ScanLog::where('scanned_by', $user->email)->count();
+        $total_scans = ScanLog::where('scanner_id', $user->id)->count();
         
         $assigned_events = $scanner ? $scanner->events()
             ->where('status', 'active')
@@ -34,13 +34,13 @@ class ScannerController extends Controller
             ->get() : collect();
         
         $recent_scans = ScanLog::with(['attendee', 'event'])
-            ->where('scanned_by', $user->email)
+            ->where('scanner_id', $user->id)
             ->latest()
             ->take(5)
             ->get();
         
         $checked_in_today = ScanLog::whereDate('created_at', today())
-            ->where('scanned_by', $user->email)
+            ->where('scanner_id', $user->id)
             ->count();
 
         return view('scanner.dashboard', compact(
@@ -146,7 +146,7 @@ class ScannerController extends Controller
         $scanner = $user->scanner;
         
         $query = ScanLog::with(['attendee', 'event'])
-            ->where('scanned_by', $user->email)
+            ->where('scanner_id', $user->id)
             ->when($request->start_date, fn($q) => $q->whereDate('created_at', '>=', $request->start_date))
             ->when($request->end_date, fn($q) => $q->whereDate('created_at', '<=', $request->end_date))
             ->when($request->event_id, fn($q) => $q->where('event_id', $request->event_id))
