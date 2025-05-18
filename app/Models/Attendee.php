@@ -40,11 +40,12 @@ class Attendee extends Model
                 $attendee->token = $token;
             }
 
-            // Generate QR code
+            // Generate QR code with check-in URL (using absolute URL)
+            $checkInUrl = route('scanner.check-in', ['token' => $attendee->token], true); // true to get absolute URL
             $qrCode = QrCode::format('png')
                 ->size(300)
                 ->errorCorrection('H')
-                ->generate($attendee->token);
+                ->generate($checkInUrl);
 
             // Store QR code image
             $path = 'qr-codes/' . $attendee->token . '.png';
@@ -96,11 +97,19 @@ class Attendee extends Model
     }
 
     /**
+     * Get the check-in URL for this attendee
+     */
+    public function getCheckInUrlAttribute()
+    {
+        return route('scanner.check-in', ['token' => $this->token], true); // true to get absolute URL
+    }
+
+    /**
      * Get the QR code URL
      */
     public function getQrCodeUrlAttribute()
     {
-        return $this->qr_code ? Storage::disk('public')->url($this->qr_code) : null;
+        return $this->qr_code ? '/storage/' . $this->qr_code : null;
     }
 
     /**
@@ -109,5 +118,33 @@ class Attendee extends Model
     public function getValidationUrlAttribute()
     {
         return route('attendees.validate', ['token' => $this->token]);
+    }
+
+    /**
+     * Regenerate the QR code for this attendee
+     */
+    public function regenerateQrCode()
+    {
+        // Delete old QR code if exists
+        if ($this->qr_code) {
+            Storage::disk('public')->delete($this->qr_code);
+        }
+
+        // Generate new QR code with check-in URL (using absolute URL)
+        $checkInUrl = route('scanner.check-in', ['token' => $this->token], true);
+        $qrCode = QrCode::format('png')
+            ->size(300)
+            ->errorCorrection('H')
+            ->generate($checkInUrl);
+
+        // Store new QR code image
+        $path = 'qr-codes/' . $this->token . '.png';
+        Storage::disk('public')->put($path, $qrCode);
+
+        // Update attendee record
+        $this->qr_code = $path;
+        $this->save();
+
+        return $this;
     }
 } 

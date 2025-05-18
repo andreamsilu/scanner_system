@@ -85,6 +85,37 @@
                 border-color: #2563eb;
                 background-color: #eff6ff;
             }
+
+            .qr-code-container {
+                background: white;
+                padding: 15px;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+                display: inline-block;
+            }
+            
+            .qr-code-container img {
+                display: block;
+                margin: 0 auto;
+            }
+            
+            .token-info {
+                font-family: monospace;
+                border: 1px solid #e9ecef;
+            }
+            
+            .token-info code {
+                color: #0d6efd;
+                font-weight: 600;
+            }
+            
+            .btn-group .btn {
+                margin-left: 5px;
+            }
+            
+            .btn-group .btn:first-child {
+                margin-left: 0;
+            }
         </style>
 
         @stack('styles')

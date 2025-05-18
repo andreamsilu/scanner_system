@@ -10,27 +10,27 @@ class ScanLog extends Model
 {
     use HasFactory;
 
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var array<int, string>
+     */
     protected $fillable = [
-        'scanner_id',
         'ticket_id',
-        'scanned_at',
+        'scanner_id',
         'status',
-        'notes'
-    ];
-
-    protected $casts = [
-        'scanned_at' => 'datetime',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime'
+        'notes',
     ];
 
     /**
-     * Get the scanner (user) that performed the scan.
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
      */
-    public function scanner(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'scanner_id');
-    }
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
 
     /**
      * Get the ticket that was scanned.
@@ -38,6 +38,14 @@ class ScanLog extends Model
     public function ticket(): BelongsTo
     {
         return $this->belongsTo(Ticket::class);
+    }
+
+    /**
+     * Get the user who performed the scan.
+     */
+    public function scanner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'scanner_id');
     }
 
     /**

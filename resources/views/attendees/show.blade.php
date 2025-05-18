@@ -202,20 +202,43 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">QR Code</h5>
-                    <form action="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" method="POST" class="d-inline">
-                        @csrf
-                        <button type="submit" class="btn btn-sm btn-outline-primary">
-                            <i class="fas fa-sync-alt"></i> Regenerate QR Code
-                        </button>
-                    </form>
+                    <div class="btn-group">
+                        @if($attendee->qr_code)
+                            <a href="{{ $attendee->qr_code_url }}" 
+                               download="qr-code-{{ $attendee->token }}.png" 
+                               class="btn btn-sm btn-outline-success">
+                                <i class="fas fa-download"></i> Download QR Code
+                            </a>
+                        @endif
+                        <form action="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
+                              method="POST" 
+                              class="d-inline">
+                            @csrf
+                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                <i class="fas fa-sync-alt"></i> Regenerate QR Code
+                            </button>
+                        </form>
+                    </div>
                 </div>
                 <div class="card-body text-center">
                     @if($attendee->qr_code)
-                        <img src="{{ $attendee->qr_code_url }}" alt="Attendee QR Code" class="img-fluid mb-3" style="max-width: 300px;">
-                        <p class="text-muted mb-0">Scan this QR code to validate the attendee's ticket</p>
-                        <small class="text-muted">Token: {{ $attendee->token }}</small>
+                        <div class="qr-code-container mb-3">
+                            <img src="{{ $attendee->qr_code_url }}" 
+                                 alt="Attendee QR Code" 
+                                 class="img-fluid" 
+                                 style="max-width: 300px; border: 1px solid #ddd; border-radius: 4px; padding: 10px;">
+                        </div>
+                        <div class="qr-code-info">
+                            <p class="text-muted mb-1">Scan this QR code to validate the attendee's ticket</p>
+                            <div class="token-info bg-light p-2 rounded d-inline-block">
+                                <small class="text-muted">Token: <code>{{ $attendee->token }}</code></small>
+                            </div>
+                        </div>
                     @else
-                        <p class="text-muted mb-0">No QR code generated</p>
+                        <div class="alert alert-warning mb-0">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            No QR code generated. Click "Regenerate QR Code" to create one.
+                        </div>
                     @endif
                 </div>
             </div>

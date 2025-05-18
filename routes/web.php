@@ -146,3 +146,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/attendees/validate/{token}', [App\Http\Controllers\AttendeeController::class, 'validateToken'])
         ->name('attendees.validate');
 });
+
+// Public check-in route (no auth required)
+Route::get('/check-in/{token}', [ScanController::class, 'checkIn'])->name('scanner.check-in');
+
+// Scanner routes (protected)
+Route::middleware(['auth', 'role:admin,scanner'])->group(function () {
+    Route::get('/scanner', [ScanController::class, 'scanner'])->name('scanner.index');
+    Route::post('/scan', [ScanController::class, 'scan'])->name('scanner.scan');
+});
