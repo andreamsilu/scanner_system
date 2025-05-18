@@ -120,6 +120,12 @@
                         </a>
                     </li>
                     <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('scanner.validate') ? 'active bg-light' : '' }}" 
+                           href="{{ route('scanner.validate') }}">
+                            <i class="bi bi-key me-2"></i> Manual Validation
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active bg-light' : '' }}" 
                            href="{{ route('scanner.history') }}">
                             <i class="bi bi-clock-history me-2"></i> Scan History

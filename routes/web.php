@@ -155,3 +155,11 @@ Route::middleware(['auth', 'role:admin,scanner'])->group(function () {
     Route::get('/scanner', [ScanController::class, 'scanner'])->name('scanner.index');
     Route::post('/scan', [ScanController::class, 'scan'])->name('scanner.scan');
 });
+
+// Scanner routes
+Route::middleware(['auth', 'role:scanner'])->prefix('scanner')->name('scanner.')->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'scannerDashboard'])->name('dashboard');
+    Route::get('/validate', [ScanController::class, 'validatePage'])->name('validate');
+    Route::post('/validate-token', [ScanController::class, 'validateToken'])->name('validate-token');
+    // ... other scanner routes ...
+});

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use Illuminate\Support\Facades\Auth;
 
 class ScanController extends Controller
 {
@@ -239,5 +240,120 @@ class ScanController extends Controller
             ];
             return request()->wantsJson() ? response()->json($data, 500) : view('checkin.result', $data);
         }
+    }
+
+    /**
+     * Validate an attendee token manually
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function validateToken(Request $request)
+    {
+        $request->validate([
+            'token' => 'required|string|max:255'
+        ]);
+
+        $token = $request->token;
+        $scanner = Auth::user();
+
+        // Find the attendee by token
+        $attendee = Attendee::where('token', $token)
+            ->with(['ticket.event'])
+            ->first();
+
+        if (!$attendee) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Invalid token'
+                ], 404);
+            }
+            return back()->with('error', 'Invalid token');
+        }
+
+        // Check if the ticket is already used
+        if ($attendee->ticket && $attendee->ticket->status === 'used') {
+            // Log the duplicate scan attempt
+            ScanLog::create([
+                'scanner_id' => $scanner->id,
+                'ticket_id' => $attendee->ticket->id,
+                'status' => 'duplicate',
+                'notes' => 'Manual token validation - Duplicate scan'
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'status' => 'warning',
+                    'message' => 'Ticket already used',
+                    'attendee' => $attendee->name,
+                    'event' => $attendee->ticket->event->name
+                ]);
+            }
+            return back()->with('warning', 'Ticket already used for ' . $attendee->name);
+        }
+
+        // Update ticket status
+        if ($attendee->ticket) {
+            $attendee->ticket->update([
+                'status' => 'used',
+                'checked_in_at' => now(),
+                'checked_in_by' => $scanner->id
+            ]);
+
+            // Log the successful scan
+            ScanLog::create([
+                'scanner_id' => $scanner->id,
+                'ticket_id' => $attendee->ticket->id,
+                'status' => 'success',
+                'notes' => 'Manual token validation'
+            ]);
+
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'status' => 'success',
+                    'message' => 'Check-in successful',
+                    'attendee' => $attendee->name,
+                    'event' => $attendee->ticket->event->name
+                ]);
+            }
+            return back()->with('success', 'Successfully checked in ' . $attendee->name);
+        }
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'No valid ticket found for this token'
+            ], 404);
+        }
+        return back()->with('error', 'No valid ticket found for this token');
+    }
+
+    /**
+     * Display the token validation page
+     */
+    public function validatePage(): View
+    {
+        $scanner = Auth::user();
+        
+        // Get recent validations for this scanner
+        $recent_validations = ScanLog::with(['ticket.attendee', 'ticket.event'])
+            ->where('scanner_id', $scanner->id)
+            ->where('notes', 'like', '%Manual token validation%')
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function($scan) {
+                return [
+                    'time' => $scan->created_at->diffForHumans(),
+                    'attendee' => $scan->ticket->attendee->name ?? 'Invalid Ticket',
+                    'event' => $scan->ticket->event->name ?? 'N/A',
+                    'status' => $scan->status,
+                    'status_class' => $scan->status === 'success' ? 'success' : 
+                                    ($scan->status === 'duplicate' ? 'warning' : 'danger')
+                ];
+            });
+
+        return view('scanner.validate', compact('recent_validations'));
     }
 } 

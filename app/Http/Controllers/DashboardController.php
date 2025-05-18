@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Attendee;
 use App\Models\ScanLog;
 use App\Models\User;
+use App\Models\Event;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -32,7 +33,60 @@ class DashboardController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        return view('dashboard.admin');
+        // Get real-time statistics
+        $stats = [
+            'total_events' => Event::count(),
+            'active_events' => Event::where('status', 'active')->count(),
+            'total_attendees' => Attendee::count(),
+            'total_scans' => ScanLog::count(),
+            'today_scans' => ScanLog::whereDate('created_at', today())->count(),
+            'active_scanners' => User::whereHas('roles', function($query) {
+                $query->where('name', 'scanner');
+            })->where('is_active', true)->count(),
+        ];
+
+        // Get recent scan activity
+        $recent_activity = ScanLog::with(['ticket.attendee', 'ticket.event', 'scanner'])
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function($scan) {
+                return [
+                    'time' => $scan->created_at->diffForHumans(),
+                    'event' => $scan->ticket->event->name ?? 'N/A',
+                    'scanner' => $scan->scanner->name ?? 'System',
+                    'attendee' => $scan->ticket->attendee->name ?? 'Invalid Ticket',
+                    'status' => $scan->status,
+                    'status_class' => $scan->status === 'success' ? 'success' : 
+                                    ($scan->status === 'duplicate' ? 'warning' : 'danger')
+                ];
+            });
+            
+
+        // Get upcoming events
+        $upcoming_events = Event::where('status', 'active')
+            ->where('start_date', '>=', now())
+            ->orderBy('start_date')
+            ->take(5)
+            ->get();
+
+        // Get scanner performance
+        $scanner_performance = User::whereHas('roles', function($query) {
+                $query->where('name', 'scanner');
+            })
+            ->withCount(['scanLogs' => function($query) {
+                $query->whereDate('created_at', today());
+            }])
+            ->orderByDesc('scan_logs_count')
+            ->take(5)
+            ->get();
+
+        return view('dashboard.admin', compact(
+            'stats',
+            'recent_activity',
+            'upcoming_events',
+            'scanner_performance'
+        ));
     }
 
     public function scannerDashboard(): View
@@ -41,6 +95,69 @@ class DashboardController extends Controller
             abort(403, 'Unauthorized action.');
         }
         
-        return view('dashboard.scanner');
+        $scanner = Auth::user();
+        
+        // Get scanner's statistics
+        $stats = [
+            'today_scans' => ScanLog::where('scanner_id', $scanner->id)
+                ->whereDate('created_at', today())
+                ->count(),
+            'valid_scans' => ScanLog::where('scanner_id', $scanner->id)
+                ->whereDate('created_at', today())
+                ->where('status', 'success')
+                ->count(),
+            'invalid_scans' => ScanLog::where('scanner_id', $scanner->id)
+                ->whereDate('created_at', today())
+                ->whereIn('status', ['invalid', 'duplicate'])
+                ->count(),
+        ];
+
+        // Get active events with their attendees
+        $active_events = Event::where('status', 'active')
+            ->where('start_date', '>=', now())
+            ->with(['attendees' => function($query) {
+                $query->with(['ticket' => function($q) {
+                    $q->select('id', 'attendee_id', 'status');
+                }])
+                ->select('id', 'name', 'email', 'event_id', 'token');
+            }])
+            ->get()
+            ->map(function($event) {
+                return [
+                    'id' => $event->id,
+                    'name' => $event->name,
+                    'start_date' => $event->start_date,
+                    'venue' => $event->venue,
+                    'attendees' => $event->attendees->map(function($attendee) {
+                        return [
+                            'id' => $attendee->id,
+                            'name' => $attendee->name,
+                            'email' => $attendee->email,
+                            'token' => $attendee->token,
+                            'status' => $attendee->ticket->status ?? 'pending',
+                            'check_in_time' => $attendee->ticket->checked_in_at ?? null
+                        ];
+                    })
+                ];
+            });
+
+        // Get recent scans
+        $recent_scans = ScanLog::with(['ticket.attendee', 'ticket.event'])
+            ->where('scanner_id', $scanner->id)
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function($scan) {
+                return [
+                    'time' => $scan->created_at->diffForHumans(),
+                    'attendee' => $scan->ticket->attendee->name ?? 'Invalid Ticket',
+                    'event' => $scan->ticket->event->name ?? 'N/A',
+                    'status' => $scan->status,
+                    'status_class' => $scan->status === 'success' ? 'success' : 
+                                    ($scan->status === 'duplicate' ? 'warning' : 'danger')
+                ];
+            });
+
+        return view('dashboard.scanner', compact('stats', 'recent_scans', 'active_events'));
     }
 } 
