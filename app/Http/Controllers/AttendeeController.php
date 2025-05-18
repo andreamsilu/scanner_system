@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use League\Csv\Reader;
 use Illuminate\Support\Facades\Validator;
+use App\Models\ScanLog;
+use Illuminate\Support\Facades\Storage;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class AttendeeController extends Controller
 {
@@ -59,15 +62,55 @@ class AttendeeController extends Controller
                 throw new \Exception('An attendee with this email already exists for this event.');
             }
 
-            // Create attendee
-            $attendee = $event->attendees()->create($validated);
+            // Generate unique token
+            do {
+                $token = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 7));
+            } while (Attendee::where('token', $token)->exists());
 
-            // Create ticket for attendee
-            $ticket = $attendee->ticket()->create([
+            // Generate QR code
+            $qrCode = QrCode::format('png')
+                ->size(300)
+                ->errorCorrection('H')
+                ->generate($token);
+
+            // Store QR code image
+            $qrPath = 'qr-codes/' . $token . '.png';
+            Storage::disk('public')->put($qrPath, $qrCode);
+
+            // Create attendee with token and QR code
+            $attendeeData = [
+                'name' => $validated['name'],
+                'email' => $validated['email'],
+                'token' => $token,
+                'qr_code' => $qrPath
+            ];
+
+            // Add optional fields only if they are present
+            if (isset($validated['phone'])) {
+                $attendeeData['phone'] = $validated['phone'];
+            }
+            if (isset($validated['position'])) {
+                $attendeeData['position'] = $validated['position'];
+            }
+
+            // Create attendee
+            $attendee = $event->attendees()->create($attendeeData);
+
+            // Generate ticket number
+            $ticketNumber = 'TICKET-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+
+            // Create ticket for attendee with all required fields
+            $ticketData = [
                 'event_id' => $event->id,
                 'type' => 'regular',
-                'status' => 'active'
-            ]);
+                'status' => 'active',
+                'token' => $token, // Ensure token is set
+                'ticket_number' => $ticketNumber,
+                'attendee_id' => $attendee->id
+            ];
+
+            // Create the ticket
+            $ticket = \App\Models\Ticket::create($ticketData);
 
             DB::commit();
 
@@ -120,15 +163,44 @@ class AttendeeController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|email|max:255',
             'phone' => 'nullable|string|max:20',
-            'registration_status' => 'required|in:registered,checked_in,cancelled',
-            'notes' => 'nullable|string',
+            'position' => 'nullable|string|max:255'
         ]);
 
-        $attendee->update($validated);
+        try {
+            DB::beginTransaction();
 
-        return redirect()
-            ->route('events.attendees', $event)
-            ->with('success', 'Attendee updated successfully.');
+            // Check if email is being changed and if it's unique for this event
+            if ($validated['email'] !== $attendee->email) {
+                $exists = $event->attendees()
+                    ->where('email', $validated['email'])
+                    ->where('id', '!=', $attendee->id)
+                    ->exists();
+
+                if ($exists) {
+                    throw new \Exception('An attendee with this email already exists for this event.');
+                }
+            }
+
+            $attendee->update($validated);
+
+            DB::commit();
+
+            return redirect()
+                ->route('events.attendees', $event)
+                ->with('success', 'Attendee updated successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Attendee update failed', [
+                'error' => $e->getMessage(),
+                'attendee_id' => $attendee->id,
+                'event_id' => $event->id,
+                'data' => $validated
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
     }
 
     /**
@@ -280,5 +352,143 @@ class AttendeeController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Check in an attendee.
+     */
+    public function checkIn(Event $event, Attendee $attendee): RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            if (!$attendee->ticket) {
+                throw new \Exception('Attendee does not have a ticket.');
+            }
+
+            if ($attendee->ticket->status === 'used') {
+                throw new \Exception('Attendee has already been checked in.');
+            }
+
+            // Create scan log
+            $scan = \App\Models\Scan::create([
+                'ticket_id' => $attendee->ticket->id,
+                'event_id' => $event->id,
+                'scanner_id' => auth()->id(),
+                'scanned_at' => now(),
+                'status' => 'success'
+            ]);
+
+            // Update ticket status
+            $attendee->ticket->update([
+                'status' => 'used',
+                'last_scanned_at' => now()
+            ]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('events.attendees.show', ['event' => $event, 'attendee' => $attendee])
+                ->with('success', 'Attendee checked in successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Attendee check-in failed', [
+                'error' => $e->getMessage(),
+                'attendee_id' => $attendee->id,
+                'event_id' => $event->id
+            ]);
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Validate an attendee by their token
+     */
+    public function validateToken(string $token)
+    {
+        $attendee = Attendee::where('token', $token)
+            ->with(['event', 'ticket'])
+            ->firstOrFail();
+
+        // Check if the attendee has a valid ticket
+        if (!$attendee->hasValidTicket()) {
+            return response()->json([
+                'status' => 'invalid',
+                'message' => 'Invalid or expired ticket',
+                'attendee' => $attendee->only(['name', 'email'])
+            ], 400);
+        }
+
+        // Check if the ticket has already been used
+        if ($attendee->ticket->status === 'used') {
+            return response()->json([
+                'status' => 'used',
+                'message' => 'Ticket has already been used',
+                'attendee' => $attendee->only(['name', 'email']),
+                'used_at' => $attendee->ticket->used_at
+            ], 400);
+        }
+
+        // Mark ticket as used
+        DB::transaction(function () use ($attendee) {
+            $attendee->ticket->update([
+                'status' => 'used',
+                'used_at' => now()
+            ]);
+
+            // Log the scan
+            ScanLog::create([
+                'scanner_id' => auth()->id(),
+                'ticket_id' => $attendee->ticket->id,
+                'scanned_at' => now(),
+                'status' => 'success'
+            ]);
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Ticket validated successfully',
+            'attendee' => $attendee->only(['name', 'email', 'position']),
+            'event' => $attendee->event->only(['name', 'venue', 'start_date'])
+        ]);
+    }
+
+    /**
+     * Regenerate QR code for an attendee
+     */
+    public function regenerateQrCode(Event $event, Attendee $attendee): RedirectResponse
+    {
+        try {
+            // Delete old QR code if exists
+            if ($attendee->qr_code) {
+                Storage::disk('public')->delete($attendee->qr_code);
+            }
+
+            // Generate new QR code
+            $qrCode = QrCode::format('png')
+                ->size(300)
+                ->errorCorrection('H')
+                ->generate($attendee->token);
+
+            // Store QR code image
+            $path = 'qr-codes/' . $attendee->token . '.png';
+            Storage::disk('public')->put($path, $qrCode);
+
+            // Update attendee record
+            $attendee->update(['qr_code' => $path]);
+
+            return redirect()
+                ->route('events.attendees.show', ['event' => $event, 'attendee' => $attendee])
+                ->with('success', 'QR code regenerated successfully.');
+        } catch (\Exception $e) {
+            Log::error('QR code regeneration failed', [
+                'error' => $e->getMessage(),
+                'attendee_id' => $attendee->id,
+                'event_id' => $event->id
+            ]);
+
+            return back()->with('error', 'Failed to regenerate QR code. Please try again.');
+        }
     }
 } 

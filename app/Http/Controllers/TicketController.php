@@ -52,31 +52,48 @@ class TicketController extends Controller
     /**
      * Display the specified ticket.
      */
-    public function show(Ticket $ticket)
+    public function show(Event $event, $token)
     {
-        $ticket->load(['event', 'attendee', 'scans']);
-        return view('tickets.show', compact('ticket'));
+        $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
+            $query->where('token', $token);
+        })
+        ->where('event_id', $event->id)
+        ->with(['attendee', 'scanLogs' => function($query) {
+            $query->with('scanner')->latest();
+        }])
+        ->firstOrFail();
+
+        return view('tickets.show', compact('event', 'ticket'));
     }
 
     /**
      * Show the form for printing a ticket.
      */
-    public function print(Ticket $ticket)
+    public function print(Event $event, $token)
     {
-        $ticket->load(['event', 'attendee']);
-        return view('tickets.print', compact('ticket'));
+        $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
+            $query->where('token', $token);
+        })->where('event_id', $event->id)->firstOrFail();
+
+        return view('tickets.print', compact('event', 'ticket'));
     }
 
     /**
      * Deactivate a specific ticket.
      */
-    public function deactivate(Ticket $ticket)
+    public function deactivate(Event $event, $token)
     {
-        $ticket->deactivate();
-        
-        return redirect()
-            ->back()
-            ->with('success', 'Ticket deactivated successfully.');
+        $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
+            $query->where('token', $token);
+        })->where('event_id', $event->id)->firstOrFail();
+
+        $ticket->update([
+            'status' => 'cancelled',
+            'cancelled_at' => now()
+        ]);
+
+        return redirect()->route('events.tickets.index', $event)
+            ->with('success', 'Ticket has been deactivated successfully.');
     }
 
     /**

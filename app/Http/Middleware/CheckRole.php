@@ -4,7 +4,6 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 class CheckRole
@@ -16,29 +15,26 @@ class CheckRole
      */
     public function handle(Request $request, Closure $next, ...$roles): Response
     {
-        if (!Auth::check()) {
+        if (!$request->user()) {
             return redirect()->route('login');
         }
 
-        $user = Auth::user();
-        $hasRole = false;
-
-        // Split roles if they are comma-separated
-        $roleList = collect($roles)->flatMap(function ($role) {
-            return explode(',', $role);
-        })->map(function ($role) {
-            return trim($role);
-        });
-
-        foreach ($roleList as $role) {
-            if ($user->hasRole($role)) {
-                $hasRole = true;
-                break;
+        $userRoles = $request->user()->roles->pluck('slug')->toArray();
+        
+        // Check if user has any of the required roles
+        if (!array_intersect($roles, $userRoles)) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'Unauthorized. Insufficient permissions.'], 403);
             }
-        }
-
-        if (!$hasRole) {
-            abort(403, 'Unauthorized action.');
+            
+            // Redirect based on user's highest role
+            if (in_array('admin', $userRoles)) {
+                return redirect()->route('dashboard')->with('error', 'You do not have permission to access this resource.');
+            } elseif (in_array('scanner', $userRoles)) {
+                return redirect()->route('scanner.dashboard')->with('error', 'You do not have permission to access this resource.');
+            }
+            
+            return redirect()->route('dashboard')->with('error', 'You do not have permission to access this resource.');
         }
 
         return $next($request);

@@ -33,30 +33,36 @@
                                     <th>Email</th>
                                     <th>Phone</th>
                                     <th>Status</th>
-                            <th>Ticket</th>
-                            <th>Registered At</th>
+                                    <th>Ticket Status</th>
+                                    <th>Registered At</th>
                                     <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($attendees as $attendee)
                                     <tr>
-                                <td>{{ $attendee->name }}</td>
+                                        <td>{{ $attendee->name }}</td>
                                         <td>{{ $attendee->email }}</td>
-                                <td>{{ $attendee->phone ?? 'N/A' }}</td>
+                                        <td>{{ $attendee->phone ?? 'N/A' }}</td>
                                         <td>
-                                    <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'info') }}">
-                                        {{ ucfirst($attendee->registration_status) }}
+                                            <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'info') }}">
+                                                {{ ucfirst($attendee->registration_status ?? 'registered') }}
                                             </span>
                                         </td>
-                                <td>
-                                    @if($attendee->ticket)
-                                        <span class="badge bg-primary">{{ $attendee->ticket->ticket_id }}</span>
-                                    @else
-                                        <span class="badge bg-secondary">No Ticket</span>
-                                    @endif
-                                </td>
-                                <td>{{ $attendee->registered_at ? $attendee->registered_at->format('M j, Y g:i A') : 'N/A' }}</td>
+                                        <td>
+                                            @if($attendee->ticket)
+                                                <span class="badge bg-{{ $attendee->ticket->status === 'used' ? 'success' : ($attendee->ticket->status === 'active' ? 'primary' : 'warning') }}">
+                                                    {{ ucfirst($attendee->ticket->status) }}
+                                                </span>
+                                            @else
+                                                <span class="badge bg-secondary">No Ticket</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span title="{{ $attendee->created_at ? $attendee->created_at->format('F j, Y') : 'N/A' }}">
+                                                {{ $attendee->created_at ? $attendee->created_at->format('M d, Y') : 'N/A' }}
+                                            </span>
+                                        </td>
                                         <td>
                                             <div class="btn-group">
                                         <a href="{{ route('events.attendees.show', [$event, $attendee]) }}" 

@@ -90,7 +90,13 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">Your Assigned Events</h5>
+                    <h5 class="card-title mb-0">
+                        @if(auth()->user()->hasRole('admin'))
+                            Available Events
+                        @else
+                            Your Assigned Events
+                        @endif
+                    </h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
@@ -119,11 +125,23 @@
                             </div>
                         @empty
                             <div class="col-12">
-                                <div class="text-center py-5">
+                                <div class="text-center py-4">
                                     <div class="text-muted">
                                         <i class="fas fa-calendar-times fa-3x mb-3"></i>
-                                        <h5>No Assigned Events</h5>
-                                        <p class="mb-0">You have not been assigned to any events yet.</p>
+                                        <h5>
+                                            @if(auth()->user()->hasRole('admin'))
+                                                No Active Events
+                                            @else
+                                                No Assigned Events
+                                            @endif
+                                        </h5>
+                                        <p class="mb-0">
+                                            @if(auth()->user()->hasRole('admin'))
+                                                There are no active events available at the moment.
+                                            @else
+                                                You have not been assigned to any events yet. Please contact your administrator.
+                                            @endif
+                                        </p>
                                     </div>
                                 </div>
                             </div>

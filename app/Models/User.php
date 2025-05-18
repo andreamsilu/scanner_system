@@ -11,6 +11,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -75,8 +76,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function roles(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, 'role_user')
-            ->withTimestamps();
+        return $this->belongsToMany(Role::class);
     }
 
     /**
@@ -84,7 +84,40 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function hasRole(string $role): bool
     {
-        return $this->roles()->where('name', $role)->exists();
+        return $this->roles()->where('slug', $role)->exists();
+    }
+
+    /**
+     * Check if the user has any of the given roles.
+     */
+    public function hasAnyRole(array $roles): bool
+    {
+        return $this->roles()->whereIn('slug', $roles)->exists();
+    }
+
+    /**
+     * Check if the user has all of the given roles.
+     */
+    public function hasAllRoles(array $roles): bool
+    {
+        return $this->roles()->whereIn('slug', $roles)->count() === count($roles);
+    }
+
+    /**
+     * Get the events that the user is assigned to scan.
+     */
+    public function assignedEvents(): BelongsToMany
+    {
+        return $this->belongsToMany(Event::class, 'event_scanner', 'scanner_id', 'event_id')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the scan logs created by this user.
+     */
+    public function scanLogs(): HasMany
+    {
+        return $this->hasMany(ScanLog::class, 'scanner_id');
     }
 
     /**
@@ -96,7 +129,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Determine if the user is a scanner.
+     * Check if the user is a scanner.
      */
     public function isScanner(): bool
     {
@@ -109,14 +142,6 @@ class User extends Authenticatable implements MustVerifyEmail
     public function scans()
     {
         return $this->hasMany(Scan::class, 'scanner_id');
-    }
-
-    /**
-     * Get the scan logs performed by this user.
-     */
-    public function scanLogs()
-    {
-        return $this->hasMany(ScanLog::class, 'scanner_id');
     }
 
     /**
@@ -161,5 +186,13 @@ class User extends Authenticatable implements MustVerifyEmail
             ->pluck('id')
             ->toArray();
         $this->roles()->sync($roleIds);
+    }
+
+    /**
+     * Scope a query to only include active users.
+     */
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
     }
 }

@@ -17,21 +17,21 @@ class ScannerController extends Controller
     public function dashboard(): View
     {
         $user = auth()->user();
-        $scanner = $user->scanner;
+        
+        // Get assigned events directly from the user's events relationship
+        $assigned_events = $user->events()
+            ->where('status', 'active')
+            ->where(function($query) {
+                $query->where('start_date', '>=', now())
+                    ->orWhere('end_date', '>=', now());
+            })
+            ->get();
         
         $today_scans = ScanLog::whereDate('created_at', today())
             ->where('scanner_id', $user->id)
             ->count();
         
         $total_scans = ScanLog::where('scanner_id', $user->id)->count();
-        
-        $assigned_events = $scanner ? $scanner->events()
-            ->where('status', 'active')
-            ->where(function($query) {
-                $query->where('start_date', '>=', now())
-                    ->orWhere('end_date', '>=', now());
-            })
-            ->get() : collect();
         
         $recent_scans = ScanLog::with(['attendee', 'event'])
             ->where('scanner_id', $user->id)
@@ -52,8 +52,22 @@ class ScannerController extends Controller
         ));
     }
 
-    public function selectEvent(Event $event): View
+    /**
+     * Select an event for scanning.
+     *
+     * @param Event $event
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function selectEvent(Event $event): \Illuminate\View\View|\Illuminate\Http\RedirectResponse
     {
+        $user = auth()->user();
+        
+        // Check if user is authorized to scan this event
+        if (!$user->hasRole('admin') && !$user->events()->where('events.id', $event->id)->exists()) {
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'You are not authorized to scan this event.');
+        }
+
         // Store selected event in session
         session(['selected_event_id' => $event->id]);
         
@@ -212,14 +226,26 @@ class ScannerController extends Controller
     {
         $user = auth()->user();
         
-        $events = $user->events()
-            ->where('status', 'active')
-            ->where(function($query) {
-                $query->where('start_date', '>=', now())
-                    ->orWhere('end_date', '>=', now());
-            })
-            ->orderBy('start_date')
-            ->paginate(10);
+        if ($user->hasRole('admin')) {
+            // Admins can see all active events
+            $events = Event::where('status', 'active')
+                ->where(function($query) {
+                    $query->where('start_date', '>=', now())
+                        ->orWhere('end_date', '>=', now());
+                })
+                ->orderBy('start_date')
+                ->paginate(10);
+        } else {
+            // Scanners only see their assigned events
+            $events = $user->events()
+                ->where('status', 'active')
+                ->where(function($query) {
+                    $query->where('start_date', '>=', now())
+                        ->orWhere('end_date', '>=', now());
+                })
+                ->orderBy('start_date')
+                ->paginate(10);
+        }
 
         return view('scanner.events.index', compact('events'));
     }

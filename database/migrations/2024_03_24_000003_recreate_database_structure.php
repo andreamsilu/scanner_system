@@ -129,6 +129,8 @@ return new class extends Migration
             $table->string('email');
             $table->string('phone')->nullable();
             $table->string('position')->nullable();
+            $table->string('token', 7)->unique();
+            $table->string('qr_code')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
@@ -144,8 +146,6 @@ return new class extends Migration
             $table->foreignId('event_id')->constrained()->onDelete('cascade');
             $table->foreignId('attendee_id')->constrained()->onDelete('cascade');
             $table->string('ticket_number')->unique();
-            $table->string('token', 6)->unique();
-            $table->string('qr_code')->unique();
             $table->enum('type', ['regular', 'vip', 'single', 'double'])->default('regular');
             $table->enum('status', ['active', 'used', 'cancelled'])->default('active');
             $table->timestamp('used_at')->nullable();

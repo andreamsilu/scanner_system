@@ -100,8 +100,11 @@ class EventController extends Controller
     public function attendees(Event $event): View
     {
         $attendees = $event->attendees()
-            ->with('ticket')
-            ->latest()
+            ->with(['ticket' => function($query) {
+                $query->select('id', 'attendee_id', 'event_id', 'ticket_number', 'status', 'created_at');
+            }])
+            ->select('attendees.*')
+            ->latest('attendees.created_at')
             ->paginate(20);
 
         return view('events.attendees', compact('event', 'attendees'));
@@ -110,7 +113,9 @@ class EventController extends Controller
     public function tickets(Event $event): View
     {
         $tickets = $event->tickets()
-            ->with('attendee')
+            ->with(['attendee', 'scanLogs' => function($query) {
+                $query->latest();
+            }])
             ->latest()
             ->paginate(20);
 

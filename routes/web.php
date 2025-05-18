@@ -13,6 +13,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
+use App\Http\Controllers\SettingController;
 
 // Authentication Routes
 /* Removed (or commented out) the fallback route (or any route named 'welcome') so that if a user (or a seeder) tries to redirect to route('welcome') (or GET /) then a 404 (or a fallback) is returned (and no "Route [welcome] not defined" error is thrown). */
@@ -42,6 +43,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:admin,scanner'])->prefix('scanner')->name('scanner.')->group(function () {
         Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
         Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
+        Route::get('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('select-event');
         Route::get('/events/{event}/scan', [ScanController::class, 'index'])->name('scan.index');
         Route::post('/scan/validate', [ScanController::class, 'scan'])->name('scan.validate');
         Route::get('/scan/{event}/{scan}', [ScanController::class, 'show'])->name('scan.show');
@@ -66,6 +68,7 @@ Route::middleware('auth')->group(function () {
                 
                 // Event tickets management
                 Route::get('/{event}/tickets', [EventController::class, 'tickets'])->name('tickets');
+                Route::get('/{event}/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
                 Route::post('/{event}/tickets/generate', [TicketController::class, 'generate'])->name('tickets.generate');
                 Route::patch('/{event}/tickets/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('tickets.deactivate');
                 Route::get('/{event}/tickets/{ticket}/print', [TicketController::class, 'print'])->name('tickets.print');
@@ -84,6 +87,8 @@ Route::middleware('auth')->group(function () {
                 Route::get('/{event}/attendees/{attendee}/edit', [AttendeeController::class, 'edit'])->name('attendees.edit');
                 Route::put('/{event}/attendees/{attendee}', [AttendeeController::class, 'update'])->name('attendees.update');
                 Route::delete('/{event}/attendees/{attendee}', [AttendeeController::class, 'destroy'])->name('attendees.destroy');
+                Route::post('/{event}/attendees/{attendee}/check-in', [AttendeeController::class, 'checkIn'])->name('attendees.check-in');
+                Route::post('/{event}/attendees/{attendee}/regenerate-qr', [AttendeeController::class, 'regenerateQrCode'])->name('attendees.regenerate-qr');
                 Route::get('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUploadForm'])->name('attendees.bulk-upload');
                 Route::post('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUpload'])->name('attendees.bulk-upload.store');
             });
@@ -130,5 +135,14 @@ Route::middleware('auth')->group(function () {
             $request->user()->sendEmailVerificationNotification();
             return back()->with('status', 'verification-link-sent');
         })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
+        // Settings Routes
+        Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
+        Route::post('/settings/clear-cache', [SettingController::class, 'clearCache'])->name('settings.clear-cache');
+        Route::post('/settings/clear-logs', [SettingController::class, 'clearLogs'])->name('settings.clear-logs');
     });
+
+    // Attendee validation route
+    Route::get('/attendees/validate/{token}', [App\Http\Controllers\AttendeeController::class, 'validateToken'])
+        ->name('attendees.validate');
 });

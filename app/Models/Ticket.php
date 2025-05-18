@@ -16,10 +16,9 @@ class Ticket extends Model
         'event_id',
         'attendee_id',
         'ticket_number',
-        'token',
-        'qr_code',
         'type',
         'status',
+        'token',
         'used_at',
         'cancelled_at'
     ];
@@ -30,6 +29,14 @@ class Ticket extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime'
     ];
+
+    /**
+     * Get the ticket ID (attendee's token)
+     */
+    public function getTicketIdAttribute()
+    {
+        return $this->attendee ? $this->attendee->token : null;
+    }
 
     /**
      * Get the event that the ticket belongs to.
@@ -110,18 +117,6 @@ class Ticket extends Model
     }
 
     /**
-     * Generate a unique 6-digit token.
-     */
-    public static function generateUniqueToken(): string
-    {
-        do {
-            $token = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        } while (self::where('token', $token)->exists());
-
-        return $token;
-    }
-
-    /**
      * Generate a unique ticket number.
      */
     public static function generateTicketNumber(): string
@@ -138,9 +133,12 @@ class Ticket extends Model
      */
     public function generateQrCode(): string
     {
+        if (!$this->attendee) {
+            throw new \Exception('Cannot generate QR code for unassigned ticket');
+        }
+
         $data = [
-            'ticket_id' => $this->id,
-            'token' => $this->token,
+            'token' => $this->attendee->token,
             'event_id' => $this->event_id
         ];
 
@@ -155,14 +153,8 @@ class Ticket extends Model
         parent::boot();
 
         static::creating(function ($ticket) {
-            if (empty($ticket->token)) {
-                $ticket->token = self::generateUniqueToken();
-            }
             if (empty($ticket->ticket_number)) {
                 $ticket->ticket_number = self::generateTicketNumber();
-            }
-            if (empty($ticket->qr_code)) {
-                $ticket->qr_code = $ticket->generateQrCode();
             }
         });
     }

@@ -123,39 +123,18 @@
                                     <input type="checkbox" class="form-check-input ticket-checkbox" 
                                            value="{{ $ticket->id }}">
                                 </td>
-                                <td>{{ $ticket->ticket_id }}</td>
-                                <td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $ticket->ticket_number }}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     @if($ticket->attendee)
-                                        <a href="{{ route('attendees.show', $ticket->attendee) }}">
-                                            {{ $ticket->attendee->name }}
-                                        </a>
+                                        {{ $ticket->attendee->token }}
                                     @else
                                         <span class="text-muted">Unassigned</span>
                                     @endif
                                 </td>
-                                <td>
-                                    @php
-                                        $ticketType = $ticket->type;
-                                        $badgeClass = match($ticketType) {
-                                            'vip' => 'bg-warning',
-                                            'regular' => 'bg-secondary',
-                                            'single' => 'bg-primary',
-                                            'double' => 'bg-success',
-                                            default => 'bg-secondary'
-                                        };
-                                    @endphp
-                                    <span class="badge {{ $badgeClass }}">
-                                        @php
-                                            $typeIcon = match($ticketType) {
-                                                'vip' => 'bi-star',
-                                                'regular' => 'bi-ticket',
-                                                'single' => 'bi-person',
-                                                'double' => 'bi-people',
-                                                default => 'bi-ticket'
-                                            };
-                                        @endphp
-                                        <i class="bi {{ $typeIcon }}"></i> {{ ucfirst($ticketType) }}
-                                    </span>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {{ $ticket->type }}
                                 </td>
                                 <td>
                                     @if($ticket->is_active)
@@ -165,9 +144,9 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($ticket->last_scan)
-                                        <span title="{{ $ticket->last_scan->created_at->format('F j, Y g:i A') }}">
-                                            <i class="bi bi-clock-history"></i> {{ $ticket->last_scan->created_at->diffForHumans() }}
+                                    @if($ticket->scanLogs->isNotEmpty())
+                                        <span title="{{ $ticket->scanLogs->first()->created_at->format('F j, Y g:i A') }}">
+                                            <i class="bi bi-clock-history"></i> {{ $ticket->scanLogs->first()->created_at->diffForHumans() }}
                                         </span>
                                     @else
                                         <span class="text-muted"><i class="bi bi-clock"></i> Never</span>
@@ -176,30 +155,36 @@
                                 <td><i class="bi bi-calendar-plus"></i> {{ $ticket->created_at->format('M j, Y g:i A') }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="{{ route('tickets.show', $ticket) }}" 
-                                           class="btn btn-sm btn-info" 
-                                           title="View Details">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="{{ route('tickets.print', $ticket) }}" 
-                                           class="btn btn-sm btn-primary" 
-                                           title="Print Ticket"
-                                           target="_blank">
-                                            <i class="bi bi-printer"></i>
-                                        </a>
-                                        @if($ticket->is_active)
-                                            <form action="{{ route('tickets.deactivate', $ticket) }}" 
-                                                  method="POST" 
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" 
-                                                        class="btn btn-sm btn-warning" 
-                                                        title="Deactivate">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
-                                            </form>
+                                        @if($ticket->attendee && $ticket->attendee->token)
+                                            <a href="{{ route('events.tickets.show', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) }}" 
+                                               class="text-indigo-600 hover:text-indigo-900"
+                                               title="View Details">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <a href="{{ route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) }}" 
+                                               class="text-green-600 hover:text-green-900"
+                                               title="Print Ticket"
+                                               target="_blank">
+                                                <i class="bi bi-printer"></i>
+                                            </a>
+                                            @if($ticket->is_active)
+                                                <form action="{{ route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) }}" 
+                                                      method="POST" 
+                                                      class="inline-block"
+                                                      onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
+                                                    @csrf
+                                                    @method('PATCH')
+                                                    <button type="submit" 
+                                                            class="btn btn-sm btn-warning" 
+                                                            title="Deactivate">
+                                                        <i class="bi bi-x-circle"></i>
+                                                    </button>
+                                                </form>
+                                            @endif
+                                        @else
+                                            <span class="text-muted" title="No attendee assigned">
+                                                <i class="bi bi-person-x"></i>
+                                            </span>
                                         @endif
                                     </div>
                                 </td>

@@ -7,13 +7,13 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h1 class="h3 mb-0">Ticket Details</h1>
-            <p class="text-muted">Ticket ID: {{ $ticket->ticket_id }}</p>
+            <p class="text-muted">Ticket ID: {{ $ticket->attendee->token }}</p>
         </div>
         <div>
-            <a href="{{ route('tickets.index') }}" class="btn btn-secondary">
+            <a href="{{ route('events.tickets', $event) }}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Tickets
             </a>
-            <a href="{{ route('tickets.print', $ticket) }}" 
+            <a href="{{ route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) }}" 
                class="btn btn-primary" 
                target="_blank">
                 <i class="bi bi-printer"></i> Print Ticket
@@ -90,7 +90,7 @@
                         <dl class="row mb-0">
                             <dt class="col-sm-4">Name</dt>
                             <dd class="col-sm-8">
-                                <a href="{{ route('attendees.show', $ticket->attendee) }}">
+                                <a href="{{ route('events.attendees.show', ['event' => $event->id, 'attendee' => $ticket->attendee->id]) }}">
                                     {{ $ticket->attendee->name }}
                                 </a>
                             </dd>
@@ -137,7 +137,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($ticket->scans as $scan)
+                        @forelse($ticket->scanLogs as $scan)
                             <tr>
                                 <td>{{ $scan->scanner->name }}</td>
                                 <td>

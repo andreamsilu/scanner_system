@@ -103,6 +103,12 @@
                             <i class="bi bi-people me-2"></i> User Management
                         </a>
                     </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('settings.*') ? 'active bg-light' : '' }}" 
+                           href="{{ route('settings.index') }}">
+                            <i class="bi bi-gear me-2"></i> Settings
+                        </a>
+                    </li>
                 @endif
 
                 {{-- Scanner Menu: show for both scanner and admin --}}

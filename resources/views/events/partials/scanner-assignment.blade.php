@@ -34,7 +34,16 @@
                                         <span class="badge bg-danger">Inactive</span>
                                     @endif
                                 </td>
-                                <td>{{ $scanner->pivot->assigned_at->format('M d, Y h:i A') }}</td>
+                                <td>
+                                    @if($scanner->pivot->assigned_at)
+                                        {{ is_string($scanner->pivot->assigned_at) 
+                                            ? \Carbon\Carbon::parse($scanner->pivot->assigned_at)->format('M d, Y h:i A')
+                                            : $scanner->pivot->assigned_at->format('M d, Y h:i A') 
+                                        }}
+                                    @else
+                                        N/A
+                                    @endif
+                                </td>
                                 <td>
                                     <div class="btn-group">
                                         <button type="button" 
