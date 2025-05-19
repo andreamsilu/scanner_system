@@ -1,9 +1,13 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="h3 mb-0">Validate Attendee Token</h2>
+            <a href="{{ route('scanner.dashboard') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </x-slot>
 
-@section('title', 'Validate Attendee - Scanner Dashboard')
-
-@section('content')
-<div class="container-fluid py-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card border-0 shadow-sm">
@@ -117,28 +121,27 @@
             </div>
         </div>
     </div>
-</div>
 
-@push('scripts')
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const tokenInput = document.getElementById('token');
-    if (tokenInput) {
-        // Auto-uppercase input
-        tokenInput.addEventListener('input', function(e) {
-            this.value = this.value.toUpperCase();
-        });
+    @push('scripts')
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const tokenInput = document.getElementById('token');
+        if (tokenInput) {
+            // Auto-uppercase input
+            tokenInput.addEventListener('input', function(e) {
+                this.value = this.value.toUpperCase();
+            });
 
-        // Focus input on page load
-        tokenInput.focus();
-
-        // Clear input after successful submission
-        @if(session('success'))
-            tokenInput.value = '';
+            // Focus input on page load
             tokenInput.focus();
-        @endif
-    }
-});
-</script>
-@endpush
-@endsection 
+
+            // Clear input after successful submission
+            @if(session('success'))
+                tokenInput.value = '';
+                tokenInput.focus();
+            @endif
+        }
+    });
+    </script>
+    @endpush
+</x-app-layout> 

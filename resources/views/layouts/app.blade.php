@@ -5,142 +5,149 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
 
-        <title>{{ config('app.name', 'Event Ticketing System') }}</title>
+        <title>{{ config('app.name', 'Laravel') }}</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
-        <!-- Bootstrap CSS -->
+        <!-- Bootstrap 5 CSS -->
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         
         <!-- Bootstrap Icons -->
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
-        <!-- DataTables CSS -->
-        <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
-
         <!-- Custom CSS -->
         <style>
             body {
                 font-family: 'Figtree', sans-serif;
-                background-color: #f8fafc;
+                background-color: #f8f9fa;
+                overflow-x: hidden;
             }
 
+            /* Content wrapper styles */
             .content-wrapper {
+                margin-left: 250px;
+                padding-top: 56px;
                 min-height: calc(100vh - 56px);
-                padding: 2rem;
+                transition: margin-left 0.3s ease-in-out;
+                background-color: #f8f9fa;
             }
 
-            @media (min-width: 992px) {
+            @media (max-width: 991.98px) {
                 .content-wrapper {
-                    margin-left: 250px;
+                    margin-left: 0;
                 }
             }
 
-            /* Ticket-specific styles */
-            .ticket-card {
-                border: 2px solid #e2e8f0;
-                border-radius: 0.5rem;
-                transition: all 0.3s ease;
+            /* Page header styles */
+            .page-header {
+                background-color: #fff;
+                box-shadow: 0 1px 3px rgba(0,0,0,.05);
+                margin-bottom: 1.5rem;
+                padding: 1rem 0;
             }
 
-            .ticket-card:hover {
+            /* Card styles */
+            .card {
+                border: none;
+                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+                transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            }
+
+            .card:hover {
                 transform: translateY(-2px);
-                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
             }
 
-            .ticket-status {
-                padding: 0.25rem 0.75rem;
-                border-radius: 9999px;
-                font-size: 0.875rem;
-                font-weight: 500;
-            }
-
-            .ticket-status.valid {
-                background-color: #dcfce7;
-                color: #166534;
-            }
-
-            .ticket-status.used {
-                background-color: #fee2e2;
-                color: #991b1b;
-            }
-
-            .ticket-status.expired {
-                background-color: #f3f4f6;
-                color: #4b5563;
-            }
-
-            .scan-area {
-                border: 2px dashed #e2e8f0;
+            /* Alert styles */
+            .alert {
+                border: none;
                 border-radius: 0.5rem;
-                padding: 2rem;
-                text-align: center;
-                background-color: white;
-                transition: all 0.3s ease;
+                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
             }
 
-            .scan-area:hover {
-                border-color: #2563eb;
-                background-color: #eff6ff;
+            /* Table styles */
+            .table {
+                background-color: #fff;
+                border-radius: 0.5rem;
+                overflow: hidden;
             }
 
-            .qr-code-container {
-                background: white;
-                padding: 15px;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-                display: inline-block;
-            }
-            
-            .qr-code-container img {
-                display: block;
-                margin: 0 auto;
-            }
-            
-            .token-info {
-                font-family: monospace;
-                border: 1px solid #e9ecef;
-            }
-            
-            .token-info code {
-                color: #0d6efd;
+            .table thead th {
+                background-color: #f8f9fa;
+                border-bottom: 2px solid #dee2e6;
                 font-weight: 600;
             }
-            
-            .btn-group .btn {
-                margin-left: 5px;
+
+            /* Button styles */
+            .btn {
+                border-radius: 0.375rem;
+                padding: 0.5rem 1rem;
+                font-weight: 500;
+                transition: all 0.2s ease-in-out;
             }
-            
-            .btn-group .btn:first-child {
-                margin-left: 0;
+
+            .btn-primary {
+                background-color: #0d6efd;
+                border-color: #0d6efd;
+            }
+
+            .btn-primary:hover {
+                background-color: #0b5ed7;
+                border-color: #0a58ca;
+                transform: translateY(-1px);
+            }
+
+            /* Form control styles */
+            .form-control {
+                border-radius: 0.375rem;
+                border: 1px solid #dee2e6;
+                padding: 0.5rem 0.75rem;
+                transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            }
+
+            .form-control:focus {
+                border-color: #86b7fe;
+                box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
             }
         </style>
 
-        @stack('styles')
+        <!-- Scripts -->
+        @vite(['resources/js/app.js'])
     </head>
     <body>
-        <div class="min-h-screen bg-gray-100">
+        <div class="min-vh-100">
             @include('layouts.navigation')
+
+            <!-- Page Heading -->
+            @if (isset($header))
+                <header class="page-header">
+                    <div class="container-fluid">
+                        {{ $header }}
+                    </div>
+                </header>
+            @endif
 
             <!-- Page Content -->
             <main class="content-wrapper">
-                @if (session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
+                <div class="container-fluid py-4">
+                    @if (session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
 
-                @if (session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
+                    @if (session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
 
-                @yield('content')
+                    {{ $slot }}
+                </div>
             </main>
         </div>
 

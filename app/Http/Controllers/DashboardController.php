@@ -121,43 +121,15 @@ class DashboardController extends Controller
                 }])
                 ->select('id', 'name', 'email', 'event_id', 'token');
             }])
-            ->get()
-            ->map(function($event) {
-                return [
-                    'id' => $event->id,
-                    'name' => $event->name,
-                    'start_date' => $event->start_date,
-                    'venue' => $event->venue,
-                    'attendees' => $event->attendees->map(function($attendee) {
-                        return [
-                            'id' => $attendee->id,
-                            'name' => $attendee->name,
-                            'email' => $attendee->email,
-                            'token' => $attendee->token,
-                            'status' => $attendee->ticket->status ?? 'pending',
-                            'check_in_time' => $attendee->ticket->checked_in_at ?? null
-                        ];
-                    })
-                ];
-            });
+            ->get();
 
-        // Get recent scans
-        $recent_scans = ScanLog::with(['ticket.attendee', 'ticket.event'])
+        // Get recent activity
+        $recent_activity = ScanLog::with(['ticket.attendee', 'ticket.event'])
             ->where('scanner_id', $scanner->id)
             ->latest()
             ->take(10)
-            ->get()
-            ->map(function($scan) {
-                return [
-                    'time' => $scan->created_at->diffForHumans(),
-                    'attendee' => $scan->ticket->attendee->name ?? 'Invalid Ticket',
-                    'event' => $scan->ticket->event->name ?? 'N/A',
-                    'status' => $scan->status,
-                    'status_class' => $scan->status === 'success' ? 'success' : 
-                                    ($scan->status === 'duplicate' ? 'warning' : 'danger')
-                ];
-            });
+            ->get();
 
-        return view('dashboard.scanner', compact('stats', 'recent_scans', 'active_events'));
+        return view('dashboard.scanner', compact('stats', 'active_events', 'recent_activity'));
     }
 } 
