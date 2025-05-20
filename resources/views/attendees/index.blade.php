@@ -7,6 +7,8 @@
                     <nav aria-label="breadcrumb" class="mt-2">
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('events.index') }}">Events</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('events.show', $event) }}">{{ $event->name }}</a></li>
                             <li class="breadcrumb-item active">Attendees</li>
                         </ol>
                     </nav>
@@ -32,11 +34,11 @@
                     <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Name or email...">
                 </div>
                 <div class="col-md-3">
-                    <label for="event" class="form-label">Event</label>
-                    <select class="form-select" id="event" name="event">
+                    <label for="event_filter" class="form-label">Event</label>
+                    <select class="form-select" id="event_filter" name="event_filter">
                         <option value="">All Events</option>
                         @foreach($events as $eventOption)
-                            <option value="{{ $eventOption->id }}" {{ request('event') == $eventOption->id ? 'selected' : '' }}>
+                            <option value="{{ $eventOption->id }}" {{ request('event_filter') == $eventOption->id ? 'selected' : '' }}>
                                 {{ $eventOption->name }}
                             </option>
                         @endforeach
