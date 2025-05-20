@@ -55,6 +55,11 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
         
+        // Attendees Management
+        Route::resource('attendees', AttendeeController::class);
+        Route::get('attendees/bulk-upload', [AttendeeController::class, 'bulkUploadForm'])->name('attendees.bulk-upload');
+        Route::post('attendees/bulk-upload', [AttendeeController::class, 'bulkUpload'])->name('attendees.bulk-upload.store');
+        
         // Events Management
         Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::prefix('events')->name('events.')->group(function () {
