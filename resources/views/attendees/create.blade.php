@@ -1,10 +1,21 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">Add New Attendee</h2>
-            <a href="{{ route('attendees.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Back to Attendees
-            </a>
+        <div class="py-3">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h2 class="mb-0">Add New Attendee</h2>
+                    <nav aria-label="breadcrumb" class="mt-2">
+                        <ol class="breadcrumb mb-0">
+                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('attendees.index') }}">Attendees</a></li>
+                            <li class="breadcrumb-item active">Add New</li>
+                        </ol>
+                    </nav>
+                </div>
+                <a href="{{ route('attendees.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Attendees
+                </a>
+            </div>
         </div>
     </x-slot>
 
