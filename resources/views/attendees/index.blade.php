@@ -12,10 +12,10 @@
                     </nav>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('attendees.create') }}" class="btn btn-primary">
+                    <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
                         <i class="bi bi-person-plus me-2"></i>Add Attendee
                     </a>
-                    <a href="{{ route('attendees.bulk-upload') }}" class="btn btn-success">
+                    <a href="{{ route('events.attendees.bulk-upload', $event) }}" class="btn btn-success">
                         <i class="bi bi-upload me-2"></i>Bulk Upload
                     </a>
                 </div>
@@ -26,7 +26,7 @@
     <!-- Filters -->
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <form action="{{ route('attendees.index') }}" method="GET" class="row g-3">
+            <form action="{{ route('events.attendees.index', $event) }}" method="GET" class="row g-3">
                 <div class="col-md-3">
                     <label for="search" class="form-label">Search</label>
                     <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Name or email...">
@@ -55,7 +55,7 @@
                     <button type="submit" class="btn btn-primary me-2">
                         <i class="bi bi-search me-2"></i>Filter
                     </button>
-                    <a href="{{ route('attendees.index') }}" class="btn btn-outline-secondary">
+                    <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-secondary">
                         <i class="bi bi-x-circle me-2"></i>Clear
                     </a>
                 </div>
@@ -92,18 +92,18 @@
                                 <td>{{ $attendee->registered_at ? $attendee->registered_at->format('M j, Y g:i A') : 'N/A' }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="{{ route('attendees.show', $attendee) }}" 
+                                        <a href="{{ route('events.attendees.show', ['event' => $event, 'attendee' => $attendee]) }}" 
                                            class="btn btn-sm btn-outline-primary"
                                            title="View Details">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="{{ route('attendees.edit', $attendee) }}" 
+                                        <a href="{{ route('events.attendees.edit', ['event' => $event, 'attendee' => $attendee]) }}" 
                                            class="btn btn-sm btn-outline-secondary"
                                            title="Edit Attendee">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         @if($attendee->registration_status !== 'cancelled')
-                                            <form action="{{ route('attendees.cancel', $attendee) }}" 
+                                            <form action="{{ route('events.attendees.cancel', ['event' => $event, 'attendee' => $attendee]) }}" 
                                                   method="POST" 
                                                   class="d-inline"
                                                   onsubmit="return confirm('Are you sure you want to cancel this registration?')">
