@@ -130,10 +130,12 @@
             </div>
 
             <!-- Scan History -->
-            @if($attendee->ticket && $attendee->ticket->scan_logs->isNotEmpty())
+            @if($attendee->ticket && $attendee->ticket->scan_logs && $attendee->ticket->scan_logs->count() > 0)
                 <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Scan History</h5>
+                    </div>
                     <div class="card-body">
-                        <h5 class="card-title mb-4">Scan History</h5>
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
@@ -148,17 +150,29 @@
                                     @foreach($attendee->ticket->scan_logs as $log)
                                         <tr>
                                             <td>{{ $log->created_at->format('M d, Y H:i:s') }}</td>
-                                            <td>{{ $log->scanner->name }}</td>
+                                            <td>{{ $log->scanner->name ?? 'System' }}</td>
                                             <td>
-                                                <span class="badge bg-{{ $log->status === 'success' ? 'success' : 'danger' }}">
+                                                <span class="badge bg-{{ $log->status === 'valid' ? 'success' : 'danger' }}">
                                                     {{ ucfirst($log->status) }}
                                                 </span>
                                             </td>
-                                            <td>{{ $log->notes ?? 'N/A' }}</td>
+                                            <td>{{ $log->notes ?? '-' }}</td>
                                         </tr>
                                     @endforeach
                                 </tbody>
                             </table>
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Scan History</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-center text-muted py-4">
+                            <i class="bi bi-clock-history fs-1 d-block mb-2"></i>
+                            No scan history available for this attendee.
                         </div>
                     </div>
                 </div>
