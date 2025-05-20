@@ -55,11 +55,6 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
         
-        // Attendees Management
-        Route::resource('attendees', AttendeeController::class);
-        Route::get('attendees/bulk-upload', [AttendeeController::class, 'bulkUploadForm'])->name('attendees.bulk-upload');
-        Route::post('attendees/bulk-upload', [AttendeeController::class, 'bulkUpload'])->name('attendees.bulk-upload.store');
-        
         // Events Management
         Route::middleware(['auth', 'role:admin'])->group(function () {
             Route::prefix('events')->name('events.')->group(function () {
@@ -84,8 +79,18 @@ Route::middleware('auth')->group(function () {
                 Route::delete('/{event}/scanners/{scanner}', [EventController::class, 'removeScanner'])->name('scanners.remove');
                 Route::put('/{event}/scanners/{scanner}', [EventController::class, 'updateScanner'])->name('scanners.update');
 
-                // Event attendees view (read-only)
-                Route::get('/{event}/attendees', [EventController::class, 'attendees'])->name('attendees');
+                // Event attendees management
+                Route::get('/{event}/attendees', [AttendeeController::class, 'index'])->name('attendees.index');
+                Route::get('/{event}/attendees/create', [AttendeeController::class, 'create'])->name('attendees.create');
+                Route::post('/{event}/attendees', [AttendeeController::class, 'store'])->name('attendees.store');
+                Route::get('/{event}/attendees/{attendee}', [AttendeeController::class, 'show'])->name('attendees.show');
+                Route::get('/{event}/attendees/{attendee}/edit', [AttendeeController::class, 'edit'])->name('attendees.edit');
+                Route::put('/{event}/attendees/{attendee}', [AttendeeController::class, 'update'])->name('attendees.update');
+                Route::delete('/{event}/attendees/{attendee}', [AttendeeController::class, 'destroy'])->name('attendees.destroy');
+                Route::post('/{event}/attendees/{attendee}/check-in', [AttendeeController::class, 'checkIn'])->name('attendees.check-in');
+                Route::post('/{event}/attendees/{attendee}/regenerate-qr', [AttendeeController::class, 'regenerateQrCode'])->name('attendees.regenerate-qr');
+                Route::get('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUploadForm'])->name('attendees.bulk-upload');
+                Route::post('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUpload'])->name('attendees.bulk-upload.store');
             });
             
             // Scanners Management
