@@ -508,4 +508,46 @@ class AttendeeController extends Controller
             return back()->with('error', 'Failed to regenerate QR code. Please try again.');
         }
     }
+
+    /**
+     * Cancel an attendee's registration.
+     */
+    public function cancel(Event $event, Attendee $attendee): RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            if ($attendee->registration_status === 'cancelled') {
+                throw new \Exception('This registration is already cancelled.');
+            }
+
+            $attendee->update([
+                'registration_status' => 'cancelled',
+                'cancelled_at' => now()
+            ]);
+
+            // If there's an associated ticket, update its status
+            if ($attendee->ticket) {
+                $attendee->ticket->update([
+                    'status' => 'cancelled',
+                    'cancelled_at' => now()
+                ]);
+            }
+
+            DB::commit();
+
+            return redirect()
+                ->route('events.attendees.index', $event)
+                ->with('success', 'Registration cancelled successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Attendee cancellation failed', [
+                'error' => $e->getMessage(),
+                'attendee_id' => $attendee->id,
+                'event_id' => $event->id
+            ]);
+
+            return back()->with('error', $e->getMessage());
+        }
+    }
 } 
