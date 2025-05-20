@@ -64,7 +64,9 @@ class AttendeeController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255',
             'phone' => 'nullable|string|max:20',
-            'position' => 'nullable|string|max:255'
+            'position' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+            'requires_ticket' => 'boolean'
         ]);
 
         try {
@@ -79,18 +81,18 @@ class AttendeeController extends Controller
                 throw new \Exception('An attendee with this email already exists for this event.');
             }
 
-            // Generate unique token
+            // Generate unique token (7 characters, uppercase alphanumeric)
             do {
                 $token = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 7));
             } while (Attendee::where('token', $token)->exists());
 
-            // Generate QR code
+            // Generate QR code with token
             $qrCode = QrCode::format('png')
                 ->size(300)
                 ->errorCorrection('H')
                 ->generate($token);
 
-            // Store QR code image
+            // Store QR code image in public storage
             $qrPath = 'qr-codes/' . $token . '.png';
             Storage::disk('public')->put($qrPath, $qrCode);
 
@@ -99,41 +101,57 @@ class AttendeeController extends Controller
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'token' => $token,
-                'qr_code' => $qrPath
+                'qr_code' => $qrPath,
+                'registration_status' => 'registered',
+                'registered_at' => now()
             ];
 
-            // Add optional fields only if they are present
+            // Add optional fields if they are present
             if (isset($validated['phone'])) {
                 $attendeeData['phone'] = $validated['phone'];
             }
             if (isset($validated['position'])) {
                 $attendeeData['position'] = $validated['position'];
             }
+            if (isset($validated['notes'])) {
+                $attendeeData['notes'] = $validated['notes'];
+            }
 
             // Create attendee
             $attendee = $event->attendees()->create($attendeeData);
 
-            // Generate ticket number
-            $ticketNumber = 'TICKET-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+            // Generate ticket if required
+            if ($request->boolean('requires_ticket')) {
+                // Generate ticket number
+                $ticketNumber = 'TICKET-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
 
-            // Create ticket for attendee with all required fields
-            $ticketData = [
-                'event_id' => $event->id,
-                'type' => 'regular',
-                'status' => 'active',
-                'token' => $token, // Ensure token is set
-                'ticket_number' => $ticketNumber,
-                'attendee_id' => $attendee->id
-            ];
+                // Create ticket for attendee
+                $ticketData = [
+                    'event_id' => $event->id,
+                    'type' => 'regular',
+                    'status' => 'active',
+                    'token' => $token,
+                    'ticket_number' => $ticketNumber,
+                    'attendee_id' => $attendee->id,
+                    'created_at' => now()
+                ];
 
-            // Create the ticket
-            $ticket = \App\Models\Ticket::create($ticketData);
+                // Create the ticket
+                $ticket = \App\Models\Ticket::create($ticketData);
+
+                // Log the ticket creation
+                Log::info('Ticket created for attendee', [
+                    'attendee_id' => $attendee->id,
+                    'ticket_id' => $ticket->id,
+                    'event_id' => $event->id
+                ]);
+            }
 
             DB::commit();
 
             return redirect()
-                ->route('events.attendees.index', $event)
-                ->with('success', 'Attendee added successfully.');
+                ->route('events.attendees.show', ['event' => $event, 'attendee' => $attendee])
+                ->with('success', 'Attendee added successfully with ' . ($request->boolean('requires_ticket') ? 'ticket' : 'registration') . '.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Attendee registration failed', [
