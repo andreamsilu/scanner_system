@@ -23,11 +23,15 @@ class AttendeeController extends Controller
      */
     public function index(): View
     {
-        $attendees = Attendee::with('events')
+        $attendees = Attendee::with('event')
             ->latest()
             ->paginate(15);
 
-        return view('attendees.index', compact('attendees'));
+        $events = Event::select('id', 'name')
+            ->orderBy('name')
+            ->get();
+
+        return view('attendees.index', compact('attendees', 'events'));
     }
 
     /**
