@@ -21,9 +21,10 @@ class AttendeeController extends Controller
     /**
      * Display a listing of the attendees.
      */
-    public function index(): View
+    public function index(Event $event): View
     {
-        $attendees = Attendee::with('event')
+        $attendees = $event->attendees()
+            ->with('event')
             ->latest()
             ->paginate(15);
 
@@ -31,7 +32,7 @@ class AttendeeController extends Controller
             ->orderBy('name')
             ->get();
 
-        return view('attendees.index', compact('attendees', 'events'));
+        return view('attendees.index', compact('attendees', 'events', 'event'));
     }
 
     /**
