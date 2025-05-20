@@ -17,6 +17,9 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
 
+    <!-- DataTables CSS -->
+    <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
+
     <!-- Custom CSS -->
     <style>
         body {
@@ -113,8 +116,7 @@
         }
     </style>
 
-    <!-- Scripts -->
-    @vite(['resources/js/app.js'])
+    @stack('styles')
 </head>
 <body>
     <div class="min-vh-100">
@@ -146,7 +148,7 @@
                     </div>
                 @endif
 
-                {{ $slot ?? '' }}
+                {{ $slot }}
             </div>
         </main>
     </div>
