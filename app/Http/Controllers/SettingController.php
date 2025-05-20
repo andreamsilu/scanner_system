@@ -21,8 +21,17 @@ class SettingController extends Controller
         $logs = $this->getSystemLogs();
         $databaseInfo = $this->getDatabaseInfo();
         $cacheInfo = $this->getCacheInfo();
+        $stats = $this->getStats();
+        $activityLogs = $this->getActivityLogs();
 
-        return view('settings.index', compact('systemInfo', 'logs', 'databaseInfo', 'cacheInfo'));
+        return view('settings.index', compact(
+            'systemInfo', 
+            'logs', 
+            'databaseInfo', 
+            'cacheInfo', 
+            'stats',
+            'activityLogs'
+        ));
     }
 
     /**
@@ -179,5 +188,67 @@ class SettingController extends Controller
         $bytes /= pow(1024, $pow);
         
         return round($bytes, $precision) . ' ' . $units[$pow];
+    }
+
+    /**
+     * Get system statistics.
+     */
+    private function getStats(): array
+    {
+        try {
+            $lastScan = DB::table('scan_logs')
+                ->latest()
+                ->first();
+
+            return [
+                'total_users' => DB::table('users')->count(),
+                'active_events' => DB::table('events')
+                    ->where('status', 'active')
+                    ->where('end_date', '>=', now())
+                    ->count(),
+                'total_attendees' => DB::table('attendees')->count(),
+                'total_scans' => DB::table('scan_logs')->count(),
+                'last_scan' => $lastScan ? $lastScan->created_at : null,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Failed to get stats: ' . $e->getMessage());
+            return [
+                'total_users' => 0,
+                'active_events' => 0,
+                'total_attendees' => 0,
+                'total_scans' => 0,
+                'last_scan' => null,
+            ];
+        }
+    }
+
+    /**
+     * Get activity logs.
+     */
+    private function getActivityLogs()
+    {
+        try {
+            return DB::table('scan_logs')
+                ->select([
+                    'scan_logs.created_at',
+                    'scan_logs.status as description',
+                    'users.name as causer_name'
+                ])
+                ->leftJoin('users', 'scan_logs.scanner_id', '=', 'users.id')
+                ->orderBy('scan_logs.created_at', 'desc')
+                ->take(100)
+                ->get()
+                ->map(function ($log) {
+                    return (object) [
+                        'causer' => (object) ['name' => $log->causer_name ?? 'System'],
+                        'description' => ucfirst($log->status),
+                        'created_at' => \Carbon\Carbon::parse($log->created_at),
+                        'id' => uniqid()
+                    ];
+                });
+        } catch (\Exception $e) {
+            Log::error('Failed to get activity logs: ' . $e->getMessage());
+            return collect([]);
+        }
     }
 } 
