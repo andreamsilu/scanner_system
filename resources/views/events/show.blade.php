@@ -69,7 +69,7 @@
                         <h5 class="card-title mb-0">
                             <i class="bi bi-people me-2"></i>Attendees
                         </h5>
-                        <a href="{{ route('events.attendees', $event) }}" class="btn btn-outline-primary btn-sm">
+                        <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-primary btn-sm">
                             <i class="bi bi-people me-2"></i>Manage Attendees
                         </a>
                     </div>

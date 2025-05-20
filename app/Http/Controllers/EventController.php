@@ -97,17 +97,10 @@ class EventController extends Controller
             ->with('success', 'Event deleted successfully.');
     }
 
-    public function attendees(Event $event): View
+    public function attendees(Event $event)
     {
-        $attendees = $event->attendees()
-            ->with(['ticket' => function($query) {
-                $query->select('id', 'attendee_id', 'event_id', 'ticket_number', 'status', 'created_at');
-            }])
-            ->select('attendees.*')
-            ->latest('attendees.created_at')
-            ->paginate(20);
-
-        return view('events.attendees', compact('event', 'attendees'));
+        $attendees = $event->attendees()->with(['ticket'])->paginate(10);
+        return view('events.attendees.index', compact('event', 'attendees'));
     }
 
     public function tickets(Event $event): View
