@@ -225,11 +225,18 @@
                                target="_blank">
                                 <i class="bi bi-printer me-2"></i>Print Ticket
                             </a>
-                            <a href="{{ route('events.tickets.regenerate', [$event, $attendee->ticket]) }}" 
-                               class="btn btn-outline-warning"
-                               onclick="return confirm('Are you sure you want to regenerate this ticket? The old ticket will be invalidated.')">
-                                <i class="bi bi-arrow-repeat me-2"></i>Regenerate Ticket
-                            </a>
+                            @if($attendee->ticket->status === 'valid')
+                                <form action="{{ route('events.tickets.invalidate', [$event, $attendee->ticket]) }}" 
+                                      method="POST" 
+                                      class="d-inline"
+                                      onsubmit="return confirm('Are you sure you want to invalidate this ticket? This action cannot be undone.')">
+                                    @csrf
+                                    @method('PATCH')
+                                    <button type="submit" class="btn btn-outline-warning w-100">
+                                        <i class="bi bi-x-circle me-2"></i>Invalidate Ticket
+                                    </button>
+                                </form>
+                            @endif
                         @endif
                         <button type="button" 
                                 class="btn btn-outline-danger"
