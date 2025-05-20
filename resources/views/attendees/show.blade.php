@@ -95,20 +95,28 @@
                                 <span class="badge bg-light text-dark border">Token: {{ $attendee->token }}</span>
                             </div>
                             <div class="mt-3">
-                                <a href="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
-                                   class="btn btn-sm btn-outline-primary"
-                                   onclick="return confirm('Are you sure you want to regenerate the QR code? This will invalidate the current one.')">
-                                    <i class="bi bi-arrow-repeat me-2"></i>Regenerate QR Code
-                                </a>
+                                <form action="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
+                                      method="POST" 
+                                      class="d-inline"
+                                      onsubmit="return confirm('Are you sure you want to regenerate the QR code? This will invalidate the current one.')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                                        <i class="bi bi-arrow-repeat me-2"></i>Regenerate QR Code
+                                    </button>
+                                </form>
                             </div>
                         @else
                             <div class="text-muted">
                                 <i class="bi bi-qr-code fs-1 d-block mb-3"></i>
                                 <p class="mb-3">No QR code generated for this attendee.</p>
-                                <a href="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
-                                   class="btn btn-primary">
-                                    <i class="bi bi-qr-code me-2"></i>Generate QR Code
-                                </a>
+                                <form action="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
+                                      method="POST" 
+                                      class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-qr-code me-2"></i>Generate QR Code
+                                    </button>
+                                </form>
                             </div>
                         @endif
                     </div>
