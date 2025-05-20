@@ -23,14 +23,26 @@ class AttendeeController extends Controller
      */
     public function index(Event $event): View
     {
-        $attendees = $event->attendees()
-            ->with('event')
-            ->latest()
-            ->paginate(15);
+        $query = $event->attendees()->with('event');
 
-        $events = Event::select('id', 'name')
-            ->orderBy('name')
-            ->get();
+        // Apply filters
+        if (request('search')) {
+            $query->where(function($q) {
+                $q->where('name', 'like', '%' . request('search') . '%')
+                  ->orWhere('email', 'like', '%' . request('search') . '%');
+            });
+        }
+
+        if (request('event_filter')) {
+            $query->where('event_id', request('event_filter'));
+        }
+
+        if (request('status')) {
+            $query->where('registration_status', request('status'));
+        }
+
+        $attendees = $query->latest()->paginate(15);
+        $events = Event::select('id', 'name')->orderBy('name')->get();
 
         return view('attendees.index', compact('attendees', 'events', 'event'));
     }
