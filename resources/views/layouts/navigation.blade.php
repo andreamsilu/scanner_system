@@ -101,9 +101,10 @@
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('attendees.*') ? 'active' : '' }}" 
-                               href="{{ route('attendees.index') }}">
+                            <a class="nav-link {{ request()->routeIs('events.*.attendees.*') ? 'active' : '' }}" 
+                               href="{{ route('events.index') }}">
                                 <i class="bi bi-people me-2"></i> Attendees
+                                <small class="text-muted d-block">(Manage via Events)</small>
                             </a>
                         </li>
                         <li class="nav-item mb-2">
