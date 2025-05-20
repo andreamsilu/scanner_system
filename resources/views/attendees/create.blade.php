@@ -7,12 +7,14 @@
                     <nav aria-label="breadcrumb" class="mt-2">
                         <ol class="breadcrumb mb-0">
                             <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('attendees.index') }}">Attendees</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('events.index') }}">Events</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('events.show', $event) }}">{{ $event->name }}</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('events.attendees.index', $event) }}">Attendees</a></li>
                             <li class="breadcrumb-item active">Add New</li>
                         </ol>
                     </nav>
                 </div>
-                <a href="{{ route('attendees.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-2"></i>Back to Attendees
                 </a>
             </div>
