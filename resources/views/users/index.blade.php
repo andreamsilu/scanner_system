@@ -1,57 +1,54 @@
-@extends('layouts.app')
-
-@section('content')
-<div class="container-fluid py-4">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center">
-                <h2 class="display-6 fw-bold text-dark">User Management</h2>
-                <div>
-                    <a href="{{ route('users.create') }}" class="btn btn-primary me-2">
-                        <i class="bi bi-person-plus me-2"></i>Add User
-                    </a>
-                    <a href="{{ route('users.export') }}" class="btn btn-success">
-                        <i class="bi bi-file-excel me-2"></i>Export Users
-                    </a>
-                </div>
+<x-app-layout>
+    <x-slot name="header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">User Management</h2>
+            <div>
+                <a href="{{ route('users.create') }}" class="btn btn-primary me-2">
+                    <i class="bi bi-person-plus me-2"></i>Add User
+                </a>
+                <a href="{{ route('users.export') }}" class="btn btn-success">
+                    <i class="bi bi-file-excel me-2"></i>Export Users
+                </a>
             </div>
         </div>
-    </div>
+    </x-slot>
 
     <!-- Filters -->
     <div class="card border-0 shadow-sm mb-4">
         <div class="card-body">
             <form action="{{ route('users.index') }}" method="GET" class="row g-3">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" class="form-control" name="search" 
-                               value="{{ request('search') }}" 
-                               placeholder="Search users...">
-                    </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Name or email...">
                 </div>
                 <div class="col-md-3">
-                    <select class="form-select" name="role">
+                    <label for="role" class="form-label">Role</label>
+                    <select class="form-select" id="role" name="role">
                         <option value="">All Roles</option>
                         @foreach($roles as $role)
-                            <option value="{{ $role->id }}" 
-                                    {{ request('role') == $role->id ? 'selected' : '' }}>
+                            <option value="{{ $role->id }}" {{ request('role') == $role->id ? 'selected' : '' }}>
                                 {{ $role->name }}
                             </option>
                         @endforeach
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <select class="form-select" name="status">
+                    <label for="status" class="form-label">Status</label>
+                    <select class="form-select" id="status" name="status">
                         <option value="">All Status</option>
                         <option value="1" {{ request('status') === '1' ? 'selected' : '' }}>Active</option>
                         <option value="0" {{ request('status') === '0' ? 'selected' : '' }}>Inactive</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <button type="submit" class="btn btn-primary w-100">Filter</button>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="d-flex gap-2 w-100">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-search me-2"></i>Filter
+                        </button>
+                        <a href="{{ route('users.index') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    </div>
                 </div>
             </form>
         </div>
@@ -61,12 +58,12 @@
     <div class="card border-0 shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover" id="usersTable">
+                <table class="table table-hover datatable">
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
-                            <th>Roles</th>
+                            <th>Role</th>
                             <th>Status</th>
                             <th>Created</th>
                             <th class="text-end">Actions</th>
@@ -75,38 +72,17 @@
                     <tbody>
                         @foreach($users as $user)
                             <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar avatar-sm me-2">
-                                            <span class="avatar-initial rounded-circle bg-primary">
-                                                {{ substr($user->name, 0, 1) }}
-                                            </span>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-0">{{ $user->name }}</h6>
-                                        </div>
-                                    </div>
-                                </td>
+                                <td>{{ $user->name }}</td>
                                 <td>{{ $user->email }}</td>
                                 <td>
                                     @foreach($user->roles as $role)
-                                        <span class="badge bg-info me-1">{{ ucfirst($role->name) }}</span>
+                                        <span class="badge bg-primary me-1">{{ $role->name }}</span>
                                     @endforeach
                                 </td>
                                 <td>
-                                    @if($user->id !== auth()->id())
-                                        <form action="{{ route('users.toggle-status', $user->id) }}" 
-                                              method="POST" class="d-inline">
-                                            @csrf
-                                            @method('PATCH')
-                                            <button type="submit" 
-                                                    class="btn btn-sm {{ $user->is_active ? 'btn-success' : 'btn-danger' }}">
-                                                {{ $user->is_active ? 'Active' : 'Inactive' }}
-                                            </button>
-                                        </form>
-                                    @else
-                                        <span class="badge bg-success">Active</span>
-                                    @endif
+                                    <span class="badge bg-{{ $user->is_active ? 'success' : 'danger' }}">
+                                        {{ $user->is_active ? 'Active' : 'Inactive' }}
+                                    </span>
                                 </td>
                                 <td>{{ $user->created_at->format('M d, Y') }}</td>
                                 <td class="text-end">
@@ -140,78 +116,8 @@
             </div>
         </div>
     </div>
-</div>
 
-@push('styles')
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
-<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
-@endpush
-
-@push('scripts')
-<script src="https://code.jquery.com/jquery-3.7.0.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-<script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-
-<script>
-$(document).ready(function() {
-    $('#usersTable').DataTable({
-        responsive: true,
-        dom: 'Bfrtip',
-        buttons: [
-            {
-                extend: 'collection',
-                text: 'Export',
-                buttons: [
-                    {
-                        extend: 'excel',
-                        text: 'Excel',
-                        className: 'btn btn-success',
-                        exportOptions: {
-                            columns: [0, 1, 2, 3, 4]
-                        }
-                    },
-                    {
-                        extend: 'pdf',
-                        text: 'PDF',
-                        className: 'btn btn-danger',
-                        exportOptions: {
-                            columns: [0, 1, 2, 3, 4]
-                        }
-                    },
-                    {
-                        extend: 'print',
-                        text: 'Print',
-                        className: 'btn btn-info',
-                        exportOptions: {
-                            columns: [0, 1, 2, 3, 4]
-                        }
-                    }
-                ]
-            }
-        ],
-        order: [[4, 'desc']], // Sort by created date by default
-        columnDefs: [
-            { orderable: false, targets: [2, 5] }, // Disable sorting on roles and actions columns
-            { responsivePriority: 1, targets: [0, 5] }, // Name and actions are most important
-            { responsivePriority: 2, targets: [1, 3] }, // Email and status are second priority
-            { responsivePriority: 3, targets: [2, 4] }  // Roles and created date are least priority
-        ],
-        language: {
-            search: "",
-            searchPlaceholder: "Search users..."
-        }
-    });
-});
-</script>
-@endpush
-@endsection 
+    @push('styles')
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    @endpush
+</x-app-layout> 

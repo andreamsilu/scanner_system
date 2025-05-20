@@ -1,13 +1,16 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot name="header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">Import Users</h2>
+            <a href="{{ route('users.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Users
+            </a>
+        </div>
+    </x-slot>
 
-@section('content')
-<div class="container py-4">
     <div class="row justify-content-center">
         <div class="col-md-8">
             <div class="card">
-                <div class="card-header">
-                    <h4 class="mb-0">Import Users</h4>
-                </div>
                 <div class="card-body">
                     @if(session('success'))
                         <div class="alert alert-success">
@@ -39,27 +42,23 @@
                         </div>
                     </div>
 
-                    <form action="{{ route('users.import.store') }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('users.import') }}" method="POST" enctype="multipart/form-data">
                         @csrf
                         <div class="mb-3">
-                            <label for="csv_file" class="form-label">CSV File</label>
-                            <input type="file" class="form-control @error('csv_file') is-invalid @enderror" 
-                                   id="csv_file" name="csv_file" accept=".csv" required>
-                            @error('csv_file')
+                            <label for="file" class="form-label">CSV File</label>
+                            <input type="file" class="form-control @error('file') is-invalid @enderror" id="file" name="file" accept=".csv" required>
+                            @error('file')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
 
-                        <div class="d-flex justify-content-between">
-                            <a href="{{ route('users.import.template') }}" class="btn btn-secondary">
-                                <i class="bi bi-download"></i> Download Template
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-upload me-2"></i>Import Users
+                            </button>
+                            <a href="{{ route('users.template') }}" class="btn btn-outline-secondary">
+                                <i class="bi bi-download me-2"></i>Download Template
                             </a>
-                            <div>
-                                <a href="{{ route('users') }}" class="btn btn-outline-secondary me-2">Cancel</a>
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-upload"></i> Import Users
-                                </button>
-                            </div>
                         </div>
                     </form>
                 </div>
@@ -101,5 +100,4 @@
             </div>
         </div>
     </div>
-</div>
-@endsection 
+</x-app-layout> 
