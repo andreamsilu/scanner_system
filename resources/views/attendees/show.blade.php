@@ -97,9 +97,10 @@
                             <div class="mt-3">
                                 <form action="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
                                       method="POST" 
-                                      class="d-inline"
+                                      class="d-inline-block"
                                       onsubmit="return confirm('Are you sure you want to regenerate the QR code? This will invalidate the current one.')">
                                     @csrf
+                                    <input type="hidden" name="_method" value="POST">
                                     <button type="submit" class="btn btn-sm btn-outline-primary">
                                         <i class="bi bi-arrow-repeat me-2"></i>Regenerate QR Code
                                     </button>
@@ -111,8 +112,9 @@
                                 <p class="mb-3">No QR code generated for this attendee.</p>
                                 <form action="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
                                       method="POST" 
-                                      class="d-inline">
+                                      class="d-inline-block">
                                     @csrf
+                                    <input type="hidden" name="_method" value="POST">
                                     <button type="submit" class="btn btn-primary">
                                         <i class="bi bi-qr-code me-2"></i>Generate QR Code
                                     </button>
