@@ -1,9 +1,19 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">Attendee Details</h2>
+        <div class="d-flex justify-content-between align-items-center py-2">
             <div>
-                <a href="{{ route('events.attendees.edit', [$event, $attendee]) }}" class="btn btn-primary me-2">
+                <h2 class="mb-0">Attendee Details</h2>
+                <nav aria-label="breadcrumb" class="mt-1">
+                    <ol class="breadcrumb mb-0">
+                        <li class="breadcrumb-item"><a href="{{ route('events.index') }}">Events</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('events.show', $event) }}">{{ $event->name }}</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('events.attendees', $event) }}">Attendees</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Details</li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{{ route('events.attendees.edit', [$event, $attendee]) }}" class="btn btn-primary">
                     <i class="bi bi-pencil me-2"></i>Edit Attendee
                 </a>
                 <a href="{{ route('events.attendees', $event) }}" class="btn btn-outline-secondary">
