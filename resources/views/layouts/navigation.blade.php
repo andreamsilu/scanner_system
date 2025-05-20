@@ -55,11 +55,7 @@
                     </a>
                 </li>
 
-                <!-- Scanner Menu -->
                 @if(auth()->user()->isScanner() || auth()->user()->isAdmin())
-                    <li class="nav-header mb-2 mt-3">
-                        <small class="text-uppercase text-muted">Scanning</small>
-                    </li>
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active' : '' }}" 
                            href="{{ route('scanner.events.index') }}">
@@ -71,10 +67,6 @@
                            href="{{ route('scanner.validate') }}">
                             <i class="bi bi-key me-2"></i> Manual Validation
                         </a>
-                    </li>
-
-                    <li class="nav-header mb-2 mt-3">
-                        <small class="text-uppercase text-muted">History & Reports</small>
                     </li>
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active' : '' }}" 
@@ -89,11 +81,7 @@
                         </a>
                     </li>
 
-                    <!-- Admin Only Menu -->
                     @if(auth()->user()->isAdmin())
-                        <li class="nav-header mb-2 mt-3">
-                            <small class="text-uppercase text-muted">Administration</small>
-                        </li>
                         <li class="nav-item mb-2">
                             <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}" 
                                href="{{ route('events.index') }}">
@@ -128,10 +116,6 @@
                     @endif
                 @endif
 
-                <!-- Profile & Logout Section -->
-                <li class="nav-header mb-2 mt-3">
-                    <small class="text-uppercase text-muted">Account</small>
-                </li>
                 <li class="nav-item mb-2">
                     <a class="nav-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}" 
                        href="{{ route('profile.edit') }}">
