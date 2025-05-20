@@ -86,33 +86,58 @@
                     <!-- QR Code Section -->
                     <div class="text-center mt-4 pt-3 border-top">
                         @if($attendee->qr_code)
-                            <img src="{{ Storage::url($attendee->qr_code) }}" 
-                                 alt="Attendee QR Code" 
-                                 class="img-fluid rounded shadow-sm" 
-                                 style="max-width: 200px;">
-                            <p class="text-muted mt-2 mb-0 small">Registration QR Code</p>
-                            <div class="mt-2">
-                                <span class="badge bg-light text-dark border">Token: {{ $attendee->token }}</span>
-                            </div>
-                            <div class="mt-3">
+                            @if(Storage::disk('public')->exists($attendee->qr_code))
+                                <div class="qr-code-container">
+                                    <img src="{{ Storage::url($attendee->qr_code) }}" 
+                                         alt="QR Code for {{ $attendee->name }}" 
+                                         class="img-fluid rounded shadow-sm" 
+                                         style="max-width: 200px;">
+                                    <p class="text-muted mt-2 mb-0 small">Registration QR Code</p>
+                                    <div class="mt-2">
+                                        <span class="badge bg-light text-dark border">Token: {{ $attendee->token }}</span>
+                                    </div>
+                                    <div class="mt-3 d-flex justify-content-center gap-2">
+                                        <a href="{{ Storage::url($attendee->qr_code) }}" 
+                                           download="{{ strtolower(str_replace(' ', '-', $attendee->name)) }}-qrcode-{{ $attendee->token }}.png"
+                                           class="btn btn-sm btn-outline-secondary">
+                                            <i class="bi bi-download me-2"></i>Download QR Code
+                                        </a>
+                                        <form action="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
+                                              method="POST" 
+                                              class="d-inline-block"
+                                              onsubmit="return confirm('Are you sure you want to regenerate the QR code? This will invalidate the current one.')">
+                                            @csrf
+                                            <input type="hidden" name="_method" value="POST">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-arrow-repeat me-2"></i>Regenerate QR Code
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="alert alert-warning">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>
+                                    QR code file not found. Please regenerate the QR code.
+                                </div>
                                 <form action="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
                                       method="POST" 
-                                      class="d-inline"
-                                      onsubmit="return confirm('Are you sure you want to regenerate the QR code? This will invalidate the current one.')">
+                                      class="d-inline-block">
                                     @csrf
-                                    <button type="submit" class="btn btn-sm btn-outline-primary">
-                                        <i class="bi bi-arrow-repeat me-2"></i>Regenerate QR Code
+                                    <input type="hidden" name="_method" value="POST">
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-qr-code me-2"></i>Generate QR Code
                                     </button>
                                 </form>
-                            </div>
+                            @endif
                         @else
                             <div class="text-muted">
                                 <i class="bi bi-qr-code fs-1 d-block mb-3"></i>
                                 <p class="mb-3">No QR code generated for this attendee.</p>
                                 <form action="{{ route('events.attendees.regenerate-qr', ['event' => $event, 'attendee' => $attendee]) }}" 
                                       method="POST" 
-                                      class="d-inline">
+                                      class="d-inline-block">
                                     @csrf
+                                    <input type="hidden" name="_method" value="POST">
                                     <button type="submit" class="btn btn-primary">
                                         <i class="bi bi-qr-code me-2"></i>Generate QR Code
                                     </button>

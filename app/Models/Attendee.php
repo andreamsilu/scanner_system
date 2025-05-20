@@ -47,8 +47,13 @@ class Attendee extends Model
                 ->errorCorrection('H')
                 ->generate($checkInUrl);
 
-            // Store QR code image
-            $path = 'qr-codes/' . $attendee->token . '.png';
+            // Sanitize name for filename (remove special characters, replace spaces with hyphens)
+            $sanitizedName = preg_replace('/[^a-zA-Z0-9-]/', '-', strtolower($attendee->name));
+            $sanitizedName = preg_replace('/-+/', '-', $sanitizedName); // Replace multiple hyphens with single hyphen
+            $sanitizedName = trim($sanitizedName, '-'); // Remove leading/trailing hyphens
+
+            // Store QR code image with attendee name in filename
+            $path = 'qr-codes/' . $sanitizedName . '-' . $attendee->token . '.png';
             Storage::disk('public')->put($path, $qrCode);
 
             $attendee->qr_code = $path;
@@ -137,8 +142,13 @@ class Attendee extends Model
             ->errorCorrection('H')
             ->generate($checkInUrl);
 
-        // Store new QR code image
-        $path = 'qr-codes/' . $this->token . '.png';
+        // Sanitize name for filename
+        $sanitizedName = preg_replace('/[^a-zA-Z0-9-]/', '-', strtolower($this->name));
+        $sanitizedName = preg_replace('/-+/', '-', $sanitizedName);
+        $sanitizedName = trim($sanitizedName, '-');
+
+        // Store new QR code image with attendee name in filename
+        $path = 'qr-codes/' . $sanitizedName . '-' . $this->token . '.png';
         Storage::disk('public')->put($path, $qrCode);
 
         // Update attendee record
