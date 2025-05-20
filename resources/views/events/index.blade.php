@@ -66,7 +66,7 @@
                                            title="Edit Event">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <a href="{{ route('events.attendees', $event) }}" 
+                                        <a href="{{ route('events.attendees.index', $event) }}" 
                                            class="btn btn-sm btn-outline-success" 
                                            title="Manage Attendees">
                                             <i class="bi bi-people"></i>

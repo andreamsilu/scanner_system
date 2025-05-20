@@ -115,8 +115,8 @@ class AttendeeController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('events.attendees', $event)
-                ->with('success', 'Attendee registered successfully.');
+                ->route('events.attendees.index', $event)
+                ->with('success', 'Attendee added successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Attendee registration failed', [
@@ -186,7 +186,7 @@ class AttendeeController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('events.attendees', $event)
+                ->route('events.attendees.index', $event)
                 ->with('success', 'Attendee updated successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -221,8 +221,8 @@ class AttendeeController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('events.attendees', $event)
-                ->with('success', 'Attendee removed successfully.');
+                ->route('events.attendees.index', $event)
+                ->with('success', 'Attendee deleted successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Attendee deletion failed', [
@@ -312,7 +312,7 @@ class AttendeeController extends Controller
             }
 
             return redirect()
-                ->route('events.attendees', $event)
+                ->route('events.attendees.index', $event)
                 ->with('success', $message)
                 ->with('errors', $errors);
         } catch (\Exception $e) {
@@ -388,7 +388,7 @@ class AttendeeController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('events.attendees.show', ['event' => $event, 'attendee' => $attendee])
+                ->route('events.attendees.index', $event)
                 ->with('success', 'Attendee checked in successfully.');
         } catch (\Exception $e) {
             DB::rollBack();

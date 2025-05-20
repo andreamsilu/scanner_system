@@ -7,7 +7,7 @@
                     <ol class="breadcrumb mb-0">
                         <li class="breadcrumb-item"><a href="{{ route('events.index') }}">Events</a></li>
                         <li class="breadcrumb-item"><a href="{{ route('events.show', $event) }}">{{ $event->name }}</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('events.attendees', $event) }}">Attendees</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('events.attendees.index', $event) }}">Attendees</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Details</li>
                     </ol>
                 </nav>
@@ -16,7 +16,7 @@
                 <a href="{{ route('events.attendees.edit', [$event, $attendee]) }}" class="btn btn-primary">
                     <i class="bi bi-pencil me-2"></i>Edit Attendee
                 </a>
-                <a href="{{ route('events.attendees', $event) }}" class="btn btn-outline-secondary">
+                <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-2"></i>Back to Attendees
                 </a>
             </div>
