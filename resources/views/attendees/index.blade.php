@@ -35,9 +35,9 @@
                     <label for="event" class="form-label">Event</label>
                     <select class="form-select" id="event" name="event">
                         <option value="">All Events</option>
-                        @foreach($events as $event)
-                            <option value="{{ $event->id }}" {{ request('event') == $event->id ? 'selected' : '' }}>
-                                {{ $event->name }}
+                        @foreach($events as $eventOption)
+                            <option value="{{ $eventOption->id }}" {{ request('event') == $eventOption->id ? 'selected' : '' }}>
+                                {{ $eventOption->name }}
                             </option>
                         @endforeach
                     </select>
