@@ -1,15 +1,12 @@
-@extends('layouts.app')
-
-@section('title', 'Admin Dashboard - Event System')
-
-@section('content')
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="display-6 fw-bold text-dark">Admin Dashboard</h2>
-        <div class="text-muted">
-            Welcome, {{ Auth::user()->name }}
+<x-app-layout>
+    <x-slot name="header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="display-6 fw-bold text-dark mb-0">Admin Dashboard</h2>
+            <div class="text-muted">
+                Welcome, {{ Auth::user()->name }}
+            </div>
         </div>
-    </div>
+    </x-slot>
 
     <!-- Stats Cards -->
     <div class="row g-4 mb-4">
@@ -197,16 +194,15 @@
             </div>
         </div>
     </div>
-</div>
 
-@push('styles')
-<style>
-    .stat-card {
-        transition: transform 0.2s;
-    }
-    .stat-card:hover {
-        transform: translateY(-5px);
-    }
-</style>
-@endpush
-@endsection 
+    @push('styles')
+    <style>
+        .stat-card {
+            transition: transform 0.2s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+    @endpush
+</x-app-layout> 
