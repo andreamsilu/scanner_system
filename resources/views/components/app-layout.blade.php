@@ -31,8 +31,7 @@
         /* Content wrapper styles */
         .content-wrapper {
             margin-left: 250px;
-            padding-top: 56px;
-            min-height: calc(100vh - 56px);
+            min-height: 100vh;
             transition: margin-left 0.3s ease-in-out;
             background-color: #f8f9fa;
         }
@@ -48,7 +47,7 @@
             background-color: #fff;
             box-shadow: 0 1px 3px rgba(0,0,0,.05);
             margin-bottom: 1.5rem;
-            padding: 1rem 0;
+            padding: 1.5rem 0;
         }
 
         /* Card styles */

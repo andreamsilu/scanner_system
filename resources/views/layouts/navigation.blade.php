@@ -1,4 +1,5 @@
-<!-- Top Navigation Bar -->
+<!-- Top Navigation Bar - Commented out for now -->
+{{-- 
 <nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
     <div class="container-fluid">
         <!-- Logo -->
@@ -13,6 +14,7 @@
         </button>
     </div>
 </nav>
+--}}
 
 <!-- Sidebar -->
 <div class="sidebar-wrapper">
@@ -21,112 +23,163 @@
     
     <!-- Sidebar -->
     <div class="sidebar bg-white shadow-sm" id="sidebar">
-        <div class="p-3">
-            <!-- User Info -->
-            @auth
-                <div class="d-flex align-items-center mb-4 px-2">
-                    <div class="flex-shrink-0">
-                        <div class="avatar-circle bg-primary bg-opacity-10 text-primary">
-                            <i class="bi bi-person-circle fs-4"></i>
-                        </div>
-                    </div>
-                    <div class="flex-grow-1 ms-3">
-                        <h6 class="mb-0">{{ auth()->user()->name }}</h6>
-                        <small class="text-muted">{{ auth()->user()->roles->first()->name ?? 'User' }}</small>
+        <!-- Logo -->
+        <div class="px-3 py-4 border-bottom">
+            <a class="d-flex align-items-center text-decoration-none" href="{{ route('dashboard') }}">
+                <img src="{{ asset('images/logo.png') }}" alt="Logo" height="40">
+                <span class="ms-2 fw-bold d-none d-sm-inline">Event Tickets</span>
+            </a>
+        </div>
+        
+        <!-- User Info -->
+        @auth
+            <div class="d-flex align-items-center mb-4 px-3 py-3 border-bottom">
+                <div class="flex-shrink-0">
+                    <div class="avatar-circle bg-primary bg-opacity-10 text-primary">
+                        <i class="bi bi-person-circle fs-4"></i>
                     </div>
                 </div>
-            @endauth
+                <div class="flex-grow-1 ms-3">
+                    <h6 class="mb-0">{{ auth()->user()->name }}</h6>
+                    <small class="text-muted">{{ auth()->user()->roles->first()->name ?? 'User' }}</small>
+                </div>
+            </div>
 
             <!-- Navigation Menu -->
-            <ul class="nav flex-column">
-                @auth
-                    <!-- Dashboard -->
+            <ul class="nav flex-column px-2">
+                <!-- Dashboard -->
+                <li class="nav-item mb-2">
+                    <a class="nav-link {{ request()->routeIs('scanner.dashboard') ? 'active' : '' }}" 
+                       href="{{ route('scanner.dashboard') }}">
+                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                    </a>
+                </li>
+
+                <!-- Scanner Menu -->
+                @if(auth()->user()->isScanner() || auth()->user()->isAdmin())
+                    <li class="nav-header mb-2 mt-3">
+                        <small class="text-uppercase text-muted">Scanning</small>
+                    </li>
                     <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('scanner.dashboard') ? 'active' : '' }}" 
-                           href="{{ route('scanner.dashboard') }}">
-                            <i class="bi bi-speedometer2 me-2"></i> Dashboard
+                        <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active' : '' }}" 
+                           href="{{ route('scanner.events.index') }}">
+                            <i class="bi bi-upc-scan me-2"></i> Scan Tickets
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('scanner.validate') ? 'active' : '' }}" 
+                           href="{{ route('scanner.validate') }}">
+                            <i class="bi bi-key me-2"></i> Manual Validation
                         </a>
                     </li>
 
-                    <!-- Scanner Menu -->
-                    @if(auth()->user()->isScanner() || auth()->user()->isAdmin())
-                        <li class="nav-header mb-2 mt-3 px-2">
-                            <small class="text-uppercase text-muted">Scanning</small>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active' : '' }}" 
-                               href="{{ route('scanner.events.index') }}">
-                                <i class="bi bi-upc-scan me-2"></i> Scan Tickets
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.validate') ? 'active' : '' }}" 
-                               href="{{ route('scanner.validate') }}">
-                                <i class="bi bi-key me-2"></i> Manual Validation
-                            </a>
-                        </li>
+                    <li class="nav-header mb-2 mt-3">
+                        <small class="text-uppercase text-muted">History & Reports</small>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active' : '' }}" 
+                           href="{{ route('scanner.history') }}">
+                            <i class="bi bi-clock-history me-2"></i> Scan History
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('scanner.history.export') ? 'active' : '' }}" 
+                           href="{{ route('scanner.history.export') }}">
+                            <i class="bi bi-download me-2"></i> Export History
+                        </a>
+                    </li>
 
-                        <li class="nav-header mb-2 mt-3 px-2">
-                            <small class="text-uppercase text-muted">History & Reports</small>
+                    <!-- Admin Only Menu -->
+                    @if(auth()->user()->isAdmin())
+                        <li class="nav-header mb-2 mt-3">
+                            <small class="text-uppercase text-muted">Administration</small>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active' : '' }}" 
-                               href="{{ route('scanner.history') }}">
-                                <i class="bi bi-clock-history me-2"></i> Scan History
+                            <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}" 
+                               href="{{ route('events.index') }}">
+                                <i class="bi bi-calendar-event me-2"></i> Events
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.history.export') ? 'active' : '' }}" 
-                               href="{{ route('scanner.history.export') }}">
-                                <i class="bi bi-download me-2"></i> Export History
+                            <a class="nav-link {{ request()->routeIs('attendees.*') ? 'active' : '' }}" 
+                               href="{{ route('attendees.index') }}">
+                                <i class="bi bi-people me-2"></i> Attendees
                             </a>
                         </li>
-
-                        <!-- Admin Only Menu -->
-                        @if(auth()->user()->isAdmin())
-                            <li class="nav-header mb-2 mt-3 px-2">
-                                <small class="text-uppercase text-muted">Administration</small>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}" 
-                                   href="{{ route('events.index') }}">
-                                    <i class="bi bi-calendar-event me-2"></i> Events
-                                </a>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" 
-                                   href="{{ route('users.index') }}">
-                                    <i class="bi bi-people me-2"></i> Users
-                                </a>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" 
-                                   href="{{ route('reports.index') }}">
-                                    <i class="bi bi-file-earmark-text me-2"></i> Reports
-                                </a>
-                            </li>
-                            <li class="nav-item mb-2">
-                                <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" 
-                                   href="{{ route('settings.index') }}">
-                                    <i class="bi bi-gear me-2"></i> Settings
-                                </a>
-                            </li>
-                        @endif
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" 
+                               href="{{ route('users.index') }}">
+                                <i class="bi bi-people me-2"></i> Users
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" 
+                               href="{{ route('reports.index') }}">
+                                <i class="bi bi-file-earmark-text me-2"></i> Reports
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" 
+                               href="{{ route('settings.index') }}">
+                                <i class="bi bi-gear me-2"></i> Settings
+                            </a>
+                        </li>
                     @endif
-                @endauth
+                @endif
+
+                <!-- Profile & Logout Section -->
+                <li class="nav-header mb-2 mt-3">
+                    <small class="text-uppercase text-muted">Account</small>
+                </li>
+                <li class="nav-item mb-2">
+                    <a class="nav-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}" 
+                       href="{{ route('profile.edit') }}">
+                        <i class="bi bi-person me-2"></i> Profile
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                        @csrf
+                        <button type="submit" class="nav-link border-0 bg-transparent w-100 text-start">
+                            <i class="bi bi-box-arrow-right me-2"></i> Logout
+                        </button>
+                    </form>
+                </li>
             </ul>
-        </div>
+        @endauth
     </div>
 </div>
 
 <!-- Add custom styles -->
 <style>
-    /* Navbar styles */
-    .navbar {
-        z-index: 1030;
-        height: 56px;
+    /* Sidebar styles */
+    .sidebar-wrapper {
+        position: relative;
     }
-    
+
+    .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        height: 100vh;
+        width: 250px;
+        z-index: 1020;
+        transition: transform 0.3s ease-in-out;
+        overflow-y: auto;
+    }
+
+    .sidebar-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: rgba(0, 0, 0, 0.5);
+        z-index: 1010;
+        display: none;
+    }
+
+    /* Nav link styles */
     .nav-link {
         color: #4a5568;
         padding: 0.5rem 1rem;
@@ -143,33 +196,6 @@
         background-color: #eff6ff;
     }
 
-    /* Sidebar styles */
-    .sidebar-wrapper {
-        position: relative;
-    }
-
-    .sidebar {
-        position: fixed;
-        top: 56px;
-        left: 0;
-        height: calc(100vh - 56px);
-        width: 250px;
-        z-index: 1020;
-        transition: transform 0.3s ease-in-out;
-        overflow-y: auto;
-    }
-
-    .sidebar-overlay {
-        position: fixed;
-        top: 56px;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1010;
-        display: none;
-    }
-
     /* User info styles */
     .avatar-circle {
         width: 40px;
@@ -184,13 +210,13 @@
         font-size: 0.75rem;
         font-weight: 600;
         color: #6b7280;
+        padding: 0 1rem;
     }
 
     /* Content wrapper adjustment */
     .content-wrapper {
         margin-left: 250px;
-        padding-top: 56px;
-        min-height: calc(100vh - 56px);
+        min-height: 100vh;
         transition: margin-left 0.3s ease-in-out;
     }
 
