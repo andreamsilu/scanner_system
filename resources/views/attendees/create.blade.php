@@ -30,7 +30,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('attendees.store') }}" method="POST">
+                    <form action="{{ route('events.attendees.store', $event) }}" method="POST">
                         @csrf
                         <div class="row g-3">
                             <div class="col-md-6">
@@ -79,19 +79,13 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="event_id" class="form-label">Event</label>
-                                    <select class="form-select @error('event_id') is-invalid @enderror" 
-                                            id="event_id" 
-                                            name="event_id" 
-                                            required>
-                                        <option value="">Select Event</option>
-                                        @foreach($events as $event)
-                                            <option value="{{ $event->id }}" {{ old('event_id') == $event->id ? 'selected' : '' }}>
-                                                {{ $event->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('event_id')
+                                    <label for="position" class="form-label">Position</label>
+                                    <input type="text" 
+                                           class="form-control @error('position') is-invalid @enderror" 
+                                           id="position" 
+                                           name="position" 
+                                           value="{{ old('position') }}">
+                                    @error('position')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
