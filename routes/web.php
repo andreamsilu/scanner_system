@@ -91,6 +91,7 @@ Route::middleware('auth')->group(function () {
                 Route::post('/{event}/attendees/{attendee}/regenerate-qr', [AttendeeController::class, 'regenerateQrCode'])->name('attendees.regenerate-qr');
                 Route::get('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUploadForm'])->name('attendees.bulk-upload');
                 Route::post('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUpload'])->name('attendees.bulk-upload.store');
+                Route::patch('/{event}/attendees/{attendee}/cancel', [AttendeeController::class, 'cancel'])->name('attendees.cancel');
             });
             
             // Scanners Management
