@@ -43,18 +43,45 @@
                 </div>
             </div>
 
-            <!-- Navigation Menu -->
-            <ul class="nav flex-column px-2">
-                <!-- Dashboard -->
-                <li class="nav-item mb-2">
-                    <a class="nav-link {{ request()->routeIs('scanner.dashboard') ? 'active' : '' }}" 
-                       href="{{ route('scanner.dashboard') }}">
-                        <i class="bi bi-speedometer2 me-2"></i> Dashboard
-                    </a>
-                </li>
+            <!-- Navigation Links -->
+            <div class="nav flex-column nav-pills">
+                <!-- Admin Menu Items (at the top) -->
+                @if(auth()->user()->isAdmin())
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" 
+                           href="{{ route('admin.dashboard') }}">
+                            <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('admin.events.*') ? 'active' : '' }}" 
+                           href="{{ route('admin.events.index') }}">
+                            <i class="bi bi-calendar-event me-2"></i> Events
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('admin.scanners.*') ? 'active' : '' }}" 
+                           href="{{ route('admin.scanners.index') }}">
+                            <i class="bi bi-person-badge me-2"></i> Scanners
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" 
+                           href="{{ route('admin.reports.index') }}">
+                            <i class="bi bi-graph-up me-2"></i> Reports
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" 
+                           href="{{ route('admin.settings.index') }}">
+                            <i class="bi bi-gear me-2"></i> Settings
+                        </a>
+                    </li>
+                    <hr class="my-3">
+                @endif
 
+                <!-- Scanner Menu Items -->
                 @if(auth()->user()->isScanner() || auth()->user()->isAdmin())
-                    <!-- Scanner Menu -->
                     @if(auth()->user()->isScanner())
                         <li class="nav-item mb-2">
                             <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active' : '' }}" 
@@ -77,61 +104,25 @@
                             <i class="bi bi-clock-history me-2"></i> Scan History
                         </a>
                     </li>
-
-                    @if(auth()->user()->isAdmin())
-                        <!-- Admin Menu -->
-                        <li class="nav-item mb-2">
-                            <div class="nav-header text-muted small px-3 py-2">Admin</div>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}" 
-                               href="{{ route('events.index') }}">
-                                <i class="bi bi-calendar-event me-2"></i> All Events
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('events.*.attendees.*') ? 'active' : '' }}" 
-                               href="{{ route('events.index') }}">
-                                <i class="bi bi-people me-2"></i> Attendees
-                                <small class="text-muted d-block">(Manage via Events)</small>
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" 
-                               href="{{ route('users.index') }}">
-                                <i class="bi bi-people me-2"></i> Users
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" 
-                               href="{{ route('reports.index') }}">
-                                <i class="bi bi-file-earmark-text me-2"></i> Reports
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" 
-                               href="{{ route('settings.index') }}">
-                                <i class="bi bi-gear me-2"></i> Settings
-                            </a>
-                        </li>
-                    @endif
                 @endif
 
+                <!-- Common Menu Items -->
+                <hr class="my-3">
                 <li class="nav-item mb-2">
-                    <a class="nav-link {{ request()->routeIs('profile.edit') ? 'active' : '' }}" 
+                    <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" 
                        href="{{ route('profile.edit') }}">
                         <i class="bi bi-person me-2"></i> Profile
                     </a>
                 </li>
                 <li class="nav-item">
-                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                    <form method="POST" action="{{ route('logout') }}">
                         @csrf
-                        <button type="submit" class="nav-link border-0 bg-transparent w-100 text-start">
+                        <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start">
                             <i class="bi bi-box-arrow-right me-2"></i> Logout
                         </button>
                     </form>
                 </li>
-            </ul>
+            </div>
         @endauth
     </div>
 </div>

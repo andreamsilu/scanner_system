@@ -25,31 +25,37 @@ class ScannerController extends Controller
                 $query->where('start_date', '>=', now())
                     ->orWhere('end_date', '>=', now());
             })
+            ->with(['attendees' => function($query) {
+                $query->with(['ticket' => function($q) {
+                    $q->select('id', 'attendee_id', 'status');
+                }])
+                ->select('id', 'name', 'email', 'event_id', 'token');
+            }])
             ->get();
         
-        $today_scans = ScanLog::whereDate('created_at', today())
-            ->where('scanner_id', $user->id)
-            ->count();
-        
-        $total_scans = ScanLog::where('scanner_id', $user->id)->count();
-        
-        $recent_scans = ScanLog::with(['attendee', 'event'])
+        // Get scanner's statistics
+        $stats = [
+            'today_scans' => ScanLog::where('scanner_id', $user->id)
+                ->whereDate('created_at', today())
+                ->count(),
+            'valid_scans' => ScanLog::where('scanner_id', $user->id)
+                ->whereDate('created_at', today())
+                ->where('status', 'success')
+                ->count(),
+            'invalid_scans' => ScanLog::where('scanner_id', $user->id)
+                ->whereDate('created_at', today())
+                ->whereIn('status', ['invalid', 'duplicate'])
+                ->count(),
+        ];
+
+        // Get recent activity
+        $recent_activity = ScanLog::with(['ticket.attendee', 'ticket.event'])
             ->where('scanner_id', $user->id)
             ->latest()
-            ->take(5)
+            ->take(10)
             ->get();
-        
-        $checked_in_today = ScanLog::whereDate('created_at', today())
-            ->where('scanner_id', $user->id)
-            ->count();
 
-        return view('scanner.dashboard', compact(
-            'today_scans',
-            'total_scans',
-            'assigned_events',
-            'recent_scans',
-            'checked_in_today'
-        ));
+        return view('scanner.dashboard', compact('stats', 'assigned_events', 'recent_activity'));
     }
 
     /**
@@ -66,6 +72,18 @@ class ScannerController extends Controller
         if (!$user->hasRole('admin') && !$user->events()->where('events.id', $event->id)->exists()) {
             return redirect()->route('scanner.events.index')
                 ->with('error', 'You are not authorized to scan this event.');
+        }
+
+        // Additional check to ensure event is active
+        if ($event->status !== 'active') {
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'This event is not active.');
+        }
+
+        // Check if event is within valid date range
+        if ($event->end_date < now()) {
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'This event has ended.');
         }
 
         // Store selected event in session

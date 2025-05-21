@@ -26,6 +26,44 @@ class ScanController extends Controller
                 'token' => 'required|string|size:7'
             ]);
 
+            $scanner = Auth::user();
+            $eventId = session('selected_event_id');
+
+            // Check if event is selected
+            if (!$eventId) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Please select an event first.'
+                ], 400);
+            }
+
+            // Verify scanner is assigned to this event
+            if (!$scanner->hasRole('admin') && !$scanner->events()->where('events.id', $eventId)->exists()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'You are not authorized to scan for this event.'
+                ], 403);
+            }
+
+            // Get the event
+            $event = Event::findOrFail($eventId);
+
+            // Additional check to ensure event is active
+            if ($event->status !== 'active') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This event is not active.'
+                ], 400);
+            }
+
+            // Check if event is within valid date range
+            if ($event->end_date < now()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This event has ended.'
+                ], 400);
+            }
+
             DB::beginTransaction();
 
             // Find the attendee by token
@@ -38,6 +76,14 @@ class ScanController extends Controller
                     'status' => 'error',
                     'message' => 'Invalid QR code. Attendee not found.'
                 ], 404);
+            }
+
+            // Check if attendee belongs to the selected event
+            if ($attendee->event_id != $eventId) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'This QR code is not valid for the selected event.'
+                ], 400);
             }
 
             // Check if attendee has a ticket
