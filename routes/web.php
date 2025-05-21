@@ -68,6 +68,8 @@ Route::middleware('auth')->group(function () {
                 
                 // Event tickets management
                 Route::get('/{event}/tickets', [EventController::class, 'tickets'])->name('tickets');
+                Route::get('/{event}/tickets/create/{attendee}', [TicketController::class, 'create'])->name('tickets.create');
+                Route::post('/{event}/tickets/store/{attendee}', [TicketController::class, 'store'])->name('tickets.store');
                 Route::get('/{event}/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
                 Route::post('/{event}/tickets/generate', [TicketController::class, 'generate'])->name('tickets.generate');
                 Route::patch('/{event}/tickets/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('tickets.deactivate');
