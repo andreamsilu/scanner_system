@@ -86,14 +86,20 @@ class AttendeeController extends Controller
                 $token = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 7));
             } while (Attendee::where('token', $token)->exists());
 
-            // Generate QR code with token
+            // Generate QR code with check-in URL
+            $checkInUrl = route('scanner.check-in', ['token' => $token], true);
             $qrCode = QrCode::format('png')
                 ->size(300)
                 ->errorCorrection('H')
-                ->generate($token);
+                ->generate($checkInUrl);
 
-            // Store QR code image in public storage
-            $qrPath = 'qr-codes/' . $token . '.png';
+            // Sanitize name for filename
+            $sanitizedName = preg_replace('/[^a-zA-Z0-9-]/', '-', strtolower($validated['name']));
+            $sanitizedName = preg_replace('/-+/', '-', $sanitizedName);
+            $sanitizedName = trim($sanitizedName, '-');
+
+            // Store QR code image with attendee name in filename
+            $qrPath = 'qr-codes/' . $sanitizedName . '-' . $token . '.png';
             Storage::disk('public')->put($qrPath, $qrCode);
 
             // Create attendee with token and QR code
@@ -500,14 +506,20 @@ class AttendeeController extends Controller
                 Storage::disk('public')->delete($attendee->qr_code);
             }
 
-            // Generate new QR code
+            // Generate new QR code with check-in URL
+            $checkInUrl = route('scanner.check-in', ['token' => $attendee->token], true);
             $qrCode = QrCode::format('png')
                 ->size(300)
                 ->errorCorrection('H')
-                ->generate($attendee->token);
+                ->generate($checkInUrl);
 
-            // Store QR code image
-            $path = 'qr-codes/' . $attendee->token . '.png';
+            // Sanitize name for filename
+            $sanitizedName = preg_replace('/[^a-zA-Z0-9-]/', '-', strtolower($attendee->name));
+            $sanitizedName = preg_replace('/-+/', '-', $sanitizedName);
+            $sanitizedName = trim($sanitizedName, '-');
+
+            // Store QR code image with attendee name in filename
+            $path = 'qr-codes/' . $sanitizedName . '-' . $attendee->token . '.png';
             Storage::disk('public')->put($path, $qrCode);
 
             // Update attendee record
