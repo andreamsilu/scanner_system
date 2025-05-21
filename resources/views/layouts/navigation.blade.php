@@ -65,34 +65,6 @@
                         </a>
                     </li>
 
-                    @if(auth()->user()->isScanner())
-                        @php
-                            $assignedEvents = auth()->user()->events()
-                                ->where('status', 'active')
-                                ->where(function($query) {
-                                    $query->where('start_date', '>=', now())
-                                        ->orWhere('end_date', '>=', now());
-                                })
-                                ->get();
-                        @endphp
-                        
-                        @if($assignedEvents->isNotEmpty())
-                            <li class="nav-item mb-2">
-                                <div class="nav-header text-muted small px-3 py-2">Active Events</div>
-                                @foreach($assignedEvents as $event)
-                                    <a class="nav-link ps-4 py-2 {{ request()->routeIs('scanner.select-event', $event) ? 'active' : '' }}" 
-                                       href="{{ route('scanner.select-event', $event) }}">
-                                        <i class="bi bi-circle-fill me-2 small"></i>
-                                        {{ $event->name }}
-                                        @if($event->isUpcoming())
-                                            <span class="badge bg-success ms-2">Upcoming</span>
-                                        @endif
-                                    </a>
-                                @endforeach
-                            </li>
-                        @endif
-                    @endif
-
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanner.validate') ? 'active' : '' }}" 
                            href="{{ route('scanner.validate') }}">
