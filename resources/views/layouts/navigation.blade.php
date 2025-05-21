@@ -80,8 +80,8 @@
                             <li class="nav-item mb-2">
                                 <div class="nav-header text-muted small px-3 py-2">Active Events</div>
                                 @foreach($assignedEvents as $event)
-                                    <a class="nav-link ps-4 py-2 {{ request()->routeIs('scanner.events.show', $event) ? 'active' : '' }}" 
-                                       href="{{ route('scanner.events.show', $event) }}">
+                                    <a class="nav-link ps-4 py-2 {{ request()->routeIs('scanner.select-event', $event) ? 'active' : '' }}" 
+                                       href="{{ route('scanner.select-event', $event) }}">
                                         <i class="bi bi-circle-fill me-2 small"></i>
                                         {{ $event->name }}
                                         @if($event->isUpcoming())
