@@ -112,9 +112,13 @@ class DashboardController extends Controller
                 ->count(),
         ];
 
-        // Get active events with their attendees
-        $active_events = Event::where('status', 'active')
-            ->where('start_date', '>=', now())
+        // Get assigned events with their attendees
+        $assigned_events = $scanner->events()
+            ->where('status', 'active')
+            ->where(function($query) {
+                $query->where('start_date', '>=', now())
+                    ->orWhere('end_date', '>=', now());
+            })
             ->with(['attendees' => function($query) {
                 $query->with(['ticket' => function($q) {
                     $q->select('id', 'attendee_id', 'status');
@@ -130,6 +134,6 @@ class DashboardController extends Controller
             ->take(10)
             ->get();
 
-        return view('dashboard.scanner', compact('stats', 'active_events', 'recent_activity'));
+        return view('dashboard.scanner', compact('stats', 'assigned_events', 'recent_activity'));
     }
 } 
