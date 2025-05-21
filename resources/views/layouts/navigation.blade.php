@@ -55,15 +55,15 @@
 
                 @if(auth()->user()->isScanner() || auth()->user()->isAdmin())
                     <!-- Scanner Menu -->
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active' : '' }}" 
-                           href="{{ route('scanner.events.index') }}">
-                            <i class="bi bi-calendar-event me-2"></i> My Events
-                            @if(auth()->user()->isScanner())
+                    @if(auth()->user()->isScanner())
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active' : '' }}" 
+                               href="{{ route('scanner.events.index') }}">
+                                <i class="bi bi-calendar-event me-2"></i> My Events
                                 <small class="text-muted d-block">(Assigned Events)</small>
-                            @endif
-                        </a>
-                    </li>
+                            </a>
+                        </li>
+                    @endif
 
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanner.validate') ? 'active' : '' }}" 
@@ -75,12 +75,6 @@
                         <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active' : '' }}" 
                            href="{{ route('scanner.history') }}">
                             <i class="bi bi-clock-history me-2"></i> Scan History
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('scanner.history.export') ? 'active' : '' }}" 
-                           href="{{ route('scanner.history.export') }}">
-                            <i class="bi bi-download me-2"></i> Export History
                         </a>
                     </li>
 

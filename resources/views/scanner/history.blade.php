@@ -7,10 +7,28 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="d-flex justify-content-between align-items-center">
-                    <a href="{{ route('scanner.history.export') }}" class="btn btn-primary">
-                        <i class="fas fa-download me-2"></i>
-                        Export
-                    </a>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-download me-2"></i>Export
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="exportDropdown">
+                            <li>
+                                <a class="dropdown-item" href="{{ route('scanner.history.export', array_merge(request()->query(), ['format' => 'csv'])) }}">
+                                    <i class="bi bi-file-earmark-spreadsheet me-2"></i>CSV
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('scanner.history.export', array_merge(request()->query(), ['format' => 'excel'])) }}">
+                                    <i class="bi bi-file-earmark-excel me-2"></i>Excel
+                                </a>
+                            </li>
+                            <li>
+                                <a class="dropdown-item" href="{{ route('scanner.history.export', array_merge(request()->query(), ['format' => 'pdf'])) }}">
+                                    <i class="bi bi-file-earmark-pdf me-2"></i>PDF
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </div>
