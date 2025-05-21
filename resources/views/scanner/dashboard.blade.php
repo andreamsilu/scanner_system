@@ -70,10 +70,10 @@
         <div class="col-12">
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0">Active Events</h5>
+                    <h5 class="card-title mb-0">Your Assigned Events</h5>
                 </div>
                 <div class="card-body">
-                    @if($active_events->count() > 0)
+                    @if($assigned_events->count() > 0)
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
@@ -87,7 +87,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($active_events as $event)
+                                    @foreach($assigned_events as $event)
                                         <tr>
                                             <td>{{ $event->name }}</td>
                                             <td>{{ $event->start_date->format('M d, Y h:i A') }}</td>
@@ -99,7 +99,7 @@
                                                 {{ $event->attendees->count() }}
                                             </td>
                                             <td>
-                                                <a href="{{ route('scanner.events.show', $event) }}" 
+                                                <a href="{{ route('scanner.select-event', $event) }}" 
                                                    class="btn btn-primary btn-sm">
                                                     <i class="bi bi-upc-scan me-1"></i> Scan
                                                 </a>
@@ -112,7 +112,7 @@
                     @else
                         <div class="text-center py-4">
                             <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
-                            <p class="text-muted mt-3">No active events found</p>
+                            <p class="text-muted mt-3">No assigned events found</p>
                         </div>
                     @endif
                 </div>
