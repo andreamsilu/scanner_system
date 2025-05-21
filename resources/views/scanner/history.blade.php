@@ -98,8 +98,22 @@
                             @forelse($scans as $scan)
                                 <tr>
                                     <td>{{ $scan->created_at->format('M d, Y h:i A') }}</td>
-                                    <td>{{ $scan->attendee->name }}</td>
-                                    <td>{{ $scan->event->name }}</td>
+                                    <td>
+                                        @if($scan->ticket && $scan->ticket->attendee)
+                                            {{ $scan->ticket->attendee->name }}
+                                            <br>
+                                            <small class="text-muted">{{ $scan->ticket->attendee->email }}</small>
+                                        @else
+                                            <span class="text-muted">Attendee data not available</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($scan->ticket && $scan->ticket->event)
+                                            {{ $scan->ticket->event->name }}
+                                        @else
+                                            <span class="text-muted">Event data not available</span>
+                                        @endif
+                                    </td>
                                     <td>
                                         <span class="badge bg-{{ $scan->status === 'success' ? 'success' : 'danger' }}">
                                             {{ ucfirst($scan->status) }}

@@ -63,12 +63,14 @@
                         <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" 
                            href="{{ route('users.index') }}">
                             <i class="bi bi-people me-2"></i> Users
+                            <small class="text-muted d-block">(User Management)</small>
                         </a>
                     </li>
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('scanners.*') ? 'active' : '' }}" 
                            href="{{ route('scanners.index') }}">
                             <i class="bi bi-person-badge me-2"></i> Scanners
+                            <small class="text-muted d-block">(Manage Event Assignments)</small>
                         </a>
                     </li>
                     <li class="nav-item mb-2">
