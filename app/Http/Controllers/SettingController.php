@@ -230,8 +230,11 @@ class SettingController extends Controller
         try {
             return DB::table('scan_logs')
                 ->select([
+                    'scan_logs.id',
                     'scan_logs.created_at',
                     'scan_logs.status',
+                    'scan_logs.notes',
+                    'scan_logs.ticket_id',
                     'users.name as causer_name'
                 ])
                 ->leftJoin('users', 'scan_logs.scanner_id', '=', 'users.id')
@@ -240,10 +243,16 @@ class SettingController extends Controller
                 ->get()
                 ->map(function ($log) {
                     return (object) [
+                        'id' => $log->id,
                         'causer' => (object) ['name' => $log->causer_name ?? 'System'],
                         'description' => ucfirst($log->status),
                         'created_at' => \Carbon\Carbon::parse($log->created_at),
-                        'id' => uniqid()
+                        'properties' => [
+                            'ticket_id' => $log->ticket_id,
+                            'notes' => $log->notes,
+                            'status' => $log->status,
+                            'scanned_by' => $log->causer_name ?? 'System'
+                        ]
                     ];
                 });
         } catch (\Exception $e) {
