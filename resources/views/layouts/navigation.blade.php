@@ -1,25 +1,23 @@
-<!-- Top Navigation Bar - Commented out for now -->
-{{-- 
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top">
+<!-- Top Navigation Bar -->
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top d-lg-none">
     <div class="container-fluid">
         <!-- Logo -->
         <a class="navbar-brand" href="{{ route('dashboard') }}">
             <img src="{{ asset('images/logo.png') }}" alt="Logo" height="40">
-            <span class="ms-2 fw-bold d-none d-sm-inline">Event Tickets</span>
+            <span class="ms-2 fw-bold">Event Tickets</span>
         </a>
 
         <!-- Mobile Toggle Button -->
-        <button class="btn btn-link text-dark d-lg-none" type="button" id="sidebarToggle">
+        <button class="btn btn-link text-dark" type="button" id="sidebarToggle">
             <i class="bi bi-list fs-4"></i>
         </button>
     </div>
 </nav>
---}}
 
 <!-- Sidebar -->
 <div class="sidebar-wrapper">
     <!-- Overlay for mobile -->
-    <div class="sidebar-overlay d-lg-none" id="sidebarOverlay"></div>
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
     
     <!-- Sidebar -->
     <div class="sidebar bg-white shadow-sm" id="sidebar">
@@ -27,7 +25,7 @@
         <div class="px-3 py-4 border-bottom">
             <a class="d-flex align-items-center text-decoration-none" href="{{ route('dashboard') }}">
                 <img src="{{ asset('images/logo.png') }}" alt="Logo" height="40">
-                <span class="ms-2 fw-bold d-none d-sm-inline">Event Tickets</span>
+                <span class="ms-2 fw-bold">Event Tickets</span>
             </a>
         </div>
         
@@ -137,6 +135,12 @@
 
 <!-- Add custom styles -->
 <style>
+    /* Top navbar styles */
+    .navbar {
+        height: 60px;
+        z-index: 1030;
+    }
+
     /* Sidebar styles */
     .sidebar-wrapper {
         position: relative;
@@ -162,6 +166,13 @@
         background-color: rgba(0, 0, 0, 0.5);
         z-index: 1010;
         display: none;
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+    }
+
+    .sidebar-overlay.show {
+        display: block;
+        opacity: 1;
     }
 
     /* Nav link styles */
@@ -170,6 +181,7 @@
         padding: 0.5rem 1rem;
         border-radius: 0.375rem;
         transition: all 0.2s ease-in-out;
+        white-space: nowrap;
     }
     
     .nav-link:hover {
@@ -191,36 +203,40 @@
         justify-content: center;
     }
 
-    .nav-header {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: #6b7280;
-        padding: 0 1rem;
-    }
-
-    /* Content wrapper adjustment */
-    .content-wrapper {
-        margin-left: 250px;
-        min-height: 100vh;
-        transition: margin-left 0.3s ease-in-out;
-    }
-
     /* Mobile styles */
     @media (max-width: 991.98px) {
         .sidebar {
             transform: translateX(-100%);
+            top: 60px; /* Account for fixed navbar */
+            height: calc(100vh - 60px);
         }
 
         .sidebar.show {
             transform: translateX(0);
         }
 
-        .sidebar-overlay.show {
-            display: block;
+        .content-wrapper {
+            margin-left: 0 !important;
+            padding-top: 60px; /* Account for fixed navbar */
+        }
+
+        body {
+            padding-top: 60px; /* Account for fixed navbar */
+        }
+    }
+
+    /* Desktop styles */
+    @media (min-width: 992px) {
+        .navbar {
+            display: none;
+        }
+
+        .sidebar {
+            transform: none;
         }
 
         .content-wrapper {
-            margin-left: 0;
+            margin-left: 250px;
         }
     }
 
@@ -249,11 +265,12 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebarOverlay');
+    const body = document.body;
 
     function toggleSidebar() {
         sidebar.classList.toggle('show');
         sidebarOverlay.classList.toggle('show');
-        document.body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
+        body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
     }
 
     if (sidebarToggle) {
@@ -279,7 +296,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.innerWidth >= 992) {
             sidebar.classList.remove('show');
             sidebarOverlay.classList.remove('show');
-            document.body.style.overflow = '';
+            body.style.overflow = '';
         }
     });
 });
