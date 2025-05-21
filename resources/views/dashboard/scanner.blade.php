@@ -65,58 +65,53 @@
         </div>
     </div>
 
-    <!-- Active Events -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0">Active Events</h5>
+    <!-- Assigned Events Section -->
+    <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg mb-6">
+        <div class="p-6 bg-white border-b border-gray-200">
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Your Assigned Events</h2>
+            
+            @if($assigned_events->isEmpty())
+                <div class="text-center py-4">
+                    <p class="text-gray-500">No assigned events found.</p>
                 </div>
-                <div class="card-body">
-                    @if($active_events->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Event Name</th>
-                                        <th>Date</th>
-                                        <th>Location</th>
-                                        <th>Total Attendees</th>
-                                        <th>Scanned</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($active_events as $event)
-                                        <tr>
-                                            <td>{{ $event->name }}</td>
-                                            <td>{{ $event->start_date->format('M d, Y h:i A') }}</td>
-                                            <td>{{ $event->location }}</td>
-                                            <td>{{ $event->attendees->count() }}</td>
-                                            <td>
-                                                {{ $event->attendees->where('ticket.status', 'used')->count() }}
-                                                /
-                                                {{ $event->attendees->count() }}
-                                            </td>
-                                            <td>
-                                                <a href="{{ route('scanner.scan.index', ['event' => $event]) }}" 
-                                                   class="btn btn-primary btn-sm">
-                                                    <i class="bi bi-upc-scan me-1"></i> Scan
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @else
-                        <div class="text-center py-4">
-                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
-                            <p class="text-muted mt-3">No active events found</p>
-                        </div>
-                    @endif
+            @else
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Event</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Attendees</th>
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="bg-white divide-y divide-gray-200">
+                            @foreach($assigned_events as $event)
+                                <tr>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm font-medium text-gray-900">{{ $event->name }}</div>
+                                        <div class="text-sm text-gray-500">{{ $event->location }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ $event->start_date->format('M d, Y') }}</div>
+                                        <div class="text-sm text-gray-500">{{ $event->start_date->format('h:i A') }}</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="text-sm text-gray-900">{{ $event->attendees->count() }}</div>
+                                        <div class="text-sm text-gray-500">Total Attendees</div>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                        <a href="{{ route('scanner.select-event', $event) }}" 
+                                           class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                                            Start Scanning
+                                        </a>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
-            </div>
+            @endif
         </div>
     </div>
 
