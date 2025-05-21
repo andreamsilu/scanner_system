@@ -231,7 +231,7 @@ class SettingController extends Controller
             return DB::table('scan_logs')
                 ->select([
                     'scan_logs.created_at',
-                    'scan_logs.status as description',
+                    'scan_logs.status',
                     'users.name as causer_name'
                 ])
                 ->leftJoin('users', 'scan_logs.scanner_id', '=', 'users.id')
@@ -241,7 +241,7 @@ class SettingController extends Controller
                 ->map(function ($log) {
                     return (object) [
                         'causer' => (object) ['name' => $log->causer_name ?? 'System'],
-                        'description' => ucfirst($log->description),
+                        'description' => ucfirst($log->status),
                         'created_at' => \Carbon\Carbon::parse($log->created_at),
                         'id' => uniqid()
                     ];
