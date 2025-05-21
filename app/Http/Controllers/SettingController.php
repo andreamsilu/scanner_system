@@ -208,7 +208,7 @@ class SettingController extends Controller
                     ->count(),
                 'total_attendees' => DB::table('attendees')->count(),
                 'total_scans' => DB::table('scan_logs')->count(),
-                'last_scan' => $lastScan ? $lastScan->created_at : null,
+                'last_scan' => $lastScan ? \Carbon\Carbon::parse($lastScan->created_at) : null,
             ];
         } catch (\Exception $e) {
             Log::error('Failed to get stats: ' . $e->getMessage());
