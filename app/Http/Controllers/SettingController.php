@@ -119,24 +119,112 @@ class SettingController extends Controller
     {
         $logs = [];
         
-        // Try to get Apache logs
-        $apacheLogPath = '/var/log/apache2/error.log';
-        if (File::exists($apacheLogPath)) {
-            $logs['apache'] = array_slice(
-                array_reverse(File::lines($apacheLogPath)->toArray()),
-                0,
-                50 // Limit to last 50 lines
-            );
+        // Common log locations for different web servers
+        $logLocations = [
+            // Apache logs
+            'apache' => [
+                'error' => [
+                    '/var/log/apache2/error.log',
+                    '/var/log/httpd/error.log',
+                    '/var/log/apache2/error.log.1',
+                    '/var/log/httpd/error.log.1'
+                ],
+                'access' => [
+                    '/var/log/apache2/access.log',
+                    '/var/log/httpd/access.log',
+                    '/var/log/apache2/access.log.1',
+                    '/var/log/httpd/access.log.1'
+                ]
+            ],
+            // Nginx logs
+            'nginx' => [
+                'error' => [
+                    '/var/log/nginx/error.log',
+                    '/var/log/nginx/error.log.1'
+                ],
+                'access' => [
+                    '/var/log/nginx/access.log',
+                    '/var/log/nginx/access.log.1'
+                ]
+            ],
+            // Lighttpd logs
+            'lighttpd' => [
+                'error' => [
+                    '/var/log/lighttpd/error.log',
+                    '/var/log/lighttpd/error.log.1'
+                ],
+                'access' => [
+                    '/var/log/lighttpd/access.log',
+                    '/var/log/lighttpd/access.log.1'
+                ]
+            ]
+        ];
+
+        // Try to find and read logs for each server type
+        foreach ($logLocations as $server => $logTypes) {
+            foreach ($logTypes as $type => $paths) {
+                foreach ($paths as $path) {
+                    if (File::exists($path)) {
+                        try {
+                            if (!is_readable($path)) {
+                                Log::warning("Log file exists but is not readable: {$path}");
+                                continue;
+                            }
+
+                            $logContent = array_slice(
+                                array_reverse(File::lines($path)->toArray()),
+                                0,
+                                50 // Limit to last 50 lines
+                            );
+
+                            if (!empty($logContent)) {
+                                $logs[$server][$type] = $logContent;
+                                Log::info("Successfully read {$type} logs from {$server} at {$path}");
+                                break; // Stop after finding the first readable log file of this type
+                            }
+                        } catch (\Exception $e) {
+                            Log::error("Failed to read {$server} {$type} log {$path}: " . $e->getMessage());
+                        }
+                    }
+                }
+            }
         }
 
-        // Try to get Nginx logs
-        $nginxLogPath = '/var/log/nginx/error.log';
-        if (File::exists($nginxLogPath)) {
-            $logs['nginx'] = array_slice(
-                array_reverse(File::lines($nginxLogPath)->toArray()),
-                0,
-                50 // Limit to last 50 lines
-            );
+        // Also check for custom log locations from environment
+        $customLogPaths = explode(',', env('CUSTOM_LOG_PATHS', ''));
+        foreach ($customLogPaths as $path) {
+            $path = trim($path);
+            if (empty($path)) continue;
+
+            if (File::exists($path)) {
+                try {
+                    if (!is_readable($path)) {
+                        Log::warning("Custom log file exists but is not readable: {$path}");
+                        continue;
+                    }
+
+                    $serverType = basename(dirname($path));
+                    $logType = str_contains($path, 'error') ? 'error' : 'access';
+                    
+                    $logContent = array_slice(
+                        array_reverse(File::lines($path)->toArray()),
+                        0,
+                        50
+                    );
+
+                    if (!empty($logContent)) {
+                        $logs[$serverType][$logType] = $logContent;
+                        Log::info("Successfully read custom log from {$path}");
+                    }
+                } catch (\Exception $e) {
+                    Log::error("Failed to read custom log {$path}: " . $e->getMessage());
+                }
+            }
+        }
+
+        // If no logs were found, log it
+        if (empty($logs)) {
+            Log::warning('No server logs were found or accessible. Check file permissions and paths.');
         }
 
         return $logs;

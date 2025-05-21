@@ -189,92 +189,84 @@
             <h5 class="card-title mb-0">Server Logs</h5>
         </div>
         <div class="card-body">
-            <ul class="nav nav-tabs" id="serverLogsTabs" role="tablist">
-                @if(isset($serverLogs['apache']))
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="apache-tab" data-bs-toggle="tab" data-bs-target="#apache-logs" type="button" role="tab">
-                            Apache Logs
-                        </button>
-                    </li>
-                @endif
-                @if(isset($serverLogs['nginx']))
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link {{ !isset($serverLogs['apache']) ? 'active' : '' }}" id="nginx-tab" data-bs-toggle="tab" data-bs-target="#nginx-logs" type="button" role="tab">
-                            Nginx Logs
-                        </button>
-                    </li>
-                @endif
-            </ul>
+            @if(!empty($serverLogs))
+                <ul class="nav nav-tabs" id="serverLogsTabs" role="tablist">
+                    @php $firstTab = true; @endphp
+                    @foreach($serverLogs as $server => $logTypes)
+                        @foreach($logTypes as $type => $logs)
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link {{ $firstTab ? 'active' : '' }}" 
+                                        id="{{ $server }}-{{ $type }}-tab" 
+                                        data-bs-toggle="tab" 
+                                        data-bs-target="#{{ $server }}-{{ $type }}-logs" 
+                                        type="button" 
+                                        role="tab">
+                                    {{ ucfirst($server) }} {{ ucfirst($type) }} Logs
+                                </button>
+                            </li>
+                            @php $firstTab = false; @endphp
+                        @endforeach
+                    @endforeach
+                </ul>
 
-            <div class="tab-content mt-3" id="serverLogsContent">
-                @if(isset($serverLogs['apache']))
-                    <div class="tab-pane fade show active" id="apache-logs" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Timestamp</th>
-                                        <th>Log Entry</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($serverLogs['apache'] as $log)
-                                        <tr>
-                                            <td class="text-nowrap" style="width: 200px;">
-                                                @php
-                                                    preg_match('/\[(.*?)\]/', $log, $matches);
-                                                    $timestamp = $matches[1] ?? '';
-                                                @endphp
-                                                {{ $timestamp }}
-                                            </td>
-                                            <td>
-                                                <code class="text-wrap">{{ $log }}</code>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                @endif
-
-                @if(isset($serverLogs['nginx']))
-                    <div class="tab-pane fade {{ !isset($serverLogs['apache']) ? 'show active' : '' }}" id="nginx-logs" role="tabpanel">
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Timestamp</th>
-                                        <th>Log Entry</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($serverLogs['nginx'] as $log)
-                                        <tr>
-                                            <td class="text-nowrap" style="width: 200px;">
-                                                @php
-                                                    preg_match('/\[(.*?)\]/', $log, $matches);
-                                                    $timestamp = $matches[1] ?? '';
-                                                @endphp
-                                                {{ $timestamp }}
-                                            </td>
-                                            <td>
-                                                <code class="text-wrap">{{ $log }}</code>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                @endif
-
-                @if(empty($serverLogs))
-                    <div class="alert alert-info mt-3">
-                        No server logs found. Make sure the web server logs are accessible.
-                    </div>
-                @endif
-            </div>
+                <div class="tab-content mt-3" id="serverLogsContent">
+                    @php $firstTab = true; @endphp
+                    @foreach($serverLogs as $server => $logTypes)
+                        @foreach($logTypes as $type => $logs)
+                            <div class="tab-pane fade {{ $firstTab ? 'show active' : '' }}" 
+                                 id="{{ $server }}-{{ $type }}-logs" 
+                                 role="tabpanel">
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Timestamp</th>
+                                                <th>Log Entry</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($logs as $log)
+                                                <tr>
+                                                    <td class="text-nowrap" style="width: 200px;">
+                                                        @php
+                                                            // Try different timestamp formats
+                                                            $timestamp = '';
+                                                            if (preg_match('/\[(.*?)\]/', $log, $matches)) {
+                                                                $timestamp = $matches[1];
+                                                            } elseif (preg_match('/(\d{4}-\d{2}-\d{2}\s\d{2}:\d{2}:\d{2})/', $log, $matches)) {
+                                                                $timestamp = $matches[1];
+                                                            } elseif (preg_match('/(\d{2}\/\w{3}\/\d{4}:\d{2}:\d{2}:\d{2})/', $log, $matches)) {
+                                                                $timestamp = $matches[1];
+                                                            }
+                                                        @endphp
+                                                        {{ $timestamp }}
+                                                    </td>
+                                                    <td>
+                                                        <code class="text-wrap">{{ $log }}</code>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            @php $firstTab = false; @endphp
+                        @endforeach
+                    @endforeach
+                </div>
+            @else
+                <div class="alert alert-info">
+                    <h5 class="alert-heading">No Server Logs Found</h5>
+                    <p class="mb-0">No server logs were found or accessible. This could be because:</p>
+                    <ul class="mb-0 mt-2">
+                        <li>The web server is not installed</li>
+                        <li>The log files are not in the default locations</li>
+                        <li>The application doesn't have permission to read the log files</li>
+                    </ul>
+                    <hr>
+                    <p class="mb-0">You can add custom log paths in your <code>.env</code> file using the <code>CUSTOM_LOG_PATHS</code> variable, separated by commas.</p>
+                </div>
+            @endif
         </div>
     </div>
 
