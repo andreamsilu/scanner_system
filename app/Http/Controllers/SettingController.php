@@ -23,6 +23,7 @@ class SettingController extends Controller
         $cacheInfo = $this->getCacheInfo();
         $stats = $this->getStats();
         $activityLogs = $this->getActivityLogs();
+        $serverLogs = $this->getServerLogs();
 
         return view('settings.index', compact(
             'systemInfo', 
@@ -30,7 +31,8 @@ class SettingController extends Controller
             'databaseInfo', 
             'cacheInfo', 
             'stats',
-            'activityLogs'
+            'activityLogs',
+            'serverLogs'
         ));
     }
 
@@ -103,7 +105,37 @@ class SettingController extends Controller
             $logs = array_slice(
                 array_reverse(File::lines($logFile)->toArray()),
                 0,
-                1000 // Limit to last 1000 lines
+                100 // Limit to last 100 lines
+            );
+        }
+
+        return $logs;
+    }
+
+    /**
+     * Get server logs (Apache/Nginx).
+     */
+    private function getServerLogs(): array
+    {
+        $logs = [];
+        
+        // Try to get Apache logs
+        $apacheLogPath = '/var/log/apache2/error.log';
+        if (File::exists($apacheLogPath)) {
+            $logs['apache'] = array_slice(
+                array_reverse(File::lines($apacheLogPath)->toArray()),
+                0,
+                50 // Limit to last 50 lines
+            );
+        }
+
+        // Try to get Nginx logs
+        $nginxLogPath = '/var/log/nginx/error.log';
+        if (File::exists($nginxLogPath)) {
+            $logs['nginx'] = array_slice(
+                array_reverse(File::lines($nginxLogPath)->toArray()),
+                0,
+                50 // Limit to last 50 lines
             );
         }
 

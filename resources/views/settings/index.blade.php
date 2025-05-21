@@ -138,7 +138,163 @@
         </div>
     </div>
 
+    <!-- Laravel System Logs -->
+    <div class="card mt-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="card-title mb-0">Laravel System Logs</h5>
+            <form action="{{ route('settings.clear-logs') }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-sm btn-outline-danger" onclick="return confirm('Are you sure you want to clear the Laravel logs?')">
+                    <i class="bi bi-trash me-2"></i>Clear Logs
+                </button>
+            </form>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>Log Entry</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($logs as $log)
+                            <tr>
+                                <td class="text-nowrap" style="width: 200px;">
+                                    @php
+                                        preg_match('/\[(.*?)\]/', $log, $matches);
+                                        $timestamp = $matches[1] ?? '';
+                                    @endphp
+                                    {{ $timestamp }}
+                                </td>
+                                <td>
+                                    <code class="text-wrap">{{ $log }}</code>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="2" class="text-center">No system logs found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Server Logs -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Server Logs</h5>
+        </div>
+        <div class="card-body">
+            <ul class="nav nav-tabs" id="serverLogsTabs" role="tablist">
+                @if(isset($serverLogs['apache']))
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="apache-tab" data-bs-toggle="tab" data-bs-target="#apache-logs" type="button" role="tab">
+                            Apache Logs
+                        </button>
+                    </li>
+                @endif
+                @if(isset($serverLogs['nginx']))
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link {{ !isset($serverLogs['apache']) ? 'active' : '' }}" id="nginx-tab" data-bs-toggle="tab" data-bs-target="#nginx-logs" type="button" role="tab">
+                            Nginx Logs
+                        </button>
+                    </li>
+                @endif
+            </ul>
+
+            <div class="tab-content mt-3" id="serverLogsContent">
+                @if(isset($serverLogs['apache']))
+                    <div class="tab-pane fade show active" id="apache-logs" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Log Entry</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($serverLogs['apache'] as $log)
+                                        <tr>
+                                            <td class="text-nowrap" style="width: 200px;">
+                                                @php
+                                                    preg_match('/\[(.*?)\]/', $log, $matches);
+                                                    $timestamp = $matches[1] ?? '';
+                                                @endphp
+                                                {{ $timestamp }}
+                                            </td>
+                                            <td>
+                                                <code class="text-wrap">{{ $log }}</code>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
+                @if(isset($serverLogs['nginx']))
+                    <div class="tab-pane fade {{ !isset($serverLogs['apache']) ? 'show active' : '' }}" id="nginx-logs" role="tabpanel">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Timestamp</th>
+                                        <th>Log Entry</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($serverLogs['nginx'] as $log)
+                                        <tr>
+                                            <td class="text-nowrap" style="width: 200px;">
+                                                @php
+                                                    preg_match('/\[(.*?)\]/', $log, $matches);
+                                                    $timestamp = $matches[1] ?? '';
+                                                @endphp
+                                                {{ $timestamp }}
+                                            </td>
+                                            <td>
+                                                <code class="text-wrap">{{ $log }}</code>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
+
+                @if(empty($serverLogs))
+                    <div class="alert alert-info mt-3">
+                        No server logs found. Make sure the web server logs are accessible.
+                    </div>
+                @endif
+            </div>
+        </div>
+    </div>
+
     @push('styles')
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
+    <style>
+        .table code {
+            white-space: pre-wrap;
+            word-break: break-word;
+            background-color: #f8f9fa;
+            padding: 0.2rem 0.4rem;
+            border-radius: 0.25rem;
+        }
+        .nav-tabs .nav-link {
+            color: #6c757d;
+        }
+        .nav-tabs .nav-link.active {
+            color: #0d6efd;
+            font-weight: 500;
+        }
+    </style>
     @endpush
 </x-app-layout> 
