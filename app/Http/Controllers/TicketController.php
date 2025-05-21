@@ -4,9 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Event;
 use App\Models\Ticket;
+use App\Models\Attendee;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\View\View;
 
 class TicketController extends Controller
 {
@@ -143,5 +148,77 @@ class TicketController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Show the form for creating a new ticket for an attendee.
+     */
+    public function create(Event $event, Attendee $attendee): View
+    {
+        // Check if attendee already has a ticket
+        if ($attendee->ticket) {
+            return redirect()
+                ->route('events.attendees.show', ['event' => $event, 'attendee' => $attendee])
+                ->with('error', 'This attendee already has a ticket.');
+        }
+
+        return view('tickets.create', compact('event', 'attendee'));
+    }
+
+    /**
+     * Store a newly created ticket for an attendee.
+     */
+    public function store(Request $request, Event $event, Attendee $attendee): RedirectResponse
+    {
+        try {
+            DB::beginTransaction();
+
+            // Check if attendee already has a ticket
+            if ($attendee->ticket) {
+                throw new \Exception('This attendee already has a ticket.');
+            }
+
+            // Validate request
+            $validated = $request->validate([
+                'type' => ['required', 'string', Rule::in(['regular', 'vip', 'single', 'double'])],
+            ]);
+
+            // Generate ticket number
+            $ticketNumber = Ticket::generateTicketNumber();
+
+            // Create ticket
+            $ticket = Ticket::create([
+                'event_id' => $event->id,
+                'attendee_id' => $attendee->id,
+                'type' => $validated['type'],
+                'status' => 'active',
+                'ticket_number' => $ticketNumber,
+                'token' => $attendee->token
+            ]);
+
+            // Log the ticket creation
+            Log::info('Ticket created for attendee', [
+                'attendee_id' => $attendee->id,
+                'ticket_id' => $ticket->id,
+                'event_id' => $event->id
+            ]);
+
+            DB::commit();
+
+            return redirect()
+                ->route('events.attendees.show', ['event' => $event, 'attendee' => $attendee])
+                ->with('success', 'Ticket created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Ticket creation failed', [
+                'error' => $e->getMessage(),
+                'attendee_id' => $attendee->id,
+                'event_id' => $event->id
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', $e->getMessage());
+        }
     }
 } 
