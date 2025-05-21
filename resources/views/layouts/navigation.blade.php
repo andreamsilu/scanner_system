@@ -54,26 +54,26 @@
                         </a>
                     </li>
                     <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('admin.events.*') ? 'active' : '' }}" 
-                           href="{{ route('admin.events.index') }}">
+                        <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}" 
+                           href="{{ route('events.index') }}">
                             <i class="bi bi-calendar-event me-2"></i> Events
                         </a>
                     </li>
                     <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('admin.scanners.*') ? 'active' : '' }}" 
-                           href="{{ route('admin.scanners.index') }}">
+                        <a class="nav-link {{ request()->routeIs('scanners.*') ? 'active' : '' }}" 
+                           href="{{ route('scanners.index') }}">
                             <i class="bi bi-person-badge me-2"></i> Scanners
                         </a>
                     </li>
                     <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('admin.reports.*') ? 'active' : '' }}" 
-                           href="{{ route('admin.reports.index') }}">
+                        <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" 
+                           href="{{ route('reports.index') }}">
                             <i class="bi bi-graph-up me-2"></i> Reports
                         </a>
                     </li>
                     <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('admin.settings.*') ? 'active' : '' }}" 
-                           href="{{ route('admin.settings.index') }}">
+                        <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" 
+                           href="{{ route('settings.index') }}">
                             <i class="bi bi-gear me-2"></i> Settings
                         </a>
                     </li>
