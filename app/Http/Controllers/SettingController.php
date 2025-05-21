@@ -241,7 +241,7 @@ class SettingController extends Controller
                 ->map(function ($log) {
                     return (object) [
                         'causer' => (object) ['name' => $log->causer_name ?? 'System'],
-                        'description' => ucfirst($log->status),
+                        'description' => ucfirst($log->description),
                         'created_at' => \Carbon\Carbon::parse($log->created_at),
                         'id' => uniqid()
                     ];
