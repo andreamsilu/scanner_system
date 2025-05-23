@@ -81,9 +81,9 @@ class AttendeeController extends Controller
                 throw new \Exception('An attendee with this email already exists for this event.');
             }
 
-            // Generate unique token (7 characters, uppercase alphanumeric)
+            // Generate unique token (7 digits)
             do {
-                $token = strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 7));
+                $token = str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT);
             } while (Attendee::where('token', $token)->exists());
 
             // Generate QR code with check-in URL
