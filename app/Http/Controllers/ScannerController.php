@@ -281,7 +281,8 @@ class ScannerController extends Controller
                     ->where(function($q) {
                         $q->where('start_date', '>=', now())
                             ->orWhere('end_date', '>=', now());
-                    });
+                    })
+                    ->withPivot(['assigned_at', 'assigned_by']);
             }])
             ->withCount(['events' => function($query) {
                 $query->where('status', 'active')
@@ -292,6 +293,12 @@ class ScannerController extends Controller
             }])
             ->latest()
             ->paginate(10);
+
+        // Load assigned events for each scanner
+        $scanners->getCollection()->transform(function ($scanner) {
+            $scanner->assignedEvents = $scanner->events;
+            return $scanner;
+        });
 
         return view('scanners.index', compact('scanners'));
     }
