@@ -145,25 +145,62 @@ class ScannerController extends Controller
         ]);
 
         $user = auth()->user();
-        $scanner = $user->scanner;
-
+        
         // Check if event is selected
         $eventId = session('selected_event_id');
         if (!$eventId) {
             return response()->json([
                 'success' => false,
-                'message' => 'Please select an event first'
-            ]);
+                'message' => 'Please select an event first before scanning.',
+                'code' => 'NO_EVENT_SELECTED',
+                'redirect' => route('scanner.dashboard')
+            ], 422);
         }
 
-        // Verify scanner is assigned to this event
-        if (!$scanner || !$scanner->events()->where('events.id', $eventId)->exists()) {
+        // Get the selected event
+        $event = Event::find($eventId);
+        if (!$event) {
+            session()->forget('selected_event_id');
             return response()->json([
                 'success' => false,
-                'message' => 'You are not authorized to scan for this event.'
-            ]);
+                'message' => 'Selected event no longer exists. Please select a new event.',
+                'code' => 'EVENT_NOT_FOUND',
+                'redirect' => route('scanner.dashboard')
+            ], 422);
         }
 
+        // Verify scanner is authorized for this event
+        if (!$user->hasRole('admin') && !$user->events()->where('events.id', $eventId)->exists()) {
+            session()->forget('selected_event_id');
+            return response()->json([
+                'success' => false,
+                'message' => 'You are not authorized to scan for this event. Please select an event you are assigned to.',
+                'code' => 'UNAUTHORIZED_EVENT',
+                'redirect' => route('scanner.dashboard')
+            ], 403);
+        }
+
+        // Verify event is active
+        if ($event->status !== 'active') {
+            return response()->json([
+                'success' => false,
+                'message' => 'This event is not active. Please select an active event.',
+                'code' => 'EVENT_NOT_ACTIVE',
+                'redirect' => route('scanner.dashboard')
+            ], 422);
+        }
+
+        // Verify event is within valid date range
+        if ($event->end_date < now()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This event has ended. Please select an active event.',
+                'code' => 'EVENT_ENDED',
+                'redirect' => route('scanner.dashboard')
+            ], 422);
+        }
+
+        // Validate the token
         $eventCard = EventCard::where('token', $request->token)
             ->where('event_id', $eventId)
             ->where('is_active', true)
@@ -171,26 +208,45 @@ class ScannerController extends Controller
             ->first();
 
         if (!$eventCard) {
+            // Check if token exists but is already used
+            $usedCard = EventCard::where('token', $request->token)
+                ->where('event_id', $eventId)
+                ->where('is_used', true)
+                ->first();
+
+            if ($usedCard) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This ticket has already been used.',
+                    'code' => 'TICKET_USED'
+                ], 422);
+            }
+
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid QR code or QR code not for this event.'
-            ]);
+                'message' => 'Invalid QR code or QR code not for this event.',
+                'code' => 'INVALID_TICKET'
+            ], 422);
         }
 
+        // Create scan log
         $scanLog = ScanLog::create([
             'event_id' => $eventCard->event_id,
             'attendee_id' => $eventCard->attendee_id,
             'event_card_id' => $eventCard->id,
+            'scanner_id' => $user->id,
             'status' => 'success',
             'scanned_by' => $user->email
         ]);
 
+        // Mark ticket as used
         $eventCard->markAsUsed();
 
         return response()->json([
             'success' => true,
             'message' => 'Check-in successful!',
-            'attendee' => $eventCard->attendee
+            'attendee' => $eventCard->attendee,
+            'scan' => $scanLog
         ]);
     }
 
