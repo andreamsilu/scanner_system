@@ -12,8 +12,8 @@
                     <p class="mb-2">Please prepare a CSV file with the following columns:</p>
                     <ul class="list-disc list-inside mb-4">
                         <li><strong>name</strong> (required) - Full name of the attendee</li>
-                        <li><strong>email</strong> (required) - Email address</li>
-                        <li><strong>phone</strong> (optional) - Phone number</li>
+                        <li><strong>phone</strong> (required) - Phone number</li>
+                        <li><strong>email</strong> (optional) - Email address</li>
                         <li><strong>position</strong> (optional) - Job position or title</li>
                     </ul>
                     <p class="text-sm text-gray-600">The first row should contain the column headers exactly as shown above.</p>
