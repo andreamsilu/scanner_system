@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'scannerDashboard'])->name('dashboard');
         Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
         Route::get('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('select-event');
+        Route::delete('/events/{event}/select', [ScannerController::class, 'deselectEvent'])->name('select-event');
         Route::get('/events/{event}/scan', [ScanController::class, 'index'])->name('scan.index');
         Route::post('/scan/validate', [ScanController::class, 'scan'])->name('scan.validate');
         Route::get('/scan/{event}/{scan}', [ScanController::class, 'show'])->name('scan.show');
