@@ -35,13 +35,17 @@ class EventController extends Controller
             'description' => 'required|string',
             'venue' => 'required|string|max:255',
             'location' => 'required|string|max:255',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
+            'start_date' => ['required', 'date_format:d/m/Y H:i'],
+            'end_date' => ['required', 'date_format:d/m/Y H:i', 'after:start_date'],
             'capacity' => 'required|integer|min:1',
-            'status' => ['required', Rule::in(['draft', 'active', 'cancelled'])],
         ]);
 
+        // Convert dates to database format
+        $validated['start_date'] = \Carbon\Carbon::createFromFormat('d/m/Y H:i', $validated['start_date']);
+        $validated['end_date'] = \Carbon\Carbon::createFromFormat('d/m/Y H:i', $validated['end_date']);
+        
         $validated['created_by'] = auth()->id();
+        // Status will be automatically set by the model's boot method
 
         $event = Event::create($validated);
 
@@ -71,12 +75,16 @@ class EventController extends Controller
             'description' => 'required|string',
             'venue' => 'required|string|max:255',
             'location' => 'required|string|max:255',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
+            'start_date' => ['required', 'date_format:d/m/Y H:i'],
+            'end_date' => ['required', 'date_format:d/m/Y H:i', 'after:start_date'],
             'capacity' => 'required|integer|min:1',
-            'status' => ['required', Rule::in(['draft', 'active', 'cancelled'])],
         ]);
 
+        // Convert dates to database format
+        $validated['start_date'] = \Carbon\Carbon::createFromFormat('d/m/Y H:i', $validated['start_date']);
+        $validated['end_date'] = \Carbon\Carbon::createFromFormat('d/m/Y H:i', $validated['end_date']);
+
+        // Status will be automatically updated by the model's boot method
         $event->update($validated);
 
         return redirect()
