@@ -94,9 +94,12 @@ Route::middleware('auth')->group(function () {
                 Route::delete('/{event}/attendees/{attendee}', [AttendeeController::class, 'destroy'])->name('attendees.destroy');
                 Route::post('/{event}/attendees/{attendee}/check-in', [AttendeeController::class, 'checkIn'])->name('attendees.check-in');
                 Route::post('/{event}/attendees/{attendee}/regenerate-qr', [AttendeeController::class, 'regenerateQrCode'])->name('attendees.regenerate-qr');
-                Route::get('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUploadForm'])->name('attendees.bulk-upload');
-                Route::post('/{event}/attendees/bulk-upload', [AttendeeController::class, 'bulkUpload'])->name('attendees.bulk-upload.store');
                 Route::patch('/{event}/attendees/{attendee}/cancel', [AttendeeController::class, 'cancel'])->name('attendees.cancel');
+
+                // Bulk Upload Routes (moved inside events prefix group)
+                Route::get('/{event}/attendees/bulk-upload', [BulkUploadController::class, 'create'])->name('attendees.bulk-upload.create');
+                Route::post('/{event}/attendees/bulk-upload', [BulkUploadController::class, 'store'])->name('attendees.bulk-upload.store');
+                Route::get('/{event}/attendees/bulk-upload/{bulkUpload}', [BulkUploadController::class, 'status'])->name('attendees.bulk-upload.status');
             });
             
             // Scanners Management
@@ -160,14 +163,4 @@ Route::get('/check-in/{token}', [ScanController::class, 'checkIn'])->name('scann
 Route::middleware(['auth', 'role:admin,scanner'])->group(function () {
     Route::get('/scanner', [ScanController::class, 'scanner'])->name('scanner.index');
     Route::post('/scan', [ScanController::class, 'scan'])->name('scanner.scan');
-});
-
-// Bulk Upload Routes
-Route::middleware(['auth'])->group(function () {
-    Route::get('events/{event}/attendees/bulk-upload', [BulkUploadController::class, 'create'])
-        ->name('events.attendees.bulk-upload.create');
-    Route::post('events/{event}/attendees/bulk-upload', [BulkUploadController::class, 'store'])
-        ->name('events.attendees.bulk-upload.store');
-    Route::get('events/{event}/attendees/bulk-upload/{bulkUpload}', [BulkUploadController::class, 'status'])
-        ->name('events.attendees.bulk-upload.status');
 });
