@@ -66,6 +66,16 @@
             // Stop scanning
             html5QrcodeScanner.pause();
             
+            // Extract token from URL if it's a full URL
+            let token = decodedText;
+            try {
+                const url = new URL(decodedText);
+                token = url.pathname.split('/').pop(); // Get the last part of the URL path
+            } catch (e) {
+                // If it's not a URL, use the decoded text as is
+                token = decodedText;
+            }
+            
             // Send the token to the server
             fetch('{{ route("scanner.scan.validate") }}', {
                 method: 'POST',
@@ -74,7 +84,7 @@
                     'X-CSRF-TOKEN': '{{ csrf_token() }}'
                 },
                 body: JSON.stringify({
-                    token: decodedText
+                    token: token
                 })
             })
             .then(response => response.json())
