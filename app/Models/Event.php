@@ -33,6 +33,37 @@ class Event extends Model
 
     protected $appends = ['status_badge'];
 
+    /**
+     * Determine the event status based on the event date
+     * 
+     * @return string
+     */
+    public function determineStatus(): string
+    {
+        $now = now();
+        
+        if ($this->start_date->isFuture()) {
+            return 'pending';
+        } elseif ($this->end_date->isPast()) {
+            return 'finished';
+        } else {
+            return 'active';
+        }
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // Automatically set the status based on dates before saving
+        static::saving(function ($event) {
+            $event->status = $event->determineStatus();
+        });
+    }
+
     public function getBannerUrlAttribute(): ?string
     {
         return $this->banner ? Storage::url($this->banner) : null;
@@ -47,7 +78,8 @@ class Event extends Model
     {
         return match($this->status) {
             'active' => '<span class="badge bg-success">Active</span>',
-            'completed' => '<span class="badge bg-info">Completed</span>',
+            'pending' => '<span class="badge bg-warning">Pending</span>',
+            'finished' => '<span class="badge bg-info">Finished</span>',
             'cancelled' => '<span class="badge bg-danger">Cancelled</span>',
             default => '<span class="badge bg-secondary">Draft</span>'
         };
@@ -114,9 +146,14 @@ class Event extends Model
         return $this->status === 'active';
     }
 
-    public function isDraft()
+    public function isPending()
     {
-        return $this->status === 'draft';
+        return $this->status === 'pending';
+    }
+
+    public function isFinished()
+    {
+        return $this->status === 'finished';
     }
 
     public function isCancelled()

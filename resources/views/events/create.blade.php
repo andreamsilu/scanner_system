@@ -31,14 +31,31 @@
 
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="date" class="form-label">Event Date <span class="text-danger">*</span></label>
-                            <input type="datetime-local" 
-                                   class="form-control @error('date') is-invalid @enderror" 
-                                   id="date" 
-                                   name="date" 
-                                   value="{{ old('date') }}" 
+                            <label for="start_date" class="form-label">Start Date <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control datepicker @error('start_date') is-invalid @enderror" 
+                                   id="start_date" 
+                                   name="start_date" 
+                                   value="{{ old('start_date') }}" 
+                                   placeholder="DD/MM/YYYY HH:mm"
                                    required>
-                            @error('date')
+                            @error('start_date')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="end_date" class="form-label">End Date <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control datepicker @error('end_date') is-invalid @enderror" 
+                                   id="end_date" 
+                                   name="end_date" 
+                                   value="{{ old('end_date') }}" 
+                                   placeholder="DD/MM/YYYY HH:mm"
+                                   required>
+                            @error('end_date')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -83,24 +100,6 @@
                                    min="1" 
                                    required>
                             @error('capacity')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
-                            <select class="form-select @error('status') is-invalid @enderror" 
-                                    id="status" 
-                                    name="status" 
-                                    required>
-                                <option value="">Select Status</option>
-                                <option value="draft" {{ old('status') == 'draft' ? 'selected' : '' }}>Draft</option>
-                                <option value="published" {{ old('status') == 'published' ? 'selected' : '' }}>Published</option>
-                                <option value="cancelled" {{ old('status') == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
-                            </select>
-                            @error('status')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -157,6 +156,9 @@
     </div>
 
     @push('scripts')
+    <!-- Include Flatpickr CSS and JS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <script>
         // Form validation
         (function () {
@@ -172,6 +174,41 @@
                 }, false)
             })
         })()
+
+        // Initialize date pickers
+        document.addEventListener('DOMContentLoaded', function() {
+            const datePickerConfig = {
+                enableTime: true,
+                dateFormat: "d/m/Y H:i",
+                time_24hr: true,
+                minDate: "today",
+                locale: {
+                    firstDayOfWeek: 1
+                }
+            };
+
+            // Initialize start date picker
+            const startDatePicker = flatpickr("#start_date", {
+                ...datePickerConfig,
+                onChange: function(selectedDates, dateStr) {
+                    // Update end date min date when start date changes
+                    endDatePicker.set("minDate", selectedDates[0]);
+                }
+            });
+
+            // Initialize end date picker
+            const endDatePicker = flatpickr("#end_date", {
+                ...datePickerConfig,
+                onChange: function(selectedDates, dateStr) {
+                    // Validate end date is after start date
+                    const startDate = startDatePicker.selectedDates[0];
+                    if (startDate && selectedDates[0] <= startDate) {
+                        endDatePicker.setDate(startDate);
+                        alert("End date must be after start date");
+                    }
+                }
+            });
+        });
     </script>
     @endpush
 </x-app-layout> 
