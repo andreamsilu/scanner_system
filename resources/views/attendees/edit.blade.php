@@ -13,7 +13,7 @@
                     </nav>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="{{ route('attendees.show', $attendee) }}" class="btn btn-outline-primary">
+                    <a href="{{ route('events.attendees.show', ['event' => $event, 'attendee' => $attendee]) }}" class="btn btn-outline-primary">
                         <i class="bi bi-eye me-2"></i>View Attendee
                     </a>
                     <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-secondary">
