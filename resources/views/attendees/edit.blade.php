@@ -88,13 +88,7 @@
                                             id="event_id" 
                                             name="event_id" 
                                             required>
-                                        <option value="">Select Event</option>
-                                        @foreach($events as $event)
-                                            <option value="{{ $event->id }}" 
-                                                    {{ old('event_id', $attendee->event_id) == $event->id ? 'selected' : '' }}>
-                                                {{ $event->name }}
-                                            </option>
-                                        @endforeach
+                                        <option value="{{ $event->id }}" selected>{{ $event->name }}</option>
                                     </select>
                                     @error('event_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
