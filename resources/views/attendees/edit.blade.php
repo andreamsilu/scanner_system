@@ -33,7 +33,7 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('attendees.update', $attendee) }}" method="POST">
+                    <form action="{{ route('events.attendees.update', ['event' => $event, 'attendee' => $attendee]) }}" method="POST">
                         @csrf
                         @method('PUT')
                         <div class="row g-3">
