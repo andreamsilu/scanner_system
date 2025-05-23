@@ -93,6 +93,27 @@ class ScannerController extends Controller
         return redirect()->route('scanner.scan.index', ['event' => $event->id]);
     }
 
+    /**
+     * Deselect the currently selected event.
+     *
+     * @param Event $event
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function deselectEvent(Event $event): \Illuminate\Http\RedirectResponse
+    {
+        // Verify this is the currently selected event
+        if (session('selected_event_id') != $event->id) {
+            return redirect()->route('scanner.dashboard')
+                ->with('error', 'Invalid event selection.');
+        }
+
+        // Clear the selected event from session
+        session()->forget('selected_event_id');
+        
+        return redirect()->route('scanner.dashboard')
+            ->with('success', 'Event deselected. Please select a new event to start scanning.');
+    }
+
     public function getSelectedEvent(): JsonResponse
     {
         $eventId = session('selected_event_id');
