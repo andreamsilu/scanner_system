@@ -282,7 +282,8 @@ class ScannerController extends Controller
                         $q->where('start_date', '>=', now())
                             ->orWhere('end_date', '>=', now());
                     })
-                    ->withPivot(['assigned_at', 'assigned_by']);
+                    ->withPivot(['assigned_at', 'assigned_by'])
+                    ->select(['events.id', 'events.name', 'events.start_date', 'events.end_date', 'events.location', 'events.status']);
             }])
             ->withCount(['events' => function($query) {
                 $query->where('status', 'active')
@@ -294,9 +295,21 @@ class ScannerController extends Controller
             ->latest()
             ->paginate(10);
 
-        // Load assigned events for each scanner
+        // Load assigned events for each scanner and ensure dates are Carbon instances
         $scanners->getCollection()->transform(function ($scanner) {
-            $scanner->assignedEvents = $scanner->events;
+            $scanner->assignedEvents = $scanner->events->map(function ($event) {
+                // Ensure dates are Carbon instances
+                if (is_string($event->start_date)) {
+                    $event->start_date = \Carbon\Carbon::parse($event->start_date);
+                }
+                if (is_string($event->end_date)) {
+                    $event->end_date = \Carbon\Carbon::parse($event->end_date);
+                }
+                if (is_string($event->pivot->assigned_at)) {
+                    $event->pivot->assigned_at = \Carbon\Carbon::parse($event->pivot->assigned_at);
+                }
+                return $event;
+            });
             return $scanner;
         });
 

@@ -122,12 +122,16 @@
                                                                         <tr>
                                                                             <td>{{ $event->name }}</td>
                                                                             <td>
-                                                                                {{ $event->start_date->format('M d, Y') }}
-                                                                                <br>
-                                                                                <small class="text-muted">
-                                                                                    {{ $event->start_date->format('h:i A') }} - 
-                                                                                    {{ $event->end_date->format('h:i A') }}
-                                                                                </small>
+                                                                                @if($event->start_date && $event->end_date)
+                                                                                    {{ $event->start_date->format('M d, Y') }}
+                                                                                    <br>
+                                                                                    <small class="text-muted">
+                                                                                        {{ $event->start_date->format('h:i A') }} - 
+                                                                                        {{ $event->end_date->format('h:i A') }}
+                                                                                    </small>
+                                                                                @else
+                                                                                    <span class="text-muted">Dates not set</span>
+                                                                                @endif
                                                                             </td>
                                                                             <td>{{ $event->location }}</td>
                                                                             <td>
