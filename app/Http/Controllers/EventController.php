@@ -88,7 +88,8 @@ class EventController extends Controller
     {
         DB::transaction(function () use ($event) {
             $event->tickets()->delete();
-            $event->attendees()->detach();
+            $event->attendees()->delete();
+            $event->scanners()->detach();
             $event->delete();
         });
 
