@@ -17,7 +17,7 @@
                     <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
                         <i class="bi bi-person-plus me-2"></i>Add Attendee
                     </a>
-                    <a href="{{ route('events.attendees.bulk-upload', $event) }}" class="btn btn-success">
+                    <a href="{{ route('events.attendees.bulk-upload.create', $event) }}" class="btn btn-success">
                         <i class="bi bi-upload me-2"></i>Bulk Upload
                     </a>
                 </div>
