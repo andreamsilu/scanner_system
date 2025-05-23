@@ -31,23 +31,37 @@
                                 <tr>
                                     <th>Time</th>
                                     <th>Attendee</th>
-                                    <th>Status</th>
+                                    <th>Ticket Status</th>
+                                    <th>Scan Status</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @forelse($scans as $scan)
                                     <tr>
                                         <td>{{ $scan->created_at->format('h:i A') }}</td>
-                                        <td>{{ $scan->ticket->attendee->name }}</td>
                                         <td>
-                                            <span class="badge bg-{{ $scan->status === 'success' ? 'success' : 'danger' }}">
+                                            {{ $scan->ticket->attendee->name }}
+                                            <br>
+                                            <small class="text-muted">{{ $scan->ticket->attendee->email }}</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ $scan->ticket->status === 'used' ? 'success' : ($scan->ticket->status === 'active' ? 'primary' : 'danger') }}">
+                                                {{ ucfirst($scan->ticket->status) }}
+                                            </span>
+                                            @if($scan->ticket->used_at)
+                                                <br>
+                                                <small class="text-muted">Checked in: {{ $scan->ticket->used_at->format('h:i A') }}</small>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ $scan->status === 'success' ? 'success' : ($scan->status === 'duplicate' ? 'warning' : 'danger') }}">
                                                 {{ ucfirst($scan->status) }}
                                             </span>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="3" class="text-center">No scans yet</td>
+                                        <td colspan="4" class="text-center">No scans yet</td>
                                     </tr>
                                 @endforelse
                             </tbody>
