@@ -192,7 +192,8 @@ class AttendeeController extends Controller
      */
     public function edit(Event $event, Attendee $attendee): View
     {
-        return view('attendees.edit', compact('event', 'attendee'));
+        $events = Event::select('id', 'name')->orderBy('name')->get();
+        return view('attendees.edit', compact('event', 'attendee', 'events'));
     }
 
     /**
