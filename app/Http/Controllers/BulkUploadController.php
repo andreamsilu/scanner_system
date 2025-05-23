@@ -98,13 +98,28 @@ class BulkUploadController extends Controller
                     $attendee = Attendee::create([
                         'event_id' => $event->id,
                         'name' => $record['name'] ?? '',
-                        'email' => $record['email'] ?? '',
-                        'phone' => $record['phone'] ?? null,
+                        'phone' => $record['phone'] ?? '',
+                        'email' => $record['email'] ?? null,
                         'position' => $record['position'] ?? null,
                         'token' => $token,
                         'bulk_upload_id' => $bulkUpload->id,
                         'registration_status' => 'registered',
                     ]);
+
+                    // Validate required fields
+                    if (empty($record['name']) || empty($record['phone'])) {
+                        throw new \Exception('Name and phone are required fields');
+                    }
+
+                    // Validate phone format if provided
+                    if (!empty($record['phone']) && !preg_match('/^\+?[1-9]\d{1,14}$/', preg_replace('/[^0-9+]/', '', $record['phone']))) {
+                        throw new \Exception('Invalid phone number format');
+                    }
+
+                    // Validate email format if provided
+                    if (!empty($record['email']) && !filter_var($record['email'], FILTER_VALIDATE_EMAIL)) {
+                        throw new \Exception('Invalid email format');
+                    }
 
                     // Create ticket
                     $ticket = Ticket::create([
