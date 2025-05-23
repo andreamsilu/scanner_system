@@ -273,7 +273,9 @@ class ScannerController extends Controller
      */
     public function index(): View
     {
-        $scanners = User::role('scanner')
+        $scanners = User::whereHas('roles', function($query) {
+                $query->where('name', 'scanner');
+            })
             ->with(['events' => function($query) {
                 $query->where('status', 'active')
                     ->where(function($q) {
