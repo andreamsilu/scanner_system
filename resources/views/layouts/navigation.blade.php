@@ -67,13 +67,6 @@
                         </a>
                     </li>
                     <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('scanners.*') ? 'active' : '' }}" 
-                           href="{{ route('scanners.index') }}">
-                            <i class="bi bi-person-badge me-2"></i> Scanners
-                            <small class="text-muted d-block">(Manage Event Assignments)</small>
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" 
                            href="{{ route('reports.index') }}">
                             <i class="bi bi-graph-up me-2"></i> Reports
@@ -92,26 +85,45 @@
                 @if(auth()->user()->isScanner() || auth()->user()->isAdmin())
                     @if(auth()->user()->isScanner())
                         <li class="nav-item mb-2">
+                            <a class="nav-link {{ request()->routeIs('scanner.dashboard') ? 'active' : '' }}" 
+                               href="{{ route('scanner.dashboard') }}">
+                                <i class="bi bi-speedometer2 me-2"></i> Scanner Dashboard
+                                <small class="text-muted d-block">(Overview & Stats)</small>
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
                             <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active' : '' }}" 
                                href="{{ route('scanner.events.index') }}">
                                 <i class="bi bi-calendar-event me-2"></i> My Events
                                 <small class="text-muted d-block">(Assigned Events)</small>
                             </a>
                         </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {{ request()->routeIs('scanner.validate') ? 'active' : '' }}" 
+                               href="{{ route('scanner.validate') }}">
+                                <i class="bi bi-upc-scan me-2"></i> Scan Tickets
+                                <small class="text-muted d-block">(QR Code Scanner)</small>
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active' : '' }}" 
+                               href="{{ route('scanner.history') }}">
+                                <i class="bi bi-clock-history me-2"></i> Scan History
+                                <small class="text-muted d-block">(View Past Scans)</small>
+                            </a>
+                        </li>
+                        <hr class="my-3">
                     @endif
 
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('scanner.validate') ? 'active' : '' }}" 
-                           href="{{ route('scanner.validate') }}">
-                            <i class="bi bi-key me-2"></i> Manual Validation
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active' : '' }}" 
-                           href="{{ route('scanner.history') }}">
-                            <i class="bi bi-clock-history me-2"></i> Scan History
-                        </a>
-                    </li>
+                    @if(auth()->user()->isAdmin())
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {{ request()->routeIs('scanners.*') ? 'active' : '' }}" 
+                               href="{{ route('scanners.index') }}">
+                                <i class="bi bi-person-badge me-2"></i> Manage Scanners
+                                <small class="text-muted d-block">(Scanner Management)</small>
+                            </a>
+                        </li>
+                    @endif
                 @endif
 
                 <!-- Common Menu Items -->
