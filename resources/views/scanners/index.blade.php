@@ -49,24 +49,14 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @php
-                                                    $assignedEvents = $scanner->events()
-                                                        ->where('status', 'active')
-                                                        ->where(function($query) {
-                                                            $query->where('start_date', '>=', now())
-                                                                ->orWhere('end_date', '>=', now());
-                                                        })
-                                                        ->get();
-                                                @endphp
-                                                
-                                                @if($assignedEvents->isEmpty())
+                                                @if($scanner->assignedEvents->isEmpty())
                                                     <span class="text-muted">No active assignments</span>
                                                 @else
                                                     <button type="button" 
                                                             class="btn btn-link btn-sm p-0" 
                                                             data-bs-toggle="modal" 
                                                             data-bs-target="#scannerEventsModal{{ $scanner->id }}">
-                                                        {{ $assignedEvents->count() }} Active Events
+                                                        {{ $scanner->assignedEvents->count() }} Active Events
                                                     </button>
                                                 @endif
                                             </td>
@@ -128,7 +118,7 @@
                                                                     </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                    @foreach($assignedEvents as $event)
+                                                                    @foreach($scanner->assignedEvents as $event)
                                                                         <tr>
                                                                             <td>{{ $event->name }}</td>
                                                                             <td>
