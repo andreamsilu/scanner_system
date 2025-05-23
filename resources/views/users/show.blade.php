@@ -110,15 +110,17 @@
                             </button>
                         @endif
                         @if($user->is_active)
-                            <form action="{{ route('users.deactivate', $user) }}" method="POST">
+                            <form action="{{ route('users.toggle-status', ['id' => $user->id]) }}" method="POST">
                                 @csrf
+                                @method('PATCH')
                                 <button type="submit" class="btn btn-outline-warning w-100">
                                     <i class="bi bi-person-x me-2"></i>Deactivate User
                                 </button>
                             </form>
                         @else
-                            <form action="{{ route('users.activate', $user) }}" method="POST">
+                            <form action="{{ route('users.toggle-status', ['id' => $user->id]) }}" method="POST">
                                 @csrf
+                                @method('PATCH')
                                 <button type="submit" class="btn btn-outline-success w-100">
                                     <i class="bi bi-person-check me-2"></i>Activate User
                                 </button>
