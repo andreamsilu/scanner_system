@@ -122,6 +122,9 @@ class ScanController extends Controller
                 'used_at' => now()
             ]);
 
+            // Mark attendee as checked in
+            $attendee->markAsCheckedIn();
+
             // Create scan log
             ScanLog::create([
                 'ticket_id' => $attendee->ticket->id,
@@ -174,8 +177,10 @@ class ScanController extends Controller
 
     public function index(Event $event): View
     {
-        $scans = $event->scans()
-            ->with(['ticket.attendee', 'scanner'])
+        $scans = ScanLog::with(['ticket.attendee', 'scanner'])
+            ->whereHas('ticket', function($query) use ($event) {
+                $query->where('event_id', $event->id);
+            })
             ->latest()
             ->paginate(20);
 
