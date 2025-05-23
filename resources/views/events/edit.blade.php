@@ -1,15 +1,12 @@
-@extends('layouts.app')
-
-@section('title', 'Edit Event')
-
-@section('content')
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="mb-0">Edit Event</h2>
-        <a href="{{ route('events.index') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-2"></i>Back to Events
-        </a>
-    </div>
+<x-app-layout>
+    <x-slot name="header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">Edit Event</h2>
+            <a href="{{ route('events.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Events
+            </a>
+        </div>
+    </x-slot>
 
     <div class="card">
         <div class="card-body">
@@ -151,36 +148,35 @@
             </form>
         </div>
     </div>
-</div>
 
-@push('scripts')
-<script>
-    // Form validation
-    (function () {
-        'use strict'
-        var forms = document.querySelectorAll('.needs-validation')
-        Array.prototype.slice.call(forms).forEach(function (form) {
-            form.addEventListener('submit', function (event) {
-                if (!form.checkValidity()) {
-                    event.preventDefault()
-                    event.stopPropagation()
-                }
-                form.classList.add('was-validated')
-            }, false)
-        })
-    })()
+    @push('scripts')
+    <script>
+        // Form validation
+        (function () {
+            'use strict'
+            var forms = document.querySelectorAll('.needs-validation')
+            Array.prototype.slice.call(forms).forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+        })()
 
-    // Date validation
-    document.getElementById('end_date').addEventListener('change', function() {
-        const startDate = new Date(document.getElementById('start_date').value);
-        const endDate = new Date(this.value);
-        
-        if (endDate <= startDate) {
-            this.setCustomValidity('End date must be after start date');
-        } else {
-            this.setCustomValidity('');
-        }
-    });
-</script>
-@endpush
-@endsection 
+        // Date validation
+        document.getElementById('end_date').addEventListener('change', function() {
+            const startDate = new Date(document.getElementById('start_date').value);
+            const endDate = new Date(this.value);
+            
+            if (endDate <= startDate) {
+                this.setCustomValidity('End date must be after start date');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+    </script>
+    @endpush
+</x-app-layout> 
