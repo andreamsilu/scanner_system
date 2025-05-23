@@ -22,7 +22,16 @@ class Attendee extends Model
         'phone',
         'position',
         'token',
-        'qr_code'
+        'qr_code',
+        'registration_status',
+        'checked_in_at'
+    ];
+
+    protected $casts = [
+        'checked_in_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'deleted_at' => 'datetime'
     ];
 
     protected static function boot()
@@ -156,5 +165,61 @@ class Attendee extends Model
         $this->save();
 
         return $this;
+    }
+
+    /**
+     * Check if the attendee is registered.
+     */
+    public function isRegistered(): bool
+    {
+        return $this->registration_status === 'registered';
+    }
+
+    /**
+     * Check if the attendee has checked in.
+     */
+    public function isCheckedIn(): bool
+    {
+        return $this->registration_status === 'checked_in';
+    }
+
+    /**
+     * Check if the attendee's registration is cancelled.
+     */
+    public function isCancelled(): bool
+    {
+        return $this->registration_status === 'cancelled';
+    }
+
+    /**
+     * Mark the attendee as checked in.
+     */
+    public function markAsCheckedIn(): bool
+    {
+        return $this->update([
+            'registration_status' => 'checked_in',
+            'checked_in_at' => now()
+        ]);
+    }
+
+    /**
+     * Mark the attendee's registration as cancelled.
+     */
+    public function markAsCancelled(): bool
+    {
+        return $this->update([
+            'registration_status' => 'cancelled'
+        ]);
+    }
+
+    /**
+     * Reset the attendee's registration status to registered.
+     */
+    public function resetRegistrationStatus(): bool
+    {
+        return $this->update([
+            'registration_status' => 'registered',
+            'checked_in_at' => null
+        ]);
     }
 } 
