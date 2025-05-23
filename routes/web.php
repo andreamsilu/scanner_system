@@ -14,6 +14,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\SettingController;
+use App\Http\Controllers\BulkUploadController;
 
 // Authentication Routes
 /* Removed (or commented out) the fallback route (or any route named 'welcome') so that if a user (or a seeder) tries to redirect to route('welcome') (or GET /) then a 404 (or a fallback) is returned (and no "Route [welcome] not defined" error is thrown). */
@@ -159,4 +160,14 @@ Route::get('/check-in/{token}', [ScanController::class, 'checkIn'])->name('scann
 Route::middleware(['auth', 'role:admin,scanner'])->group(function () {
     Route::get('/scanner', [ScanController::class, 'scanner'])->name('scanner.index');
     Route::post('/scan', [ScanController::class, 'scan'])->name('scanner.scan');
+});
+
+// Bulk Upload Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('events/{event}/attendees/bulk-upload', [BulkUploadController::class, 'create'])
+        ->name('events.attendees.bulk-upload.create');
+    Route::post('events/{event}/attendees/bulk-upload', [BulkUploadController::class, 'store'])
+        ->name('events.attendees.bulk-upload.store');
+    Route::get('events/{event}/attendees/bulk-upload/{bulkUpload}', [BulkUploadController::class, 'status'])
+        ->name('events.attendees.bulk-upload.status');
 });
