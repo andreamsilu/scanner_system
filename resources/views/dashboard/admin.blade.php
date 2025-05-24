@@ -20,7 +20,7 @@
                         <div>
                             <h6 class="card-subtitle mb-2 text-muted">Total Events</h6>
                             <h3 class="card-title mb-0">{{ $stats['total_events'] }}</h3>
-                            <small class="text-success">{{ $stats['active_events'] }} Active</small>
+                            <small class="text-muted">All time</small>
                         </div>
                     </div>
                 </div>
@@ -31,28 +31,12 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="p-3 rounded-circle bg-success bg-opacity-10 text-success me-3">
-                            <i class="bi bi-people fa-2x"></i>
+                            <i class="bi bi-check-circle fa-2x"></i>
                         </div>
                         <div>
-                            <h6 class="card-subtitle mb-2 text-muted">Total Attendees</h6>
-                            <h3 class="card-title mb-0">{{ $stats['total_attendees'] }}</h3>
-                            <small class="text-muted">Registered</small>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="p-3 rounded-circle bg-info bg-opacity-10 text-info me-3">
-                            <i class="bi bi-person-badge fa-2x"></i>
-                        </div>
-                        <div>
-                            <h6 class="card-subtitle mb-2 text-muted">Active Scanners</h6>
-                            <h3 class="card-title mb-0">{{ $stats['active_scanners'] }}</h3>
-                            <small class="text-muted">Today</small>
+                            <h6 class="card-subtitle mb-2 text-muted">Completed Events</h6>
+                            <h3 class="card-title mb-0">{{ $stats['completed_events'] }}</h3>
+                            <small class="text-muted">Past events</small>
                         </div>
                     </div>
                 </div>
@@ -63,12 +47,28 @@
                 <div class="card-body">
                     <div class="d-flex align-items-center">
                         <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning me-3">
+                            <i class="bi bi-calendar-plus fa-2x"></i>
+                        </div>
+                        <div>
+                            <h6 class="card-subtitle mb-2 text-muted">Upcoming Events</h6>
+                            <h3 class="card-title mb-0">{{ $stats['upcoming_events'] }}</h3>
+                            <small class="text-muted">Pending events</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="p-3 rounded-circle bg-info bg-opacity-10 text-info me-3">
                             <i class="bi bi-upc-scan fa-2x"></i>
                         </div>
                         <div>
-                            <h6 class="card-subtitle mb-2 text-muted">Today's Scans</h6>
-                            <h3 class="card-title mb-0">{{ $stats['today_scans'] }}</h3>
-                            <small class="text-muted">Total: {{ $stats['total_scans'] }}</small>
+                            <h6 class="card-subtitle mb-2 text-muted">Active Scanners</h6>
+                            <h3 class="card-title mb-0">{{ $stats['active_scanners'] }}</h3>
+                            <small class="text-muted">Currently assigned</small>
                         </div>
                     </div>
                 </div>
