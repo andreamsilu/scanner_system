@@ -5,16 +5,26 @@
     <div class="d-flex justify-content-between align-items-center">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+                <li class="breadcrumb-item">
+                    <a href="{{ route('admin.dashboard') }}" class="breadcrumb-link">
+                        <i class="bi bi-house-door me-1"></i>Dashboard
+                    </a>
+                </li>
                 @foreach($breadcrumbs as $label => $route)
                     @if($route)
-                        <li class="breadcrumb-item"><a href="{{ $route }}">{{ $label }}</a></li>
+                        <li class="breadcrumb-item">
+                            <a href="{{ $route }}" class="breadcrumb-link">{{ $label }}</a>
+                        </li>
                     @else
-                        <li class="breadcrumb-item active" aria-current="page">{{ $label }}</li>
+                        <li class="breadcrumb-item active" aria-current="page">
+                            <span class="breadcrumb-text">{{ $label }}</span>
+                        </li>
                     @endif
                 @endforeach
                 @if(empty($breadcrumbs))
-                    <li class="breadcrumb-item active" aria-current="page">{{ $title }}</li>
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <span class="breadcrumb-text">{{ $title }}</span>
+                    </li>
                 @endif
             </ol>
         </nav>
@@ -52,19 +62,33 @@
         font-size: 1.2rem;
         line-height: 1;
         vertical-align: middle;
+        color: #6c757d;
     }
     
-    .breadcrumb-item a {
+    /* Breadcrumb link styles */
+    .breadcrumb-link {
         color: #6c757d;
         text-decoration: none;
+        transition: color 0.2s ease-in-out;
+        display: inline-flex;
+        align-items: center;
     }
     
-    .breadcrumb-item a:hover {
+    .breadcrumb-link:hover {
         color: #0d6efd;
+        text-decoration: underline;
     }
     
-    .breadcrumb-item.active {
+    .breadcrumb-link:focus {
+        color: #0d6efd;
+        outline: none;
+        text-decoration: underline;
+    }
+    
+    /* Active breadcrumb */
+    .breadcrumb-item.active .breadcrumb-text {
         color: #495057;
+        font-weight: 500;
     }
 
     /* Header styles */
@@ -82,6 +106,27 @@
     .text-muted.border-start {
         font-size: 0.875rem;
         border-color: #dee2e6 !important;
+    }
+
+    /* Breadcrumb hover effect */
+    .breadcrumb-item:not(.active) {
+        position: relative;
+    }
+
+    .breadcrumb-item:not(.active)::after {
+        content: '';
+        position: absolute;
+        bottom: -2px;
+        left: 0;
+        width: 100%;
+        height: 2px;
+        background-color: #0d6efd;
+        transform: scaleX(0);
+        transition: transform 0.2s ease-in-out;
+    }
+
+    .breadcrumb-item:not(.active):hover::after {
+        transform: scaleX(1);
     }
 </style>
 @endpush 
