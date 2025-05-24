@@ -152,7 +152,20 @@
     /* Top navbar styles */
     .navbar {
         height: 60px;
-        z-index: 1040;
+        z-index: 1050; /* Increased z-index to be above sidebar */
+        background-color: #fff;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .navbar .container-fluid {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .navbar-brand {
+        display: flex;
+        align-items: center;
+        margin-right: 0;
     }
 
     /* Sidebar styles */
@@ -166,9 +179,10 @@
         left: 0;
         height: 100vh;
         width: 250px;
-        z-index: 1030;
+        z-index: 1040; /* Below navbar but above overlay */
         transition: transform 0.3s ease-in-out;
         overflow-y: auto;
+        background-color: #fff;
     }
 
     .sidebar-overlay {
@@ -178,7 +192,7 @@
         right: 0;
         bottom: 0;
         background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1020;
+        z-index: 1030; /* Below sidebar */
         display: none;
         opacity: 0;
         transition: opacity 0.3s ease-in-out;
@@ -229,6 +243,16 @@
             transform: translateX(0);
         }
 
+        /* Ensure top navbar stays above everything on mobile */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        /* Adjust content spacing */
         .content-wrapper {
             margin-left: 0 !important;
             padding-top: 60px; /* Account for fixed navbar */
@@ -238,12 +262,10 @@
             padding-top: 60px; /* Account for fixed navbar */
         }
 
-        /* Ensure top navbar stays above sidebar on mobile */
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
+        /* Ensure navbar content is visible */
+        .navbar .container-fluid {
+            position: relative;
+            z-index: 1051; /* Above navbar background */
         }
     }
 
@@ -255,15 +277,16 @@
 
         .sidebar {
             transform: none;
+            box-shadow: 1px 0 4px rgba(0,0,0,0.05);
         }
 
         .content-wrapper {
             margin-left: 250px;
-            padding-top: 0; /* Remove top padding on desktop */
+            padding-top: 0;
         }
 
         body {
-            padding-top: 0; /* Remove top padding on desktop */
+            padding-top: 0;
         }
     }
 
