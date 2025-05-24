@@ -9,66 +9,66 @@
     </x-slot>
 
     <!-- Stats Cards -->
-    <div class="row g-4 mb-4">
+    <div class="row g-3 mb-4">
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="p-3 rounded-circle bg-primary bg-opacity-10 text-primary me-3">
-                            <i class="bi bi-calendar-event fa-2x"></i>
-                        </div>
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2 text-muted">Total Events</h6>
-                            <h3 class="card-title mb-0">{{ $stats['total_events'] }}</h3>
+                            <h6 class="card-subtitle mb-1 text-muted small">Total Events</h6>
+                            <h4 class="card-title mb-0">{{ $stats['total_events'] }}</h4>
                             <small class="text-muted">All time</small>
                         </div>
+                        <div class="p-2 rounded-circle bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-calendar-event"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="p-3 rounded-circle bg-success bg-opacity-10 text-success me-3">
-                            <i class="bi bi-check-circle fa-2x"></i>
-                        </div>
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2 text-muted">Completed Events</h6>
-                            <h3 class="card-title mb-0">{{ $stats['completed_events'] }}</h3>
+                            <h6 class="card-subtitle mb-1 text-muted small">Completed Events</h6>
+                            <h4 class="card-title mb-0">{{ $stats['completed_events'] }}</h4>
                             <small class="text-muted">Past events</small>
                         </div>
+                        <div class="p-2 rounded-circle bg-success bg-opacity-10 text-success">
+                            <i class="bi bi-check-circle"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="p-3 rounded-circle bg-warning bg-opacity-10 text-warning me-3">
-                            <i class="bi bi-calendar-plus fa-2x"></i>
-                        </div>
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2 text-muted">Upcoming Events</h6>
-                            <h3 class="card-title mb-0">{{ $stats['upcoming_events'] }}</h3>
+                            <h6 class="card-subtitle mb-1 text-muted small">Upcoming Events</h6>
+                            <h4 class="card-title mb-0">{{ $stats['upcoming_events'] }}</h4>
                             <small class="text-muted">Pending events</small>
                         </div>
+                        <div class="p-2 rounded-circle bg-warning bg-opacity-10 text-warning">
+                            <i class="bi bi-calendar-plus"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="p-3 rounded-circle bg-info bg-opacity-10 text-info me-3">
-                            <i class="bi bi-upc-scan fa-2x"></i>
-                        </div>
+                <div class="card-body p-3">
+                    <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-2 text-muted">Active Scanners</h6>
-                            <h3 class="card-title mb-0">{{ $stats['active_scanners'] }}</h3>
+                            <h6 class="card-subtitle mb-1 text-muted small">Active Scanners</h6>
+                            <h4 class="card-title mb-0">{{ $stats['active_scanners'] }}</h4>
                             <small class="text-muted">Currently assigned</small>
+                        </div>
+                        <div class="p-2 rounded-circle bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-upc-scan"></i>
                         </div>
                     </div>
                 </div>
@@ -197,11 +197,21 @@
 
     @push('styles')
     <style>
-        .stat-card {
+        .card {
             transition: transform 0.2s;
         }
-        .stat-card:hover {
-            transform: translateY(-5px);
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .bi {
+            font-size: 1.25rem;
+        }
+        .rounded-circle {
+            width: 2.5rem;
+            height: 2.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
     </style>
     @endpush
