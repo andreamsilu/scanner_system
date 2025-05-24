@@ -1,21 +1,8 @@
 <x-app-layout>
-    <!-- Breadcrumb -->
-    <nav aria-label="breadcrumb" class="bg-white py-2 px-3 border-bottom">
-        <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-            <li class="breadcrumb-item active" aria-current="page">Admin Dashboard</li>
-        </ol>
-    </nav>
-
-    <!-- Header -->
-    <div class="bg-white border-bottom py-3 px-3">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="h4 fw-bold text-dark mb-0">Admin Dashboard</h2>
-            <div class="text-muted">
-                Welcome, {{ Auth::user()->name }}
-            </div>
-        </div>
-    </div>
+    <x-page-header 
+        title="Admin Dashboard"
+        :breadcrumbs="['Admin Dashboard' => null]"
+    />
 
     <!-- Stats Cards -->
     <div class="row g-2 mb-4 mt-3">

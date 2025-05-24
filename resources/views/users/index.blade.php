@@ -1,17 +1,17 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">User Management</h2>
-            <div>
-                <a href="{{ route('users.create') }}" class="btn btn-primary me-2">
-                    <i class="bi bi-person-plus me-2"></i>Add User
-                </a>
-                <a href="{{ route('users.export') }}" class="btn btn-success">
-                    <i class="bi bi-file-excel me-2"></i>Export Users
-                </a>
-            </div>
-        </div>
-    </x-slot>
+    <x-page-header 
+        title="User Management"
+        :breadcrumbs="['Users' => null]"
+    >
+        <x-slot name="actions">
+            <a href="{{ route('users.create') }}" class="btn btn-primary me-2">
+                <i class="bi bi-person-plus me-2"></i>Add User
+            </a>
+            <a href="{{ route('users.export') }}" class="btn btn-success">
+                <i class="bi bi-file-excel me-2"></i>Export Users
+            </a>
+        </x-slot>
+    </x-page-header>
 
     <!-- Filters -->
     <div class="card border-0 shadow-sm mb-4">
