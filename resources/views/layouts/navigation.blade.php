@@ -152,7 +152,7 @@
     /* Top navbar styles */
     .navbar {
         height: 60px;
-        z-index: 1030;
+        z-index: 1040;
     }
 
     /* Sidebar styles */
@@ -166,7 +166,7 @@
         left: 0;
         height: 100vh;
         width: 250px;
-        z-index: 1020;
+        z-index: 1030;
         transition: transform 0.3s ease-in-out;
         overflow-y: auto;
     }
@@ -178,7 +178,7 @@
         right: 0;
         bottom: 0;
         background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1010;
+        z-index: 1020;
         display: none;
         opacity: 0;
         transition: opacity 0.3s ease-in-out;
@@ -237,6 +237,14 @@
         body {
             padding-top: 60px; /* Account for fixed navbar */
         }
+
+        /* Ensure top navbar stays above sidebar on mobile */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+        }
     }
 
     /* Desktop styles */
@@ -251,6 +259,11 @@
 
         .content-wrapper {
             margin-left: 250px;
+            padding-top: 0; /* Remove top padding on desktop */
+        }
+
+        body {
+            padding-top: 0; /* Remove top padding on desktop */
         }
     }
 

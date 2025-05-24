@@ -200,6 +200,7 @@
         body {
             min-height: 100vh;
             display: flex;
+            background-color: #f8f9fa;
         }
         
         .content-wrapper {
@@ -209,17 +210,26 @@
             min-height: 100vh;
             margin-left: 250px;
             transition: margin-left 0.3s ease-in-out;
+            position: relative;
+            z-index: 1;
         }
         
         @media (max-width: 991.98px) {
             .content-wrapper {
                 margin-left: 0;
+                padding-top: 60px; /* Account for fixed navbar */
             }
         }
         
         main {
             flex: 1;
-            padding-top: 1rem;
+            padding: 1.5rem 0;
+        }
+
+        /* Ensure alerts don't overlap with fixed navbar */
+        .alert {
+            margin-top: 1rem;
+            margin-bottom: 1rem;
         }
     </style>
 </head>
