@@ -2,49 +2,53 @@
 
 <!-- Breadcrumb with Welcome Message -->
 <div class="bg-white py-2 px-3 border-bottom">
-    <div class="d-flex justify-content-between align-items-center">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mb-0">
-                <li class="breadcrumb-item">
-                    <a href="{{ route('admin.dashboard') }}" class="breadcrumb-link">
-                        <i class="bi bi-house-door me-1"></i>Dashboard
-                    </a>
-                </li>
-                @foreach($breadcrumbs as $label => $route)
-                    @if($route)
-                        <li class="breadcrumb-item">
-                            <a href="{{ $route }}" class="breadcrumb-link">{{ $label }}</a>
-                        </li>
-                    @else
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item">
+                        <a href="{{ route('admin.dashboard') }}" class="breadcrumb-link">
+                            <i class="bi bi-house-door me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    @foreach($breadcrumbs as $label => $route)
+                        @if($route)
+                            <li class="breadcrumb-item">
+                                <a href="{{ $route }}" class="breadcrumb-link">{{ $label }}</a>
+                            </li>
+                        @else
+                            <li class="breadcrumb-item active" aria-current="page">
+                                <span class="breadcrumb-text">{{ $label }}</span>
+                            </li>
+                        @endif
+                    @endforeach
+                    @if(empty($breadcrumbs))
                         <li class="breadcrumb-item active" aria-current="page">
-                            <span class="breadcrumb-text">{{ $label }}</span>
+                            <span class="breadcrumb-text">{{ $title }}</span>
                         </li>
                     @endif
-                @endforeach
-                @if(empty($breadcrumbs))
-                    <li class="breadcrumb-item active" aria-current="page">
-                        <span class="breadcrumb-text">{{ $title }}</span>
-                    </li>
-                @endif
-            </ol>
-        </nav>
-        <div class="text-muted border-start ps-3 ms-3">
-            Welcome, {{ Auth::user()->name }}
+                </ol>
+            </nav>
+            <div class="text-muted border-start ps-3 ms-3">
+                Welcome, {{ Auth::user()->name }}
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Header -->
 <div class="bg-white border-bottom py-3 px-3">
-    <div class="d-flex justify-content-between align-items-center">
-        <div>
-            <h2 class="h4 fw-bold text-dark mb-0">{{ $title }}</h2>
-            @if(isset($subtitle))
-                <p class="text-muted mb-0">{{ $subtitle }}</p>
-            @endif
-        </div>
-        <div class="d-flex gap-2">
-            {{ $actions ?? '' }}
+    <div class="container-fluid">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="h4 fw-bold text-dark mb-0">{{ $title }}</h2>
+                @if(isset($subtitle))
+                    <p class="text-muted mb-0">{{ $subtitle }}</p>
+                @endif
+            </div>
+            <div class="d-flex gap-2">
+                {{ $actions ?? '' }}
+            </div>
         </div>
     </div>
 </div>
