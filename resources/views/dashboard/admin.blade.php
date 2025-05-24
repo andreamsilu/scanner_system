@@ -1,15 +1,24 @@
 <x-app-layout>
-    <x-slot name="header">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="bg-white py-2 px-3 border-bottom">
+        <ol class="breadcrumb mb-0">
+            <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Admin Dashboard</li>
+        </ol>
+    </nav>
+
+    <!-- Header -->
+    <div class="bg-white border-bottom py-3 px-3">
         <div class="d-flex justify-content-between align-items-center">
-            <h2 class="display-6 fw-bold text-dark mb-0">Admin Dashboard</h2>
+            <h2 class="h4 fw-bold text-dark mb-0">Admin Dashboard</h2>
             <div class="text-muted">
                 Welcome, {{ Auth::user()->name }}
             </div>
         </div>
-    </x-slot>
+    </div>
 
     <!-- Stats Cards -->
-    <div class="row g-2 mb-4">
+    <div class="row g-2 mb-4 mt-3">
         <div class="col-md-3">
             <div class="card border h-100 stat-card">
                 <div class="card-body p-2">
@@ -225,6 +234,38 @@
         }
         .text-muted.small {
             font-size: 0.7rem;
+        }
+        
+        /* Breadcrumb styles */
+        .breadcrumb {
+            margin-bottom: 0;
+            padding: 0.5rem 0;
+        }
+        
+        .breadcrumb-item + .breadcrumb-item::before {
+            content: "›";
+            font-size: 1.2rem;
+            line-height: 1;
+            vertical-align: middle;
+        }
+        
+        .breadcrumb-item a {
+            color: #6c757d;
+            text-decoration: none;
+        }
+        
+        .breadcrumb-item a:hover {
+            color: #0d6efd;
+        }
+        
+        .breadcrumb-item.active {
+            color: #495057;
+        }
+
+        /* Header styles */
+        .h4 {
+            font-size: 1.25rem;
+            font-weight: 600;
         }
     </style>
     @endpush
