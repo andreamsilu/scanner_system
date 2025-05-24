@@ -44,13 +44,43 @@
         
         main {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Breadcrumb and header container */
+        .breadcrumb-container,
+        .header-container {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Content area */
+        .content-area {
+            flex: 1;
             padding: 1.5rem 0;
+            position: relative;
+            z-index: 1;
         }
 
         /* Ensure alerts don't overlap with fixed navbar */
         .alert {
-            margin-top: 1rem;
-            margin-bottom: 1rem;
+            margin: 1rem 0;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Container padding adjustments */
+        .container-fluid {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+
+        @media (max-width: 767.98px) {
+            .container-fluid {
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
         }
     </style>
 </head>
@@ -61,7 +91,7 @@
     <!-- Main Content -->
     <div class="content-wrapper">
         <main>
-            <div class="container-fluid py-4">
+            <div class="container-fluid">
                 @if (session('success'))
                     <div class="alert alert-success alert-dismissible fade show" role="alert">
                         {{ session('success') }}
