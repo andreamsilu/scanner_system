@@ -9,17 +9,17 @@
     </x-slot>
 
     <!-- Stats Cards -->
-    <div class="row g-3 mb-4">
+    <div class="row g-2 mb-4">
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-3">
+            <div class="card border h-100 stat-card">
+                <div class="card-body p-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-1 text-muted small">Total Events</h6>
-                            <h4 class="card-title mb-0">{{ $stats['total_events'] }}</h4>
-                            <small class="text-muted">All time</small>
+                            <h6 class="card-subtitle mb-0 text-muted small">Total Events</h6>
+                            <h5 class="card-title mb-0">{{ $stats['total_events'] }}</h5>
+                            <small class="text-muted small">All time</small>
                         </div>
-                        <div class="p-2 rounded-circle bg-primary bg-opacity-10 text-primary">
+                        <div class="p-1 rounded-circle bg-primary bg-opacity-10 text-primary">
                             <i class="bi bi-calendar-event"></i>
                         </div>
                     </div>
@@ -27,15 +27,15 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-3">
+            <div class="card border h-100 stat-card">
+                <div class="card-body p-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-1 text-muted small">Completed Events</h6>
-                            <h4 class="card-title mb-0">{{ $stats['completed_events'] }}</h4>
-                            <small class="text-muted">Past events</small>
+                            <h6 class="card-subtitle mb-0 text-muted small">Completed Events</h6>
+                            <h5 class="card-title mb-0">{{ $stats['completed_events'] }}</h5>
+                            <small class="text-muted small">Past events</small>
                         </div>
-                        <div class="p-2 rounded-circle bg-success bg-opacity-10 text-success">
+                        <div class="p-1 rounded-circle bg-success bg-opacity-10 text-success">
                             <i class="bi bi-check-circle"></i>
                         </div>
                     </div>
@@ -43,15 +43,15 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-3">
+            <div class="card border h-100 stat-card">
+                <div class="card-body p-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-1 text-muted small">Upcoming Events</h6>
-                            <h4 class="card-title mb-0">{{ $stats['upcoming_events'] }}</h4>
-                            <small class="text-muted">Pending events</small>
+                            <h6 class="card-subtitle mb-0 text-muted small">Upcoming Events</h6>
+                            <h5 class="card-title mb-0">{{ $stats['upcoming_events'] }}</h5>
+                            <small class="text-muted small">Pending events</small>
                         </div>
-                        <div class="p-2 rounded-circle bg-warning bg-opacity-10 text-warning">
+                        <div class="p-1 rounded-circle bg-warning bg-opacity-10 text-warning">
                             <i class="bi bi-calendar-plus"></i>
                         </div>
                     </div>
@@ -59,15 +59,15 @@
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-body p-3">
+            <div class="card border h-100 stat-card">
+                <div class="card-body p-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-1 text-muted small">Active Scanners</h6>
-                            <h4 class="card-title mb-0">{{ $stats['active_scanners'] }}</h4>
-                            <small class="text-muted">Currently assigned</small>
+                            <h6 class="card-subtitle mb-0 text-muted small">Active Scanners</h6>
+                            <h5 class="card-title mb-0">{{ $stats['active_scanners'] }}</h5>
+                            <small class="text-muted small">Currently assigned</small>
                         </div>
-                        <div class="p-2 rounded-circle bg-info bg-opacity-10 text-info">
+                        <div class="p-1 rounded-circle bg-info bg-opacity-10 text-info">
                             <i class="bi bi-upc-scan"></i>
                         </div>
                     </div>
@@ -197,21 +197,34 @@
 
     @push('styles')
     <style>
-        .card {
+        .stat-card {
             transition: transform 0.2s;
+            border-color: #e9ecef !important;
         }
-        .card:hover {
+        .stat-card:hover {
             transform: translateY(-2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .bi {
-            font-size: 1.25rem;
+            font-size: 1rem;
         }
         .rounded-circle {
-            width: 2.5rem;
-            height: 2.5rem;
+            width: 2rem;
+            height: 2rem;
             display: flex;
             align-items: center;
             justify-content: center;
+        }
+        .card-title {
+            font-size: 1.25rem;
+            line-height: 1.2;
+        }
+        .card-subtitle {
+            font-size: 0.75rem;
+            line-height: 1.2;
+        }
+        .text-muted.small {
+            font-size: 0.7rem;
         }
     </style>
     @endpush
