@@ -34,7 +34,9 @@ class DashboardController extends Controller
             'total_events' => Event::count(),
             'completed_events' => Event::where('end_date', '<', now())->count(),
             'upcoming_events' => Event::where('start_date', '>', now())->count(),
-            'active_scanners' => User::role('scanner')
+            'active_scanners' => User::whereHas('roles', function($query) {
+                    $query->where('slug', 'scanner');
+                })
                 ->whereHas('scannerEvents', function ($query) {
                     $query->whereHas('event', function ($q) {
                         $q->where('start_date', '<=', now())
