@@ -67,7 +67,9 @@ class DashboardController extends Controller
             ->get();
 
         // Get scanner performance for today
-        $scanner_performance = User::role('scanner')
+        $scanner_performance = User::whereHas('roles', function($query) {
+                $query->where('slug', 'scanner');
+            })
             ->withCount(['scanLogs' => function ($query) {
                 $query->whereDate('created_at', today());
             }])
