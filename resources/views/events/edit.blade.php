@@ -32,36 +32,6 @@
 
                     <div class="col-md-6">
                         <div class="form-group">
-                            <label for="venue" class="form-label">Venue <span class="text-danger">*</span></label>
-                            <input type="text" 
-                                   class="form-control @error('venue') is-invalid @enderror" 
-                                   id="venue" 
-                                   name="venue" 
-                                   value="{{ old('venue', $event->venue) }}" 
-                                   required>
-                            @error('venue')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
-                            <input type="text" 
-                                   class="form-control @error('location') is-invalid @enderror" 
-                                   id="location" 
-                                   name="location" 
-                                   value="{{ old('location', $event->location) }}" 
-                                   required>
-                            @error('location')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
                             <label for="start_date" class="form-label">Start Date <span class="text-danger">*</span></label>
                             <input type="text" 
                                    class="form-control datepicker @error('start_date') is-invalid @enderror" 
@@ -94,6 +64,21 @@
 
                     <div class="col-md-6">
                         <div class="form-group">
+                            <label for="venue" class="form-label">Venue <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control @error('venue') is-invalid @enderror" 
+                                   id="venue" 
+                                   name="venue" 
+                                   value="{{ old('venue', $event->venue) }}" 
+                                   required>
+                            @error('venue')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
                             <label for="capacity" class="form-label">Capacity <span class="text-danger">*</span></label>
                             <input type="number" 
                                    class="form-control @error('capacity') is-invalid @enderror" 
@@ -103,40 +88,6 @@
                                    min="1" 
                                    required>
                             @error('capacity')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="type" class="form-label">Event Type <span class="text-danger">*</span></label>
-                            <select class="form-select @error('type') is-invalid @enderror" 
-                                    id="type" 
-                                    name="type" 
-                                    required>
-                                <option value="">Select Type</option>
-                                <option value="conference" {{ old('type', $event->type) == 'conference' ? 'selected' : '' }}>Conference</option>
-                                <option value="seminar" {{ old('type', $event->type) == 'seminar' ? 'selected' : '' }}>Seminar</option>
-                                <option value="workshop" {{ old('type', $event->type) == 'workshop' ? 'selected' : '' }}>Workshop</option>
-                                <option value="meeting" {{ old('type', $event->type) == 'meeting' ? 'selected' : '' }}>Meeting</option>
-                                <option value="other" {{ old('type', $event->type) == 'other' ? 'selected' : '' }}>Other</option>
-                            </select>
-                            @error('type')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <div class="form-group">
-                            <label for="description" class="form-label">Description <span class="text-danger">*</span></label>
-                            <textarea class="form-control @error('description') is-invalid @enderror" 
-                                      id="description" 
-                                      name="description" 
-                                      rows="4" 
-                                      required>{{ old('description', $event->description) }}</textarea>
-                            @error('description')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
