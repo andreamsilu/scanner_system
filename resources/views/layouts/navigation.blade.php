@@ -63,7 +63,7 @@
                         <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" 
                            href="{{ route('users.index') }}">
                             <i class="bi bi-people me-2"></i> Users
-                            <small class="text-muted d-block">(User Management)</small>
+                            <!-- <small class="text-muted d-block">(User Management)</small> -->
                         </a>
                     </li>
                     <li class="nav-item mb-2">
