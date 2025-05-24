@@ -13,9 +13,9 @@
                     <i class="bi bi-person-plus me-2"></i>Add Attendee
                 </a>
                 @role('admin')
-                <a href="{{ route('events.attendees.bulk-upload.create', $event) }}" class="btn btn-success">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
                     <i class="bi bi-upload me-2"></i>Bulk Upload
-                </a>
+                </button>
                 @endrole
             </div>
         </x-slot>
@@ -201,6 +201,67 @@
     </style>
     @endpush
 
+    <!-- Bulk Upload Modal -->
+    <div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-labelledby="bulkUploadModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bulkUploadModalLabel">
+                        <i class="bi bi-upload me-2"></i>Bulk Upload Attendees
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-4">
+                        <h6 class="fw-semibold mb-2">Instructions</h6>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-2">Please prepare a CSV file with the following columns:</p>
+                            <ul class="list-disc list-inside mb-3">
+                                <li><strong>name</strong> (required) - Full name of the attendee</li>
+                                <li><strong>phone</strong> (required) - Phone number</li>
+                                <li><strong>email</strong> (optional) - Email address</li>
+                                <li><strong>position</strong> (optional) - Job position or title</li>
+                            </ul>
+                            <p class="text-muted small mb-0">The first row should contain the column headers exactly as shown above.</p>
+                        </div>
+                    </div>
+
+                    <form action="{{ route('events.attendees.bulk-upload.store', $event) }}" method="POST" enctype="multipart/form-data" id="bulkUploadForm">
+                        @csrf
+                        <div class="mb-4">
+                            <label for="csv_file" class="form-label">CSV File</label>
+                            <input type="file" 
+                                   name="csv_file" 
+                                   id="csv_file" 
+                                   accept=".csv,.txt" 
+                                   required
+                                   class="form-control @error('csv_file') is-invalid @enderror">
+                            @error('csv_file')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <div class="alert alert-warning">
+                            <h6 class="alert-heading mb-2">Important Notes:</h6>
+                            <ul class="mb-0 ps-3">
+                                <li>Each attendee will automatically receive a unique token and QR code</li>
+                                <li>The process may take some time depending on the number of records</li>
+                                <li>You will be notified when the upload is complete</li>
+                                <li>Maximum file size is 10MB</li>
+                            </ul>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" form="bulkUploadForm" class="btn btn-primary">
+                        <i class="bi bi-upload me-2"></i>Upload and Process
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('scripts')
     <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
@@ -313,6 +374,57 @@
 
             // Ensure buttons are properly initialized
             table.buttons().container().addClass('float-start');
+        });
+
+        // Handle form submission
+        document.getElementById('bulkUploadForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const formData = new FormData(form);
+            const submitButton = form.querySelector('button[type="submit"]');
+            
+            // Disable submit button and show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+            
+            fetch(form.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Close modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('bulkUploadModal'));
+                modal.hide();
+                
+                // Show success message
+                if (data.success) {
+                    // Redirect to status page if provided
+                    if (data.redirect) {
+                        window.location.href = data.redirect;
+                    } else {
+                        // Show success message and reload page
+                        alert('Bulk upload started successfully. You will be notified when it\'s complete.');
+                        window.location.reload();
+                    }
+                } else {
+                    // Show error message
+                    alert(data.message || 'An error occurred during upload.');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred during upload. Please try again.');
+            })
+            .finally(() => {
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="bi bi-upload me-2"></i>Upload and Process';
+            });
         });
     </script>
     @endpush

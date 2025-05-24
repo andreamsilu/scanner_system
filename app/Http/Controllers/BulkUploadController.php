@@ -58,11 +58,27 @@ class BulkUploadController extends Controller
                 $this->processUpload($path, $bulkUpload, $event);
             })->afterResponse();
 
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Bulk upload started successfully.',
+                    'redirect' => route('events.attendees.bulk-upload.status', ['event' => $event, 'bulkUpload' => $bulkUpload])
+                ]);
+            }
+
             return redirect()->route('events.attendees.index', $event)
                 ->with('success', 'Bulk upload started. You will be notified when it\'s complete.');
 
         } catch (\Exception $e) {
             Log::error('Bulk upload failed: ' . $e->getMessage());
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to process upload: ' . $e->getMessage()
+                ], 422);
+            }
+
             return back()->with('error', 'Failed to process upload: ' . $e->getMessage());
         }
     }
