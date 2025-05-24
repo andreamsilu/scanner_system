@@ -53,12 +53,6 @@
                                 <p class="mb-0 fw-medium">{{ $event->end_date->format('F j, Y g:i A') }}</p>
                             </div>
                         </div>
-                        <div class="col-12">
-                            <div class="mb-3">
-                                <label class="form-label text-muted small">Description</label>
-                                <p class="mb-0 fw-medium">{{ $event->description }}</p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
