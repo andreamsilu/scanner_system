@@ -13,9 +13,24 @@
         </div>
     </x-slot>
 
+    @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            {{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
     <div class="row g-4">
+        <!-- Event Details Card -->
         <div class="col-md-8">
-            <div class="card shadow-sm mb-4">
+            <div class="card shadow-sm h-100">
                 <div class="card-header bg-transparent">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-info-circle me-2"></i>Event Details
@@ -24,140 +39,106 @@
                 <div class="card-body">
                     <div class="row g-4">
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label text-muted small">Venue</label>
-                                <p class="mb-0 fw-medium">{{ $event->venue }}</p>
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-2">Event Name</h6>
+                                <p class="mb-0 fs-5">{{ $event->name }}</p>
+                            </div>
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-2">Venue</h6>
+                                <p class="mb-0">
+                                    <i class="bi bi-building me-2"></i>{{ $event->venue }}
+                                </p>
+                            </div>
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-2">Location</h6>
+                                <p class="mb-0">
+                                    <i class="bi bi-geo-alt me-2"></i>{{ $event->location }}
+                                </p>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label text-muted small">Location</label>
-                                <p class="mb-0 fw-medium">{{ $event->location }}</p>
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-2">Date & Time</h6>
+                                <p class="mb-0">
+                                    <i class="bi bi-calendar-event me-2"></i>
+                                    {{ $event->start_date->format('M d, Y H:i') }} - 
+                                    {{ $event->end_date->format('M d, Y H:i') }}
+                                </p>
+                            </div>
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-2">Capacity</h6>
+                                <p class="mb-0">
+                                    <i class="bi bi-people me-2"></i>
+                                    {{ number_format($event->capacity) }} attendees
+                                </p>
+                            </div>
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-2">Status</h6>
+                                <p class="mb-0">
+                                    <span class="badge bg-{{ $event->status === 'active' ? 'success' : ($event->status === 'pending' ? 'warning' : 'secondary') }}">
+                                        {{ ucfirst($event->status) }}
+                                    </span>
+                                </p>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label text-muted small">Capacity</label>
-                                <p class="mb-0 fw-medium">{{ number_format($event->capacity) }} attendees</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label text-muted small">Start Date</label>
-                                <p class="mb-0 fw-medium">{{ $event->start_date->format('F j, Y g:i A') }}</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label class="form-label text-muted small">End Date</label>
-                                <p class="mb-0 fw-medium">{{ $event->end_date->format('F j, Y g:i A') }}</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card shadow-sm">
-                <div class="card-header bg-transparent">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-people me-2"></i>Attendees
-                        </h5>
-                        <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-primary btn-sm">
-                            <i class="bi bi-people me-2"></i>Manage Attendees
-                        </a>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle" id="attendeesTable">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Status</th>
-                                    <th>Registration Date</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($event->attendees as $attendee)
-                                    <tr>
-                                        <td>{{ $attendee->name }}</td>
-                                        <td>{{ $attendee->email }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'info') }}">
-                                                {{ ucfirst($attendee->registration_status) }}
-                                            </span>
-                                        </td>
-                                        <td>{{ $attendee->registered_at ? $attendee->registered_at->format('M j, Y g:i A') : 'N/A' }}</td>
-                                        <td>
-                                            <div class="btn-group">
-                                                <a href="{{ route('events.attendees.show', [$event, $attendee]) }}" 
-                                                   class="btn btn-sm btn-outline-primary"
-                                                   title="View Details">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                <a href="{{ route('events.attendees.edit', [$event, $attendee]) }}" 
-                                                   class="btn btn-sm btn-outline-secondary"
-                                                   title="Edit Attendee">
-                                                    <i class="bi bi-pencil"></i>
-                                                </a>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="text-center py-4">
-                                            <div class="text-muted">
-                                                <i class="bi bi-people fs-1 d-block mb-2"></i>
-                                                <p class="mb-0">No attendees registered yet.</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
                     </div>
                 </div>
             </div>
         </div>
 
+        <!-- Statistics Card -->
         <div class="col-md-4">
-            <div class="card shadow-sm mb-4">
+            <div class="card shadow-sm h-100">
                 <div class="card-header bg-transparent">
                     <h5 class="card-title mb-0">
-                        <i class="bi bi-graph-up me-2"></i>Event Status
+                        <i class="bi bi-graph-up me-2"></i>Statistics
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex align-items-center mb-3">
-                        <span class="badge bg-{{ $event->status === 'active' ? 'success' : ($event->status === 'draft' ? 'warning' : 'danger') }} me-2">
-                            {{ ucfirst($event->status) }}
-                        </span>
-                        <span class="text-muted small">
-                            {{ $event->status === 'active' ? 'Event is currently active' : 
-                               ($event->status === 'draft' ? 'Event is in draft mode' : 'Event has been cancelled') }}
-                        </span>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small">Registration Status</label>
-                        <div class="progress" style="height: 8px;">
-                            <div class="progress-bar" 
-                                 role="progressbar" 
-                                 style="width: {{ ($event->attendees->count() / $event->capacity) * 100 }}%"
-                                 aria-valuenow="{{ ($event->attendees->count() / $event->capacity) * 100 }}"
-                                 aria-valuemin="0"
-                                 aria-valuemax="100">
+                    <div class="d-flex flex-column gap-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Total Attendees</h6>
+                                <h3 class="mb-0">{{ $event->attendees->count() }}</h3>
+                            </div>
+                            <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-people-fill text-primary fs-4"></i>
                             </div>
                         </div>
-                        <small class="text-muted mt-2 d-block">
-                            {{ $event->attendees->count() }} of {{ $event->capacity }} spots filled
-                        </small>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Total Tickets</h6>
+                                <h3 class="mb-0">{{ $event->tickets->count() }}</h3>
+                            </div>
+                            <div class="bg-success bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-ticket-perforated-fill text-success fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Available Capacity</h6>
+                                <h3 class="mb-0">{{ $event->remaining_capacity }}</h3>
+                            </div>
+                            <div class="bg-info bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-person-plus-fill text-info fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Assigned Scanners</h6>
+                                <h3 class="mb-0">{{ $event->scanners->count() }}</h3>
+                            </div>
+                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-upc-scan text-warning fs-4"></i>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
+        </div>
 
+        <!-- Quick Actions Card -->
+        <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-transparent">
                     <h5 class="card-title mb-0">
@@ -165,96 +146,96 @@
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-grid gap-2">
-                        <a href="{{ route('events.tickets', $event) }}" class="btn btn-outline-primary">
-                            <i class="bi bi-ticket-perforated me-2"></i>Manage Tickets
-                        </a>
-                        <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-outline-primary">
-                            <i class="bi bi-person-plus me-2"></i>Add Attendee
-                        </a>
-                        <button type="button" 
-                                class="btn btn-outline-danger"
-                                data-bs-toggle="modal"
-                                data-bs-target="#deleteEventModal">
-                            <i class="bi bi-trash me-2"></i>Delete Event
-                        </button>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-person-plus me-2"></i>Add Attendee
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('events.tickets', $event) }}" class="btn btn-outline-success w-100">
+                                <i class="bi bi-ticket-perforated me-2"></i>Manage Tickets
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-info w-100">
+                                <i class="bi bi-people me-2"></i>View Attendees
+                            </a>
+                        </div>
+                        <div class="col-md-3">
+                            <button type="button" class="btn btn-outline-warning w-100" data-bs-toggle="modal" data-bs-target="#assignScannerModal">
+                                <i class="bi bi-upc-scan me-2"></i>Assign Scanner
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Scanner Assignment Section -->
-            @include('events.partials.scanner-assignment')
         </div>
     </div>
 
-    <!-- Delete Event Modal -->
-    <div class="modal fade" id="deleteEventModal" tabindex="-1" aria-labelledby="deleteEventModalLabel" aria-hidden="true">
+    <!-- Assign Scanner Modal -->
+    <div class="modal fade" id="assignScannerModal" tabindex="-1" aria-labelledby="assignScannerModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="deleteEventModalLabel">
-                        <i class="bi bi-exclamation-triangle text-danger me-2"></i>
-                        Delete Event
-                    </h5>
+                    <h5 class="modal-title" id="assignScannerModalLabel">Assign Scanner</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body">
-                    <p class="mb-0">Are you sure you want to delete this event? This action cannot be undone.</p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form action="{{ route('events.destroy', $event) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-danger">
-                            <i class="bi bi-trash me-2"></i>Delete Event
-                        </button>
-                    </form>
-                </div>
+                <form action="{{ route('events.scanners.assign', $event) }}" method="POST">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="scanner_id" class="form-label">Select Scanner</label>
+                            <select class="form-select" id="scanner_id" name="scanner_id" required>
+                                <option value="">Choose a scanner...</option>
+                                @foreach($scannerUsers as $scanner)
+                                    <option value="{{ $scanner->id }}">{{ $scanner->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">Assign Scanner</button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
 
     @push('styles')
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
-    @endpush
-
-    @push('scripts')
-    <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
-    <script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
-    <script src="https://cdn.datatables.net/responsive/2.5.0/js/responsive.bootstrap5.min.js"></script>
-
-    <script>
-        $(document).ready(function() {
-            $('#attendeesTable').DataTable({
-                responsive: true,
-                processing: true,
-                pageLength: 10,
-                order: [[3, 'desc']], // Sort by registration date by default
-                dom: 'Bfrtip',
-                buttons: [
-                    'copy', 'csv', 'excel', 'pdf', 'print'
-                ],
-                columnDefs: [
-                    { orderable: false, targets: [4] } // Disable sorting on actions column
-                ],
-                language: {
-                    search: "_INPUT_",
-                    searchPlaceholder: "Search attendees...",
-                    emptyTable: "No attendees registered yet."
-                }
-            });
-        });
-    </script>
+    <style>
+        .card {
+            border: none;
+            border-radius: 0.5rem;
+        }
+        .card-header {
+            border-bottom: 1px solid rgba(0,0,0,.125);
+            padding: 1rem;
+        }
+        .card-body {
+            padding: 1.5rem;
+        }
+        .badge {
+            padding: 0.5em 1em;
+            font-size: 0.875rem;
+        }
+        .btn {
+            padding: 0.5rem 1rem;
+            font-weight: 500;
+        }
+        .btn i {
+            font-size: 1rem;
+        }
+        .text-muted {
+            font-size: 0.875rem;
+        }
+        .fs-5 {
+            font-weight: 500;
+        }
+        .bg-opacity-10 {
+            --bs-bg-opacity: 0.1;
+        }
+    </style>
     @endpush
 </x-app-layout> 
