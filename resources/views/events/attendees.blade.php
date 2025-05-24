@@ -21,7 +21,7 @@
     @endif
 
     <!-- Filters -->
-    <div class="card border-0 shadow-sm mb-4">
+    <div class="card mb-4">
         <div class="card-body">
             <form action="{{ route('events.attendees.index', $event) }}" method="GET" class="row g-3">
                 <div class="col-md-3">
@@ -61,7 +61,7 @@
     </div>
 
     <!-- Attendees Table -->
-    <div class="card border-0 shadow-sm">
+    <div class="card">
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover datatable">
