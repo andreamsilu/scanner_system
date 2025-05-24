@@ -1,17 +1,17 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
-            <h2 class="display-6 fw-bold text-dark mb-0">Reports Dashboard</h2>
-            <div class="d-flex flex-wrap gap-2">
-                <a href="{{ route('reports.attendance') }}" class="btn btn-primary">
-                    <i class="bi bi-people me-2"></i>Attendance Report
-                </a>
-                <a href="{{ route('reports.revenue') }}" class="btn btn-success">
-                    <i class="bi bi-currency-dollar me-2"></i>Revenue Report
-                </a>
-            </div>
-        </div>
-    </x-slot>
+    <x-page-header 
+        title="Reports Dashboard"
+        :breadcrumbs="['Reports' => null]"
+    >
+        <x-slot name="actions">
+            <a href="{{ route('reports.attendance') }}" class="btn btn-primary">
+                <i class="bi bi-people me-2"></i>Attendance Report
+            </a>
+            <a href="{{ route('reports.revenue') }}" class="btn btn-success">
+                <i class="bi bi-currency-dollar me-2"></i>Revenue Report
+            </a>
+        </x-slot>
+    </x-page-header>
 
     <!-- Statistics Cards -->
     <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 g-md-4 mb-4">
