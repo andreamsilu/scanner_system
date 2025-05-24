@@ -110,6 +110,21 @@
                             @enderror
                         </div>
                     </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control @error('location') is-invalid @enderror" 
+                                   id="location" 
+                                   name="location" 
+                                   value="{{ old('location') }}" 
+                                   required>
+                            @error('location')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
                 </div>
 
                 <div class="mt-4">
