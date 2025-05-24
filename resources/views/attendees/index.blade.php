@@ -162,20 +162,45 @@
     <style>
         .dt-buttons {
             margin-bottom: 1rem;
+            float: left;
         }
         .dt-button {
             padding: 0.375rem 0.75rem;
             font-size: 0.875rem;
             border-radius: 0.25rem;
             margin-right: 0.25rem;
+            background-color: #fff;
+            border: 1px solid #dee2e6;
+        }
+        .dt-button:hover {
+            background-color: #f8f9fa;
         }
         .dt-button-collection {
             width: auto !important;
+            padding: 0.5rem;
+        }
+        .dt-button-collection .dt-button {
+            margin: 0.25rem;
+            width: calc(100% - 0.5rem);
+        }
+        .dataTables_wrapper .dataTables_filter {
+            float: right;
+            margin-bottom: 1rem;
+        }
+        .dataTables_wrapper .dataTables_length {
+            float: left;
+            margin-bottom: 1rem;
+        }
+        .dataTables_wrapper::after {
+            content: "";
+            display: table;
+            clear: both;
         }
     </style>
     @endpush
 
     @push('scripts')
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.datatables.net/1.13.7/js/dataTables.bootstrap5.min.js"></script>
     <script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
@@ -190,12 +215,14 @@
 
     <script>
         $(document).ready(function() {
-            $('#attendeesTable').DataTable({
+            var table = $('#attendeesTable').DataTable({
                 responsive: true,
                 processing: true,
                 pageLength: 10,
                 order: [[4, 'desc']], // Sort by registration date by default
-                dom: '<"d-flex justify-content-between align-items-center mb-3"Bf>rt<"d-flex justify-content-between align-items-center"ip>',
+                dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 buttons: [
                     {
                         extend: 'collection',
@@ -281,6 +308,9 @@
                     }
                 }
             });
+
+            // Ensure buttons are properly initialized
+            table.buttons().container().addClass('float-start');
         });
     </script>
     @endpush
