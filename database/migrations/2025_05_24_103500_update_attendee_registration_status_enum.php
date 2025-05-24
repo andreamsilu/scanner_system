@@ -12,11 +12,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Modify the ENUM type to include 'unchecked_in'
-        DB::statement("ALTER TABLE attendees MODIFY COLUMN registration_status ENUM('unchecked_in', 'checked_in', 'cancelled') DEFAULT 'unchecked_in'");
-        
-        // Update any existing 'registered' status to 'unchecked_in'
+        // First, update any existing 'registered' status to 'unchecked_in'
         DB::statement("UPDATE attendees SET registration_status = 'unchecked_in' WHERE registration_status = 'registered'");
+        
+        // Then modify the ENUM type
+        DB::statement("ALTER TABLE attendees MODIFY COLUMN registration_status ENUM('unchecked_in', 'checked_in', 'cancelled') DEFAULT 'unchecked_in'");
     }
 
     /**
@@ -24,10 +24,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Update any 'unchecked_in' status back to 'registered'
+        // First, update any 'unchecked_in' status back to 'registered'
         DB::statement("UPDATE attendees SET registration_status = 'registered' WHERE registration_status = 'unchecked_in'");
         
-        // Revert the ENUM type
+        // Then revert the ENUM type
         DB::statement("ALTER TABLE attendees MODIFY COLUMN registration_status ENUM('registered', 'checked_in', 'cancelled') DEFAULT 'registered'");
     }
 }; 
