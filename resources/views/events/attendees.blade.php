@@ -10,11 +10,11 @@
     >
         <x-slot name="actions">
             <div class="d-flex gap-2">
-                <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
+                <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
                     <i class="bi bi-person-plus me-2"></i>Add Attendee
                 </a>
-                <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Event
+                <a href="{{ route('events.attendees.export', $event) }}" class="btn btn-success">
+                    <i class="bi bi-file-excel me-2"></i>Export Attendees
                 </a>
             </div>
         </x-slot>
@@ -27,24 +27,60 @@
         </div>
     @endif
 
-    <div class="card">
-        <div class="card-header bg-transparent">
-            <h5 class="card-title mb-0">
-                <i class="bi bi-people me-2"></i>{{ $event->name }} - Attendees List
-            </h5>
+    <!-- Filters -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <form action="{{ route('events.attendees.index', $event) }}" method="GET" class="row g-3">
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Name or email...">
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Registration Status</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">All Status</option>
+                        <option value="registered" {{ request('status') === 'registered' ? 'selected' : '' }}>Registered</option>
+                        <option value="checked_in" {{ request('status') === 'checked_in' ? 'selected' : '' }}>Checked In</option>
+                        <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="ticket_status" class="form-label">Ticket Status</label>
+                    <select class="form-select" id="ticket_status" name="ticket_status">
+                        <option value="">All Tickets</option>
+                        <option value="valid" {{ request('ticket_status') === 'valid' ? 'selected' : '' }}>Valid</option>
+                        <option value="invalid" {{ request('ticket_status') === 'invalid' ? 'selected' : '' }}>Invalid</option>
+                        <option value="none" {{ request('ticket_status') === 'none' ? 'selected' : '' }}>No Ticket</option>
+                    </select>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="d-flex gap-2 w-100">
+                        <button type="submit" class="btn btn-primary flex-grow-1">
+                            <i class="bi bi-search me-2"></i>Filter
+                        </button>
+                        <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-x-lg"></i>
+                        </a>
+                    </div>
+                </div>
+            </form>
         </div>
+    </div>
+
+    <!-- Attendees Table -->
+    <div class="card border-0 shadow-sm">
         <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover" id="attendeesTable">
+                <table class="table table-hover datatable">
                     <thead>
                         <tr>
                             <th>Name</th>
                             <th>Email</th>
                             <th>Phone</th>
-                            <th>Status</th>
+                            <th>Registration Status</th>
                             <th>Ticket Status</th>
                             <th>Registered At</th>
-                            <th>Actions</th>
+                            <th class="text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -67,24 +103,21 @@
                                         <span class="badge bg-secondary">No Ticket</span>
                                     @endif
                                 </td>
-                                <td>{{ $attendee->created_at->format('M d, Y H:i') }}</td>
-                                <td>
+                                <td>{{ $attendee->created_at->format('M d, Y') }}</td>
+                                <td class="text-end">
                                     <div class="btn-group">
                                         <a href="{{ route('events.attendees.show', [$event, $attendee]) }}" 
-                                           class="btn btn-sm btn-outline-primary"
-                                           title="View Details">
+                                           class="btn btn-sm btn-info">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         <a href="{{ route('events.attendees.edit', [$event, $attendee]) }}" 
-                                           class="btn btn-sm btn-outline-secondary"
-                                           title="Edit Attendee">
+                                           class="btn btn-sm btn-primary">
                                             <i class="bi bi-pencil"></i>
                                         </a>
                                         <button type="button" 
-                                                class="btn btn-sm btn-outline-danger"
+                                                class="btn btn-sm btn-danger"
                                                 data-bs-toggle="modal"
-                                                data-bs-target="#deleteAttendeeModal{{ $attendee->id }}"
-                                                title="Delete Attendee">
+                                                data-bs-target="#deleteAttendeeModal{{ $attendee->id }}">
                                             <i class="bi bi-trash"></i>
                                         </button>
                                     </div>
@@ -171,7 +204,7 @@
 
     <script>
         $(document).ready(function() {
-            $('#attendeesTable').DataTable({
+            $('.datatable').DataTable({
                 responsive: true,
                 dom: 'Bfrtip',
                 buttons: [
