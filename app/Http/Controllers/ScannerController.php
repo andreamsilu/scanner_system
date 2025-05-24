@@ -258,12 +258,20 @@ class ScannerController extends Controller
             ->where('scanner_id', $user->id)
             ->when($request->start_date, fn($q) => $q->whereDate('created_at', '>=', $request->start_date))
             ->when($request->end_date, fn($q) => $q->whereDate('created_at', '<=', $request->end_date))
-            ->when($request->event_id, fn($q) => $q->where('event_id', $request->event_id))
             ->when($request->status, fn($q) => $q->where('status', $request->status));
 
         // If scanner is assigned to specific events, only show those events
         if ($user->hasRole('scanner')) {
-            $query->whereIn('event_id', $user->events()->pluck('events.id'));
+            $query->whereHas('ticket.event', function($q) use ($user) {
+                $q->whereIn('events.id', $user->events()->pluck('events.id'));
+            });
+        }
+
+        // Filter by event if specified
+        if ($request->event_id) {
+            $query->whereHas('ticket.event', function($q) use ($request) {
+                $q->where('events.id', $request->event_id);
+            });
         }
 
         $scans = $query->latest()->paginate(15);
@@ -274,11 +282,15 @@ class ScannerController extends Controller
 
     public function exportHistory(Request $request)
     {
-        $scans = ScanLog::with(['attendee', 'event'])
+        $scans = ScanLog::with(['ticket.attendee', 'ticket.event'])
             ->when($request->start_date, fn($q) => $q->whereDate('created_at', '>=', $request->start_date))
             ->when($request->end_date, fn($q) => $q->whereDate('created_at', '<=', $request->end_date))
-            ->when($request->event_id, fn($q) => $q->where('event_id', $request->event_id))
             ->when($request->status, fn($q) => $q->where('status', $request->status))
+            ->when($request->event_id, function($q) use ($request) {
+                $q->whereHas('ticket.event', function($q) use ($request) {
+                    $q->where('events.id', $request->event_id);
+                });
+            })
             ->latest()
             ->get();
 
