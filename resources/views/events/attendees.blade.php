@@ -1,22 +1,15 @@
 <x-app-layout>
     <x-page-header 
-        title="Attendees"
-        :subtitle="'Manage attendees for ' . $event->name"
-        :breadcrumbs="[
-            'Events' => route('events.index'),
-            $event->name => route('events.show', $event),
-            'Attendees' => null
-        ]"
+        title="User Management"
+        :breadcrumbs="['Events' => route('events.index'), $event->name => route('events.show', $event), 'Attendees' => null]"
     >
         <x-slot name="actions">
-            <div class="d-flex gap-2">
-                <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
-                    <i class="bi bi-person-plus me-2"></i>Add Attendee
-                </a>
-                <a href="{{ route('events.attendees.export', $event) }}" class="btn btn-success">
-                    <i class="bi bi-file-excel me-2"></i>Export Attendees
-                </a>
-            </div>
+            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
+                <i class="bi bi-person-plus me-2"></i>Add Attendee
+            </a>
+            <a href="{{ route('events.attendees.export', $event) }}" class="btn btn-success">
+                <i class="bi bi-file-excel me-2"></i>Export Attendees
+            </a>
         </x-slot>
     </x-page-header>
 
