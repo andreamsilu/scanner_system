@@ -28,9 +28,9 @@
     @endif
 
     <div class="row g-4">
-        <!-- Event Details Card -->
-        <div class="col-md-8">
-            <div class="card shadow-sm h-100">
+        <!-- Event Details Card - Full Width Row -->
+        <div class="col-12">
+            <div class="card shadow-sm">
                 <div class="card-header bg-transparent">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-info-circle me-2"></i>Event Details
@@ -38,21 +38,35 @@
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
-                        <div class="col-md-6">
+                        <div class="col-md-3">
                             <div class="mb-4">
                                 <h6 class="text-muted mb-2">Event Name</h6>
                                 <p class="mb-0 fs-5">{{ $event->name }}</p>
                             </div>
+                        </div>
+                        <div class="col-md-3">
                             <div class="mb-4">
                                 <h6 class="text-muted mb-2">Venue</h6>
                                 <p class="mb-0">
                                     <i class="bi bi-building me-2"></i>{{ $event->venue }}
                                 </p>
                             </div>
+                        </div>
+                        <div class="col-md-3">
                             <div class="mb-4">
                                 <h6 class="text-muted mb-2">Location</h6>
                                 <p class="mb-0">
                                     <i class="bi bi-geo-alt me-2"></i>{{ $event->location }}
+                                </p>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-4">
+                                <h6 class="text-muted mb-2">Status</h6>
+                                <p class="mb-0">
+                                    <span class="badge bg-{{ $event->status === 'active' ? 'success' : ($event->status === 'pending' ? 'warning' : 'secondary') }}">
+                                        {{ ucfirst($event->status) }}
+                                    </span>
                                 </p>
                             </div>
                         </div>
@@ -65,19 +79,13 @@
                                     {{ $event->end_date->format('M d, Y H:i') }}
                                 </p>
                             </div>
+                        </div>
+                        <div class="col-md-6">
                             <div class="mb-4">
                                 <h6 class="text-muted mb-2">Capacity</h6>
                                 <p class="mb-0">
                                     <i class="bi bi-people me-2"></i>
                                     {{ number_format($event->capacity) }} attendees
-                                </p>
-                            </div>
-                            <div class="mb-4">
-                                <h6 class="text-muted mb-2">Status</h6>
-                                <p class="mb-0">
-                                    <span class="badge bg-{{ $event->status === 'active' ? 'success' : ($event->status === 'pending' ? 'warning' : 'secondary') }}">
-                                        {{ ucfirst($event->status) }}
-                                    </span>
                                 </p>
                             </div>
                         </div>
@@ -86,68 +94,80 @@
             </div>
         </div>
 
-        <!-- Statistics Card -->
-        <div class="col-md-4">
-            <div class="card shadow-sm h-100">
+        <!-- Statistics Card - Full Width Row -->
+        <div class="col-12">
+            <div class="card shadow-sm">
                 <div class="card-header bg-transparent">
                     <h5 class="card-title mb-0">
                         <i class="bi bi-graph-up me-2"></i>Statistics
                     </h5>
                 </div>
                 <div class="card-body">
-                    <div class="d-flex flex-column gap-3">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-1">Total Attendees</h6>
-                                <h3 class="mb-0">{{ $event->attendees->count() }}</h3>
-                            </div>
-                            <div class="bg-primary bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-people-fill text-primary fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-1">Checked-in Attendees</h6>
-                                <h3 class="mb-0">{{ $event->attendees->where('registration_status', 'checked_in')->count() }}</h3>
-                            </div>
-                            <div class="bg-success bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-person-check-fill text-success fs-4"></i>
+                    <div class="row g-4">
+                        <div class="col-md-3">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="text-muted mb-1">Total Attendees</h6>
+                                    <h3 class="mb-0">{{ $event->attendees->count() }}</h3>
+                                </div>
+                                <div class="bg-primary bg-opacity-10 p-3 rounded">
+                                    <i class="bi bi-people-fill text-primary fs-4"></i>
+                                </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-1">Unchecked Attendees</h6>
-                                <h3 class="mb-0">{{ $event->attendees->where('registration_status', 'registered')->count() }}</h3>
-                            </div>
-                            <div class="bg-warning bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-person-dash-fill text-warning fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-1">Total Tickets</h6>
-                                <h3 class="mb-0">{{ $event->tickets->count() }}</h3>
-                            </div>
-                            <div class="bg-info bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-ticket-perforated-fill text-info fs-4"></i>
+                        <div class="col-md-3">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="text-muted mb-1">Checked-in</h6>
+                                    <h3 class="mb-0">{{ $event->attendees->where('registration_status', 'checked_in')->count() }}</h3>
+                                </div>
+                                <div class="bg-success bg-opacity-10 p-3 rounded">
+                                    <i class="bi bi-person-check-fill text-success fs-4"></i>
+                                </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-1">Assigned Scanners</h6>
-                                <h3 class="mb-0">{{ $event->scanners->count() }}</h3>
-                            </div>
-                            <div class="bg-warning bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-upc-scan text-warning fs-4"></i>
+                        <div class="col-md-3">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="text-muted mb-1">Unchecked</h6>
+                                    <h3 class="mb-0">{{ $event->attendees->where('registration_status', 'registered')->count() }}</h3>
+                                </div>
+                                <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                    <i class="bi bi-person-dash-fill text-warning fs-4"></i>
+                                </div>
                             </div>
                         </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-1">Available Capacity</h6>
-                                <h3 class="mb-0">{{ $event->remaining_capacity }}</h3>
+                        <div class="col-md-3">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="text-muted mb-1">Total Tickets</h6>
+                                    <h3 class="mb-0">{{ $event->tickets->count() }}</h3>
+                                </div>
+                                <div class="bg-info bg-opacity-10 p-3 rounded">
+                                    <i class="bi bi-ticket-perforated-fill text-info fs-4"></i>
+                                </div>
                             </div>
-                            <div class="bg-info bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-person-plus-fill text-info fs-4"></i>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="text-muted mb-1">Available Capacity</h6>
+                                    <h3 class="mb-0">{{ $event->remaining_capacity }}</h3>
+                                </div>
+                                <div class="bg-info bg-opacity-10 p-3 rounded">
+                                    <i class="bi bi-person-plus-fill text-info fs-4"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
+                                <div>
+                                    <h6 class="text-muted mb-1">Assigned Scanners</h6>
+                                    <h3 class="mb-0">{{ $event->scanners->count() }}</h3>
+                                </div>
+                                <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                    <i class="bi bi-upc-scan text-warning fs-4"></i>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -176,7 +196,7 @@
             </div>
         </div>
 
-        <!-- Quick Actions Card -->
+        <!-- Quick Actions Card - Full Width Row -->
         <div class="col-12">
             <div class="card shadow-sm">
                 <div class="card-header bg-transparent">
@@ -274,6 +294,9 @@
         }
         .bg-opacity-10 {
             --bs-bg-opacity: 0.1;
+        }
+        .bg-light {
+            background-color: #f8f9fa !important;
         }
     </style>
     @endpush
