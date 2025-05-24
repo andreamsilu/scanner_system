@@ -12,22 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Get the current column definition
-        $column = Schema::getConnection()
-            ->getDoctrineSchemaManager()
-            ->listTableDetails('attendees')
-            ->getColumn('registration_status');
+        // First modify the column to allow any string temporarily
+        Schema::table('attendees', function (Blueprint $table) {
+            $table->string('registration_status')->change();
+        });
 
-        $currentValues = $column->getType()->getValues();
+        // Update the values
+        DB::table('attendees')
+            ->where('registration_status', 'registered')
+            ->update(['registration_status' => 'unchecked_in']);
 
-        // If 'registered' is still a valid value, update it to 'unchecked_in'
-        if (in_array('registered', $currentValues)) {
-            DB::table('attendees')
-                ->where('registration_status', 'registered')
-                ->update(['registration_status' => 'unchecked_in']);
-        }
-
-        // Modify the ENUM type using Schema Builder
+        // Then set the new ENUM type
         Schema::table('attendees', function (Blueprint $table) {
             $table->enum('registration_status', ['unchecked_in', 'checked_in', 'cancelled'])
                   ->default('unchecked_in')
@@ -40,22 +35,17 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Get the current column definition
-        $column = Schema::getConnection()
-            ->getDoctrineSchemaManager()
-            ->listTableDetails('attendees')
-            ->getColumn('registration_status');
+        // First modify the column to allow any string temporarily
+        Schema::table('attendees', function (Blueprint $table) {
+            $table->string('registration_status')->change();
+        });
 
-        $currentValues = $column->getType()->getValues();
+        // Update the values
+        DB::table('attendees')
+            ->where('registration_status', 'unchecked_in')
+            ->update(['registration_status' => 'registered']);
 
-        // If 'unchecked_in' is still a valid value, update it to 'registered'
-        if (in_array('unchecked_in', $currentValues)) {
-            DB::table('attendees')
-                ->where('registration_status', 'unchecked_in')
-                ->update(['registration_status' => 'registered']);
-        }
-
-        // Revert the ENUM type using Schema Builder
+        // Then set the original ENUM type
         Schema::table('attendees', function (Blueprint $table) {
             $table->enum('registration_status', ['registered', 'checked_in', 'cancelled'])
                   ->default('registered')
