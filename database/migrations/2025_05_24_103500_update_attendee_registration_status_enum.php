@@ -12,10 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, update any existing 'registered' status to 'unchecked_in'
-        DB::statement("UPDATE attendees SET registration_status = 'unchecked_in' WHERE registration_status = 'registered'");
-        
-        // Then modify the ENUM type
+        // Get the current ENUM values
+        $columnInfo = DB::select("SHOW COLUMNS FROM attendees WHERE Field = 'registration_status'")[0];
+        $currentEnum = str_replace(['enum(', ')', "'"], '', $columnInfo->Type);
+        $currentValues = explode(',', $currentEnum);
+
+        // If 'registered' is still a valid value, update it to 'unchecked_in'
+        if (in_array('registered', $currentValues)) {
+            DB::statement("UPDATE attendees SET registration_status = 'unchecked_in' WHERE registration_status = 'registered'");
+        }
+
+        // Modify the ENUM type regardless of current values
         DB::statement("ALTER TABLE attendees MODIFY COLUMN registration_status ENUM('unchecked_in', 'checked_in', 'cancelled') DEFAULT 'unchecked_in'");
     }
 
@@ -24,10 +31,17 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // First, update any 'unchecked_in' status back to 'registered'
-        DB::statement("UPDATE attendees SET registration_status = 'registered' WHERE registration_status = 'unchecked_in'");
-        
-        // Then revert the ENUM type
+        // Get the current ENUM values
+        $columnInfo = DB::select("SHOW COLUMNS FROM attendees WHERE Field = 'registration_status'")[0];
+        $currentEnum = str_replace(['enum(', ')', "'"], '', $columnInfo->Type);
+        $currentValues = explode(',', $currentEnum);
+
+        // If 'unchecked_in' is still a valid value, update it to 'registered'
+        if (in_array('unchecked_in', $currentValues)) {
+            DB::statement("UPDATE attendees SET registration_status = 'registered' WHERE registration_status = 'unchecked_in'");
+        }
+
+        // Revert the ENUM type
         DB::statement("ALTER TABLE attendees MODIFY COLUMN registration_status ENUM('registered', 'checked_in', 'cancelled') DEFAULT 'registered'");
     }
 }; 
