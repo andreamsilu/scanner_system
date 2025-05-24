@@ -1,7 +1,6 @@
 <x-app-layout>
     <x-page-header 
-        :title="$event->name . ' - Attendees'"
-        :subtitle="'Manage attendees for ' . $event->name"
+        title="Attendees"
         :breadcrumbs="[
             'Events' => route('events.index'),
             $event->name => route('events.show', $event),
@@ -9,14 +8,12 @@
         ]"
     >
         <x-slot name="actions">
-            <div class="d-flex gap-2">
-                <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
-                    <i class="bi bi-person-plus me-2"></i>Add Attendee
-                </a>
-                <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Event
-                </a>
-            </div>
+            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
+                <i class="bi bi-person-plus me-2"></i>Add Attendee
+            </a>
+            <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Event
+            </a>
         </x-slot>
     </x-page-header>
 
@@ -28,6 +25,11 @@
     @endif
 
     <div class="card border-0 no-hover-shadow">
+        <div class="card-header bg-transparent border-0">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-people me-2"></i>{{ $event->name }} - Attendees List
+            </h5>
+        </div>
         <div class="card-body p-4">
             <div class="table-responsive">
                 <table class="table table-hover" id="attendeesTable">
