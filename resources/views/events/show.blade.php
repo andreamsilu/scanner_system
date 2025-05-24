@@ -1,17 +1,5 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">{{ $event->name }}</h2>
-            <div>
-                <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary me-2">
-                    <i class="bi bi-pencil me-2"></i>Edit Event
-                </a>
-                <a href="{{ route('events.index') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Events
-                </a>
-            </div>
-        </div>
-    </x-slot>
+    
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -26,6 +14,19 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
+    <x-slot name="header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">{{ $event->name }}</h2>
+            <div>
+                <a href="{{ route('events.edit', $event) }}" class="btn btn-outline-primary me-2">
+                    <i class="bi bi-pencil me-2"></i>Edit Event
+                </a>
+                <a href="{{ route('events.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Events
+                </a>
+            </div>
+        </div>
+    </x-slot>
 
     <div class="row g-4">
         <!-- Event Details Card - Full Width Row -->
