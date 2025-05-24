@@ -1,111 +1,117 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-page-header 
+        title="Bulk Upload Status"
+        :breadcrumbs="[
+            'Events' => route('events.index'),
+            $bulkUpload->event->name => route('events.show', $bulkUpload->event),
+            'Attendees' => route('events.attendees.index', $bulkUpload->event),
+            'Upload Status' => null
+        ]"
+    >
+        <x-slot name="actions">
+            <a href="{{ route('events.attendees.index', $bulkUpload->event) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Attendees
+            </a>
+        </x-slot>
+    </x-page-header>
 
-@section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="max-w-4xl mx-auto">
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <div class="flex justify-between items-center mb-6">
-                <h1 class="text-2xl font-bold">Bulk Upload Status</h1>
-                <a href="{{ route('events.attendees.index', $bulkUpload->event) }}" 
-                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                    Back to Attendees
-                </a>
-            </div>
+    <div class="container-fluid py-4">
+        <div class="row justify-content-center">
+            <div class="col-md-10">
+                <div class="card">
+                    <div class="card-header bg-transparent">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Upload Details
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="fw-semibold mb-3">Upload Information</h6>
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-4 text-muted">Event</dt>
+                                            <dd class="col-sm-8">{{ $bulkUpload->event->name }}</dd>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-gray-50 p-4 rounded-md">
-                    <h2 class="text-lg font-semibold mb-4">Upload Details</h2>
-                    <dl class="space-y-2">
-                        <div>
-                            <dt class="text-sm font-medium text-gray-500">Event</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $bulkUpload->event->name }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-sm font-medium text-gray-500">File Name</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $bulkUpload->filename }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-sm font-medium text-gray-500">Uploaded By</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $bulkUpload->user->name }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-sm font-medium text-gray-500">Upload Date</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $bulkUpload->created_at->format('M d, Y H:i:s') }}</dd>
-                        </div>
-                    </dl>
-                </div>
+                                            <dt class="col-sm-4 text-muted">File Name</dt>
+                                            <dd class="col-sm-8">{{ $bulkUpload->filename }}</dd>
 
-                <div class="bg-gray-50 p-4 rounded-md">
-                    <h2 class="text-lg font-semibold mb-4">Processing Status</h2>
-                    <dl class="space-y-2">
-                        <div>
-                            <dt class="text-sm font-medium text-gray-500">Status</dt>
-                            <dd class="mt-1">
-                                <span class="px-2 py-1 text-xs font-medium rounded-full
-                                    @if($bulkUpload->status === 'completed') bg-green-100 text-green-800
-                                    @elseif($bulkUpload->status === 'failed') bg-red-100 text-red-800
-                                    @elseif($bulkUpload->status === 'processing') bg-yellow-100 text-yellow-800
-                                    @else bg-gray-100 text-gray-800
-                                    @endif">
-                                    {{ ucfirst($bulkUpload->status) }}
-                                </span>
-                            </dd>
-                        </div>
-                        <div>
-                            <dt class="text-sm font-medium text-gray-500">Total Records</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $bulkUpload->total_records }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-sm font-medium text-gray-500">Processed</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $bulkUpload->processed_records }}</dd>
-                        </div>
-                        <div>
-                            <dt class="text-sm font-medium text-gray-500">Failed</dt>
-                            <dd class="mt-1 text-sm text-gray-900">{{ $bulkUpload->failed_records }}</dd>
-                        </div>
-                    </dl>
-                </div>
-            </div>
+                                            <dt class="col-sm-4 text-muted">Uploaded By</dt>
+                                            <dd class="col-sm-8">{{ $bulkUpload->user->name }}</dd>
 
-            @if($bulkUpload->error_message)
-                <div class="mb-8">
-                    <h2 class="text-lg font-semibold mb-2">Errors</h2>
-                    <div class="bg-red-50 p-4 rounded-md">
-                        <pre class="text-sm text-red-700 whitespace-pre-wrap">{{ $bulkUpload->error_message }}</pre>
+                                            <dt class="col-sm-4 text-muted">Upload Date</dt>
+                                            <dd class="col-sm-8">{{ $bulkUpload->created_at->format('M d, Y H:i:s') }}</dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="card bg-light">
+                                    <div class="card-body">
+                                        <h6 class="fw-semibold mb-3">Processing Status</h6>
+                                        <dl class="row mb-0">
+                                            <dt class="col-sm-4 text-muted">Status</dt>
+                                            <dd class="col-sm-8">
+                                                <span class="badge bg-{{ $bulkUpload->status === 'completed' ? 'success' : ($bulkUpload->status === 'failed' ? 'danger' : ($bulkUpload->status === 'processing' ? 'warning' : 'secondary')) }}">
+                                                    {{ ucfirst($bulkUpload->status) }}
+                                                </span>
+                                            </dd>
+
+                                            <dt class="col-sm-4 text-muted">Total Records</dt>
+                                            <dd class="col-sm-8">{{ $bulkUpload->total_records }}</dd>
+
+                                            <dt class="col-sm-4 text-muted">Processed</dt>
+                                            <dd class="col-sm-8">{{ $bulkUpload->processed_records }}</dd>
+
+                                            <dt class="col-sm-4 text-muted">Failed</dt>
+                                            <dd class="col-sm-8">{{ $bulkUpload->failed_records }}</dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        @if($bulkUpload->error_message)
+                            <div class="alert alert-danger mt-4">
+                                <h6 class="alert-heading mb-2">Errors</h6>
+                                <pre class="mb-0 text-danger">{{ $bulkUpload->error_message }}</pre>
+                            </div>
+                        @endif
+
+                        @if($bulkUpload->status === 'completed' && $bulkUpload->attendees->isNotEmpty())
+                            <div class="mt-4">
+                                <h6 class="fw-semibold mb-3">Uploaded Attendees</h6>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Phone</th>
+                                                <th>Position</th>
+                                                <th>Token</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($bulkUpload->attendees as $attendee)
+                                                <tr>
+                                                    <td>{{ $attendee->name }}</td>
+                                                    <td>{{ $attendee->email }}</td>
+                                                    <td>{{ $attendee->phone ?? '-' }}</td>
+                                                    <td>{{ $attendee->position ?? '-' }}</td>
+                                                    <td><code>{{ $attendee->token }}</code></td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        @endif
                     </div>
                 </div>
-            @endif
-
-            @if($bulkUpload->status === 'completed' && $bulkUpload->attendees->isNotEmpty())
-                <div>
-                    <h2 class="text-lg font-semibold mb-4">Uploaded Attendees</h2>
-                    <div class="overflow-x-auto">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Position</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Token</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($bulkUpload->attendees as $attendee)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $attendee->name }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $attendee->email }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $attendee->phone ?? '-' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{{ $attendee->position ?? '-' }}</td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-mono text-gray-900">{{ $attendee->token }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            @endif
+            </div>
         </div>
     </div>
-</div>
-@endsection 
+</x-app-layout> 
