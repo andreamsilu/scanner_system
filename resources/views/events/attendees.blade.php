@@ -1,10 +1,10 @@
 <x-app-layout>
     <x-page-header 
-        title="User Management"
+        title="Events"
         :breadcrumbs="['Events' => route('events.index'), $event->name => route('events.show', $event), 'Attendees' => null]"
     >
         <x-slot name="actions">
-            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
+            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
                 <i class="bi bi-person-plus me-2"></i>Add Attendee
             </a>
             <a href="{{ route('events.attendees.export', $event) }}" class="btn btn-success">
