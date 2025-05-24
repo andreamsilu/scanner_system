@@ -159,6 +159,20 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    <style>
+        .dt-buttons {
+            margin-bottom: 1rem;
+        }
+        .dt-button {
+            padding: 0.375rem 0.75rem;
+            font-size: 0.875rem;
+            border-radius: 0.25rem;
+            margin-right: 0.25rem;
+        }
+        .dt-button-collection {
+            width: auto !important;
+        }
+    </style>
     @endpush
 
     @push('scripts')
@@ -180,18 +194,91 @@
                 responsive: true,
                 processing: true,
                 pageLength: 10,
-                order: [[5, 'desc']], // Sort by registration date by default
-                dom: 'Bfrtip',
+                order: [[4, 'desc']], // Sort by registration date by default
+                dom: '<"d-flex justify-content-between align-items-center mb-3"Bf>rt<"d-flex justify-content-between align-items-center"ip>',
                 buttons: [
-                    'copy', 'csv', 'excel', 'pdf', 'print'
+                    {
+                        extend: 'collection',
+                        text: '<i class="bi bi-download me-2"></i>Export',
+                        className: 'btn btn-primary',
+                        buttons: [
+                            {
+                                extend: 'excel',
+                                text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
+                                className: 'btn btn-success',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4] // Exclude actions column
+                                },
+                                title: '{{ $event->name }} - Attendees List',
+                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
+                            },
+                            {
+                                extend: 'csv',
+                                text: '<i class="bi bi-file-earmark-text me-2"></i>CSV',
+                                className: 'btn btn-info',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4] // Exclude actions column
+                                },
+                                title: '{{ $event->name }} - Attendees List',
+                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
+                            },
+                            {
+                                extend: 'pdf',
+                                text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
+                                className: 'btn btn-danger',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4] // Exclude actions column
+                                },
+                                title: '{{ $event->name }} - Attendees List',
+                                messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
+                                customize: function(doc) {
+                                    doc.defaultStyle.fontSize = 10;
+                                    doc.styles.tableHeader.fontSize = 11;
+                                    doc.styles.tableHeader.fillColor = '#f8f9fa';
+                                    doc.styles.tableHeader.color = '#212529';
+                                    doc.pageMargins = [40, 60, 40, 60];
+                                }
+                            },
+                            {
+                                extend: 'print',
+                                text: '<i class="bi bi-printer me-2"></i>Print',
+                                className: 'btn btn-secondary',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4] // Exclude actions column
+                                },
+                                title: '{{ $event->name }} - Attendees List',
+                                messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
+                                customize: function(win) {
+                                    $(win.document.body).css('font-size', '10pt');
+                                    $(win.document.body).find('table')
+                                        .addClass('compact')
+                                        .css('font-size', 'inherit');
+                                }
+                            }
+                        ]
+                    }
                 ],
                 columnDefs: [
-                    { orderable: false, targets: [6] } // Disable sorting on actions column
+                    { 
+                        orderable: false, 
+                        targets: [5], // Disable sorting on actions column
+                        searchable: false
+                    }
                 ],
                 language: {
                     search: "_INPUT_",
                     searchPlaceholder: "Search attendees...",
-                    emptyTable: "No attendees found."
+                    emptyTable: "No attendees found.",
+                    info: "Showing _START_ to _END_ of _TOTAL_ attendees",
+                    infoEmpty: "Showing 0 to 0 of 0 attendees",
+                    infoFiltered: "(filtered from _MAX_ total attendees)",
+                    lengthMenu: "Show _MENU_ attendees per page",
+                    paginate: {
+                        first: '<i class="bi bi-chevron-double-left"></i>',
+                        previous: '<i class="bi bi-chevron-left"></i>',
+                        next: '<i class="bi bi-chevron-right"></i>',
+                        last: '<i class="bi bi-chevron-double-right"></i>'
+                    }
                 }
             });
         });
