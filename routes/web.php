@@ -40,6 +40,12 @@ Route::middleware('auth')->group(function () {
     // Dashboard Routes
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
     
+    // Profile routes (accessible to both admin and scanner roles)
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+    Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
+
     // Scanner Routes (accessible to both admin and scanner roles)
     Route::middleware(['role:admin,scanner'])->prefix('scanner')->name('scanner.')->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'scannerDashboard'])->name('dashboard');
@@ -112,12 +118,6 @@ Route::middleware('auth')->group(function () {
             Route::get('reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
         });
         
-        // Profile routes
-        Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-        Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-        Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-        Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
-
         // User Management Routes
         Route::middleware(['auth'])->group(function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');
