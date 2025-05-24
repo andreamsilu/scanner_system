@@ -1,30 +1,24 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="py-4 px-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="ms-4">
-                    <h2 class="mb-2">Add New Attendee</h2>
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb mb-0">
-                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('events.index') }}">Events</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('events.show', $event) }}">{{ $event->name }}</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('events.attendees.index', $event) }}">Attendees</a></li>
-                            <li class="breadcrumb-item active">Add New</li>
-                        </ol>
-                    </nav>
-                </div>
-                <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-secondary me-4">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Attendees
-                </a>
-            </div>
-        </div>
-    </x-slot>
+    <x-page-header 
+        title="Add New Attendee"
+        :breadcrumbs="[
+            'Events' => route('events.index'),
+            $event->name => route('events.show', $event),
+            'Attendees' => route('events.attendees.index', $event),
+            'Add New' => null
+        ]"
+    >
+        <x-slot name="actions">
+            <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Attendees
+            </a>
+        </x-slot>
+    </x-page-header>
 
     <div class="container-fluid py-4">
         <div class="row justify-content-center">
             <div class="col-md-8">
-                <div class="card shadow-sm">
+                <div class="card">
                     <div class="card-header bg-transparent">
                         <h5 class="card-title mb-0">
                             <i class="bi bi-person-plus me-2"></i>Attendee Information
