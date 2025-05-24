@@ -165,17 +165,37 @@ class EventController extends Controller
         ]);
 
         $user = \App\Models\User::findOrFail($request->scanner_id);
-        
+
         if (!$user->isScanner()) {
             return redirect()->back()->with('error', 'Selected user is not a scanner.');
         }
 
-        $event->scanners()->attach($user->id, [
-            'assigned_by' => auth()->id(),
-            'assigned_at' => now()
-        ]);
+        // Check if scanner is already assigned to this event
+        if ($event->scanners()->where('scanner_id', $user->id)->exists()) {
+            return redirect()->back()->with('warning', 'This scanner is already assigned to the event.');
+        }
 
-        return redirect()->back()->with('success', 'Scanner assigned successfully.');
+        try {
+            DB::beginTransaction();
+
+            $event->scanners()->attach($user->id, [
+                'assigned_by' => auth()->id(),
+                'assigned_at' => now()
+            ]);
+
+            DB::commit();
+
+            return redirect()->back()->with('success', 'Scanner assigned successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Failed to assign scanner to event', [
+                'event_id' => $event->id,
+                'scanner_id' => $user->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return redirect()->back()->with('error', 'Failed to assign scanner. Please try again.');
+        }
     }
 
     /**
