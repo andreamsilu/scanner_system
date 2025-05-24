@@ -108,7 +108,7 @@ class AttendeeController extends Controller
                 'email' => $validated['email'],
                 'token' => $token,
                 'qr_code' => $qrPath,
-                'registration_status' => 'registered',
+                'registration_status' => 'unchecked_in',
                 'registered_at' => now()
             ];
 
@@ -156,8 +156,8 @@ class AttendeeController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('events.attendees.show', ['event' => $event, 'attendee' => $attendee])
-                ->with('success', 'Attendee added successfully with ' . ($request->boolean('requires_ticket') ? 'ticket' : 'registration') . '.');
+                ->route('events.attendees.index', $event)
+                ->with('success', 'Attendee registered successfully with ' . ($request->boolean('requires_ticket') ? 'ticket' : 'registration') . '.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Attendee registration failed', [
@@ -324,12 +324,14 @@ class AttendeeController extends Controller
                         throw new \Exception('Duplicate email: ' . $data['email']);
                     }
 
-                    // Create attendee
+                    // Create attendee with unchecked_in status
                     $attendee = $event->attendees()->create([
                         'name' => $data['name'],
                         'email' => $data['email'],
                         'phone' => $data['phone'] ?? null,
-                        'position' => $data['position'] ?? null
+                        'position' => $data['position'] ?? null,
+                        'registration_status' => 'unchecked_in',
+                        'registered_at' => now()
                     ]);
 
                     // Create ticket
@@ -408,7 +410,7 @@ class AttendeeController extends Controller
                 throw new \Exception('Attendee does not have a ticket.');
             }
 
-            if ($attendee->ticket->status === 'used') {
+            if ($attendee->registration_status === 'checked_in') {
                 throw new \Exception('Attendee has already been checked in.');
             }
 
@@ -419,6 +421,12 @@ class AttendeeController extends Controller
                 'scanner_id' => auth()->id(),
                 'scanned_at' => now(),
                 'status' => 'success'
+            ]);
+
+            // Update attendee status
+            $attendee->update([
+                'registration_status' => 'checked_in',
+                'checked_in_at' => now()
             ]);
 
             // Update ticket status
@@ -548,8 +556,8 @@ class AttendeeController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($attendee->registration_status === 'cancelled') {
-                throw new \Exception('This registration is already cancelled.');
+            if ($attendee->registration_status === 'checked_in') {
+                throw new \Exception('Cannot cancel a checked-in attendee.');
             }
 
             $attendee->update([

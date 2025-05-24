@@ -43,7 +43,7 @@
                         <label for="status" class="form-label">Status</label>
                         <select class="form-select" id="status" name="status">
                             <option value="">All Statuses</option>
-                            <option value="registered" {{ request('status') === 'registered' ? 'selected' : '' }}>Registered</option>
+                            <option value="unchecked_in" {{ request('status') === 'unchecked_in' ? 'selected' : '' }}>Unchecked In</option>
                             <option value="checked_in" {{ request('status') === 'checked_in' ? 'selected' : '' }}>Checked In</option>
                             <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                         </select>
@@ -68,8 +68,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Name</th>
-                                <th>Email</th>
-                                <th>Event</th>
+                                <th>Phone</th>
                                 <th>Registration Status</th>
                                 <th>Ticket Status</th>
                                 <th>Registration Date</th>
@@ -79,18 +78,11 @@
                         <tbody>
                             @forelse($attendees as $attendee)
                                 <tr>
+                                    <td>{{ $attendee->name }}</td>
+                                    <td>{{ $attendee->phone ?? 'N/A' }}</td>
                                     <td>
-                                        {{ $attendee->name }}
-                                        @if($attendee->phone)
-                                            <br>
-                                            <small class="text-muted">{{ $attendee->phone }}</small>
-                                        @endif
-                                    </td>
-                                    <td>{{ $attendee->email }}</td>
-                                    <td>{{ $attendee->event->name }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'info') }}">
-                                            {{ ucfirst($attendee->registration_status) }}
+                                        <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'primary') }}">
+                                            {{ $attendee->registration_status === 'unchecked_in' ? 'Unchecked In' : ucfirst($attendee->registration_status) }}
                                         </span>
                                         @if($attendee->registration_status === 'checked_in' && $attendee->checked_in_at)
                                             <br>
@@ -106,18 +98,12 @@
                                                 <br>
                                                 <small class="text-muted">Used: {{ $attendee->ticket->used_at->format('M j, Y g:i A') }}</small>
                                             @endif
-                                            <br>
-                                            <small class="text-muted">Token: {{ $attendee->ticket->token }}</small>
                                         @else
                                             <span class="badge bg-secondary">No Ticket</span>
                                         @endif
                                     </td>
                                     <td>
                                         {{ $attendee->created_at->format('M j, Y g:i A') }}
-                                        @if($attendee->updated_at->diffInDays($attendee->created_at) > 0)
-                                            <br>
-                                            <small class="text-muted">Updated: {{ $attendee->updated_at->format('M j, Y g:i A') }}</small>
-                                        @endif
                                     </td>
                                     <td>
                                         <div class="btn-group">
@@ -131,26 +117,24 @@
                                                title="Edit Attendee">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
-                                            @if($attendee->registration_status !== 'cancelled')
-                                                <form action="{{ route('events.attendees.cancel', ['event' => $event, 'attendee' => $attendee]) }}" 
-                                                      method="POST" 
-                                                      class="d-inline"
-                                                      onsubmit="return confirm('Are you sure you want to cancel this registration?')">
-                                                    @csrf
-                                                    @method('PATCH')
-                                                    <button type="submit" 
-                                                            class="btn btn-sm btn-outline-danger"
-                                                            title="Cancel Registration">
-                                                        <i class="bi bi-x-circle"></i>
-                                                    </button>
-                                                </form>
-                                            @endif
+                                            <form action="{{ route('events.attendees.destroy', ['event' => $event, 'attendee' => $attendee]) }}" 
+                                                  method="POST" 
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Are you sure you want to delete this attendee? This action cannot be undone.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" 
+                                                        class="btn btn-sm btn-outline-danger"
+                                                        title="Delete Attendee">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="text-center py-4">
+                                    <td colspan="6" class="text-center py-4">
                                         <div class="text-muted">
                                             <i class="bi bi-people fs-1 d-block mb-2"></i>
                                             <p class="mb-0">No attendees found.</p>
