@@ -105,68 +105,68 @@
                 <div class="card-body">
                     <div class="row g-4">
                         <div class="col-md-3">
-                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                <div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-primary bg-opacity-10">
+                                    <i class="bi bi-people-fill text-primary"></i>
+                                </div>
+                                <div class="stat-content">
                                     <h6 class="text-muted mb-1">Total Attendees</h6>
                                     <h3 class="mb-0">{{ $event->attendees->count() }}</h3>
                                 </div>
-                                <div class="bg-primary bg-opacity-10 p-3 rounded">
-                                    <i class="bi bi-people-fill text-primary fs-4"></i>
-                                </div>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                <div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-success bg-opacity-10">
+                                    <i class="bi bi-person-check-fill text-success"></i>
+                                </div>
+                                <div class="stat-content">
                                     <h6 class="text-muted mb-1">Checked-in</h6>
                                     <h3 class="mb-0">{{ $event->attendees->where('registration_status', 'checked_in')->count() }}</h3>
                                 </div>
-                                <div class="bg-success bg-opacity-10 p-3 rounded">
-                                    <i class="bi bi-person-check-fill text-success fs-4"></i>
-                                </div>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                <div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-warning bg-opacity-10">
+                                    <i class="bi bi-person-dash-fill text-warning"></i>
+                                </div>
+                                <div class="stat-content">
                                     <h6 class="text-muted mb-1">Unchecked</h6>
                                     <h3 class="mb-0">{{ $event->attendees->where('registration_status', 'registered')->count() }}</h3>
                                 </div>
-                                <div class="bg-warning bg-opacity-10 p-3 rounded">
-                                    <i class="bi bi-person-dash-fill text-warning fs-4"></i>
-                                </div>
                             </div>
                         </div>
                         <div class="col-md-3">
-                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                <div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-info bg-opacity-10">
+                                    <i class="bi bi-ticket-perforated-fill text-info"></i>
+                                </div>
+                                <div class="stat-content">
                                     <h6 class="text-muted mb-1">Total Tickets</h6>
                                     <h3 class="mb-0">{{ $event->tickets->count() }}</h3>
                                 </div>
-                                <div class="bg-info bg-opacity-10 p-3 rounded">
-                                    <i class="bi bi-ticket-perforated-fill text-info fs-4"></i>
-                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                <div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-info bg-opacity-10">
+                                    <i class="bi bi-person-plus-fill text-info"></i>
+                                </div>
+                                <div class="stat-content">
                                     <h6 class="text-muted mb-1">Available Capacity</h6>
                                     <h3 class="mb-0">{{ $event->remaining_capacity }}</h3>
                                 </div>
-                                <div class="bg-info bg-opacity-10 p-3 rounded">
-                                    <i class="bi bi-person-plus-fill text-info fs-4"></i>
-                                </div>
                             </div>
                         </div>
                         <div class="col-md-6">
-                            <div class="d-flex justify-content-between align-items-center p-3 bg-light rounded">
-                                <div>
+                            <div class="stat-card">
+                                <div class="stat-icon bg-warning bg-opacity-10">
+                                    <i class="bi bi-upc-scan text-warning"></i>
+                                </div>
+                                <div class="stat-content">
                                     <h6 class="text-muted mb-1">Assigned Scanners</h6>
                                     <h3 class="mb-0">{{ $event->scanners->count() }}</h3>
-                                </div>
-                                <div class="bg-warning bg-opacity-10 p-3 rounded">
-                                    <i class="bi bi-upc-scan text-warning fs-4"></i>
                                 </div>
                             </div>
                         </div>
@@ -297,6 +297,46 @@
         }
         .bg-light {
             background-color: #f8f9fa !important;
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 0.75rem;
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .stat-icon i {
+            font-size: 1.5rem;
+        }
+        .stat-content {
+            flex-grow: 1;
+        }
+        .stat-content h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .stat-content h6 {
+            font-size: 0.875rem;
+            margin-bottom: 0.25rem;
         }
     </style>
     @endpush
