@@ -12,18 +12,27 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Get the current ENUM values
-        $columnInfo = DB::select("SHOW COLUMNS FROM attendees WHERE Field = 'registration_status'")[0];
-        $currentEnum = str_replace(['enum(', ')', "'"], '', $columnInfo->Type);
-        $currentValues = explode(',', $currentEnum);
+        // Get the current column definition
+        $column = Schema::getConnection()
+            ->getDoctrineSchemaManager()
+            ->listTableDetails('attendees')
+            ->getColumn('registration_status');
+
+        $currentValues = $column->getType()->getValues();
 
         // If 'registered' is still a valid value, update it to 'unchecked_in'
         if (in_array('registered', $currentValues)) {
-            DB::statement("UPDATE attendees SET registration_status = 'unchecked_in' WHERE registration_status = 'registered'");
+            DB::table('attendees')
+                ->where('registration_status', 'registered')
+                ->update(['registration_status' => 'unchecked_in']);
         }
 
-        // Modify the ENUM type regardless of current values
-        DB::statement("ALTER TABLE attendees MODIFY COLUMN registration_status ENUM('unchecked_in', 'checked_in', 'cancelled') DEFAULT 'unchecked_in'");
+        // Modify the ENUM type using Schema Builder
+        Schema::table('attendees', function (Blueprint $table) {
+            $table->enum('registration_status', ['unchecked_in', 'checked_in', 'cancelled'])
+                  ->default('unchecked_in')
+                  ->change();
+        });
     }
 
     /**
@@ -31,17 +40,26 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Get the current ENUM values
-        $columnInfo = DB::select("SHOW COLUMNS FROM attendees WHERE Field = 'registration_status'")[0];
-        $currentEnum = str_replace(['enum(', ')', "'"], '', $columnInfo->Type);
-        $currentValues = explode(',', $currentEnum);
+        // Get the current column definition
+        $column = Schema::getConnection()
+            ->getDoctrineSchemaManager()
+            ->listTableDetails('attendees')
+            ->getColumn('registration_status');
+
+        $currentValues = $column->getType()->getValues();
 
         // If 'unchecked_in' is still a valid value, update it to 'registered'
         if (in_array('unchecked_in', $currentValues)) {
-            DB::statement("UPDATE attendees SET registration_status = 'registered' WHERE registration_status = 'unchecked_in'");
+            DB::table('attendees')
+                ->where('registration_status', 'unchecked_in')
+                ->update(['registration_status' => 'registered']);
         }
 
-        // Revert the ENUM type
-        DB::statement("ALTER TABLE attendees MODIFY COLUMN registration_status ENUM('registered', 'checked_in', 'cancelled') DEFAULT 'registered'");
+        // Revert the ENUM type using Schema Builder
+        Schema::table('attendees', function (Blueprint $table) {
+            $table->enum('registration_status', ['registered', 'checked_in', 'cancelled'])
+                  ->default('registered')
+                  ->change();
+        });
     }
 }; 
