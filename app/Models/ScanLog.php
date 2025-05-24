@@ -53,7 +53,7 @@ class ScanLog extends Model
      */
     public function event()
     {
-        return $this->ticket->event();
+        return $this->ticket?->event();
     }
 
     /**
@@ -61,7 +61,7 @@ class ScanLog extends Model
      */
     public function attendee()
     {
-        return $this->ticket->attendee();
+        return $this->ticket?->attendee();
     }
 
     /**
