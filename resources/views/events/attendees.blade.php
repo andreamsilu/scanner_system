@@ -1,36 +1,29 @@
 <x-app-layout>
     <x-page-header 
-        title="Attendees"
-        :breadcrumbs="[
-            'Events' => route('events.index'),
-            $event->name => route('events.show', $event),
-            'Attendees' => null
-        ]"
+        title="Events"
+        :breadcrumbs="['Events' => route('events.index'), 'Attendees' => null]"
     >
         <x-slot name="actions">
-            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
+            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
                 <i class="bi bi-person-plus me-2"></i>Add Attendee
-            </a>
-            <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Back to Event
             </a>
         </x-slot>
     </x-page-header>
 
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
-    <div class="card border-0 no-hover-shadow">
-        <div class="card-header bg-transparent border-0">
+    <div class="card">
+        <div class="card-header bg-transparent">
             <h5 class="card-title mb-0">
                 <i class="bi bi-people me-2"></i>{{ $event->name }} - Attendees List
             </h5>
         </div>
-        <div class="card-body p-4">
+        <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-hover" id="attendeesTable">
                     <thead>
@@ -135,14 +128,6 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
     <style>
-        .no-hover-shadow {
-            box-shadow: none !important;
-            transition: none !important;
-        }
-        .no-hover-shadow:hover {
-            box-shadow: none !important;
-            transform: none !important;
-        }
         .table th {
             font-weight: 600;
             background-color: #f8f9fa;
@@ -157,9 +142,6 @@
         .badge {
             padding: 0.5em 0.75em;
             font-weight: 500;
-        }
-        .gap-2 {
-            gap: 0.5rem !important;
         }
     </style>
     @endpush
