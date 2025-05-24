@@ -330,20 +330,13 @@
                                 }
                             },
                             {
-                                extend: 'print',
-                                text: '<i class="bi bi-printer me-2"></i>Print',
+                                extend: 'copy',
+                                text: '<i class="bi bi-clipboard me-2"></i>Copy',
                                 className: 'btn btn-secondary',
                                 exportOptions: {
                                     columns: [0, 1, 2, 3, 4] // Exclude actions column
                                 },
-                                title: '{{ $event->name }} - Attendees List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
-                                customize: function(win) {
-                                    $(win.document.body).css('font-size', '10pt');
-                                    $(win.document.body).find('table')
-                                        .addClass('compact')
-                                        .css('font-size', 'inherit');
-                                }
+                                title: '{{ $event->name }} - Attendees List'
                             }
                         ]
                     }
