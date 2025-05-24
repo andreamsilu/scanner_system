@@ -67,7 +67,7 @@ Route::middleware('auth')->group(function () {
                 Route::post('/', [EventController::class, 'store'])->name('store');
                 Route::get('/{event}', [EventController::class, 'show'])->name('show');
                 Route::get('/{event}/edit', [EventController::class, 'edit'])->name('edit');
-                Route::put('/{event}', [EventController::class, 'update'])->name('update');
+                Route::match(['put', 'patch'], '/{event}', [EventController::class, 'update'])->name('update');
                 Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
                 
                 // Event tickets management
