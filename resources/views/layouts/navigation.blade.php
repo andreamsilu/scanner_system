@@ -112,7 +112,7 @@
                                 <small class="text-muted d-block">(View Past Scans)</small>
                             </a>
                         </li>
-                        <hr class="my-3">
+                        <!-- <hr class="my-3"> -->
                     @endif
 
                     @if(auth()->user()->isAdmin())
@@ -129,7 +129,7 @@
                 @endif
 
                 <!-- Common Menu Items -->
-                <hr class="my-3">
+                <!-- <hr class="my-3"> -->
                 <li class="nav-item mb-2">
                     <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" 
                        href="{{ route('profile.edit') }}">
