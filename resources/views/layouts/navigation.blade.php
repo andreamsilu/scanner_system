@@ -78,7 +78,7 @@
                             <i class="bi bi-gear me-2"></i> Settings
                         </a>
                     </li>
-                    <hr class="my-3">
+                    <!-- <hr class="my-3"> -->
                 @endif
 
                 <!-- Scanner Menu Items -->
