@@ -14,97 +14,81 @@
     </x-page-header>
 
     <!-- Statistics Cards -->
-    <div class="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-3 g-md-4 mb-4">
-        <div class="col">
+    <div class="row g-4 mb-4">
+        <div class="col-sm-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="bg-primary bg-opacity-10 p-2 p-sm-3 rounded">
-                                <i class="bi bi-calendar-event text-primary fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
                             <h6 class="text-muted mb-1 small">Total Events</h6>
-                            <h4 class="mb-0 fs-5 fs-sm-4">{{ $stats['total_events'] }}</h4>
+                            <h4 class="mb-0 fs-4">{{ $stats['total_events'] }}</h4>
+                            <small class="text-success">
+                                {{ $stats['active_events'] }} Active
+                            </small>
                         </div>
-                    </div>
-                    <div class="mt-auto">
-                        <small class="text-success">
-                            {{ $stats['active_events'] }} Active
-                        </small>
+                        <div class="bg-primary bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-calendar-event text-primary fs-4"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col">
+        <div class="col-sm-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="bg-success bg-opacity-10 p-2 p-sm-3 rounded">
-                                <i class="bi bi-people text-success fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
                             <h6 class="text-muted mb-1 small">Total Attendees</h6>
-                            <h4 class="mb-0 fs-5 fs-sm-4">{{ $stats['total_attendees'] }}</h4>
+                            <h4 class="mb-0 fs-4">{{ $stats['total_attendees'] }}</h4>
+                            <small class="text-muted">
+                                Across all events
+                            </small>
                         </div>
-                    </div>
-                    <div class="mt-auto">
-                        <small class="text-muted">
-                            Across all events
-                        </small>
+                        <div class="bg-success bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-people text-success fs-4"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col">
+        <div class="col-sm-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="bg-info bg-opacity-10 p-2 p-sm-3 rounded">
-                                <i class="bi bi-upc-scan text-info fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
                             <h6 class="text-muted mb-1 small">Total Scans</h6>
-                            <h4 class="mb-0 fs-5 fs-sm-4">{{ $stats['total_scans'] }}</h4>
+                            <h4 class="mb-0 fs-4">{{ $stats['total_scans'] }}</h4>
+                            <small class="text-success">
+                                {{ $stats['successful_scans'] }} Successful
+                            </small>
                         </div>
-                    </div>
-                    <div class="mt-auto">
-                        <small class="text-success">
-                            {{ $stats['successful_scans'] }} Successful
-                        </small>
+                        <div class="bg-info bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-upc-scan text-info fs-4"></i>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="col">
+        <div class="col-sm-6 col-lg-3">
             <div class="card border-0 shadow-sm h-100">
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex align-items-center mb-3">
-                        <div class="flex-shrink-0">
-                            <div class="bg-warning bg-opacity-10 p-2 p-sm-3 rounded">
-                                <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
                             <h6 class="text-muted mb-1 small">Failed Scans</h6>
-                            <h4 class="mb-0 fs-5 fs-sm-4">{{ $stats['failed_scans'] }}</h4>
+                            <h4 class="mb-0 fs-4">{{ $stats['failed_scans'] }}</h4>
+                            <small class="text-muted">
+                                {{ $stats['total_scans'] > 0 
+                                    ? number_format(($stats['failed_scans'] / $stats['total_scans']) * 100, 1) 
+                                    : '0.0' 
+                                }}% Rate
+                            </small>
                         </div>
-                    </div>
-                    <div class="mt-auto">
-                        <small class="text-muted">
-                            {{ $stats['total_scans'] > 0 
-                                ? number_format(($stats['failed_scans'] / $stats['total_scans']) * 100, 1) 
-                                : '0.0' 
-                            }}% Rate
-                        </small>
+                        <div class="bg-warning bg-opacity-10 p-3 rounded">
+                            <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                        </div>
                     </div>
                 </div>
             </div>
