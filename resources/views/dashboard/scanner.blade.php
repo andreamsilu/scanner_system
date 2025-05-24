@@ -169,11 +169,15 @@
                                                         Continue Scanning
                                                     </a>
                                                 @else
-                                                    <a href="{{ route('scanner.select-event', $event) }}" 
-                                                       class="btn btn-outline-primary btn-sm">
-                                                        <i class="bi bi-check-circle me-1"></i>
-                                                        Select Event
-                                                    </a>
+                                                    <form action="{{ route('scanner.select-event', $event) }}" 
+                                                          method="POST" 
+                                                          class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-outline-primary btn-sm">
+                                                            <i class="bi bi-check-circle me-1"></i>
+                                                            Select Event
+                                                        </button>
+                                                    </form>
                                                 @endif
                                             </td>
                                         </tr>
