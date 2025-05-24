@@ -14,6 +14,9 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
+   
+
+    <div class="row g-4">
     <x-slot name="header">
         <div class="d-flex justify-content-between align-items-center">
             <h2 class="mb-0">{{ $event->name }}</h2>
@@ -27,8 +30,6 @@
             </div>
         </div>
     </x-slot>
-
-    <div class="row g-4">
         <!-- Event Details Card - Full Width Row -->
         <div class="col-12">
             <div class="card shadow-sm">
