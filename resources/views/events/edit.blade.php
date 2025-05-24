@@ -10,9 +10,28 @@
 
     <div class="card">
         <div class="card-body">
+            @if ($errors->any())
+                <div class="alert alert-danger">
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+            @if (session('error'))
+                <div class="alert alert-danger">
+                    {{ session('error') }}
+                </div>
+            @endif
+            @if (session('success'))
+                <div class="alert alert-success">
+                    {{ session('success') }}
+                </div>
+            @endif
             <form action="{{ route('events.update', $event) }}" method="POST" class="needs-validation" novalidate>
                 @csrf
-                @method('PUT')
+                @method('PATCH')
                 
                 <div class="row g-4">
                     <div class="col-md-6">
@@ -25,6 +44,36 @@
                                    value="{{ old('name', $event->name) }}" 
                                    required>
                             @error('name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="venue" class="form-label">Venue <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control @error('venue') is-invalid @enderror" 
+                                   id="venue" 
+                                   name="venue" 
+                                   value="{{ old('venue', $event->venue) }}" 
+                                   required>
+                            @error('venue')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="location" class="form-label">Location <span class="text-danger">*</span></label>
+                            <input type="text" 
+                                   class="form-control @error('location') is-invalid @enderror" 
+                                   id="location" 
+                                   name="location" 
+                                   value="{{ old('location', $event->location) }}" 
+                                   required>
+                            @error('location')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
@@ -57,21 +106,6 @@
                                    placeholder="DD/MM/YYYY HH:mm"
                                    required>
                             @error('end_date')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="venue" class="form-label">Venue <span class="text-danger">*</span></label>
-                            <input type="text" 
-                                   class="form-control @error('venue') is-invalid @enderror" 
-                                   id="venue" 
-                                   name="venue" 
-                                   value="{{ old('venue', $event->venue) }}" 
-                                   required>
-                            @error('venue')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                         </div>
