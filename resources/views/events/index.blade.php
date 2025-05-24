@@ -1,12 +1,14 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">Events Management</h2>
+    <x-page-header 
+        title="Events"
+        :breadcrumbs="['Events' => null]"
+    >
+        <x-slot name="actions">
             <a href="{{ route('events.create') }}" class="btn btn-primary">
                 <i class="bi bi-plus-circle me-2"></i>Create Event
             </a>
-        </div>
-    </x-slot>
+        </x-slot>
+    </x-page-header>
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">

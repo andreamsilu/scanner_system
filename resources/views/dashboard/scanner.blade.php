@@ -1,12 +1,8 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="display-6 fw-bold text-dark mb-0">Scanner Dashboard</h2>
-            <div class="text-muted">
-                Welcome, {{ Auth::user()->name }}
-            </div>
-        </div>
-    </x-slot>
+    <x-page-header 
+        title="Scanner Dashboard"
+        :breadcrumbs="['Scanner Dashboard' => null]"
+    />
 
     <!-- Currently Selected Event -->
     @if(session('selected_event_id'))

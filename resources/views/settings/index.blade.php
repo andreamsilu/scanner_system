@@ -1,26 +1,24 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2 class="mb-0">System Settings</h2>
-                <p class="text-muted mb-0">View and manage system information, logs, and settings</p>
-            </div>
-            <div class="d-flex gap-2">
-                <form action="{{ route('settings.clear-cache') }}" method="POST" class="d-inline">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-primary" onclick="return confirm('Are you sure you want to clear the cache?')">
-                        <i class="bi bi-broom me-2"></i>Clear Cache
-                    </button>
-                </form>
-                <form action="{{ route('settings.clear-logs') }}" method="POST" class="d-inline">
-                    @csrf
-                    <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to clear the logs?')">
-                        <i class="bi bi-trash me-2"></i>Clear Logs
-                    </button>
-                </form>
-            </div>
-        </div>
-    </x-slot>
+    <x-page-header 
+        title="System Settings"
+        subtitle="View and manage system information, logs, and settings"
+        :breadcrumbs="['Settings' => null]"
+    >
+        <x-slot name="actions">
+            <form action="{{ route('settings.clear-cache') }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-outline-primary" onclick="return confirm('Are you sure you want to clear the cache?')">
+                    <i class="bi bi-broom me-2"></i>Clear Cache
+                </button>
+            </form>
+            <form action="{{ route('settings.clear-logs') }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('Are you sure you want to clear the logs?')">
+                    <i class="bi bi-trash me-2"></i>Clear Logs
+                </button>
+            </form>
+        </x-slot>
+    </x-page-header>
 
     <!-- System Information -->
     <div class="row">
