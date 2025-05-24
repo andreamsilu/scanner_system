@@ -130,12 +130,14 @@
 
                 <!-- Common Menu Items -->
                 <!-- <hr class="my-3"> -->
-                <li class="nav-item mb-2">
-                    <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" 
-                       href="{{ route('profile.edit') }}">
-                        <i class="bi bi-person me-2"></i> Profile
-                    </a>
-                </li>
+                @if(auth()->user()->isAdmin())
+                    <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" 
+                           href="{{ route('profile.edit') }}">
+                            <i class="bi bi-person me-2"></i> Profile
+                        </a>
+                    </li>
+                @endif
                 <li class="nav-item">
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
