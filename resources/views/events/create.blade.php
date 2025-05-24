@@ -61,19 +61,6 @@
                         </div>
                     </div>
 
-                    <div class="col-md-12">
-                        <div class="form-group">
-                            <label for="description" class="form-label">Description</label>
-                            <textarea class="form-control @error('description') is-invalid @enderror" 
-                                      id="description" 
-                                      name="description" 
-                                      rows="3">{{ old('description') }}</textarea>
-                            @error('description')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="venue" class="form-label">Venue <span class="text-danger">*</span></label>
@@ -102,45 +89,6 @@
                             @error('capacity')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="type" class="form-label">Event Type <span class="text-danger">*</span></label>
-                            <select class="form-select @error('type') is-invalid @enderror" 
-                                    id="type" 
-                                    name="type" 
-                                    required>
-                                <option value="">Select Type</option>
-                                <option value="conference" {{ old('type') == 'conference' ? 'selected' : '' }}>Conference</option>
-                                <option value="seminar" {{ old('type') == 'seminar' ? 'selected' : '' }}>Seminar</option>
-                                <option value="workshop" {{ old('type') == 'workshop' ? 'selected' : '' }}>Workshop</option>
-                                <option value="meeting" {{ old('type') == 'meeting' ? 'selected' : '' }}>Meeting</option>
-                                <option value="other" {{ old('type') == 'other' ? 'selected' : '' }}>Other</option>
-                            </select>
-                            @error('type')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="col-12">
-                        <div class="form-group">
-                            <div class="form-check">
-                                <input type="checkbox" 
-                                       class="form-check-input @error('requires_registration') is-invalid @enderror" 
-                                       id="requires_registration" 
-                                       name="requires_registration" 
-                                       value="1" 
-                                       {{ old('requires_registration') ? 'checked' : '' }}>
-                                <label class="form-check-label" for="requires_registration">
-                                    Requires Registration
-                                </label>
-                                @error('requires_registration')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
                         </div>
                     </div>
                 </div>

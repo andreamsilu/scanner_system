@@ -15,20 +15,19 @@ class Event extends Model
 
     protected $fillable = [
         'name',
-        'description',
         'venue',
         'location',
         'start_date',
         'end_date',
         'capacity',
         'status',
-        'created_by',
+        'created_by'
     ];
 
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
-        'capacity' => 'integer',
+        'capacity' => 'integer'
     ];
 
     protected $appends = ['status_badge'];

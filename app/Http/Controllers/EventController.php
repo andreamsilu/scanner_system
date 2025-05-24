@@ -32,12 +32,11 @@ class EventController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'required|string',
             'venue' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'start_date' => ['required', 'date_format:d/m/Y H:i'],
             'end_date' => ['required', 'date_format:d/m/Y H:i', 'after:start_date'],
-            'capacity' => 'required|integer|min:1',
+            'capacity' => 'required|integer|min:1'
         ]);
 
         // Convert dates to database format
@@ -47,11 +46,27 @@ class EventController extends Controller
         $validated['created_by'] = auth()->id();
         // Status will be automatically set by the model's boot method
 
-        $event = Event::create($validated);
+        try {
+            DB::beginTransaction();
+            
+            $event = Event::create($validated);
+            
+            DB::commit();
 
-        return redirect()
-            ->route('events.show', $event)
-            ->with('success', 'Event created successfully.');
+            return redirect()
+                ->route('events.show', $event)
+                ->with('success', 'Event created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Event creation failed', [
+                'error' => $e->getMessage(),
+                'data' => $validated
+            ]);
+
+            return back()
+                ->withInput()
+                ->with('error', 'Failed to create event. Please try again.');
+        }
     }
 
     public function show(Event $event): View
@@ -72,12 +87,11 @@ class EventController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'required|string',
             'venue' => 'required|string|max:255',
             'location' => 'required|string|max:255',
             'start_date' => ['required', 'date_format:d/m/Y H:i'],
             'end_date' => ['required', 'date_format:d/m/Y H:i', 'after:start_date'],
-            'capacity' => 'required|integer|min:1',
+            'capacity' => 'required|integer|min:1'
         ]);
 
         // Convert dates to database format

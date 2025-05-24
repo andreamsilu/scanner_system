@@ -105,12 +105,10 @@ return new class extends Migration
         Schema::create('events', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->text('description')->nullable();
             $table->dateTime('start_date');
             $table->dateTime('end_date');
             $table->string('venue');
-            $table->string('status')->default('draft');
-            $table->boolean('is_public')->default(false);
+            $table->string('status')->default('pending');
             $table->string('location')->nullable();
             $table->integer('capacity');
             $table->string('banner')->nullable();
