@@ -12,9 +12,11 @@
                 <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
                     <i class="bi bi-person-plus me-2"></i>Add Attendee
                 </a>
+                @role('admin')
                 <a href="{{ route('events.attendees.bulk-upload.create', $event) }}" class="btn btn-success">
                     <i class="bi bi-upload me-2"></i>Bulk Upload
                 </a>
+                @endrole
             </div>
         </x-slot>
     </x-page-header>
