@@ -1,6 +1,7 @@
 <x-app-layout>
     <x-page-header 
         :title="$event->name . ' - Attendees'"
+        :subtitle="'Manage attendees for ' . $event->name"
         :breadcrumbs="[
             'Events' => route('events.index'),
             $event->name => route('events.show', $event),
@@ -8,24 +9,26 @@
         ]"
     >
         <x-slot name="actions">
-            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
-                <i class="bi bi-person-plus me-2"></i>Add Attendee
-            </a>
-            <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Back to Event
-            </a>
+            <div class="d-flex gap-2">
+                <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
+                    <i class="bi bi-person-plus me-2"></i>Add Attendee
+                </a>
+                <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left me-2"></i>Back to Event
+                </a>
+            </div>
         </x-slot>
     </x-page-header>
 
     @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
             {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
 
-    <div class="card">
-        <div class="card-body">
+    <div class="card border-0 no-hover-shadow">
+        <div class="card-body p-4">
             <div class="table-responsive">
                 <table class="table table-hover" id="attendeesTable">
                     <thead>
@@ -129,6 +132,34 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.bootstrap5.min.css">
+    <style>
+        .no-hover-shadow {
+            box-shadow: none !important;
+            transition: none !important;
+        }
+        .no-hover-shadow:hover {
+            box-shadow: none !important;
+            transform: none !important;
+        }
+        .table th {
+            font-weight: 600;
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+        .table td {
+            vertical-align: middle;
+        }
+        .btn-group .btn {
+            padding: 0.25rem 0.5rem;
+        }
+        .badge {
+            padding: 0.5em 0.75em;
+            font-weight: 500;
+        }
+        .gap-2 {
+            gap: 0.5rem !important;
+        }
+    </style>
     @endpush
 
     @push('scripts')
