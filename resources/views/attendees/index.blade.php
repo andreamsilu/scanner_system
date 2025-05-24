@@ -278,6 +278,14 @@
 
     <script>
         $(document).ready(function() {
+            // Destroy existing DataTable instance if it exists
+            if ($.fn.DataTable.isDataTable('#attendeesTable')) {
+                $('#attendeesTable').DataTable().destroy();
+            }
+
+            // Clear the table to prevent duplicate initialization
+            $('#attendeesTable tbody').empty();
+
             var table = $('#attendeesTable').DataTable({
                 responsive: true,
                 processing: true,
