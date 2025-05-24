@@ -13,7 +13,7 @@
         </x-slot>
     </x-page-header>
 
-    <div class="card border-0">
+    <div class="card border-0 no-hover-shadow">
         <div class="card-body">
             @if ($errors->any())
                 <div class="alert alert-danger">
@@ -141,6 +141,19 @@
             </form>
         </div>
     </div>
+
+    @push('styles')
+    <style>
+        .no-hover-shadow {
+            box-shadow: none !important;
+            transition: none !important;
+        }
+        .no-hover-shadow:hover {
+            box-shadow: none !important;
+            transform: none !important;
+        }
+    </style>
+    @endpush
 
     @push('scripts')
     <!-- Include Flatpickr CSS and JS -->
