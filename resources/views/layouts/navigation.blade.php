@@ -88,28 +88,28 @@
                             <a class="nav-link {{ request()->routeIs('scanner.dashboard') ? 'active' : '' }}" 
                                href="{{ route('scanner.dashboard') }}">
                                 <i class="bi bi-speedometer2 me-2"></i> Scanner Dashboard
-                                <small class="text-muted d-block">(Overview & Stats)</small>
+                                <!-- <small class="text-muted d-block">(Overview & Stats)</small> -->
                             </a>
                         </li>
                         <li class="nav-item mb-2">
                             <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active' : '' }}" 
                                href="{{ route('scanner.events.index') }}">
                                 <i class="bi bi-calendar-event me-2"></i> My Events
-                                <small class="text-muted d-block">(Assigned Events)</small>
+                                <!-- <small class="text-muted d-block">(Assigned Events)</small> -->
                             </a>
                         </li>
                         <li class="nav-item mb-2">
                             <a class="nav-link {{ request()->routeIs('scanner.validate') ? 'active' : '' }}" 
                                href="{{ route('scanner.validate') }}">
-                                <i class="bi bi-upc-scan me-2"></i> Scan Tickets
-                                <small class="text-muted d-block">(QR Code Scanner)</small>
+                                <i class="bi bi-upc-scan me-2"></i> Validate Tickets
+                                <!-- <small class="text-muted d-block">(QR Code Scanner)</small> -->
                             </a>
                         </li>
                         <li class="nav-item mb-2">
                             <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active' : '' }}" 
                                href="{{ route('scanner.history') }}">
                                 <i class="bi bi-clock-history me-2"></i> Scan History
-                                <small class="text-muted d-block">(View Past Scans)</small>
+                                <!-- <small class="text-muted d-block">(View Past Scans)</small> -->
                             </a>
                         </li>
                         <!-- <hr class="my-3"> -->
