@@ -1,12 +1,18 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">Edit Event</h2>
-            <a href="{{ route('events.index') }}" class="btn btn-outline-secondary">
-                <i class="bi bi-arrow-left me-2"></i>Back to Events
+    <x-page-header 
+        title="Edit Event"
+        :breadcrumbs="[
+            'Events' => route('events.index'),
+            $event->name => route('events.show', $event),
+            'Edit Event' => null
+        ]"
+    >
+        <x-slot name="actions">
+            <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Event
             </a>
-        </div>
-    </x-slot>
+        </x-slot>
+    </x-page-header>
 
     <div class="card">
         <div class="card-body">

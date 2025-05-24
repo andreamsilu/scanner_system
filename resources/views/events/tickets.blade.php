@@ -1,36 +1,21 @@
-@extends('layouts.app')
-
-@section('title', $event->name . ' - Tickets')
-
-@section('content')
-<div class="container-fluid">
-    <!-- System Logo and Header Section -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex align-items-center justify-content-between">
-                <div class="d-flex align-items-center">
-                    <div class="me-3">
-                        <img src="{{ asset('images/logo.png') }}" 
-                             alt="Event System Logo" 
-                             class="system-logo" 
-                             style="height: 60px; width: auto;">
-                    </div>
-                    <div>
-                        <h1 class="h3 mb-0"><i class="bi bi-ticket-perforated"></i> {{ $event->name }} - Tickets</h1>
-                        <p class="text-muted"><i class="bi bi-calendar-event"></i> {{ $event->start_date->format('F j, Y') }} - {{ $event->end_date->format('F j, Y') }}</p>
-                    </div>
-                </div>
-                <div>
-                    <a href="{{ route('events.show', $event) }}" class="btn btn-secondary">
-                        <i class="bi bi-arrow-left"></i> Back to Event
-                    </a>
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#generateTicketsModal">
-                        <i class="bi bi-plus-lg"></i> Generate Tickets
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+<x-app-layout>
+    <x-page-header 
+        :title="$event->name . ' - Tickets'"
+        :breadcrumbs="[
+            'Events' => route('events.index'),
+            $event->name => route('events.show', $event),
+            'Tickets' => null
+        ]"
+    >
+        <x-slot name="actions">
+            <button type="button" class="btn btn-primary me-2" data-bs-toggle="modal" data-bs-target="#generateTicketsModal">
+                <i class="bi bi-plus-lg me-2"></i>Generate Tickets
+            </button>
+            <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Event
+            </a>
+        </x-slot>
+    </x-page-header>
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -381,4 +366,4 @@ $(document).ready(function() {
 });
 </script>
 @endpush
-@endsection 
+</x-app-layout> 

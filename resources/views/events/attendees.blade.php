@@ -1,17 +1,21 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <h2 class="mb-0">{{ $event->name }} - Attendees</h2>
-            <div>
-                <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
-                    <i class="bi bi-person-plus me-2"></i>Add Attendee
-                </a>
-                <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-arrow-left me-2"></i>Back to Event
-                </a>
-            </div>
-        </div>
-    </x-slot>
+    <x-page-header 
+        :title="$event->name . ' - Attendees'"
+        :breadcrumbs="[
+            'Events' => route('events.index'),
+            $event->name => route('events.show', $event),
+            'Attendees' => null
+        ]"
+    >
+        <x-slot name="actions">
+            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
+                <i class="bi bi-person-plus me-2"></i>Add Attendee
+            </a>
+            <a href="{{ route('events.show', $event) }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-2"></i>Back to Event
+            </a>
+        </x-slot>
+    </x-page-header>
 
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
