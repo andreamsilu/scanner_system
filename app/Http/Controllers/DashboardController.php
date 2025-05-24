@@ -27,56 +27,51 @@ class DashboardController extends Controller
         }
     }
 
-    public function adminDashboard(): View
+    public function admin()
     {
-        if (!Auth::user()->hasRole('admin')) {
-            abort(403, 'Unauthorized action.');
-        }
-        
-        // Get real-time statistics
+        // Get event statistics
         $stats = [
             'total_events' => Event::count(),
-            'active_events' => Event::where('status', 'active')->count(),
-            'total_attendees' => Attendee::count(),
-            'total_scans' => ScanLog::count(),
-            'today_scans' => ScanLog::whereDate('created_at', today())->count(),
-            'active_scanners' => User::whereHas('roles', function($query) {
-                $query->where('name', 'scanner');
-            })->where('is_active', true)->count(),
+            'completed_events' => Event::where('end_date', '<', now())->count(),
+            'upcoming_events' => Event::where('start_date', '>', now())->count(),
+            'active_scanners' => User::role('scanner')
+                ->whereHas('scannerEvents', function ($query) {
+                    $query->whereHas('event', function ($q) {
+                        $q->where('start_date', '<=', now())
+                          ->where('end_date', '>=', now());
+                    });
+                })
+                ->count(),
         ];
 
-        // Get recent scan activity
-        $recent_activity = ScanLog::with(['ticket.attendee', 'ticket.event', 'scanner'])
+        // Get recent activity (last 10 scan logs)
+        $recent_activity = ScanLog::with(['event', 'scanner', 'attendee'])
             ->latest()
             ->take(10)
             ->get()
-            ->map(function($scan) {
+            ->map(function ($log) {
                 return [
-                    'time' => $scan->created_at->diffForHumans(),
-                    'event' => $scan->ticket->event->name ?? 'N/A',
-                    'scanner' => $scan->scanner->name ?? 'System',
-                    'attendee' => $scan->ticket->attendee->name ?? 'Invalid Ticket',
-                    'status' => $scan->status,
-                    'status_class' => $scan->status === 'success' ? 'success' : 
-                                    ($scan->status === 'duplicate' ? 'warning' : 'danger')
+                    'time' => $log->created_at->format('M d, H:i'),
+                    'event' => $log->event->name,
+                    'scanner' => $log->scanner->name,
+                    'attendee' => $log->attendee->name,
+                    'status' => $log->status,
+                    'status_class' => $log->status === 'success' ? 'success' : 'danger'
                 ];
             });
-            
 
-        // Get upcoming events
-        $upcoming_events = Event::where('status', 'active')
-            ->where('start_date', '>=', now())
+        // Get upcoming events (next 5)
+        $upcoming_events = Event::where('start_date', '>', now())
             ->orderBy('start_date')
             ->take(5)
             ->get();
 
-        // Get scanner performance
-        $scanner_performance = User::whereHas('roles', function($query) {
-                $query->where('name', 'scanner');
-            })
-            ->withCount(['scanLogs' => function($query) {
+        // Get scanner performance for today
+        $scanner_performance = User::role('scanner')
+            ->withCount(['scanLogs' => function ($query) {
                 $query->whereDate('created_at', today());
             }])
+            ->having('scan_logs_count', '>', 0)
             ->orderByDesc('scan_logs_count')
             ->take(5)
             ->get();
