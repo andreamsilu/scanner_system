@@ -31,7 +31,7 @@
         
         <!-- User Info -->
         @auth
-            <div class="d-flex align-items-center mb-4 px-3 py-3 border-bottom">
+            <!-- <div class="d-flex align-items-center mb-4 px-3 py-3 border-bottom">
                 <div class="flex-shrink-0">
                     <div class="avatar-circle bg-primary bg-opacity-10 text-primary">
                         <i class="bi bi-person-circle fs-4"></i>
@@ -41,7 +41,7 @@
                     <h6 class="mb-0">{{ auth()->user()->name }}</h6>
                     <small class="text-muted">{{ auth()->user()->roles->first()->name ?? 'User' }}</small>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Navigation Links -->
             <div class="nav flex-column nav-pills">
