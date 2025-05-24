@@ -107,20 +107,29 @@
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="text-muted mb-1">Total Tickets</h6>
-                                <h3 class="mb-0">{{ $event->tickets->count() }}</h3>
+                                <h6 class="text-muted mb-1">Checked-in Attendees</h6>
+                                <h3 class="mb-0">{{ $event->attendees->where('registration_status', 'checked_in')->count() }}</h3>
                             </div>
                             <div class="bg-success bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-ticket-perforated-fill text-success fs-4"></i>
+                                <i class="bi bi-person-check-fill text-success fs-4"></i>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <h6 class="text-muted mb-1">Available Capacity</h6>
-                                <h3 class="mb-0">{{ $event->remaining_capacity }}</h3>
+                                <h6 class="text-muted mb-1">Unchecked Attendees</h6>
+                                <h3 class="mb-0">{{ $event->attendees->where('registration_status', 'registered')->count() }}</h3>
+                            </div>
+                            <div class="bg-warning bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-person-dash-fill text-warning fs-4"></i>
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Total Tickets</h6>
+                                <h3 class="mb-0">{{ $event->tickets->count() }}</h3>
                             </div>
                             <div class="bg-info bg-opacity-10 p-3 rounded">
-                                <i class="bi bi-person-plus-fill text-info fs-4"></i>
+                                <i class="bi bi-ticket-perforated-fill text-info fs-4"></i>
                             </div>
                         </div>
                         <div class="d-flex justify-content-between align-items-center">
@@ -132,6 +141,36 @@
                                 <i class="bi bi-upc-scan text-warning fs-4"></i>
                             </div>
                         </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Available Capacity</h6>
+                                <h3 class="mb-0">{{ $event->remaining_capacity }}</h3>
+                            </div>
+                            <div class="bg-info bg-opacity-10 p-3 rounded">
+                                <i class="bi bi-person-plus-fill text-info fs-4"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Progress bar for check-in status -->
+                    <div class="mt-4">
+                        <h6 class="text-muted mb-2">Check-in Progress</h6>
+                        <div class="progress" style="height: 8px;">
+                            @php
+                                $totalAttendees = $event->attendees->count();
+                                $checkedInAttendees = $event->attendees->where('registration_status', 'checked_in')->count();
+                                $checkInPercentage = $totalAttendees > 0 ? ($checkedInAttendees / $totalAttendees) * 100 : 0;
+                            @endphp
+                            <div class="progress-bar bg-success" 
+                                 role="progressbar" 
+                                 style="width: {{ $checkInPercentage }}%"
+                                 aria-valuenow="{{ $checkInPercentage }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            {{ $checkedInAttendees }} of {{ $totalAttendees }} attendees checked in
+                        </small>
                     </div>
                 </div>
             </div>
