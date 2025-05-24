@@ -50,7 +50,7 @@
                     <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" 
                            href="{{ route('admin.dashboard') }}">
-                            <i class="bi bi-speedometer2 me-2"></i> Admin Dashboard
+                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
                         </a>
                     </li>
                     <li class="nav-item mb-2">
