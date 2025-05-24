@@ -283,12 +283,10 @@
                 $('#attendeesTable').DataTable().destroy();
             }
 
-            // Clear the table to prevent duplicate initialization
-            $('#attendeesTable tbody').empty();
-
             var table = $('#attendeesTable').DataTable({
                 responsive: true,
                 processing: true,
+                serverSide: false, // Set to false since we're using blade rendering
                 pageLength: 10,
                 order: [[4, 'desc']], // Sort by registration date by default
                 dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
@@ -370,6 +368,10 @@
                         next: '<i class="bi bi-chevron-right"></i>',
                         last: '<i class="bi bi-chevron-double-right"></i>'
                     }
+                },
+                drawCallback: function() {
+                    // Reinitialize any tooltips or other plugins if needed
+                    $('[data-bs-toggle="tooltip"]').tooltip();
                 }
             });
 
