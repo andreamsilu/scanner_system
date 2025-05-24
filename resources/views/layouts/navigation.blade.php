@@ -31,7 +31,7 @@
         
         <!-- User Info -->
         @auth
-            <div class="d-flex align-items-center mb-4 px-3 py-3 border-bottom">
+            <!-- <div class="d-flex align-items-center mb-4 px-3 py-3 border-bottom">
                 <div class="flex-shrink-0">
                     <div class="avatar-circle bg-primary bg-opacity-10 text-primary">
                         <i class="bi bi-person-circle fs-4"></i>
@@ -41,7 +41,7 @@
                     <h6 class="mb-0">{{ auth()->user()->name }}</h6>
                     <small class="text-muted">{{ auth()->user()->roles->first()->name ?? 'User' }}</small>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Navigation Links -->
             <div class="nav flex-column nav-pills">
@@ -112,7 +112,7 @@
                                 <small class="text-muted d-block">(View Past Scans)</small>
                             </a>
                         </li>
-                        <hr class="my-3">
+                        <!-- <hr class="my-3"> -->
                     @endif
 
                     @if(auth()->user()->isAdmin())
@@ -129,7 +129,7 @@
                 @endif
 
                 <!-- Common Menu Items -->
-                <hr class="my-3">
+                <!-- <hr class="my-3"> -->
                 <li class="nav-item mb-2">
                     <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" 
                        href="{{ route('profile.edit') }}">
