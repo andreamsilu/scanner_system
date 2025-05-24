@@ -57,7 +57,7 @@ Route::middleware('auth')->group(function () {
 
     // Admin Routes
     Route::middleware('role:admin')->group(function () {
-        Route::get('/admin/dashboard', [DashboardController::class, 'adminDashboard'])->name('admin.dashboard');
+        Route::get('/admin/dashboard', [DashboardController::class, 'admin'])->name('admin.dashboard');
         
         // Events Management
         Route::middleware(['auth', 'role:admin'])->group(function () {
