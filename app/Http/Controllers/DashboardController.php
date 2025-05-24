@@ -45,16 +45,16 @@ class DashboardController extends Controller
         ];
 
         // Get recent activity (last 10 scan logs)
-        $recent_activity = ScanLog::with(['event', 'scanner', 'attendee'])
+        $recent_activity = ScanLog::with(['ticket.event', 'ticket.attendee', 'scanner'])
             ->latest()
             ->take(10)
             ->get()
             ->map(function ($log) {
                 return [
                     'time' => $log->created_at->format('M d, H:i'),
-                    'event' => $log->event->name,
-                    'scanner' => $log->scanner->name,
-                    'attendee' => $log->attendee->name,
+                    'event' => $log->ticket?->event?->name ?? 'Unknown Event',
+                    'scanner' => $log->scanner?->name ?? 'Unknown Scanner',
+                    'attendee' => $log->ticket?->attendee?->name ?? 'Unknown Attendee',
                     'status' => $log->status,
                     'status_class' => $log->status === 'success' ? 'success' : 'danger'
                 ];
