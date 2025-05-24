@@ -116,6 +116,7 @@
                     @endif
 
                     @if(auth()->user()->isAdmin())
+                        {{-- Temporarily disabled scanners management
                         <li class="nav-item mb-2">
                             <a class="nav-link {{ request()->routeIs('scanners.*') ? 'active' : '' }}" 
                                href="{{ route('scanners.index') }}">
@@ -123,6 +124,7 @@
                                 <small class="text-muted d-block">(Scanner Management)</small>
                             </a>
                         </li>
+                        --}}
                     @endif
                 @endif
 
