@@ -235,6 +235,9 @@
         </div>
     </div>
 
+    <!-- Scanner Assignment Section -->
+    @include('events.partials.scanner-assignment')
+
     <!-- Assign Scanner Modal -->
     <div class="modal fade" id="assignScannerModal" tabindex="-1" aria-labelledby="assignScannerModalLabel" aria-hidden="true">
         <div class="modal-dialog">
