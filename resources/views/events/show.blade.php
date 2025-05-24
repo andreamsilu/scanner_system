@@ -199,6 +199,123 @@
             </div>
         </div>
 
+        <!-- Scanner Assignments Card - Full Width Row -->
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-upc-scan me-2"></i>Scanner Assignments
+                        </h5>
+                        @if(auth()->user()->hasRole('admin'))
+                            <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#assignScannerModal">
+                                <i class="bi bi-person-plus me-2"></i>Assign Scanner
+                            </button>
+                        @endif
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if($event->scanners->isEmpty())
+                        <div class="text-center py-4">
+                            <i class="bi bi-upc-scan text-muted" style="font-size: 2rem;"></i>
+                            <p class="text-muted mt-2 mb-0">No scanners assigned to this event yet.</p>
+                            @if(auth()->user()->hasRole('admin'))
+                                <button type="button" class="btn btn-outline-primary btn-sm mt-3" data-bs-toggle="modal" data-bs-target="#assignScannerModal">
+                                    <i class="bi bi-person-plus me-2"></i>Assign Scanner
+                                </button>
+                            @endif
+                        </div>
+                    @else
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Scanner</th>
+                                        <th>Email</th>
+                                        <th>Status</th>
+                                        <th>Assigned At</th>
+                                        <th>Assigned By</th>
+                                        @if(auth()->user()->hasRole('admin'))
+                                            <th class="text-end">Actions</th>
+                                        @endif
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($event->scanners as $scanner)
+                                        <tr>
+                                            <td>
+                                                <div class="d-flex align-items-center">
+                                                    <div class="avatar-sm me-2">
+                                                        <span class="avatar-title rounded-circle bg-primary bg-opacity-10 text-primary">
+                                                            {{ substr($scanner->name, 0, 1) }}
+                                                        </span>
+                                                    </div>
+                                                    <div>
+                                                        <h6 class="mb-0">{{ $scanner->name }}</h6>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td>{{ $scanner->email }}</td>
+                                            <td>
+                                                @if($scanner->is_active)
+                                                    <span class="badge bg-success">Active</span>
+                                                @else
+                                                    <span class="badge bg-danger">Inactive</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($scanner->pivot->assigned_at)
+                                                    {{ is_string($scanner->pivot->assigned_at) 
+                                                        ? \Carbon\Carbon::parse($scanner->pivot->assigned_at)->format('M d, Y h:i A')
+                                                        : $scanner->pivot->assigned_at->format('M d, Y h:i A') 
+                                                    }}
+                                                @else
+                                                    <span class="text-muted">N/A</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($scanner->pivot->assigned_by)
+                                                    @php
+                                                        $assignedBy = \App\Models\User::find($scanner->pivot->assigned_by);
+                                                    @endphp
+                                                    {{ $assignedBy ? $assignedBy->name : 'System' }}
+                                                @else
+                                                    <span class="text-muted">System</span>
+                                                @endif
+                                            </td>
+                                            @if(auth()->user()->hasRole('admin'))
+                                                <td class="text-end">
+                                                    <div class="btn-group">
+                                                        <button type="button" 
+                                                            class="btn btn-light btn-sm" 
+                                                            data-bs-toggle="modal" 
+                                                            data-bs-target="#editScannerModal{{ $scanner->id }}"
+                                                            title="Edit Assignment">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </button>
+                                                        <form action="{{ route('events.scanners.remove', [$event, $scanner]) }}" 
+                                                            method="POST" 
+                                                            class="d-inline"
+                                                            onsubmit="return confirm('Are you sure you want to remove this scanner?');">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-light btn-sm text-danger" title="Remove Scanner">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                </td>
+                                            @endif
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
         <!-- Quick Actions Card - Full Width Row -->
         <div class="col-12">
             <div class="card shadow-sm">
@@ -333,6 +450,26 @@
         .stat-content h6 {
             font-size: 0.875rem;
             margin-bottom: 0.25rem;
+        }
+        .avatar-sm {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .avatar-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        .table > :not(caption) > * > * {
+            padding: 1rem;
+        }
+        .btn-group .btn {
+            padding: 0.25rem 0.5rem;
+        }
+        .btn-group .btn i {
+            font-size: 0.875rem;
         }
     </style>
     @endpush
