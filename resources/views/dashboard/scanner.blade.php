@@ -203,18 +203,16 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                @if($event->status === 'active')
-                                                    <form action="{{ route('scanner.select-event', $event) }}" method="POST" class="d-inline">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-primary btn-sm">
-                                                            <i class="bi bi-upc-scan me-1"></i>Start Scanning
-                                                        </button>
-                                                    </form>
-                                                @else
-                                                    <button class="btn btn-secondary btn-sm" disabled>
-                                                        <i class="bi bi-upc-scan me-1"></i>Not Available
-                                                    </button>
-                                                @endif
+                                                <div class="btn-group">
+                                                    <a href="{{ route('events.show', $event) }}" 
+                                                       class="btn btn-info btn-sm">
+                                                        <i class="bi bi-eye me-1"></i>View Attendees
+                                                    </a>
+                                                    <a href="{{ route('scanner.select-event', ['event' => $event->id]) }}" 
+                                                       class="btn btn-primary btn-sm">
+                                                        <i class="bi bi-upc-scan me-1"></i>Start Scanning
+                                                    </a>
+                                                </div>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -223,11 +221,8 @@
                         </div>
                     @else
                         <div class="text-center py-4">
-                            <div class="avatar-circle bg-light mx-auto mb-3" style="width: 64px; height: 64px;">
-                                <i class="bi bi-calendar-x fs-2 text-muted"></i>
-                            </div>
-                            <h5 class="text-muted mb-2">No Events Assigned</h5>
-                            <p class="text-muted mb-0">You haven't been assigned to any events yet.</p>
+                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-3">No events assigned to you yet</p>
                         </div>
                     @endif
                 </div>
