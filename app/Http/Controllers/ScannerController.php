@@ -27,9 +27,9 @@ class ScannerController extends Controller
         // Get scanner's statistics using a dedicated method
         $stats = $this->getScannerStats($user);
         
-        // Get all assigned events with optimized query
+        // Get all assigned events without status check
         $assigned_events = $user->events()
-            ->orderBy('start_date')
+            ->orderBy('start_date', 'desc')
             ->get()
             ->map(function ($event) {
                 // Calculate scan statistics for each event
@@ -74,10 +74,22 @@ class ScannerController extends Controller
     {
         $today = now()->startOfDay();
         
-        // Get counts for different event types
-        $activeEventsCount = $scanner->activeAndEnabledEvents()->count();
+        // Get all assigned events count
         $totalAssignedEvents = $scanner->events()->count();
-        $upcomingEventsCount = $scanner->activeEvents()->count();
+        
+        // Get events by date range
+        $upcomingEvents = $scanner->events()
+            ->where('start_date', '>', now())
+            ->count();
+            
+        $currentEvents = $scanner->events()
+            ->where('start_date', '<=', now())
+            ->where('end_date', '>=', now())
+            ->count();
+            
+        $pastEvents = $scanner->events()
+            ->where('end_date', '<', now())
+            ->count();
         
         return [
             'today_scans' => ScanLog::where('scanner_id', $scanner->id)
@@ -92,9 +104,9 @@ class ScannerController extends Controller
                 ->whereIn('status', ['invalid', 'duplicate'])
                 ->count(),
             'total_events' => $totalAssignedEvents,
-            'active_events' => $activeEventsCount,
-            'upcoming_events' => $upcomingEventsCount,
-            'past_events' => $scanner->pastEvents()->count()
+            'current_events' => $currentEvents,
+            'upcoming_events' => $upcomingEvents,
+            'past_events' => $pastEvents
         ];
     }
 
