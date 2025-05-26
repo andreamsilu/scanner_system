@@ -107,29 +107,43 @@ class DashboardController extends Controller
                 ->whereDate('created_at', today())
                 ->whereIn('status', ['invalid', 'duplicate'])
                 ->count(),
+            'total_events' => $scanner->events()->count()
         ];
 
-        // Get assigned events with their attendees
+        // Get assigned events without any checks
         $assigned_events = $scanner->events()
-            ->where('status', 'active')
-            ->where(function($query) {
-                $query->where('start_date', '>=', now())
-                    ->orWhere('end_date', '>=', now());
-            })
-            ->with(['attendees' => function($query) {
-                $query->with(['ticket' => function($q) {
-                    $q->select('id', 'attendee_id', 'status');
-                }])
-                ->select('id', 'name', 'email', 'event_id', 'token');
-            }])
-            ->get();
+            ->orderBy('start_date', 'desc')
+            ->get()
+            ->map(function ($event) {
+                // Calculate scan statistics for each event
+                $event->scan_stats = [
+                    'total_attendees' => $event->attendees->count(),
+                    'scanned_count' => $event->attendees->filter(function ($attendee) {
+                        return $attendee->ticket && $attendee->ticket->status === 'used';
+                    })->count(),
+                    'pending_count' => $event->attendees->filter(function ($attendee) {
+                        return !$attendee->ticket || $attendee->ticket->status !== 'used';
+                    })->count()
+                ];
+                return $event;
+            });
 
         // Get recent activity
         $recent_activity = ScanLog::with(['ticket.attendee', 'ticket.event'])
             ->where('scanner_id', $scanner->id)
             ->latest()
             ->take(10)
-            ->get();
+            ->get()
+            ->map(function ($scan) {
+                return [
+                    'time' => $scan->created_at->diffForHumans(),
+                    'event' => $scan->ticket?->event?->name ?? 'N/A',
+                    'attendee' => $scan->ticket?->attendee?->name ?? 'Invalid Ticket',
+                    'status' => $scan->status,
+                    'status_class' => $scan->status === 'success' ? 'success' : 
+                        ($scan->status === 'duplicate' ? 'warning' : 'danger')
+                ];
+            });
 
         return view('dashboard.scanner', compact('stats', 'assigned_events', 'recent_activity'));
     }
