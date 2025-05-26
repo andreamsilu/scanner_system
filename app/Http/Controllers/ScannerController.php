@@ -74,6 +74,9 @@ class ScannerController extends Controller
     {
         $today = now()->startOfDay();
         
+        // Get active events count first to avoid duplicate queries
+        $activeEventsCount = $scanner->activeEvents()->count();
+        
         return [
             'today_scans' => ScanLog::where('scanner_id', $scanner->id)
                 ->whereDate('created_at', $today)
@@ -87,7 +90,7 @@ class ScannerController extends Controller
                 ->whereIn('status', ['invalid', 'duplicate'])
                 ->count(),
             'total_events' => $scanner->events()->count(),
-            'active_events' => $scanner->activeEvents()->count(),
+            'active_events' => $activeEventsCount,
             'past_events' => $scanner->pastEvents()->count()
         ];
     }
