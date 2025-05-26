@@ -99,8 +99,8 @@
                             </a>
                         </li>
                         <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.validate') ? 'active' : '' }}" 
-                               href="{{ route('scanner.validate') }}">
+                            <a class="nav-link {{ request()->routeIs('scanner.scan.*') ? 'active' : '' }}"
+                               href="{{ route('scanner.scan.index') }}">
                                 <i class="bi bi-upc-scan me-2"></i> Validate Tickets
                                 <!-- <small class="text-muted d-block">(QR Code Scanner)</small> -->
                             </a>
