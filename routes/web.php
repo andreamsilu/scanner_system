@@ -48,17 +48,15 @@ Route::middleware('auth')->group(function () {
 
     // Scanner Routes (accessible to both admin and scanner roles)
     Route::middleware(['role:admin,scanner'])->prefix('scanner')->name('scanner.')->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'scannerDashboard'])->name('dashboard');
+        Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
         Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
+        Route::get('/events/{event}/attendees', [ScannerController::class, 'showEventAttendees'])->name('events.attendees');
         Route::get('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('select-event');
-        Route::delete('/events/{event}/select', [ScannerController::class, 'deselectEvent'])->name('select-event');
-        Route::get('/events/{event}/scan', [ScanController::class, 'index'])->name('scan.index');
-        Route::post('/scan/validate', [ScanController::class, 'scan'])->name('scan.validate');
-        Route::get('/scan/{event}/{scan}', [ScanController::class, 'show'])->name('scan.show');
+        Route::get('/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('deselect-event');
+        Route::get('/scan', [ScannerController::class, 'scan'])->name('scan.index');
+        Route::post('/scan/validate', [ScannerController::class, 'validateToken'])->name('scan.validate');
         Route::get('/history', [ScannerController::class, 'history'])->name('history');
         Route::get('/history/export', [ScannerController::class, 'exportHistory'])->name('history.export');
-        Route::get('/validate', [ScanController::class, 'validatePage'])->name('validate');
-        Route::post('/validate-token', [ScanController::class, 'validateToken'])->name('validate-token');
     });
 
     // Admin Routes
