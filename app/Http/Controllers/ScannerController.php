@@ -15,48 +15,96 @@ use Illuminate\Support\Facades\DB;
 
 class ScannerController extends Controller
 {
+    /**
+     * Display the scanner dashboard with assigned events and statistics
+     * 
+     * @return \Illuminate\View\View
+     */
     public function dashboard(): View
     {
         $user = auth()->user();
         
-        // Get assigned events directly from the user's events relationship
-        $assigned_events = $user->events()
-            ->where('status', 'active')
-            ->where(function($query) {
-                $query->where('start_date', '>=', now())
-                    ->orWhere('end_date', '>=', now());
-            })
-            ->with(['attendees' => function($query) {
-                $query->with(['ticket' => function($q) {
-                    $q->select('id', 'attendee_id', 'status');
-                }])
-                ->select('id', 'name', 'email', 'event_id', 'token');
-            }])
-            ->get();
+        // Get scanner's statistics using a dedicated method
+        $stats = $this->getScannerStats($user);
         
-        // Get scanner's statistics
-        $stats = [
-            'today_scans' => ScanLog::where('scanner_id', $user->id)
-                ->whereDate('created_at', today())
-                ->count(),
-            'valid_scans' => ScanLog::where('scanner_id', $user->id)
-                ->whereDate('created_at', today())
-                ->where('status', 'success')
-                ->count(),
-            'invalid_scans' => ScanLog::where('scanner_id', $user->id)
-                ->whereDate('created_at', today())
-                ->whereIn('status', ['invalid', 'duplicate'])
-                ->count(),
-        ];
-
-        // Get recent activity
+        // Get assigned events with optimized query
+        $assigned_events = $user->activeEvents()
+            ->orderBy('start_date')
+            ->get()
+            ->map(function ($event) {
+                // Calculate scan statistics for each event
+                $event->scan_stats = [
+                    'total_attendees' => $event->attendees->count(),
+                    'scanned_count' => $event->attendees->filter(function ($attendee) {
+                        return $attendee->ticket && $attendee->ticket->status === 'used';
+                    })->count(),
+                    'pending_count' => $event->attendees->filter(function ($attendee) {
+                        return !$attendee->ticket || $attendee->ticket->status !== 'used';
+                    })->count()
+                ];
+                return $event;
+            });
+        
+        // Get recent activity with optimized query
         $recent_activity = ScanLog::with(['ticket.attendee', 'ticket.event'])
             ->where('scanner_id', $user->id)
             ->latest()
             ->take(10)
-            ->get();
+            ->get()
+            ->map(function ($scan) {
+                return [
+                    'time' => $scan->created_at->diffForHumans(),
+                    'event' => $scan->ticket?->event?->name ?? 'N/A',
+                    'attendee' => $scan->ticket?->attendee?->name ?? 'Invalid Ticket',
+                    'status' => $scan->status,
+                    'status_class' => $this->getStatusClass($scan->status)
+                ];
+            });
 
-        return view('scanner.dashboard', compact('stats', 'assigned_events', 'recent_activity'));
+        return view('dashboard.scanner', compact('stats', 'assigned_events', 'recent_activity'));
+    }
+
+    /**
+     * Get scanner statistics
+     * 
+     * @param User $scanner
+     * @return array
+     */
+    private function getScannerStats(User $scanner): array
+    {
+        $today = now()->startOfDay();
+        
+        return [
+            'today_scans' => ScanLog::where('scanner_id', $scanner->id)
+                ->whereDate('created_at', $today)
+                ->count(),
+            'valid_scans' => ScanLog::where('scanner_id', $scanner->id)
+                ->whereDate('created_at', $today)
+                ->where('status', 'success')
+                ->count(),
+            'invalid_scans' => ScanLog::where('scanner_id', $scanner->id)
+                ->whereDate('created_at', $today)
+                ->whereIn('status', ['invalid', 'duplicate'])
+                ->count(),
+            'total_events' => $scanner->events()->count(),
+            'active_events' => $scanner->activeEvents()->count(),
+            'past_events' => $scanner->pastEvents()->count()
+        ];
+    }
+
+    /**
+     * Get status class for scan status
+     * 
+     * @param string $status
+     * @return string
+     */
+    private function getStatusClass(string $status): string
+    {
+        return match($status) {
+            'success' => 'success',
+            'duplicate' => 'warning',
+            default => 'danger'
+        };
     }
 
     /**
