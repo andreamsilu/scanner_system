@@ -125,11 +125,8 @@
                             </div>
                         </div>
                         <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle mb-1 text-muted">Current Events</h6>
-                            <h3 class="card-title mb-0">{{ $stats['current_events'] }}</h3>
-                            <small class="text-muted">
-                                {{ $stats['upcoming_events'] }} upcoming, {{ $stats['past_events'] }} past
-                            </small>
+                            <h6 class="card-subtitle mb-1 text-muted">Total Events</h6>
+                            <h3 class="card-title mb-0">{{ $stats['total_events'] }}</h3>
                         </div>
                     </div>
                 </div>
@@ -189,24 +186,9 @@
                                                         'cancelled' => 'danger',
                                                         default => 'warning'
                                                     };
-                                                    
-                                                    $timelineClass = match(true) {
-                                                        $event->start_date > now() => 'info',
-                                                        $event->end_date < now() => 'secondary',
-                                                        default => 'success'
-                                                    };
-                                                    
-                                                    $timelineText = match(true) {
-                                                        $event->start_date > now() => 'Upcoming',
-                                                        $event->end_date < now() => 'Past',
-                                                        default => 'Current'
-                                                    };
                                                 @endphp
                                                 <span class="badge bg-{{ $statusClass }}">
                                                     {{ ucfirst($event->status) }}
-                                                </span>
-                                                <span class="badge bg-{{ $timelineClass }}">
-                                                    {{ $timelineText }}
                                                 </span>
                                             </td>
                                             <td>{{ $event->scan_stats['total_attendees'] }}</td>
@@ -221,7 +203,7 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                @if($event->status === 'active' && $event->start_date <= now() && $event->end_date >= now())
+                                                @if($event->status === 'active')
                                                     <form action="{{ route('scanner.select-event', $event) }}" method="POST" class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="btn btn-primary btn-sm">
