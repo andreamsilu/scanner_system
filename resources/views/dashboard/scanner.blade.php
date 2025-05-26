@@ -174,8 +174,8 @@
                                                           class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="btn btn-outline-primary btn-sm">
-                                                            <i class="bi bi-check-circle me-1"></i>
-                                                            Select Event
+                                                        <i class="bi bi-check-circle me-1"></i>
+                                                        Select Event
                                                         </button>
                                                     </form>
                                                 @endif

@@ -375,10 +375,10 @@
                                 No available scanners to assign. All scanner users are already assigned to this event.
                             </div>
                         @else
-                            <div class="mb-3">
-                                <label for="scanner_id" class="form-label">Select Scanner</label>
-                                <select class="form-select" id="scanner_id" name="scanner_id" required>
-                                    <option value="">Choose a scanner...</option>
+                        <div class="mb-3">
+                            <label for="scanner_id" class="form-label">Select Scanner</label>
+                            <select class="form-select" id="scanner_id" name="scanner_id" required>
+                                <option value="">Choose a scanner...</option>
                                     @foreach($availableScanners as $scanner)
                                         <option value="{{ $scanner->id }}" 
                                                 data-email="{{ $scanner->email }}"
@@ -386,9 +386,9 @@
                                                 data-last-active="{{ $scanner->last_login_at?->diffForHumans() ?? 'Never' }}">
                                             {{ $scanner->name }}
                                         </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                                @endforeach
+                            </select>
+                        </div>
 
                             <div id="scannerDetails" class="d-none">
                                 <div class="card">
@@ -412,7 +412,7 @@
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                         @if(!$availableScanners->isEmpty())
-                            <button type="submit" class="btn btn-primary">Assign Scanner</button>
+                        <button type="submit" class="btn btn-primary">Assign Scanner</button>
                         @endif
                     </div>
                 </form>
