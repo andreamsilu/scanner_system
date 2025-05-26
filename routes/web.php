@@ -117,7 +117,7 @@ Route::middleware('auth')->group(function () {
             Route::get('reports/attendance', [ReportController::class, 'attendance'])->name('reports.attendance');
             Route::get('reports/revenue', [ReportController::class, 'revenue'])->name('reports.revenue');
         });
-        
+
         // User Management Routes
         Route::middleware(['auth'])->group(function () {
             Route::get('/users', [UserController::class, 'index'])->name('users.index');

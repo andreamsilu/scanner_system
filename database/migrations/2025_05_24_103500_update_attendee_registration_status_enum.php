@@ -16,7 +16,7 @@ return new class extends Migration
         Schema::table('attendees', function (Blueprint $table) {
             $table->string('registration_status')->change();
         });
-
+        
         // Update the values
         DB::table('attendees')
             ->where('registration_status', 'registered')
@@ -44,7 +44,7 @@ return new class extends Migration
         DB::table('attendees')
             ->where('registration_status', 'unchecked_in')
             ->update(['registration_status' => 'registered']);
-
+        
         // Then set the original ENUM type
         Schema::table('attendees', function (Blueprint $table) {
             $table->enum('registration_status', ['registered', 'checked_in', 'cancelled'])
