@@ -382,26 +382,34 @@ class ScannerController extends Controller
     {
         $user = auth()->user();
         
-        if ($user->hasRole('admin')) {
-            // Admins can see all active events
-            $events = Event::where('status', 'active')
-                ->where(function($query) {
-                    $query->where('start_date', '>=', now())
-                        ->orWhere('end_date', '>=', now());
-                })
-                ->orderBy('start_date')
-                ->paginate(10);
-        } else {
-            // Scanners only see their assigned events
-            $events = $user->events()
-                ->where('status', 'active')
-                ->where(function($query) {
-                    $query->where('start_date', '>=', now())
-                        ->orWhere('end_date', '>=', now());
-                })
-                ->orderBy('start_date')
-                ->paginate(10);
-        }
+        // Get all assigned events without any checks, using the same logic as dashboard
+        $events = $user->events()
+            ->orderBy('start_date', 'desc')
+            ->get()
+            ->map(function ($event) {
+                // Ensure dates are Carbon instances
+                if (is_string($event->start_date)) {
+                    $event->start_date = \Carbon\Carbon::parse($event->start_date);
+                }
+                if (is_string($event->end_date)) {
+                    $event->end_date = \Carbon\Carbon::parse($event->end_date);
+                }
+                if (is_string($event->pivot->assigned_at)) {
+                    $event->pivot->assigned_at = \Carbon\Carbon::parse($event->pivot->assigned_at);
+                }
+
+                // Calculate scan statistics for each event
+                $event->scan_stats = [
+                    'total_attendees' => $event->attendees->count(),
+                    'scanned_count' => $event->attendees->filter(function ($attendee) {
+                        return $attendee->ticket && $attendee->ticket->status === 'used';
+                    })->count(),
+                    'pending_count' => $event->attendees->filter(function ($attendee) {
+                        return !$attendee->ticket || $attendee->ticket->status !== 'used';
+                    })->count()
+                ];
+                return $event;
+            });
 
         return view('scanner.events.index', compact('events'));
     }
