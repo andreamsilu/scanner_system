@@ -12,6 +12,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use App\Models\Event as EventModel;
 
 class User extends Authenticatable implements MustVerifyEmail
 {
@@ -151,7 +152,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function events(): BelongsToMany
     {
-        return $this->belongsToMany(Event::class, 'event_scanner', 'scanner_id', 'event_id')
+        return $this->belongsToMany(EventModel::class, 'event_scanner', 'scanner_id', 'event_id')
             ->withTimestamps()
             ->withPivot(['assigned_at', 'assigned_by'])
             ->with(['attendees' => function($query) {
