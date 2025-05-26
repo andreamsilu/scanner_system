@@ -651,4 +651,70 @@ class ScannerController extends Controller
 
         return view('scanner.events.attendees', compact('event', 'attendees'));
     }
+
+    /**
+     * Display the scanning interface.
+     */
+    public function scan(): View
+    {
+        $user = auth()->user();
+        $eventId = session('selected_event_id');
+        
+        // If no event is selected, redirect to events list
+        if (!$eventId) {
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'Please select an event first before scanning.');
+        }
+
+        // Get the selected event
+        $event = Event::find($eventId);
+        if (!$event) {
+            session()->forget('selected_event_id');
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'Selected event no longer exists. Please select a new event.');
+        }
+
+        // Verify scanner is authorized for this event
+        if (!$user->hasRole('admin') && !$user->events()->where('events.id', $eventId)->exists()) {
+            session()->forget('selected_event_id');
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'You are not authorized to scan for this event. Please select an event you are assigned to.');
+        }
+
+        // Verify event is active
+        if ($event->status !== 'active') {
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'This event is not active. Please select an active event.');
+        }
+
+        // Verify event is within valid date range
+        if ($event->end_date < now()) {
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'This event has ended. Please select an active event.');
+        }
+
+        // Get recent scans for this event
+        $recent_scans = ScanLog::with(['ticket.attendee', 'scanner'])
+            ->whereHas('ticket', function($query) use ($eventId) {
+                $query->where('event_id', $eventId);
+            })
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function($scan) {
+                return [
+                    'time' => $scan->created_at->diffForHumans(),
+                    'attendee' => $scan->ticket?->attendee?->name ?? 'Invalid Ticket',
+                    'scanner' => $scan->scanner?->name ?? 'Unknown',
+                    'status' => $scan->status,
+                    'status_class' => match($scan->status) {
+                        'success' => 'success',
+                        'duplicate' => 'warning',
+                        default => 'danger'
+                    }
+                ];
+            });
+
+        return view('scanner.scan', compact('event', 'recent_scans'));
+    }
 } 
