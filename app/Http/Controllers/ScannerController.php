@@ -27,8 +27,8 @@ class ScannerController extends Controller
         // Get scanner's statistics using a dedicated method
         $stats = $this->getScannerStats($user);
         
-        // Get assigned events with optimized query
-        $assigned_events = $user->activeEvents()
+        // Get all assigned events with optimized query
+        $assigned_events = $user->events()
             ->orderBy('start_date')
             ->get()
             ->map(function ($event) {
@@ -74,8 +74,10 @@ class ScannerController extends Controller
     {
         $today = now()->startOfDay();
         
-        // Get active events count first to avoid duplicate queries
-        $activeEventsCount = $scanner->activeEvents()->count();
+        // Get counts for different event types
+        $activeEventsCount = $scanner->activeAndEnabledEvents()->count();
+        $totalAssignedEvents = $scanner->events()->count();
+        $upcomingEventsCount = $scanner->activeEvents()->count();
         
         return [
             'today_scans' => ScanLog::where('scanner_id', $scanner->id)
@@ -89,8 +91,9 @@ class ScannerController extends Controller
                 ->whereDate('created_at', $today)
                 ->whereIn('status', ['invalid', 'duplicate'])
                 ->count(),
-            'total_events' => $scanner->events()->count(),
+            'total_events' => $totalAssignedEvents,
             'active_events' => $activeEventsCount,
+            'upcoming_events' => $upcomingEventsCount,
             'past_events' => $scanner->pastEvents()->count()
         ];
     }
