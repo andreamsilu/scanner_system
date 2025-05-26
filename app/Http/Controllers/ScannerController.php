@@ -382,11 +382,11 @@ class ScannerController extends Controller
     {
         $user = auth()->user();
         
-        // Get all assigned events without any checks, using the same logic as dashboard
+        // Get all assigned events with pagination
         $events = $user->events()
             ->orderBy('start_date', 'desc')
-            ->get()
-            ->map(function ($event) {
+            ->paginate(9) // Show 9 events per page (3x3 grid)
+            ->through(function ($event) {
                 // Ensure dates are Carbon instances
                 if (is_string($event->start_date)) {
                     $event->start_date = \Carbon\Carbon::parse($event->start_date);
