@@ -606,4 +606,38 @@ class ScannerController extends Controller
         return redirect()->route('scanners.index')
             ->with('success', 'Scanner deleted successfully.');
     }
+
+    /**
+     * Display attendees for a specific event.
+     */
+    public function showEventAttendees(Event $event): View
+    {
+        $user = auth()->user();
+        
+        // Check if user is authorized to view this event's attendees
+        if (!$user->hasRole('admin') && !$user->events()->where('events.id', $event->id)->exists()) {
+            abort(403, 'You are not authorized to view attendees for this event.');
+        }
+
+        // Get attendees with their tickets and scan logs
+        $attendees = $event->attendees()
+            ->with(['ticket.scanLogs' => function($query) {
+                $query->with('scanner')->latest();
+            }])
+            ->when(request('search'), function($query) {
+                $query->where(function($q) {
+                    $q->where('name', 'like', '%' . request('search') . '%')
+                      ->orWhere('email', 'like', '%' . request('search') . '%');
+                });
+            })
+            ->when(request('status'), function($query) {
+                $query->whereHas('ticket', function($q) {
+                    $q->where('status', request('status'));
+                });
+            })
+            ->latest()
+            ->paginate(15);
+
+        return view('scanner.events.attendees', compact('event', 'attendees'));
+    }
 } 
