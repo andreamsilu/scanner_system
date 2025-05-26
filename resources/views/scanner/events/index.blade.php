@@ -35,16 +35,22 @@
                         </p>
                         <p class="card-text">
                             <i class="bi bi-geo-alt me-2"></i>
-                            {{ $event->venue }}
+                            {{ $event->location }}
                         </p>
                         <div class="d-flex justify-content-between align-items-center mt-3">
                             <span class="badge bg-{{ $event->status === 'active' ? 'success' : 'secondary' }}">
                                 {{ ucfirst($event->status) }}
                             </span>
-                            <a href="{{ route('scanner.select-event', ['event' => $event->id]) }}" 
-                               class="btn btn-primary">
-                                <i class="bi bi-upc-scan me-2"></i>Start Scanning
-                            </a>
+                            <div class="btn-group">
+                                <a href="{{ route('events.show', $event) }}" 
+                                   class="btn btn-info">
+                                    <i class="bi bi-eye me-2"></i>View Attendees
+                                </a>
+                                <a href="{{ route('scanner.select-event', ['event' => $event->id]) }}" 
+                                   class="btn btn-primary">
+                                    <i class="bi bi-upc-scan me-2"></i>Start Scanning
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>
