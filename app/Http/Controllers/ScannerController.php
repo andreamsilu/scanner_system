@@ -654,8 +654,10 @@ class ScannerController extends Controller
 
     /**
      * Display the scanning interface.
+     * 
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
      */
-    public function scan(): View
+    public function scan(): View|\Illuminate\Http\RedirectResponse
     {
         $user = auth()->user();
         $eventId = session('selected_event_id');
