@@ -145,13 +145,48 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get the events that this user (scanner) is assigned to.
+     * Get all events assigned to this scanner
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function events(): BelongsToMany
     {
-        return $this->belongsToMany(\App\Models\Event::class, 'event_scanner', 'scanner_id', 'event_id')
+        return $this->belongsToMany(Event::class, 'event_scanner', 'scanner_id', 'event_id')
             ->withTimestamps()
-            ->withPivot(['assigned_at', 'assigned_by']);
+            ->withPivot(['assigned_at', 'assigned_by'])
+            ->with(['attendees' => function($query) {
+                $query->select('id', 'name', 'email', 'event_id', 'token')
+                    ->with(['ticket' => function($q) {
+                        $q->select('id', 'attendee_id', 'status', 'used_at');
+                    }]);
+            }]);
+    }
+
+    /**
+     * Get active events assigned to this scanner
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function activeEvents(): BelongsToMany
+    {
+        return $this->events()
+            ->where('status', 'active')
+            ->where(function($query) {
+                $query->where('start_date', '>=', now())
+                    ->orWhere('end_date', '>=', now());
+            });
+    }
+
+    /**
+     * Get past events assigned to this scanner
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function pastEvents(): BelongsToMany
+    {
+        return $this->events()
+            ->where('end_date', '<', now())
+            ->orWhere('status', 'completed');
     }
 
     /**
