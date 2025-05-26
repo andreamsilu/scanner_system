@@ -164,18 +164,28 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Get active events assigned to this scanner
+     * Get all assigned events that are currently active
      * 
      * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
      */
     public function activeEvents(): BelongsToMany
     {
         return $this->events()
-            ->where('status', 'active')
             ->where(function($query) {
                 $query->where('start_date', '>=', now())
                     ->orWhere('end_date', '>=', now());
             });
+    }
+
+    /**
+     * Get all assigned events that are currently active and have active status
+     * 
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsToMany
+     */
+    public function activeAndEnabledEvents(): BelongsToMany
+    {
+        return $this->activeEvents()
+            ->where('status', 'active');
     }
 
     /**

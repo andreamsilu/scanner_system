@@ -127,6 +127,7 @@
                         <div class="flex-grow-1 ms-3">
                             <h6 class="card-subtitle mb-1 text-muted">Active Events</h6>
                             <h3 class="card-title mb-0">{{ $stats['active_events'] }}</h3>
+                            <small class="text-muted">{{ $stats['upcoming_events'] }} upcoming</small>
                         </div>
                     </div>
                 </div>
@@ -150,6 +151,7 @@
                                         <th>Event Name</th>
                                         <th>Date & Time</th>
                                         <th>Location</th>
+                                        <th>Status</th>
                                         <th>Total Attendees</th>
                                         <th>Scanned</th>
                                         <th>Pending</th>
@@ -177,6 +179,24 @@
                                                 <small class="text-muted">{{ $event->start_date->format('h:i A') }}</small>
                                             </td>
                                             <td>{{ $event->location }}</td>
+                                            <td>
+                                                @php
+                                                    $statusClass = match($event->status) {
+                                                        'active' => 'success',
+                                                        'completed' => 'info',
+                                                        'cancelled' => 'danger',
+                                                        default => 'warning'
+                                                    };
+                                                @endphp
+                                                <span class="badge bg-{{ $statusClass }}">
+                                                    {{ ucfirst($event->status) }}
+                                                </span>
+                                                @if($event->start_date > now())
+                                                    <span class="badge bg-info">Upcoming</span>
+                                                @elseif($event->end_date < now())
+                                                    <span class="badge bg-secondary">Past</span>
+                                                @endif
+                                            </td>
                                             <td>{{ $event->scan_stats['total_attendees'] }}</td>
                                             <td>
                                                 <span class="badge bg-success">
@@ -189,12 +209,18 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <form action="{{ route('scanner.select-event', $event) }}" method="POST" class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-primary btn-sm">
-                                                        <i class="bi bi-upc-scan me-1"></i>Start Scanning
+                                                @if($event->status === 'active' && $event->end_date >= now())
+                                                    <form action="{{ route('scanner.select-event', $event) }}" method="POST" class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-primary btn-sm">
+                                                            <i class="bi bi-upc-scan me-1"></i>Start Scanning
+                                                        </button>
+                                                    </form>
+                                                @else
+                                                    <button class="btn btn-secondary btn-sm" disabled>
+                                                        <i class="bi bi-upc-scan me-1"></i>Not Available
                                                     </button>
-                                                </form>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
