@@ -33,21 +33,82 @@ class Event extends Model
     protected $appends = ['status_badge'];
 
     /**
-     * Determine the event status based on the event date
+     * Event status constants
+     */
+    const STATUS_DRAFT = 'draft';
+    const STATUS_PENDING = 'pending';
+    const STATUS_ACTIVE = 'active';
+    const STATUS_ONGOING = 'ongoing';
+    const STATUS_FINISHED = 'finished';
+    const STATUS_CANCELLED = 'cancelled';
+
+    /**
+     * Get all possible event statuses
+     * 
+     * @return array
+     */
+    public static function getStatuses(): array
+    {
+        return [
+            self::STATUS_DRAFT => 'Draft',
+            self::STATUS_PENDING => 'Pending',
+            self::STATUS_ACTIVE => 'Active',
+            self::STATUS_ONGOING => 'Ongoing',
+            self::STATUS_FINISHED => 'Finished',
+            self::STATUS_CANCELLED => 'Cancelled'
+        ];
+    }
+
+    /**
+     * Determine the event status based on various conditions
      * 
      * @return string
      */
     public function determineStatus(): string
     {
+        // If event is manually cancelled, keep that status
+        if ($this->status === self::STATUS_CANCELLED) {
+            return self::STATUS_CANCELLED;
+        }
+
         $now = now();
         
-        if ($this->start_date->isFuture()) {
-            return 'pending';
-        } elseif ($this->end_date->isPast()) {
-            return 'finished';
-        } else {
-            return 'active';
+        // Check if event has started
+        $hasStarted = $now->gte($this->start_date);
+        
+        // Check if event has ended
+        $hasEnded = $now->gt($this->end_date);
+        
+        // Check if event is currently ongoing (within start and end time)
+        $isOngoing = $hasStarted && !$hasEnded;
+        
+        // Check if event is about to start (within 24 hours)
+        $isAboutToStart = $now->diffInHours($this->start_date) <= 24 && !$hasStarted;
+        
+        // Check if event has capacity
+        $hasCapacity = $this->capacity > $this->attendees()->count();
+        
+        // Check if event has any attendees
+        $hasAttendees = $this->attendees()->exists();
+
+        // Determine status based on conditions
+        if ($hasEnded) {
+            return $hasAttendees ? self::STATUS_FINISHED : self::STATUS_CANCELLED;
         }
+        
+        if ($isOngoing) {
+            return $hasAttendees ? self::STATUS_ONGOING : self::STATUS_ACTIVE;
+        }
+        
+        if ($isAboutToStart) {
+            return $hasAttendees ? self::STATUS_ACTIVE : self::STATUS_PENDING;
+        }
+        
+        if (!$hasStarted) {
+            return $hasAttendees ? self::STATUS_PENDING : self::STATUS_DRAFT;
+        }
+
+        return self::STATUS_DRAFT;
     }
 
     /**
@@ -57,9 +118,12 @@ class Event extends Model
     {
         parent::boot();
 
-        // Automatically set the status based on dates before saving
+        // Automatically set the status based on conditions before saving
         static::saving(function ($event) {
-            $event->status = $event->determineStatus();
+            // Only update status if it's not manually set to cancelled
+            if ($event->status !== self::STATUS_CANCELLED) {
+                $event->status = $event->determineStatus();
+            }
         });
     }
 
@@ -73,15 +137,84 @@ class Event extends Model
         return $this->capacity - $this->attendees()->count();
     }
 
+    /**
+     * Get the status badge HTML with appropriate styling
+     * 
+     * @return string
+     */
     public function getStatusBadgeAttribute(): string
     {
-        return match($this->status) {
-            'active' => '<span class="badge bg-success">Active</span>',
-            'pending' => '<span class="badge bg-warning">Pending</span>',
-            'finished' => '<span class="badge bg-info">Finished</span>',
-            'cancelled' => '<span class="badge bg-danger">Cancelled</span>',
-            default => '<span class="badge bg-secondary">Draft</span>'
+        $badgeClass = match($this->status) {
+            self::STATUS_ACTIVE => 'bg-success',
+            self::STATUS_ONGOING => 'bg-primary',
+            self::STATUS_PENDING => 'bg-warning',
+            self::STATUS_FINISHED => 'bg-info',
+            self::STATUS_CANCELLED => 'bg-danger',
+            default => 'bg-secondary'
         };
+
+        $statusLabel = self::getStatuses()[$this->status] ?? ucfirst($this->status);
+        
+        return sprintf(
+            '<span class="badge %s" title="%s">%s</span>',
+            $badgeClass,
+            $this->getStatusDescription(),
+            $statusLabel
+        );
+    }
+
+    /**
+     * Get a human-readable description of the current status
+     * 
+     * @return string
+     */
+    public function getStatusDescription(): string
+    {
+        $now = now();
+        $timeToStart = $now->diffForHumans($this->start_date, ['parts' => 2]);
+        $timeToEnd = $now->diffForHumans($this->end_date, ['parts' => 2]);
+
+        return match($this->status) {
+            self::STATUS_DRAFT => 'Event is in draft mode. No attendees registered yet.',
+            self::STATUS_PENDING => "Event starts {$timeToStart}. Has {$this->attendees()->count()} registered attendees.",
+            self::STATUS_ACTIVE => "Event is active and starts {$timeToStart}. Ready for scanning.",
+            self::STATUS_ONGOING => "Event is currently ongoing. Ends {$timeToEnd}.",
+            self::STATUS_FINISHED => "Event ended {$timeToEnd}. Had {$this->attendees()->count()} attendees.",
+            self::STATUS_CANCELLED => 'Event has been cancelled.',
+            default => 'Unknown status'
+        };
+    }
+
+    /**
+     * Check if the event is currently active for scanning
+     * 
+     * @return bool
+     */
+    public function isActiveForScanning(): bool
+    {
+        return in_array($this->status, [self::STATUS_ACTIVE, self::STATUS_ONGOING]) 
+            && $this->hasAttendees()
+            && !$this->isCancelled();
+    }
+
+    /**
+     * Check if the event has any attendees
+     * 
+     * @return bool
+     */
+    public function hasAttendees(): bool
+    {
+        return $this->attendees()->exists();
+    }
+
+    /**
+     * Check if the event is cancelled
+     * 
+     * @return bool
+     */
+    public function isCancelled(): bool
+    {
+        return $this->status === self::STATUS_CANCELLED;
     }
 
     public function attendees(): HasMany
@@ -153,11 +286,6 @@ class Event extends Model
     public function isFinished()
     {
         return $this->status === 'finished';
-    }
-
-    public function isCancelled()
-    {
-        return $this->status === 'cancelled';
     }
 
     public function getAvailableCapacity()
