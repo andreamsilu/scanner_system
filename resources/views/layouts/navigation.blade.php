@@ -109,7 +109,12 @@
                             <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active' : '' }}" 
                                href="{{ route('scanner.history') }}">
                                 <i class="bi bi-clock-history me-2"></i> Scan History
-                                <!-- <small class="text-muted d-block">(View Past Scans)</small> -->
+                            </a>
+                        </li>
+                        <li class="nav-item mb-2">
+                            <a class="nav-link {{ request()->routeIs('scanner.attendees.*') ? 'active' : '' }}" 
+                               href="{{ route('scanner.attendees.index') }}">
+                                <i class="bi bi-people-fill me-2"></i> Event Attendees
                             </a>
                         </li>
                         <!-- <hr class="my-3"> -->

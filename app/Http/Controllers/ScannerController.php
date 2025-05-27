@@ -719,4 +719,52 @@ class ScannerController extends Controller
 
         return view('scanner.scan', compact('event', 'recent_scans'));
     }
+
+    /**
+     * Display a list of all events with their attendees for the scanner.
+     * 
+     * @return \Illuminate\View\View
+     */
+    public function attendeesIndex(): View
+    {
+        $user = auth()->user();
+        
+        // Get all events assigned to the scanner with their attendees
+        $events = $user->events()
+            ->with(['attendees' => function($query) {
+                $query->with(['ticket.scanLogs' => function($q) {
+                    $q->with('scanner')->latest();
+                }])
+                ->when(request('search'), function($query) {
+                    $query->where(function($q) {
+                        $q->where('name', 'like', '%' . request('search') . '%')
+                          ->orWhere('email', 'like', '%' . request('search') . '%');
+                    });
+                })
+                ->when(request('status'), function($query) {
+                    $query->whereHas('ticket', function($q) {
+                        $q->where('status', request('status'));
+                    });
+                });
+            }])
+            ->when(request('event_search'), function($query) {
+                $query->where('name', 'like', '%' . request('event_search') . '%');
+            })
+            ->orderBy('start_date', 'desc')
+            ->paginate(10);
+
+        // Transform the data for the view
+        $events->getCollection()->transform(function ($event) {
+            $event->attendees_count = $event->attendees->count();
+            $event->scanned_count = $event->attendees->filter(function ($attendee) {
+                return $attendee->ticket && $attendee->ticket->status === 'used';
+            })->count();
+            $event->pending_count = $event->attendees->filter(function ($attendee) {
+                return !$attendee->ticket || $attendee->ticket->status !== 'used';
+            })->count();
+            return $event;
+        });
+
+        return view('scanner.attendees.index', compact('events'));
+    }
 } 
