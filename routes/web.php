@@ -50,6 +50,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:admin,scanner'])->prefix('scanner')->name('scanner.')->group(function () {
         Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
         Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
+        Route::get('/attendees', [ScannerController::class, 'attendeesIndex'])->name('attendees.index');
         Route::get('/events/{event}/attendees', [ScannerController::class, 'showEventAttendees'])->name('events.attendees');
         Route::get('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('select-event');
         Route::get('/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('deselect-event');
