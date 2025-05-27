@@ -767,4 +767,52 @@ class ScannerController extends Controller
 
         return view('scanner.attendees.index', compact('events'));
     }
+
+    /**
+     * Display the ticket validation page with event selection
+     * 
+     * @return \Illuminate\View\View
+     */
+    public function validatePage(): View
+    {
+        $user = auth()->user();
+        
+        // Get all assigned events with their statistics
+        $events = $user->events()
+            ->withCount(['attendees' => function($query) {
+                $query->whereHas('ticket', function($q) {
+                    $q->where('status', 'used');
+                });
+            }, 'attendees as scanned_count'])
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        // Get recent validations for the selected event
+        $recent_validations = [];
+        if ($eventId = session('selected_event_id')) {
+            $recent_validations = ScanLog::with(['ticket.attendee', 'scanner'])
+                ->whereHas('ticket', function($query) use ($eventId) {
+                    $query->where('event_id', $eventId);
+                })
+                ->latest()
+                ->take(10)
+                ->get()
+                ->map(function($scan) {
+                    return [
+                        'time' => $scan->created_at->diffForHumans(),
+                        'attendee' => $scan->ticket?->attendee?->name ?? 'Invalid Ticket',
+                        'email' => $scan->ticket?->attendee?->email,
+                        'status' => $scan->status,
+                        'status_class' => match($scan->status) {
+                            'success' => 'success',
+                            'duplicate' => 'warning',
+                            default => 'danger'
+                        },
+                        'scanner' => $scan->scanner?->name
+                    ];
+                });
+        }
+
+        return view('scanner.validate', compact('events', 'recent_validations'));
+    }
 } 
