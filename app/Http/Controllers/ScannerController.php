@@ -135,19 +135,6 @@ class ScannerController extends Controller
                 ->with('error', 'You are not authorized to scan this event.');
         }
 
-        // Allow scanning if today is the event's start date or if event is active
-        $isStartDate = now()->isSameDay($event->start_date);
-        if (!$isStartDate && $event->status !== 'active') {
-            return redirect()->route('scanner.events.index')
-                ->with('error', 'This event is not active.');
-        }
-
-        // Check if event has ended (only if not on start date)
-        if (!$isStartDate && $event->end_date < now()) {
-            return redirect()->route('scanner.events.index')
-                ->with('error', 'This event has ended.');
-        }
-
         // Store selected event in session
         session(['selected_event_id' => $event->id]);
         
