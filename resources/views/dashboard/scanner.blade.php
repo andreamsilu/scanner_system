@@ -33,7 +33,7 @@
                            class="btn btn-primary btn-sm">
                             <i class="bi bi-upc-scan me-1"></i>Continue Scanning
                         </a>
-                        <form action="{{ route('scanner.select-event', ['event' => $selectedEvent->id]) }}" 
+                        <form action="{{ route('scanner.events.select', ['event' => $selectedEvent->id]) }}" 
                               method="POST" 
                               class="d-inline"
                               onsubmit="return confirm('Are you sure you want to change the selected event?');">
