@@ -797,4 +797,139 @@ class ScannerController extends Controller
 
         return view('scanner.attendees.index', compact('events'));
     }
+
+    /**
+     * Start the scanner and initialize the camera.
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function startScanner(): JsonResponse
+    {
+        try {
+            $user = auth()->user();
+            $eventId = session('selected_event_id');
+
+            // Check if event is selected
+            if (!$eventId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select an event first.'
+                ], 400);
+            }
+
+            // Verify scanner is authorized for this event
+            if (!$user->hasRole('admin') && !$user->events()->where('events.id', $eventId)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to scan for this event.'
+                ], 403);
+            }
+
+            // Get the event
+            $event = Event::findOrFail($eventId);
+
+            // Check if event is within valid date range
+            if ($event->end_date < now()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This event has ended.'
+                ], 400);
+            }
+
+            // Store scanner state in session
+            session(['scanner_active' => true]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Scanner started successfully.',
+                'event' => [
+                    'id' => $event->id,
+                    'name' => $event->name,
+                    'start_date' => $event->start_date->format('M d, Y'),
+                    'end_date' => $event->end_date->format('M d, Y')
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to start scanner', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to start scanner. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Stop the scanner and cleanup resources.
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function stopScanner(): JsonResponse
+    {
+        try {
+            // Clear scanner state from session
+            session()->forget('scanner_active');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Scanner stopped successfully.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to stop scanner', [
+                'error' => $e->getMessage(),
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to stop scanner. Please try again.'
+            ], 500);
+        }
+    }
+
+    /**
+     * Get the current scanner status.
+     * 
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getScannerStatus(): JsonResponse
+    {
+        $user = auth()->user();
+        $eventId = session('selected_event_id');
+        $isActive = session('scanner_active', false);
+
+        if (!$eventId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No event selected',
+                'status' => 'inactive'
+            ]);
+        }
+
+        $event = Event::find($eventId);
+        if (!$event) {
+            session()->forget(['selected_event_id', 'scanner_active']);
+            return response()->json([
+                'success' => false,
+                'message' => 'Selected event not found',
+                'status' => 'inactive'
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'status' => $isActive ? 'active' : 'inactive',
+            'event' => [
+                'id' => $event->id,
+                'name' => $event->name,
+                'start_date' => $event->start_date->format('M d, Y'),
+                'end_date' => $event->end_date->format('M d, Y')
+            ]
+        ]);
+    }
 } 

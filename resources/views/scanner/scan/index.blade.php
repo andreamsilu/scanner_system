@@ -95,6 +95,125 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
         let html5QrCode = null;
+        let isScanning = false;
+
+        async function startScanner() {
+            try {
+                // Show loading overlay
+                document.getElementById('loadingOverlay').classList.remove('d-none');
+                
+                // Call the start scanner endpoint
+                const response = await fetch('{{ route("scanner.scan.start") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message);
+                }
+
+                // Initialize the camera
+                const videoElement = document.getElementById('scanner');
+                html5QrCode = new Html5Qrcode("scanner");
+                
+                // Get available cameras
+                const devices = await Html5Qrcode.getCameras();
+                if (devices && devices.length) {
+                    // Start with the first camera (usually the back camera on mobile)
+                    const cameraId = devices[0].id;
+                    await html5QrCode.start(
+                        cameraId,
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0
+                        },
+                        onScanSuccess,
+                        onScanFailure
+                    );
+                    isScanning = true;
+                    
+                    // Update UI
+                    document.getElementById('startScanBtn').classList.add('d-none');
+                    document.getElementById('stopScanBtn').classList.remove('d-none');
+                } else {
+                    throw new Error('No cameras found');
+                }
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+                const resultDiv = document.getElementById('scanResult');
+                resultDiv.classList.remove('d-none');
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger d-flex align-items-center mb-0">
+                        <i class="bi bi-x-circle me-2"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">Camera Error</h6>
+                            <p class="mb-0">${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            } finally {
+                document.getElementById('loadingOverlay').classList.add('d-none');
+            }
+        }
+
+        async function stopScanner() {
+            try {
+                // Show loading overlay
+                document.getElementById('loadingOverlay').classList.remove('d-none');
+                
+                // Call the stop scanner endpoint
+                const response = await fetch('{{ route("scanner.scan.stop") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.message);
+                }
+
+                // Stop the camera
+                if (html5QrCode) {
+                    await html5QrCode.stop();
+                    html5QrCode = null;
+                }
+                isScanning = false;
+                
+                // Update UI
+                document.getElementById('startScanBtn').classList.remove('d-none');
+                document.getElementById('stopScanBtn').classList.add('d-none');
+                
+                // Clear the video element
+                const videoElement = document.getElementById('scanner');
+                videoElement.srcObject = null;
+                
+            } catch (error) {
+                console.error('Error stopping scanner:', error);
+                const resultDiv = document.getElementById('scanResult');
+                resultDiv.classList.remove('d-none');
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger d-flex align-items-center mb-0">
+                        <i class="bi bi-x-circle me-2"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">Error</h6>
+                            <p class="mb-0">${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            } finally {
+                document.getElementById('loadingOverlay').classList.add('d-none');
+            }
+        }
 
         function onScanSuccess(decodedText, decodedResult) {
             // Show loading overlay
@@ -154,7 +273,7 @@
                 // Resume scanning after a short delay
                 setTimeout(() => {
                     document.getElementById('loadingOverlay').classList.add('d-none');
-                    if (html5QrCode) {
+                    if (html5QrCode && isScanning) {
                         html5QrCode.resume();
                     }
                 }, 2000);
@@ -175,7 +294,7 @@
                 
                 // Resume scanning after error
                 document.getElementById('loadingOverlay').classList.add('d-none');
-                if (html5QrCode) {
+                if (html5QrCode && isScanning) {
                     html5QrCode.resume();
                 }
             });
@@ -186,43 +305,18 @@
             console.warn(`QR code scan error: ${error}`);
         }
 
-        // Initialize the scanner when the page loads
+        // Check scanner status when the page loads
         document.addEventListener('DOMContentLoaded', async function() {
             try {
-                const videoElement = document.getElementById('scanner');
-                html5QrCode = new Html5Qrcode("scanner");
+                const response = await fetch('{{ route("scanner.scan.status") }}');
+                const data = await response.json();
                 
-                // Get available cameras
-                const devices = await Html5Qrcode.getCameras();
-                if (devices && devices.length) {
-                    // Start with the first camera (usually the back camera on mobile)
-                    const cameraId = devices[0].id;
-                    await html5QrCode.start(
-                        cameraId,
-                        {
-                            fps: 10,
-                            qrbox: { width: 250, height: 250 },
-                            aspectRatio: 1.0
-                        },
-                        onScanSuccess,
-                        onScanFailure
-                    );
-                } else {
-                    throw new Error('No cameras found');
+                if (data.success && data.status === 'active') {
+                    // Scanner is active, start it
+                    await startScanner();
                 }
             } catch (error) {
-                console.error('Error starting scanner:', error);
-                const resultDiv = document.getElementById('scanResult');
-                resultDiv.classList.remove('d-none');
-                resultDiv.innerHTML = `
-                    <div class="alert alert-danger d-flex align-items-center mb-0">
-                        <i class="bi bi-x-circle me-2"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1">Camera Error</h6>
-                            <p class="mb-0">Unable to access the camera. Please ensure you have granted camera permissions and try again.</p>
-                        </div>
-                    </div>
-                `;
+                console.error('Error checking scanner status:', error);
             }
         });
 
@@ -230,7 +324,7 @@
         window.addEventListener('beforeunload', async function() {
             if (html5QrCode) {
                 try {
-                    await html5QrCode.stop();
+                    await stopScanner();
                 } catch (error) {
                     console.error('Error stopping scanner:', error);
                 }
@@ -238,4 +332,16 @@
         });
     </script>
     @endpush
+
+    <!-- Add scanner control buttons -->
+    <div class="card-footer bg-transparent border-top-0">
+        <div class="d-flex justify-content-center gap-2">
+            <button id="startScanBtn" onclick="startScanner()" class="btn btn-primary">
+                <i class="bi bi-camera-video me-2"></i>Start Scanner
+            </button>
+            <button id="stopScanBtn" onclick="stopScanner()" class="btn btn-danger d-none">
+                <i class="bi bi-camera-video-off me-2"></i>Stop Scanner
+            </button>
+        </div>
+    </div>
 </x-app-layout> 
