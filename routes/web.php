@@ -47,13 +47,13 @@ Route::middleware('auth')->group(function () {
     Route::put('/password', [ProfileController::class, 'updatePassword'])->name('password.update');
 
     // Scanner Routes (accessible to both admin and scanner roles)
-    Route::middleware(['role:admin,scanner'])->prefix('scanner')->name('scanner.')->group(function () {
+    Route::middleware(['auth', 'role:admin,scanner'])->prefix('scanner')->name('scanner.')->group(function () {
+        // Dashboard and Event Management
         Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
         Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
-        Route::get('/attendees', [ScannerController::class, 'attendeesIndex'])->name('attendees.index');
+        Route::get('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('events.select');
+        Route::delete('/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('events.deselect');
         Route::get('/events/{event}/attendees', [ScannerController::class, 'showEventAttendees'])->name('events.attendees');
-        Route::get('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('select-event');
-        Route::get('/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('deselect-event');
         
         // QR Code Scanning Routes
         Route::get('/scan', [ScannerController::class, 'scan'])->name('scan.index');
@@ -63,6 +63,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/validate', [ScannerController::class, 'validatePage'])->name('validate.index');
         Route::post('/validate/token', [ScannerController::class, 'validateManualToken'])->name('validate.token');
         
+        // History and Reports
         Route::get('/history', [ScannerController::class, 'history'])->name('history');
         Route::get('/history/export', [ScannerController::class, 'exportHistory'])->name('history.export');
     });
@@ -165,15 +166,3 @@ Route::middleware('auth')->group(function () {
 
 // Public check-in route (no auth required)
 Route::get('/check-in/{token}', [ScanController::class, 'checkIn'])->name('scanner.check-in');
-
-// Scanner routes (protected)
-Route::middleware(['auth', 'role:admin,scanner'])->group(function () {
-    Route::get('/scanner', [ScanController::class, 'scanner'])->name('scanner.index');
-    Route::post('/scan', [ScanController::class, 'scan'])->name('scanner.scan');
-});
-
-// Scanner Event Routes
-Route::middleware(['auth', 'role:scanner|admin'])->group(function () {
-    Route::get('/scanner/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('scanner.events.select');
-    Route::delete('/scanner/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('scanner.events.deselect');
-});
