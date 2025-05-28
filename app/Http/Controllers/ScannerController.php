@@ -228,16 +228,6 @@ class ScannerController extends Controller
             ], 403);
         }
 
-        // Verify event is active
-        if ($event->status !== 'active') {
-            return response()->json([
-                'success' => false,
-                'message' => 'This event is not active. Please select an active event.',
-                'code' => 'EVENT_NOT_ACTIVE',
-                'redirect' => route('scanner.dashboard')
-            ], 422);
-        }
-
         // Verify event is within valid date range
         if ($event->end_date < now()) {
             return response()->json([
@@ -669,12 +659,6 @@ class ScannerController extends Controller
             session()->forget('selected_event_id');
             return redirect()->route('scanner.events.index')
                 ->with('error', 'You are not authorized to scan for this event. Please select an event you are assigned to.');
-        }
-
-        // Verify event is active
-        if ($event->status !== 'active') {
-            return redirect()->route('scanner.events.index')
-                ->with('error', 'This event is not active. Please select an active event.');
         }
 
         // Verify event is within valid date range

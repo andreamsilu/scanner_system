@@ -48,13 +48,13 @@ class ScanController extends Controller
             // Get the event
             $event = Event::findOrFail($eventId);
 
-            // Additional check to ensure event is active
-            if ($event->status !== 'active') {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'This event is not active.'
-                ], 400);
-            }
+            // Remove event status check
+            // if ($event->status !== 'active') {
+            //     return response()->json([
+            //         'status' => 'error',
+            //         'message' => 'This event is not active.'
+            //     ], 400);
+            // }
 
             // Check if event is within valid date range
             if ($event->end_date < now()) {
