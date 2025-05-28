@@ -12,6 +12,7 @@ use Illuminate\View\View;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use App\Models\Attendee;
 
 class ScannerController extends Controller
 {
@@ -186,20 +187,132 @@ class ScannerController extends Controller
         ]);
     }
 
-    public function validateToken(Request $request): JsonResponse
+    /**
+     * Display the scanning interface for QR code scanning.
+     * 
+     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
+     */
+    public function scan(): View|\Illuminate\Http\RedirectResponse
+    {
+        $user = auth()->user();
+        $eventId = session('selected_event_id');
+        
+        // If no event is selected, redirect to events list
+        if (!$eventId) {
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'Please select an event first before scanning.');
+        }
+
+        // Get the selected event
+        $event = Event::find($eventId);
+        if (!$event) {
+            session()->forget('selected_event_id');
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'Selected event no longer exists. Please select a new event.');
+        }
+
+        // Verify scanner is authorized for this event
+        if (!$user->hasRole('admin') && !$user->events()->where('events.id', $eventId)->exists()) {
+            session()->forget('selected_event_id');
+            return redirect()->route('scanner.events.index')
+                ->with('error', 'You are not authorized to scan for this event. Please select an event you are assigned to.');
+        }
+
+        // Get recent scans for this event
+        $recent_scans = ScanLog::with(['ticket.attendee', 'scanner'])
+            ->whereHas('ticket', function($query) use ($eventId) {
+                $query->where('event_id', $eventId);
+            })
+            ->latest()
+            ->take(10)
+            ->get()
+            ->map(function($scan) {
+                return [
+                    'time' => $scan->created_at->diffForHumans(),
+                    'attendee' => $scan->ticket?->attendee?->name ?? 'Invalid Ticket',
+                    'scanner' => $scan->scanner?->name ?? 'Unknown',
+                    'status' => $scan->status,
+                    'status_class' => match($scan->status) {
+                        'success' => 'success',
+                        'duplicate' => 'warning',
+                        default => 'danger'
+                    }
+                ];
+            });
+
+        return view('scanner.scan.index', compact('event', 'recent_scans'));
+    }
+
+    /**
+     * Display the manual token validation interface.
+     * 
+     * @return \Illuminate\View\View
+     */
+    public function validatePage(): View
+    {
+        $user = auth()->user();
+        $eventId = session('selected_event_id');
+        
+        // Get all assigned events with their statistics
+        $events = $user->events()
+            ->withCount(['attendees' => function($query) {
+                $query->whereHas('ticket', function($q) {
+                    $q->where('status', 'used');
+                });
+            }, 'attendees as scanned_count'])
+            ->orderBy('start_date', 'desc')
+            ->get();
+
+        // Get recent validations for the selected event
+        $recent_validations = [];
+        if ($eventId) {
+            $recent_validations = ScanLog::with(['ticket.attendee', 'scanner'])
+                ->whereHas('ticket', function($query) use ($eventId) {
+                    $query->where('event_id', $eventId);
+                })
+                ->where('notes', 'like', '%Manual token validation%')
+                ->latest()
+                ->take(10)
+                ->get()
+                ->map(function($scan) {
+                    return [
+                        'time' => $scan->created_at->diffForHumans(),
+                        'attendee' => $scan->ticket?->attendee?->name ?? 'Invalid Ticket',
+                        'email' => $scan->ticket?->attendee?->email,
+                        'status' => $scan->status,
+                        'status_class' => match($scan->status) {
+                            'success' => 'success',
+                            'duplicate' => 'warning',
+                            default => 'danger'
+                        },
+                        'scanner' => $scan->scanner?->name
+                    ];
+                });
+        }
+
+        return view('scanner.validate.index', compact('events', 'recent_validations'));
+    }
+
+    /**
+     * Handle manual token validation.
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function validateManualToken(Request $request): JsonResponse
     {
         $request->validate([
             'token' => 'required|string'
         ]);
 
         $user = auth()->user();
+        $eventId = session('selected_event_id');
         
         // Check if event is selected
-        $eventId = session('selected_event_id');
         if (!$eventId) {
             return response()->json([
                 'success' => false,
-                'message' => 'Please select an event first before scanning.',
+                'message' => 'Please select an event first before validating tokens.',
                 'code' => 'NO_EVENT_SELECTED',
                 'redirect' => route('scanner.dashboard')
             ], 422);
@@ -222,70 +335,77 @@ class ScannerController extends Controller
             session()->forget('selected_event_id');
             return response()->json([
                 'success' => false,
-                'message' => 'You are not authorized to scan for this event. Please select an event you are assigned to.',
+                'message' => 'You are not authorized to validate tokens for this event.',
                 'code' => 'UNAUTHORIZED_EVENT',
                 'redirect' => route('scanner.dashboard')
             ], 403);
         }
 
-        // Verify event is within valid date range
-        if ($event->end_date < now()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'This event has ended. Please select an active event.',
-                'code' => 'EVENT_ENDED',
-                'redirect' => route('scanner.dashboard')
-            ], 422);
-        }
-
-        // Validate the token
-        $eventCard = EventCard::where('token', $request->token)
+        // Find the attendee by token
+        $attendee = Attendee::where('token', $request->token)
             ->where('event_id', $eventId)
-            ->where('is_active', true)
-            ->where('is_used', false)
+            ->with(['ticket'])
             ->first();
 
-        if (!$eventCard) {
-            // Check if token exists but is already used
-            $usedCard = EventCard::where('token', $request->token)
-                ->where('event_id', $eventId)
-                ->where('is_used', true)
-                ->first();
-
-            if ($usedCard) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This ticket has already been used.',
-                    'code' => 'TICKET_USED'
-                ], 422);
-            }
-
+        if (!$attendee) {
             return response()->json([
                 'success' => false,
-                'message' => 'Invalid QR code or QR code not for this event.',
-                'code' => 'INVALID_TICKET'
+                'message' => 'Invalid token or token not for this event.',
+                'code' => 'INVALID_TOKEN'
             ], 422);
         }
 
-        // Create scan log
-        $scanLog = ScanLog::create([
-            'event_id' => $eventCard->event_id,
-            'attendee_id' => $eventCard->attendee_id,
-            'event_card_id' => $eventCard->id,
-            'scanner_id' => $user->id,
-            'status' => 'success',
-            'scanned_by' => $user->email
-        ]);
+        // Check if ticket is already used
+        if ($attendee->ticket && $attendee->ticket->status === 'used') {
+            // Log the duplicate validation attempt
+            ScanLog::create([
+                'ticket_id' => $attendee->ticket->id,
+                'scanner_id' => $user->id,
+                'status' => 'duplicate',
+                'notes' => 'Manual token validation - Duplicate scan'
+            ]);
 
-        // Mark ticket as used
-        $eventCard->markAsUsed();
+            return response()->json([
+                'success' => false,
+                'message' => 'This ticket has already been used.',
+                'code' => 'TICKET_USED',
+                'attendee' => $attendee->name
+            ], 422);
+        }
+
+        // Update ticket status if exists
+        if ($attendee->ticket) {
+            DB::transaction(function() use ($attendee, $user) {
+                $attendee->ticket->update([
+                    'status' => 'used',
+                    'used_at' => now()
+                ]);
+
+                // Log the successful validation
+                ScanLog::create([
+                    'ticket_id' => $attendee->ticket->id,
+                    'scanner_id' => $user->id,
+                    'status' => 'success',
+                    'notes' => 'Manual token validation'
+                ]);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Check-in successful!',
+                'attendee' => [
+                    'name' => $attendee->name,
+                    'email' => $attendee->email,
+                    'checked_in_at' => now()
+                ]
+            ]);
+        }
 
         return response()->json([
-            'success' => true,
-            'message' => 'Check-in successful!',
-            'attendee' => $eventCard->attendee,
-            'scan' => $scanLog
-        ]);
+            'success' => false,
+            'message' => 'No valid ticket found for this token.',
+            'code' => 'NO_TICKET'
+        ], 422);
     }
 
     public function history(Request $request): View
@@ -631,68 +751,6 @@ class ScannerController extends Controller
     }
 
     /**
-     * Display the scanning interface.
-     * 
-     * @return \Illuminate\View\View|\Illuminate\Http\RedirectResponse
-     */
-    public function scan(): View|\Illuminate\Http\RedirectResponse
-    {
-        $user = auth()->user();
-        $eventId = session('selected_event_id');
-        
-        // If no event is selected, redirect to events list
-        if (!$eventId) {
-            return redirect()->route('scanner.events.index')
-                ->with('error', 'Please select an event first before scanning.');
-        }
-
-        // Get the selected event
-        $event = Event::find($eventId);
-        if (!$event) {
-            session()->forget('selected_event_id');
-            return redirect()->route('scanner.events.index')
-                ->with('error', 'Selected event no longer exists. Please select a new event.');
-        }
-
-        // Verify scanner is authorized for this event
-        if (!$user->hasRole('admin') && !$user->events()->where('events.id', $eventId)->exists()) {
-            session()->forget('selected_event_id');
-            return redirect()->route('scanner.events.index')
-                ->with('error', 'You are not authorized to scan for this event. Please select an event you are assigned to.');
-        }
-
-        // Verify event is within valid date range
-        if ($event->end_date < now()) {
-            return redirect()->route('scanner.events.index')
-                ->with('error', 'This event has ended. Please select an active event.');
-        }
-
-        // Get recent scans for this event
-        $recent_scans = ScanLog::with(['ticket.attendee', 'scanner'])
-            ->whereHas('ticket', function($query) use ($eventId) {
-                $query->where('event_id', $eventId);
-            })
-            ->latest()
-            ->take(10)
-            ->get()
-            ->map(function($scan) {
-                return [
-                    'time' => $scan->created_at->diffForHumans(),
-                    'attendee' => $scan->ticket?->attendee?->name ?? 'Invalid Ticket',
-                    'scanner' => $scan->scanner?->name ?? 'Unknown',
-                    'status' => $scan->status,
-                    'status_class' => match($scan->status) {
-                        'success' => 'success',
-                        'duplicate' => 'warning',
-                        default => 'danger'
-                    }
-                ];
-            });
-
-        return view('scanner.scan', compact('event', 'recent_scans'));
-    }
-
-    /**
      * Display a list of all events with their attendees for the scanner.
      * 
      * @return \Illuminate\View\View
@@ -738,53 +796,5 @@ class ScannerController extends Controller
         });
 
         return view('scanner.attendees.index', compact('events'));
-    }
-
-    /**
-     * Display the ticket validation page with event selection
-     * 
-     * @return \Illuminate\View\View
-     */
-    public function validatePage(): View
-    {
-        $user = auth()->user();
-        
-        // Get all assigned events with their statistics
-        $events = $user->events()
-            ->withCount(['attendees' => function($query) {
-                $query->whereHas('ticket', function($q) {
-                    $q->where('status', 'used');
-                });
-            }, 'attendees as scanned_count'])
-            ->orderBy('start_date', 'desc')
-            ->get();
-
-        // Get recent validations for the selected event
-        $recent_validations = [];
-        if ($eventId = session('selected_event_id')) {
-            $recent_validations = ScanLog::with(['ticket.attendee', 'scanner'])
-                ->whereHas('ticket', function($query) use ($eventId) {
-                    $query->where('event_id', $eventId);
-                })
-                ->latest()
-                ->take(10)
-                ->get()
-                ->map(function($scan) {
-                    return [
-                        'time' => $scan->created_at->diffForHumans(),
-                        'attendee' => $scan->ticket?->attendee?->name ?? 'Invalid Ticket',
-                        'email' => $scan->ticket?->attendee?->email,
-                        'status' => $scan->status,
-                        'status_class' => match($scan->status) {
-                            'success' => 'success',
-                            'duplicate' => 'warning',
-                            default => 'danger'
-                        },
-                        'scanner' => $scan->scanner?->name
-                    ];
-                });
-        }
-
-        return view('scanner.validate', compact('events', 'recent_validations'));
     }
 } 
