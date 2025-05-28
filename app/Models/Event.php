@@ -35,12 +35,9 @@ class Event extends Model
     /**
      * Event status constants
      */
-    const STATUS_DRAFT = 'draft';
     const STATUS_PENDING = 'pending';
     const STATUS_ACTIVE = 'active';
-    const STATUS_ONGOING = 'ongoing';
-    const STATUS_FINISHED = 'finished';
-    const STATUS_CANCELLED = 'cancelled';
+    const STATUS_COMPLETED = 'completed';
 
     /**
      * Get all possible event statuses
@@ -50,12 +47,9 @@ class Event extends Model
     public static function getStatuses(): array
     {
         return [
-            self::STATUS_DRAFT => 'Draft',
             self::STATUS_PENDING => 'Pending',
             self::STATUS_ACTIVE => 'Active',
-            self::STATUS_ONGOING => 'Ongoing',
-            self::STATUS_FINISHED => 'Finished',
-            self::STATUS_CANCELLED => 'Cancelled'
+            self::STATUS_COMPLETED => 'Completed'
         ];
     }
 
@@ -66,18 +60,13 @@ class Event extends Model
      */
     public function determineStatus(): string
     {
-        // If event is manually cancelled, keep that status
-        if ($this->status === self::STATUS_CANCELLED) {
-            return self::STATUS_CANCELLED;
-        }
-
         $now = now();
-        
-        // Check if event has started
-        $hasStarted = $now->gte($this->start_date);
         
         // Check if event has ended
         $hasEnded = $now->gt($this->end_date);
+        
+        // Check if event has started
+        $hasStarted = $now->gte($this->start_date);
         
         // Check if event is currently ongoing (within start and end time)
         $isOngoing = $hasStarted && !$hasEnded;
@@ -85,30 +74,19 @@ class Event extends Model
         // Check if event is about to start (within 24 hours)
         $isAboutToStart = $now->diffInHours($this->start_date) <= 24 && !$hasStarted;
         
-        // Check if event has capacity
-        $hasCapacity = $this->capacity > $this->attendees()->count();
-        
         // Check if event has any attendees
         $hasAttendees = $this->attendees()->exists();
 
         // Determine status based on conditions
         if ($hasEnded) {
-            return $hasAttendees ? self::STATUS_FINISHED : self::STATUS_CANCELLED;
+            return self::STATUS_COMPLETED;
         }
         
-        if ($isOngoing) {
-            return $hasAttendees ? self::STATUS_ONGOING : self::STATUS_ACTIVE;
+        if ($isOngoing || $isAboutToStart) {
+            return self::STATUS_ACTIVE;
         }
         
-        if ($isAboutToStart) {
-            return $hasAttendees ? self::STATUS_ACTIVE : self::STATUS_PENDING;
-        }
-        
-        if (!$hasStarted) {
-            return $hasAttendees ? self::STATUS_PENDING : self::STATUS_DRAFT;
-        }
-
-        return self::STATUS_DRAFT;
+        return self::STATUS_PENDING;
     }
 
     /**
@@ -121,7 +99,7 @@ class Event extends Model
         // Automatically set the status based on conditions before saving
         static::saving(function ($event) {
             // Only update status if it's not manually set to cancelled
-            if ($event->status !== self::STATUS_CANCELLED) {
+            if ($event->status !== self::STATUS_COMPLETED) {
                 $event->status = $event->determineStatus();
             }
         });
@@ -146,10 +124,8 @@ class Event extends Model
     {
         $badgeClass = match($this->status) {
             self::STATUS_ACTIVE => 'bg-success',
-            self::STATUS_ONGOING => 'bg-primary',
+            self::STATUS_COMPLETED => 'bg-info',
             self::STATUS_PENDING => 'bg-warning',
-            self::STATUS_FINISHED => 'bg-info',
-            self::STATUS_CANCELLED => 'bg-danger',
             default => 'bg-secondary'
         };
 
@@ -175,12 +151,9 @@ class Event extends Model
         $timeToEnd = $now->diffForHumans($this->end_date, ['parts' => 2]);
 
         return match($this->status) {
-            self::STATUS_DRAFT => 'Event is in draft mode. No attendees registered yet.',
             self::STATUS_PENDING => "Event starts {$timeToStart}. Has {$this->attendees()->count()} registered attendees.",
             self::STATUS_ACTIVE => "Event is active and starts {$timeToStart}. Ready for scanning.",
-            self::STATUS_ONGOING => "Event is currently ongoing. Ends {$timeToEnd}.",
-            self::STATUS_FINISHED => "Event ended {$timeToEnd}. Had {$this->attendees()->count()} attendees.",
-            self::STATUS_CANCELLED => 'Event has been cancelled.',
+            self::STATUS_COMPLETED => "Event ended {$timeToEnd}. Had {$this->attendees()->count()} attendees.",
             default => 'Unknown status'
         };
     }
@@ -192,9 +165,8 @@ class Event extends Model
      */
     public function isActiveForScanning(): bool
     {
-        return in_array($this->status, [self::STATUS_ACTIVE, self::STATUS_ONGOING]) 
-            && $this->hasAttendees()
-            && !$this->isCancelled();
+        return $this->status === self::STATUS_ACTIVE 
+            && $this->hasAttendees();
     }
 
     /**
@@ -214,7 +186,7 @@ class Event extends Model
      */
     public function isCancelled(): bool
     {
-        return $this->status === self::STATUS_CANCELLED;
+        return $this->status === self::STATUS_COMPLETED;
     }
 
     public function attendees(): HasMany
@@ -275,17 +247,17 @@ class Event extends Model
 
     public function isActive()
     {
-        return $this->status === 'active';
+        return $this->status === self::STATUS_ACTIVE;
     }
 
     public function isPending()
     {
-        return $this->status === 'pending';
+        return $this->status === self::STATUS_PENDING;
     }
 
-    public function isFinished()
+    public function isCompleted()
     {
-        return $this->status === 'finished';
+        return $this->status === self::STATUS_COMPLETED;
     }
 
     public function getAvailableCapacity()

@@ -28,7 +28,7 @@ return new class extends Migration
             $table->dateTime('start_date');
             $table->dateTime('end_date');
             $table->integer('capacity')->unsigned();
-            $table->string('status')->default('pending');
+            $table->enum('status', ['pending', 'active', 'completed'])->default('pending');
             $table->foreignId('created_by')->constrained('users')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();
