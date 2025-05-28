@@ -1,34 +1,77 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex justify-between items-center">
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                {{ __('QR Code Scanner') }}
-            </h2>
-            @if(session('selected_event_id'))
-                <div class="flex items-center space-x-4">
-                    <span class="text-sm text-gray-600">
-                        Selected Event: {{ $event->name }}
-                    </span>
-                    <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="text-sm text-red-600 hover:text-red-800">
-                            Deselect Event
-                        </button>
-                    </form>
-                </div>
-            @endif
+        <div class="flex flex-col space-y-2">
+            <!-- Breadcrumbs -->
+            <nav class="flex" aria-label="Breadcrumb">
+                <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                    <li class="inline-flex items-center">
+                        <a href="{{ route('scanner.dashboard') }}" class="text-gray-700 hover:text-indigo-600">
+                            <i class="bi bi-house-door mr-2"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                            <i class="bi bi-chevron-right text-gray-400 mx-2"></i>
+                            <span class="text-gray-500">QR Code Scanner</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+
+            <!-- Header Content -->
+            <div class="flex justify-between items-center">
+                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
+                    {{ __('QR Code Scanner') }}
+                </h2>
+                @if(session('selected_event_id'))
+                    <div class="flex items-center space-x-4">
+                        <span class="text-sm text-gray-600">
+                            Selected Event: {{ $event->name }}
+                        </span>
+                        <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="inline">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="text-sm text-red-600 hover:text-red-800">
+                                Deselect Event
+                            </button>
+                        </form>
+                    </div>
+                @endif
+            </div>
         </div>
     </x-slot>
 
     <div class="py-12">
         <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
+            <!-- Page Header -->
+            <div class="mb-6">
+                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-lg font-medium text-gray-900">Scan QR Code</h3>
+                                <p class="mt-1 text-sm text-gray-600">
+                                    Scan attendee QR codes to validate their tickets
+                                </p>
+                            </div>
+                            @if(!session('selected_event_id'))
+                                <a href="{{ route('scanner.events.index') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
+                                    <i class="bi bi-calendar-event mr-2"></i>
+                                    Select Event
+                                </a>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Content -->
             <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                 <div class="p-6 text-gray-900">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- QR Code Scanner -->
                         <div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-4">Scan QR Code</h3>
                             <div class="relative">
                                 <video id="scanner" class="w-full h-64 bg-gray-100 rounded-lg"></video>
                                 <div id="scanOverlay" class="absolute inset-0 flex items-center justify-center hidden">
@@ -42,7 +85,12 @@
 
                         <!-- Recent Scans -->
                         <div>
-                            <h3 class="text-lg font-medium text-gray-900 mb-4">Recent Scans</h3>
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-medium text-gray-900">Recent Scans</h3>
+                                <a href="{{ route('scanner.history') }}" class="text-sm text-indigo-600 hover:text-indigo-800">
+                                    View All History
+                                </a>
+                            </div>
                             <div class="space-y-4">
                                 @forelse($recent_scans as $scan)
                                     <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -59,7 +107,10 @@
                                         </span>
                                     </div>
                                 @empty
-                                    <p class="text-sm text-gray-500">No recent scans</p>
+                                    <div class="text-center py-8 bg-gray-50 rounded-lg">
+                                        <i class="bi bi-upc-scan text-4xl text-gray-400 mb-2"></i>
+                                        <p class="text-sm text-gray-500">No recent scans</p>
+                                    </div>
                                 @endforelse
                             </div>
                         </div>
