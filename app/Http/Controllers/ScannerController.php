@@ -253,6 +253,15 @@ class ScannerController extends Controller
         $user = auth()->user();
         $eventId = session('selected_event_id');
         
+        // Get the selected event if any
+        $event = null;
+        if ($eventId) {
+            $event = Event::find($eventId);
+            if (!$event) {
+                session()->forget('selected_event_id');
+            }
+        }
+        
         // Get all assigned events with their statistics
         $events = $user->events()
             ->withCount(['attendees' => function($query) {
@@ -265,7 +274,7 @@ class ScannerController extends Controller
 
         // Get recent validations for the selected event
         $recent_validations = [];
-        if ($eventId) {
+        if ($eventId && $event) {
             $recent_validations = ScanLog::with(['ticket.attendee', 'scanner'])
                 ->whereHas('ticket', function($query) use ($eventId) {
                     $query->where('event_id', $eventId);
@@ -290,7 +299,7 @@ class ScannerController extends Controller
                 });
         }
 
-        return view('scanner.validate.index', compact('events', 'recent_validations'));
+        return view('scanner.validate.index', compact('events', 'event', 'recent_validations'));
     }
 
     /**
