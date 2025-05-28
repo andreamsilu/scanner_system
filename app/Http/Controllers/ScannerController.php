@@ -408,6 +408,137 @@ class ScannerController extends Controller
         ], 422);
     }
 
+    /**
+     * Handle QR code scan validation.
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function validateToken(Request $request): JsonResponse
+    {
+        try {
+            $request->validate([
+                'token' => 'required|string'
+            ]);
+
+            $user = auth()->user();
+            $eventId = session('selected_event_id');
+            
+            // Check if event is selected
+            if (!$eventId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Please select an event first before scanning.',
+                    'code' => 'NO_EVENT_SELECTED'
+                ], 422);
+            }
+
+            // Get the selected event
+            $event = Event::find($eventId);
+            if (!$event) {
+                session()->forget('selected_event_id');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Selected event no longer exists. Please select a new event.',
+                    'code' => 'EVENT_NOT_FOUND'
+                ], 422);
+            }
+
+            // Verify scanner is authorized for this event
+            if (!$user->hasRole('admin') && !$user->events()->where('events.id', $eventId)->exists()) {
+                session()->forget('selected_event_id');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You are not authorized to scan for this event.',
+                    'code' => 'UNAUTHORIZED_EVENT'
+                ], 403);
+            }
+
+            // Find the attendee by token
+            $attendee = Attendee::where('token', $request->token)
+                ->where('event_id', $eventId)
+                ->with(['ticket'])
+                ->first();
+
+            if (!$attendee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid token or token not for this event.',
+                    'code' => 'INVALID_TOKEN'
+                ], 422);
+            }
+
+            // Check if ticket is already used
+            if ($attendee->ticket && $attendee->ticket->status === 'used') {
+                // Log the duplicate validation attempt
+                ScanLog::create([
+                    'ticket_id' => $attendee->ticket->id,
+                    'scanner_id' => $user->id,
+                    'status' => 'duplicate',
+                    'notes' => 'QR code scan - Duplicate scan'
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This ticket has already been used.',
+                    'code' => 'TICKET_USED',
+                    'attendee' => [
+                        'name' => $attendee->name,
+                        'email' => $attendee->email,
+                        'checked_in_at' => $attendee->ticket->used_at
+                    ]
+                ], 422);
+            }
+
+            // Update ticket status if exists
+            if ($attendee->ticket) {
+                DB::transaction(function() use ($attendee, $user) {
+                    $attendee->ticket->update([
+                        'status' => 'used',
+                        'used_at' => now()
+                    ]);
+
+                    // Log the successful validation
+                    ScanLog::create([
+                        'ticket_id' => $attendee->ticket->id,
+                        'scanner_id' => $user->id,
+                        'status' => 'success',
+                        'notes' => 'QR code scan'
+                    ]);
+                });
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Check-in successful!',
+                    'attendee' => [
+                        'name' => $attendee->name,
+                        'email' => $attendee->email,
+                        'checked_in_at' => now()
+                    ]
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid ticket found for this token.',
+                'code' => 'NO_TICKET'
+            ], 422);
+
+        } catch (\Exception $e) {
+            \Log::error('QR code scan validation failed', [
+                'error' => $e->getMessage(),
+                'token' => $request->token ?? null,
+                'user_id' => auth()->id()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'An error occurred while processing the scan. Please try again.',
+                'code' => 'SERVER_ERROR'
+            ], 500);
+        }
+    }
+
     public function history(Request $request): View
     {
         $user = auth()->user();
