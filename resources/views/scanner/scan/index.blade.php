@@ -1,213 +1,161 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="flex flex-col space-y-2">
-            <!-- Breadcrumbs -->
-            <nav class="flex" aria-label="Breadcrumb">
-                <ol class="inline-flex items-center space-x-1 md:space-x-3">
-                    <li class="inline-flex items-center">
-                        <a href="{{ route('scanner.dashboard') }}" class="text-gray-700 hover:text-indigo-600">
-                            <i class="bi bi-house-door mr-2"></i>
-                            Dashboard
-                        </a>
-                    </li>
-                    <li>
-                        <div class="flex items-center">
-                            <i class="bi bi-chevron-right text-gray-400 mx-2"></i>
-                            <span class="text-gray-500">QR Code Scanner</span>
-                        </div>
-                    </li>
-                </ol>
-            </nav>
+@extends('layouts.app')
 
-            <!-- Header Content -->
-            <div class="flex justify-between items-center">
-                <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-                    {{ __('QR Code Scanner') }}
-                </h2>
-                @if(session('selected_event_id'))
-                    <div class="flex items-center space-x-4">
-                        <span class="text-sm text-gray-600">
-                            Selected Event: {{ $event->name }}
-                        </span>
-                        <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="inline">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="text-sm text-red-600 hover:text-red-800">
-                                Deselect Event
-                            </button>
-                        </form>
-                    </div>
-                @endif
-            </div>
+@section('content')
+    <!-- Breadcrumbs -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item">
+                <a href="{{ route('scanner.dashboard') }}" class="text-decoration-none">
+                    <i class="bi bi-house-door me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="breadcrumb-item active">QR Code Scanner</li>
+        </ol>
+    </nav>
+
+    <!-- Header Content -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="h4 mb-1">QR Code Scanner</h2>
+            <p class="text-muted mb-0">Scan QR codes to validate attendee tickets</p>
         </div>
-    </x-slot>
+        @if(session('selected_event_id'))
+            <div class="d-flex align-items-center gap-3">
+                <span class="text-muted">
+                    Selected Event: {{ $event->name }}
+                </span>
+                <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-link text-danger p-0">Deselect Event</button>
+                </form>
+            </div>
+        @endif
+    </div>
 
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <!-- Page Header -->
-            <div class="mb-6">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <h3 class="text-lg font-medium text-gray-900">Scan QR Code</h3>
-                                <p class="mt-1 text-sm text-gray-600">
-                                    Scan attendee QR codes to validate their tickets
-                                </p>
+    <!-- Page Content -->
+    <div class="row g-4">
+        <!-- Scanner Section -->
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-body">
+                    <div class="position-relative">
+                        <video id="scanner" class="w-100 rounded"></video>
+                        <div id="loadingOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-none justify-content-center align-items-center">
+                            <div class="spinner-border text-light" role="status">
+                                <span class="visually-hidden">Loading...</span>
                             </div>
-                            @if(!session('selected_event_id'))
-                                <a href="{{ route('scanner.events.index') }}" class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-md font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700">
-                                    <i class="bi bi-calendar-event mr-2"></i>
-                                    Select Event
-                                </a>
-                            @endif
                         </div>
                     </div>
+                    <div id="scanResult" class="mt-3"></div>
                 </div>
             </div>
+        </div>
 
-            <!-- Main Content -->
-            <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                <div class="p-6 text-gray-900">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- QR Code Scanner -->
-                        <div>
-                            <div class="relative">
-                                <video id="scanner" class="w-full h-64 bg-gray-100 rounded-lg"></video>
-                                <div id="scanOverlay" class="absolute inset-0 flex items-center justify-center hidden">
-                                    <div class="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+        <!-- Recent Scans -->
+        <div class="col-lg-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Recent Scans</h5>
+                    <a href="{{ route('scanner.history') }}" class="btn btn-link btn-sm p-0">View All</a>
+                </div>
+                <div class="card-body">
+                    <div class="list-group list-group-flush">
+                        @forelse($recent_scans as $scan)
+                            <div class="list-group-item">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <h6 class="mb-1">{{ $scan['attendee'] }}</h6>
+                                        <small class="text-muted">{{ $scan['time'] }}</small>
+                                        <small class="d-block text-muted">Scanner: {{ $scan['scanner'] }}</small>
+                                    </div>
+                                    <span class="badge rounded-pill 
+                                        @if($scan['status_class'] === 'success') bg-success
+                                        @elseif($scan['status_class'] === 'warning') bg-warning
+                                        @else bg-danger @endif">
+                                        {{ ucfirst($scan['status']) }}
+                                    </span>
                                 </div>
                             </div>
-                            <div id="scanResult" class="mt-4 hidden">
-                                <!-- Scan result will be shown here -->
+                        @empty
+                            <div class="text-center py-4">
+                                <i class="bi bi-upc-scan display-4 text-muted mb-2"></i>
+                                <p class="text-muted mb-0">No recent scans</p>
                             </div>
-                        </div>
-
-                        <!-- Recent Scans -->
-                        <div>
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="text-lg font-medium text-gray-900">Recent Scans</h3>
-                                <a href="{{ route('scanner.history') }}" class="text-sm text-indigo-600 hover:text-indigo-800">
-                                    View All History
-                                </a>
-                            </div>
-                            <div class="space-y-4">
-                                @forelse($recent_scans as $scan)
-                                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                                        <div>
-                                            <p class="text-sm font-medium text-gray-900">{{ $scan['attendee'] }}</p>
-                                            <p class="text-xs text-gray-400">{{ $scan['time'] }}</p>
-                                            <p class="text-xs text-gray-500">Scanner: {{ $scan['scanner'] }}</p>
-                                        </div>
-                                        <span class="px-2 py-1 text-xs font-medium rounded-full 
-                                            @if($scan['status_class'] === 'success') bg-green-100 text-green-800
-                                            @elseif($scan['status_class'] === 'warning') bg-yellow-100 text-yellow-800
-                                            @else bg-red-100 text-red-800 @endif">
-                                            {{ ucfirst($scan['status']) }}
-                                        </span>
-                                    </div>
-                                @empty
-                                    <div class="text-center py-8 bg-gray-50 rounded-lg">
-                                        <i class="bi bi-upc-scan text-4xl text-gray-400 mb-2"></i>
-                                        <p class="text-sm text-gray-500">No recent scans</p>
-                                    </div>
-                                @endforelse
-                            </div>
-                        </div>
+                        @endforelse
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    @push('scripts')
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script>
-        let html5QrcodeScanner = null;
+    @if(!session('selected_event_id'))
+        <div class="card mt-4">
+            <div class="card-body text-center">
+                <i class="bi bi-calendar-x display-4 text-muted mb-3"></i>
+                <h5 class="card-title">No Event Selected</h5>
+                <p class="card-text text-muted">Please select an event to start scanning tickets</p>
+                <a href="{{ route('scanner.events.index') }}" class="btn btn-primary">
+                    <i class="bi bi-calendar-event me-2"></i>Select Event
+                </a>
+            </div>
+        </div>
+    @endif
+@endsection
 
-        function onScanSuccess(decodedText, decodedResult) {
-            // Show loading overlay
-            document.getElementById('scanOverlay').classList.remove('hidden');
+@push('scripts')
+<script src="https://unpkg.com/html5-qrcode"></script>
+<script>
+    let html5QrcodeScanner = null;
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Show loading overlay
+        document.getElementById('loadingOverlay').classList.remove('d-none');
+        
+        // Stop scanning temporarily
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.pause();
+        }
+
+        // Send the scanned token to the server
+        fetch('{{ route("scanner.scan.validate") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({ token: decodedText })
+        })
+        .then(response => response.json())
+        .then(data => {
+            const resultDiv = document.getElementById('scanResult');
+            resultDiv.classList.remove('hidden');
             
-            // Stop scanning temporarily
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.pause();
-            }
-
-            // Send the scanned token to the server
-            fetch('{{ route("scanner.scan.validate") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ token: decodedText })
-            })
-            .then(response => response.json())
-            .then(data => {
-                const resultDiv = document.getElementById('scanResult');
-                resultDiv.classList.remove('hidden');
+            if (data.success) {
+                resultDiv.innerHTML = `
+                    <div class="rounded-md bg-green-50 p-4">
+                        <div class="flex">
+                            <div class="flex-shrink-0">
+                                <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                </svg>
+                            </div>
+                            <div class="ml-3">
+                                <h3 class="text-sm font-medium text-green-800">Check-in Successful</h3>
+                                <div class="mt-2 text-sm text-green-700">
+                                    <p>Attendee: ${data.attendee.name}</p>
+                                    <p>Email: ${data.attendee.email}</p>
+                                    <p>Checked in at: ${new Date(data.attendee.checked_in_at).toLocaleString()}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
                 
-                if (data.success) {
-                    resultDiv.innerHTML = `
-                        <div class="rounded-md bg-green-50 p-4">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-green-800">Check-in Successful</h3>
-                                    <div class="mt-2 text-sm text-green-700">
-                                        <p>Attendee: ${data.attendee.name}</p>
-                                        <p>Email: ${data.attendee.email}</p>
-                                        <p>Checked in at: ${new Date(data.attendee.checked_in_at).toLocaleString()}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Play success sound
-                    const audio = new Audio('/sounds/success.mp3');
-                    audio.play().catch(() => {}); // Ignore if sound fails to play
-                } else {
-                    resultDiv.innerHTML = `
-                        <div class="rounded-md bg-red-50 p-4">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-red-800">Scan Failed</h3>
-                                    <div class="mt-2 text-sm text-red-700">
-                                        <p>${data.message}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Play error sound
-                    const audio = new Audio('/sounds/error.mp3');
-                    audio.play().catch(() => {}); // Ignore if sound fails to play
-                }
-
-                // Resume scanning after a short delay
-                setTimeout(() => {
-                    document.getElementById('scanOverlay').classList.add('hidden');
-                    if (html5QrcodeScanner) {
-                        html5QrcodeScanner.resume();
-                    }
-                }, 2000);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                const resultDiv = document.getElementById('scanResult');
-                resultDiv.classList.remove('hidden');
+                // Play success sound
+                const audio = new Audio('/sounds/success.mp3');
+                audio.play().catch(() => {}); // Ignore if sound fails to play
+            } else {
                 resultDiv.innerHTML = `
                     <div class="rounded-md bg-red-50 p-4">
                         <div class="flex">
@@ -217,47 +165,81 @@
                                 </svg>
                             </div>
                             <div class="ml-3">
-                                <h3 class="text-sm font-medium text-red-800">Error</h3>
+                                <h3 class="text-sm font-medium text-red-800">Scan Failed</h3>
                                 <div class="mt-2 text-sm text-red-700">
-                                    <p>An error occurred while processing the scan. Please try again.</p>
+                                    <p>${data.message}</p>
                                 </div>
                             </div>
                         </div>
                     </div>
                 `;
                 
-                // Resume scanning after error
-                document.getElementById('scanOverlay').classList.add('hidden');
+                // Play error sound
+                const audio = new Audio('/sounds/error.mp3');
+                audio.play().catch(() => {}); // Ignore if sound fails to play
+            }
+
+            // Resume scanning after a short delay
+            setTimeout(() => {
+                document.getElementById('loadingOverlay').classList.add('d-none');
                 if (html5QrcodeScanner) {
                     html5QrcodeScanner.resume();
                 }
-            });
-        }
-
-        function onScanFailure(error) {
-            // Handle scan failure, usually ignore
-            console.warn(`QR code scan error: ${error}`);
-        }
-
-        // Initialize the scanner when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            html5QrcodeScanner = new Html5QrcodeScanner(
-                "scanner",
-                { 
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0
-                }
-            );
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-        });
-
-        // Clean up when the page is unloaded
-        window.addEventListener('beforeunload', function() {
+            }, 2000);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            const resultDiv = document.getElementById('scanResult');
+            resultDiv.classList.remove('hidden');
+            resultDiv.innerHTML = `
+                <div class="rounded-md bg-red-50 p-4">
+                    <div class="flex">
+                        <div class="flex-shrink-0">
+                            <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
+                                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                            </svg>
+                        </div>
+                        <div class="ml-3">
+                            <h3 class="text-sm font-medium text-red-800">Error</h3>
+                            <div class="mt-2 text-sm text-red-700">
+                                <p>An error occurred while processing the scan. Please try again.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Resume scanning after error
+            document.getElementById('loadingOverlay').classList.add('d-none');
             if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear();
+                html5QrcodeScanner.resume();
             }
         });
-    </script>
-    @endpush
-</x-app-layout> 
+    }
+
+    function onScanFailure(error) {
+        // Handle scan failure, usually ignore
+        console.warn(`QR code scan error: ${error}`);
+    }
+
+    // Initialize the scanner when the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        html5QrcodeScanner = new Html5QrcodeScanner(
+            "scanner",
+            { 
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
+                aspectRatio: 1.0
+            }
+        );
+        html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+    });
+
+    // Clean up when the page is unloaded
+    window.addEventListener('beforeunload', function() {
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.clear();
+        }
+    });
+</script>
+@endpush 
