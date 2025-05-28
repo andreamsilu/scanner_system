@@ -55,6 +55,9 @@ Route::middleware('auth')->group(function () {
         Route::delete('/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('events.deselect');
         Route::get('/events/{event}/attendees', [ScannerController::class, 'showEventAttendees'])->name('events.attendees');
         
+        // Attendees Management
+        Route::get('/attendees', [ScannerController::class, 'attendeesIndex'])->name('attendees.index');
+        
         // QR Code Scanning Routes
         Route::get('/scan', [ScannerController::class, 'scan'])->name('scan.index');
         Route::post('/scan/validate', [ScannerController::class, 'validateToken'])->name('scan.validate');
