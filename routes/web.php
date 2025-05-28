@@ -69,6 +69,11 @@ Route::middleware('auth')->group(function () {
         // History and Reports
         Route::get('/history', [ScannerController::class, 'history'])->name('history');
         Route::get('/history/export', [ScannerController::class, 'exportHistory'])->name('history.export');
+
+        // Scanner control routes
+        Route::post('/scan/start', [ScannerController::class, 'startScanner'])->name('scan.start');
+        Route::post('/scan/stop', [ScannerController::class, 'stopScanner'])->name('scan.stop');
+        Route::get('/scan/status', [ScannerController::class, 'getScannerStatus'])->name('scan.status');
     });
 
     // Admin Routes
