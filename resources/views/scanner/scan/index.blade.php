@@ -9,7 +9,7 @@
                     <span class="text-sm text-gray-600">
                         Selected Event: {{ $event->name }}
                     </span>
-                    <form action="{{ route('scanner.deselect-event', $event) }}" method="POST" class="inline">
+                    <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="inline">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="text-sm text-red-600 hover:text-red-800">
