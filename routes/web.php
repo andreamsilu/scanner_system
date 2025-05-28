@@ -54,8 +54,15 @@ Route::middleware('auth')->group(function () {
         Route::get('/events/{event}/attendees', [ScannerController::class, 'showEventAttendees'])->name('events.attendees');
         Route::get('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('select-event');
         Route::get('/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('deselect-event');
+        
+        // QR Code Scanning Routes
         Route::get('/scan', [ScannerController::class, 'scan'])->name('scan.index');
         Route::post('/scan/validate', [ScannerController::class, 'validateToken'])->name('scan.validate');
+        
+        // Manual Token Validation Routes
+        Route::get('/validate', [ScannerController::class, 'validatePage'])->name('validate.index');
+        Route::post('/validate/token', [ScannerController::class, 'validateManualToken'])->name('validate.token');
+        
         Route::get('/history', [ScannerController::class, 'history'])->name('history');
         Route::get('/history/export', [ScannerController::class, 'exportHistory'])->name('history.export');
     });
@@ -163,4 +170,10 @@ Route::get('/check-in/{token}', [ScanController::class, 'checkIn'])->name('scann
 Route::middleware(['auth', 'role:admin,scanner'])->group(function () {
     Route::get('/scanner', [ScanController::class, 'scanner'])->name('scanner.index');
     Route::post('/scan', [ScanController::class, 'scan'])->name('scanner.scan');
+});
+
+// Scanner Event Routes
+Route::middleware(['auth', 'role:scanner|admin'])->group(function () {
+    Route::get('/scanner/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('scanner.events.select');
+    Route::delete('/scanner/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('scanner.events.deselect');
 });
