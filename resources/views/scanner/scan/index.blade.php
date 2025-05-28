@@ -27,18 +27,87 @@
         <!-- Scanner Section -->
         <div class="col-lg-8">
             <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">QR Code Scanner</h5>
+                </div>
                 <div class="card-body">
-                    <div class="position-relative">
-                        <div id="scanner" class="w-100" style="min-height: 400px; background: #000;">
-                            <!-- The scanner will be rendered here -->
-                        </div>
-                        <div id="loadingOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-none justify-content-center align-items-center">
-                            <div class="spinner-border text-light" role="status">
-                                <span class="visually-hidden">Loading...</span>
+                    @if($event)
+                        <div class="scanner-container position-relative">
+                            <!-- Scanner Status and Controls -->
+                            <div class="scanner-controls mb-3 d-flex justify-content-between align-items-center">
+                                <div class="scanner-status">
+                                    <span class="badge bg-secondary" id="scannerStatus">Scanner Inactive</span>
+                                </div>
+                                <div class="scanner-buttons">
+                                    <button type="button" class="btn btn-success" id="startScanner" onclick="startScanner()">
+                                        <i class="fas fa-play me-1"></i> Start Scanner
+                                    </button>
+                                    <button type="button" class="btn btn-danger d-none" id="stopScanner" onclick="stopScanner()">
+                                        <i class="fas fa-stop me-1"></i> Stop Scanner
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Scanner View -->
+                            <div id="reader" class="scanner-view mb-3" style="min-height: 400px; background: #000; position: relative;">
+                                <!-- Camera feed will be inserted here -->
+                            </div>
+
+                            <!-- Scanner Messages -->
+                            <div id="scannerMessage" class="alert d-none mb-3"></div>
+
+                            <!-- Selected Event Info -->
+                            <div class="selected-event-info alert alert-info">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <strong>Selected Event:</strong> {{ $event->name }}
+                                        <br>
+                                        <small class="text-muted">
+                                            {{ $event->start_date->format('M d, Y') }} - {{ $event->end_date->format('M d, Y') }}
+                                        </small>
+                                    </div>
+                                    <a href="{{ route('scanner.events.deselect', $event) }}" class="btn btn-sm btn-outline-danger">
+                                        <i class="fas fa-times me-1"></i> Deselect Event
+                                    </a>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div id="scanResult" class="mt-3"></div>
+
+                        <!-- Recent Scans -->
+                        <div class="mt-4">
+                            <h6 class="mb-3">Recent Scans</h6>
+                            <div class="list-group">
+                                @forelse($recent_scans as $scan)
+                                    <div class="list-group-item">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <h6 class="mb-1">{{ $scan['attendee'] }}</h6>
+                                                <small class="text-muted">
+                                                    Scanned by {{ $scan['scanner'] }} • {{ $scan['time'] }}
+                                                </small>
+                                            </div>
+                                            <span class="badge bg-{{ $scan['status_class'] }}">
+                                                {{ ucfirst($scan['status']) }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                @empty
+                                    <div class="list-group-item text-center text-muted">
+                                        No scans yet
+                                    </div>
+                                @endforelse
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-center py-5">
+                            <i class="fas fa-qrcode fa-3x text-muted mb-3"></i>
+                            <h5>No Event Selected</h5>
+                            <p class="text-muted">Please select an event to start scanning QR codes.</p>
+                            <a href="{{ route('scanner.events.index') }}" class="btn btn-primary">
+                                <i class="fas fa-calendar me-1"></i> Select Event
+                            </a>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
@@ -80,303 +149,212 @@
         </div>
     </div>
 
-    @if(!session('selected_event_id'))
-        <div class="card mt-4">
-            <div class="card-body text-center">
-                <i class="bi bi-calendar-x display-4 text-muted mb-3"></i>
-                <h5 class="card-title">No Event Selected</h5>
-                <p class="card-text text-muted">Please select an event to start scanning tickets</p>
-                <a href="{{ route('scanner.events.index') }}" class="btn btn-primary">
-                    <i class="bi bi-calendar-event me-2"></i>Select Event
-                </a>
-            </div>
-        </div>
-    @endif
+    @push('styles')
+    <style>
+        .scanner-container {
+            background: #f8f9fa;
+            border-radius: 0.5rem;
+            padding: 1rem;
+        }
+        .scanner-view {
+            border-radius: 0.5rem;
+            overflow: hidden;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        #reader {
+            width: 100% !important;
+        }
+        #reader video {
+            width: 100% !important;
+            height: auto !important;
+            border-radius: 0.5rem;
+        }
+        .scanner-controls {
+            background: #fff;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+        }
+        .scanner-status .badge {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
+        }
+        .scanner-buttons .btn {
+            min-width: 120px;
+        }
+    </style>
+    @endpush
 
     @push('scripts')
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
-        let html5QrCode = null;
-        let isScanning = false;
+    let html5QrcodeScanner = null;
+    let isScanning = false;
 
-        async function startScanner() {
-            try {
-                // Show loading overlay
-                document.getElementById('loadingOverlay').classList.remove('d-none');
-                
-                // Call the start scanner endpoint
-                const response = await fetch('{{ route("scanner.scan.start") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-
-                const data = await response.json();
-                
-                if (!data.success) {
-                    throw new Error(data.message);
-                }
-
-                // Initialize the camera with updated configuration
-                const scannerElement = document.getElementById('scanner');
-                html5QrCode = new Html5Qrcode("scanner");
-                
-                // Get available cameras
-                const devices = await Html5Qrcode.getCameras();
-                if (devices && devices.length) {
-                    // Start with the first camera (usually the back camera on mobile)
-                    const cameraId = devices[0].id;
-                    await html5QrCode.start(
-                        cameraId,
-                        {
-                            fps: 10,
-                            qrbox: { width: 300, height: 300 }, // Increased QR box size
-                            aspectRatio: 1.0,
-                            formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
-                            showTorchButtonIfSupported: true,
-                            showZoomSliderIfSupported: true,
-                            defaultZoomValueIfSupported: 2,
-                            videoConstraints: {
-                                width: { min: 640, ideal: 1280, max: 1920 },
-                                height: { min: 480, ideal: 720, max: 1080 },
-                                facingMode: { ideal: "environment" }
-                            }
-                        },
-                        onScanSuccess,
-                        onScanFailure
-                    );
-                    isScanning = true;
-                    
-                    // Update UI
-                    document.getElementById('startScanBtn').classList.add('d-none');
-                    document.getElementById('stopScanBtn').classList.remove('d-none');
-
-                    // Add custom styles for the scanner
-                    const style = document.createElement('style');
-                    style.textContent = `
-                        #scanner video {
-                            width: 100% !important;
-                            height: auto !important;
-                            object-fit: cover;
-                        }
-                        #scanner__scan_region {
-                            background: transparent !important;
-                        }
-                        #scanner__scan_region video {
-                            border-radius: 8px;
-                        }
-                        #scanner__dashboard {
-                            background: transparent !important;
-                            border: none !important;
-                        }
-                        #scanner__dashboard_section_csr {
-                            display: none !important;
-                        }
-                    `;
-                    document.head.appendChild(style);
-                } else {
-                    throw new Error('No cameras found');
-                }
-            } catch (error) {
-                console.error('Error starting scanner:', error);
-                const resultDiv = document.getElementById('scanResult');
-                resultDiv.classList.remove('d-none');
-                resultDiv.innerHTML = `
-                    <div class="alert alert-danger d-flex align-items-center mb-0">
-                        <i class="bi bi-x-circle me-2"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1">Camera Error</h6>
-                            <p class="mb-0">${error.message}</p>
-                        </div>
-                    </div>
-                `;
-            } finally {
-                document.getElementById('loadingOverlay').classList.add('d-none');
-            }
-        }
-
-        async function stopScanner() {
-            try {
-                // Show loading overlay
-                document.getElementById('loadingOverlay').classList.remove('d-none');
-                
-                // Call the stop scanner endpoint
-                const response = await fetch('{{ route("scanner.scan.stop") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    }
-                });
-
-                const data = await response.json();
-                
-                if (!data.success) {
-                    throw new Error(data.message);
-                }
-
-                // Stop the camera
-                if (html5QrCode) {
-                    await html5QrCode.stop();
-                    html5QrCode = null;
-                }
-                isScanning = false;
-                
-                // Update UI
-                document.getElementById('startScanBtn').classList.remove('d-none');
-                document.getElementById('stopScanBtn').classList.add('d-none');
-                
-                // Clear the video element
-                const videoElement = document.getElementById('scanner');
-                videoElement.srcObject = null;
-                
-            } catch (error) {
-                console.error('Error stopping scanner:', error);
-                const resultDiv = document.getElementById('scanResult');
-                resultDiv.classList.remove('d-none');
-                resultDiv.innerHTML = `
-                    <div class="alert alert-danger d-flex align-items-center mb-0">
-                        <i class="bi bi-x-circle me-2"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1">Error</h6>
-                            <p class="mb-0">${error.message}</p>
-                        </div>
-                    </div>
-                `;
-            } finally {
-                document.getElementById('loadingOverlay').classList.add('d-none');
-            }
-        }
-
-        function onScanSuccess(decodedText, decodedResult) {
-            // Show loading overlay
-            document.getElementById('loadingOverlay').classList.remove('d-none');
-            
-            // Stop scanning temporarily
-            if (html5QrCode) {
-                html5QrCode.pause();
-            }
-
-            // Send the scanned token to the server
-            fetch('{{ route("scanner.scan.validate") }}', {
+    async function startScanner() {
+        try {
+            const response = await fetch('{{ route("scanner.scan.start") }}', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ token: decodedText })
-            })
-            .then(response => response.json())
-            .then(data => {
-                const resultDiv = document.getElementById('scanResult');
-                resultDiv.classList.remove('d-none');
-                
-                if (data.success) {
-                    resultDiv.innerHTML = `
-                        <div class="alert alert-success d-flex align-items-center mb-0">
-                            <i class="bi bi-check-circle me-2"></i>
-                            <div>
-                                <h6 class="alert-heading mb-1">Check-in Successful</h6>
-                                <p class="mb-0">Attendee: ${data.attendee.name}</p>
-                                <p class="mb-0">Email: ${data.attendee.email}</p>
-                                <p class="mb-0">Checked in at: ${new Date(data.attendee.checked_in_at).toLocaleString()}</p>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Play success sound
-                    const audio = new Audio('/sounds/success.mp3');
-                    audio.play().catch(() => {}); // Ignore if sound fails to play
-                } else {
-                    resultDiv.innerHTML = `
-                        <div class="alert alert-danger d-flex align-items-center mb-0">
-                            <i class="bi bi-x-circle me-2"></i>
-                            <div>
-                                <h6 class="alert-heading mb-1">Scan Failed</h6>
-                                <p class="mb-0">${data.message}</p>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Play error sound
-                    const audio = new Audio('/sounds/error.mp3');
-                    audio.play().catch(() => {}); // Ignore if sound fails to play
-                }
-
-                // Resume scanning after a short delay
-                setTimeout(() => {
-                    document.getElementById('loadingOverlay').classList.add('d-none');
-                    if (html5QrCode && isScanning) {
-                        html5QrCode.resume();
-                    }
-                }, 2000);
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                const resultDiv = document.getElementById('scanResult');
-                resultDiv.classList.remove('d-none');
-                resultDiv.innerHTML = `
-                    <div class="alert alert-danger d-flex align-items-center mb-0">
-                        <i class="bi bi-x-circle me-2"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1">Error</h6>
-                            <p class="mb-0">An error occurred while processing the scan. Please try again.</p>
-                        </div>
-                    </div>
-                `;
-                
-                // Resume scanning after error
-                document.getElementById('loadingOverlay').classList.add('d-none');
-                if (html5QrCode && isScanning) {
-                    html5QrCode.resume();
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
                 }
             });
-        }
 
-        function onScanFailure(error) {
-            // Handle scan failure, usually ignore
-            console.warn(`QR code scan error: ${error}`);
-        }
-
-        // Check scanner status when the page loads
-        document.addEventListener('DOMContentLoaded', async function() {
-            try {
-                const response = await fetch('{{ route("scanner.scan.status") }}');
-                const data = await response.json();
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update UI
+                document.getElementById('scannerStatus').className = 'badge bg-success';
+                document.getElementById('scannerStatus').textContent = 'Scanner Active';
+                document.getElementById('startScanner').classList.add('d-none');
+                document.getElementById('stopScanner').classList.remove('d-none');
                 
-                if (data.success && data.status === 'active') {
-                    // Scanner is active, start it
-                    await startScanner();
-                }
-            } catch (error) {
-                console.error('Error checking scanner status:', error);
-            }
-        });
+                // Initialize scanner
+                if (!html5QrcodeScanner) {
+                    html5QrcodeScanner = new Html5QrcodeScanner(
+                        "reader",
+                        {
+                            fps: 10,
+                            qrbox: { width: 300, height: 300 },
+                            aspectRatio: 1.0,
+                            videoConstraints: {
+                                facingMode: "environment",
+                                width: { min: 640, ideal: 1280, max: 1920 },
+                                height: { min: 480, ideal: 720, max: 1080 }
+                            }
+                        }
+                    );
 
-        // Clean up when the page is unloaded
-        window.addEventListener('beforeunload', async function() {
-            if (html5QrCode) {
-                try {
-                    await stopScanner();
-                } catch (error) {
-                    console.error('Error stopping scanner:', error);
+                    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
                 }
+                
+                isScanning = true;
+                showMessage('Scanner started successfully.', 'success');
+            } else {
+                showMessage(data.message, 'danger');
             }
-        });
+        } catch (error) {
+            console.error('Error starting scanner:', error);
+            showMessage('Failed to start scanner. Please try again.', 'danger');
+        }
+    }
+
+    async function stopScanner() {
+        try {
+            const response = await fetch('{{ route("scanner.scan.stop") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                // Update UI
+                document.getElementById('scannerStatus').className = 'badge bg-secondary';
+                document.getElementById('scannerStatus').textContent = 'Scanner Inactive';
+                document.getElementById('startScanner').classList.remove('d-none');
+                document.getElementById('stopScanner').classList.add('d-none');
+                
+                // Stop scanner
+                if (html5QrcodeScanner) {
+                    await html5QrcodeScanner.clear();
+                    html5QrcodeScanner = null;
+                }
+                
+                isScanning = false;
+                showMessage('Scanner stopped successfully.', 'info');
+            } else {
+                showMessage(data.message, 'danger');
+            }
+        } catch (error) {
+            console.error('Error stopping scanner:', error);
+            showMessage('Failed to stop scanner. Please try again.', 'danger');
+        }
+    }
+
+    function showMessage(message, type = 'info') {
+        const messageDiv = document.getElementById('scannerMessage');
+        messageDiv.className = `alert alert-${type} mb-3`;
+        messageDiv.textContent = message;
+        messageDiv.classList.remove('d-none');
+        
+        // Hide message after 5 seconds
+        setTimeout(() => {
+            messageDiv.classList.add('d-none');
+        }, 5000);
+    }
+
+    async function onScanSuccess(decodedText, decodedResult) {
+        if (!isScanning) return;
+
+        try {
+            const response = await fetch('{{ route("scanner.scan.validate") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ token: decodedText })
+            });
+
+            const data = await response.json();
+            
+            // Play sound based on result
+            const audio = new Audio(data.success ? 
+                '{{ asset("sounds/success.mp3") }}' : 
+                '{{ asset("sounds/error.mp3") }}'
+            );
+            audio.play();
+
+            showMessage(data.message, data.success ? 'success' : 'danger');
+
+            // If successful, refresh the page after a short delay to update recent scans
+            if (data.success) {
+                setTimeout(() => {
+                    window.location.reload();
+                }, 2000);
+            }
+        } catch (error) {
+            console.error('Error processing scan:', error);
+            showMessage('An error occurred while processing the scan. Please try again.', 'danger');
+        }
+    }
+
+    function onScanFailure(error) {
+        // Handle scan failure silently
+        console.warn(`QR code scan failed: ${error}`);
+    }
+
+    // Check scanner status on page load
+    document.addEventListener('DOMContentLoaded', async function() {
+        try {
+            const response = await fetch('{{ route("scanner.scan.status") }}');
+            const data = await response.json();
+            
+            if (data.success && data.status === 'active') {
+                startScanner();
+            }
+        } catch (error) {
+            console.error('Error checking scanner status:', error);
+        }
+    });
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', async function() {
+        if (html5QrcodeScanner) {
+            await html5QrcodeScanner.clear();
+        }
+        if (isScanning) {
+            await stopScanner();
+        }
+    });
     </script>
     @endpush
-
-    <!-- Add scanner control buttons -->
-    <div class="card-footer bg-transparent border-top-0">
-        <div class="d-flex justify-content-center gap-2">
-            <button id="startScanBtn" onclick="startScanner()" class="btn btn-primary">
-                <i class="bi bi-camera-video me-2"></i>Start Scanner
-            </button>
-            <button id="stopScanBtn" onclick="stopScanner()" class="btn btn-danger d-none">
-                <i class="bi bi-camera-video-off me-2"></i>Stop Scanner
-            </button>
-        </div>
-    </div>
 </x-app-layout> 
