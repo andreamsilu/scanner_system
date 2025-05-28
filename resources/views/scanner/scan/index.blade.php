@@ -29,7 +29,9 @@
             <div class="card">
                 <div class="card-body">
                     <div class="position-relative">
-                        <video id="scanner" class="w-100 rounded"></video>
+                        <div id="scanner" class="w-100" style="min-height: 400px; background: #000;">
+                            <!-- The scanner will be rendered here -->
+                        </div>
                         <div id="loadingOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-dark bg-opacity-50 d-none justify-content-center align-items-center">
                             <div class="spinner-border text-light" role="status">
                                 <span class="visually-hidden">Loading...</span>
@@ -117,8 +119,8 @@
                     throw new Error(data.message);
                 }
 
-                // Initialize the camera
-                const videoElement = document.getElementById('scanner');
+                // Initialize the camera with updated configuration
+                const scannerElement = document.getElementById('scanner');
                 html5QrCode = new Html5Qrcode("scanner");
                 
                 // Get available cameras
@@ -130,8 +132,17 @@
                         cameraId,
                         {
                             fps: 10,
-                            qrbox: { width: 250, height: 250 },
-                            aspectRatio: 1.0
+                            qrbox: { width: 300, height: 300 }, // Increased QR box size
+                            aspectRatio: 1.0,
+                            formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+                            showTorchButtonIfSupported: true,
+                            showZoomSliderIfSupported: true,
+                            defaultZoomValueIfSupported: 2,
+                            videoConstraints: {
+                                width: { min: 640, ideal: 1280, max: 1920 },
+                                height: { min: 480, ideal: 720, max: 1080 },
+                                facingMode: { ideal: "environment" }
+                            }
                         },
                         onScanSuccess,
                         onScanFailure
@@ -141,6 +152,30 @@
                     // Update UI
                     document.getElementById('startScanBtn').classList.add('d-none');
                     document.getElementById('stopScanBtn').classList.remove('d-none');
+
+                    // Add custom styles for the scanner
+                    const style = document.createElement('style');
+                    style.textContent = `
+                        #scanner video {
+                            width: 100% !important;
+                            height: auto !important;
+                            object-fit: cover;
+                        }
+                        #scanner__scan_region {
+                            background: transparent !important;
+                        }
+                        #scanner__scan_region video {
+                            border-radius: 8px;
+                        }
+                        #scanner__dashboard {
+                            background: transparent !important;
+                            border: none !important;
+                        }
+                        #scanner__dashboard_section_csr {
+                            display: none !important;
+                        }
+                    `;
+                    document.head.appendChild(style);
                 } else {
                     throw new Error('No cameras found');
                 }
