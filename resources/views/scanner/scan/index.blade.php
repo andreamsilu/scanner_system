@@ -94,15 +94,15 @@
     @push('scripts')
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script>
-        let html5QrcodeScanner = null;
+        let html5QrCode = null;
 
         function onScanSuccess(decodedText, decodedResult) {
             // Show loading overlay
             document.getElementById('loadingOverlay').classList.remove('d-none');
             
             // Stop scanning temporarily
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.pause();
+            if (html5QrCode) {
+                html5QrCode.pause();
             }
 
             // Send the scanned token to the server
@@ -117,25 +117,17 @@
             .then(response => response.json())
             .then(data => {
                 const resultDiv = document.getElementById('scanResult');
-                resultDiv.classList.remove('hidden');
+                resultDiv.classList.remove('d-none');
                 
                 if (data.success) {
                     resultDiv.innerHTML = `
-                        <div class="rounded-md bg-green-50 p-4">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-green-800">Check-in Successful</h3>
-                                    <div class="mt-2 text-sm text-green-700">
-                                        <p>Attendee: ${data.attendee.name}</p>
-                                        <p>Email: ${data.attendee.email}</p>
-                                        <p>Checked in at: ${new Date(data.attendee.checked_in_at).toLocaleString()}</p>
-                                    </div>
-                                </div>
+                        <div class="alert alert-success d-flex align-items-center mb-0">
+                            <i class="bi bi-check-circle me-2"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Check-in Successful</h6>
+                                <p class="mb-0">Attendee: ${data.attendee.name}</p>
+                                <p class="mb-0">Email: ${data.attendee.email}</p>
+                                <p class="mb-0">Checked in at: ${new Date(data.attendee.checked_in_at).toLocaleString()}</p>
                             </div>
                         </div>
                     `;
@@ -145,19 +137,11 @@
                     audio.play().catch(() => {}); // Ignore if sound fails to play
                 } else {
                     resultDiv.innerHTML = `
-                        <div class="rounded-md bg-red-50 p-4">
-                            <div class="flex">
-                                <div class="flex-shrink-0">
-                                    <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                                    </svg>
-                                </div>
-                                <div class="ml-3">
-                                    <h3 class="text-sm font-medium text-red-800">Scan Failed</h3>
-                                    <div class="mt-2 text-sm text-red-700">
-                                        <p>${data.message}</p>
-                                    </div>
-                                </div>
+                        <div class="alert alert-danger d-flex align-items-center mb-0">
+                            <i class="bi bi-x-circle me-2"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Scan Failed</h6>
+                                <p class="mb-0">${data.message}</p>
                             </div>
                         </div>
                     `;
@@ -170,37 +154,29 @@
                 // Resume scanning after a short delay
                 setTimeout(() => {
                     document.getElementById('loadingOverlay').classList.add('d-none');
-                    if (html5QrcodeScanner) {
-                        html5QrcodeScanner.resume();
+                    if (html5QrCode) {
+                        html5QrCode.resume();
                     }
                 }, 2000);
             })
             .catch(error => {
                 console.error('Error:', error);
                 const resultDiv = document.getElementById('scanResult');
-                resultDiv.classList.remove('hidden');
+                resultDiv.classList.remove('d-none');
                 resultDiv.innerHTML = `
-                    <div class="rounded-md bg-red-50 p-4">
-                        <div class="flex">
-                            <div class="flex-shrink-0">
-                                <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
-                                </svg>
-                            </div>
-                            <div class="ml-3">
-                                <h3 class="text-sm font-medium text-red-800">Error</h3>
-                                <div class="mt-2 text-sm text-red-700">
-                                    <p>An error occurred while processing the scan. Please try again.</p>
-                                </div>
-                            </div>
+                    <div class="alert alert-danger d-flex align-items-center mb-0">
+                        <i class="bi bi-x-circle me-2"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">Error</h6>
+                            <p class="mb-0">An error occurred while processing the scan. Please try again.</p>
                         </div>
                     </div>
                 `;
                 
                 // Resume scanning after error
                 document.getElementById('loadingOverlay').classList.add('d-none');
-                if (html5QrcodeScanner) {
-                    html5QrcodeScanner.resume();
+                if (html5QrCode) {
+                    html5QrCode.resume();
                 }
             });
         }
@@ -211,22 +187,53 @@
         }
 
         // Initialize the scanner when the page loads
-        document.addEventListener('DOMContentLoaded', function() {
-            html5QrcodeScanner = new Html5QrcodeScanner(
-                "scanner",
-                { 
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    aspectRatio: 1.0
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const videoElement = document.getElementById('scanner');
+                html5QrCode = new Html5Qrcode("scanner");
+                
+                // Get available cameras
+                const devices = await Html5Qrcode.getCameras();
+                if (devices && devices.length) {
+                    // Start with the first camera (usually the back camera on mobile)
+                    const cameraId = devices[0].id;
+                    await html5QrCode.start(
+                        cameraId,
+                        {
+                            fps: 10,
+                            qrbox: { width: 250, height: 250 },
+                            aspectRatio: 1.0
+                        },
+                        onScanSuccess,
+                        onScanFailure
+                    );
+                } else {
+                    throw new Error('No cameras found');
                 }
-            );
-            html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+            } catch (error) {
+                console.error('Error starting scanner:', error);
+                const resultDiv = document.getElementById('scanResult');
+                resultDiv.classList.remove('d-none');
+                resultDiv.innerHTML = `
+                    <div class="alert alert-danger d-flex align-items-center mb-0">
+                        <i class="bi bi-x-circle me-2"></i>
+                        <div>
+                            <h6 class="alert-heading mb-1">Camera Error</h6>
+                            <p class="mb-0">Unable to access the camera. Please ensure you have granted camera permissions and try again.</p>
+                        </div>
+                    </div>
+                `;
+            }
         });
 
         // Clean up when the page is unloaded
-        window.addEventListener('beforeunload', function() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.clear();
+        window.addEventListener('beforeunload', async function() {
+            if (html5QrCode) {
+                try {
+                    await html5QrCode.stop();
+                } catch (error) {
+                    console.error('Error stopping scanner:', error);
+                }
             }
         });
     </script>
