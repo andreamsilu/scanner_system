@@ -1,37 +1,26 @@
-@extends('layouts.app')
-
-@section('content')
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="{{ route('scanner.dashboard') }}" class="text-decoration-none">
-                    <i class="bi bi-house-door me-2"></i>Dashboard
-                </a>
-            </li>
-            <li class="breadcrumb-item active">Manual Token Validation</li>
-        </ol>
-    </nav>
-
-    <!-- Header Content -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="h4 mb-1">Manual Token Validation</h2>
-            <p class="text-muted mb-0">Enter attendee tokens manually to validate their tickets</p>
-        </div>
+<x-app-layout>
+    <x-page-header 
+        title="Manual Token Validation"
+        :breadcrumbs="[
+            'Dashboard' => route('scanner.dashboard'),
+            'Manual Token Validation' => null
+        ]"
+    >
         @if(session('selected_event_id'))
-            <div class="d-flex align-items-center gap-3">
-                <span class="text-muted">
-                    Selected Event: {{ $event->name }}
-                </span>
-                <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-link text-danger p-0">Deselect Event</button>
-                </form>
-            </div>
+            <x-slot name="actions">
+                <div class="d-flex align-items-center gap-3">
+                    <span class="text-muted">
+                        Selected Event: {{ $event->name }}
+                    </span>
+                    <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn btn-link text-danger p-0">Deselect Event</button>
+                    </form>
+                </div>
+            </x-slot>
         @endif
-    </div>
+    </x-page-header>
 
     <!-- Page Content -->
     <div class="row g-4">
@@ -105,85 +94,85 @@
             </div>
         </div>
     @endif
-@endsection
 
-@push('scripts')
-<script>
-    document.getElementById('validateForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const token = document.getElementById('token').value;
-        const resultDiv = document.getElementById('validationResult');
-        
-        // Show loading state
-        resultDiv.classList.remove('d-none');
-        resultDiv.innerHTML = `
-            <div class="alert alert-info d-flex align-items-center mb-0">
-                <div class="spinner-border spinner-border-sm me-2" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <div>Validating...</div>
-            </div>
-        `;
-
-        // Send validation request
-        fetch('{{ route("scanner.validate.token") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ token: token })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                resultDiv.innerHTML = `
-                    <div class="alert alert-success d-flex align-items-center mb-0">
-                        <i class="bi bi-check-circle me-2"></i>
-                        <div>
-                            <h6 class="alert-heading mb-1">Validation Successful</h6>
-                            <p class="mb-0">Attendee: ${data.attendee.name}</p>
-                            <p class="mb-0">Email: ${data.attendee.email}</p>
-                            <p class="mb-0">Validated at: ${new Date(data.attendee.checked_in_at).toLocaleString()}</p>
-                        </div>
+    @push('scripts')
+    <script>
+        document.getElementById('validateForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const token = document.getElementById('token').value;
+            const resultDiv = document.getElementById('validationResult');
+            
+            // Show loading state
+            resultDiv.classList.remove('d-none');
+            resultDiv.innerHTML = `
+                <div class="alert alert-info d-flex align-items-center mb-0">
+                    <div class="spinner-border spinner-border-sm me-2" role="status">
+                        <span class="visually-hidden">Loading...</span>
                     </div>
-                `;
-                
-                // Play success sound
-                const audio = new Audio('/sounds/success.mp3');
-                audio.play().catch(() => {}); // Ignore if sound fails to play
-            } else {
+                    <div>Validating...</div>
+                </div>
+            `;
+
+            // Send validation request
+            fetch('{{ route("scanner.validate.token") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({ token: token })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success d-flex align-items-center mb-0">
+                            <i class="bi bi-check-circle me-2"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Validation Successful</h6>
+                                <p class="mb-0">Attendee: ${data.attendee.name}</p>
+                                <p class="mb-0">Email: ${data.attendee.email}</p>
+                                <p class="mb-0">Validated at: ${new Date(data.attendee.checked_in_at).toLocaleString()}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Play success sound
+                    const audio = new Audio('/sounds/success.mp3');
+                    audio.play().catch(() => {}); // Ignore if sound fails to play
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-danger d-flex align-items-center mb-0">
+                            <i class="bi bi-x-circle me-2"></i>
+                            <div>
+                                <h6 class="alert-heading mb-1">Validation Failed</h6>
+                                <p class="mb-0">${data.message}</p>
+                            </div>
+                        </div>
+                    `;
+                    
+                    // Play error sound
+                    const audio = new Audio('/sounds/error.mp3');
+                    audio.play().catch(() => {}); // Ignore if sound fails to play
+                }
+
+                // Clear the input
+                document.getElementById('token').value = '';
+            })
+            .catch(error => {
+                console.error('Error:', error);
                 resultDiv.innerHTML = `
                     <div class="alert alert-danger d-flex align-items-center mb-0">
                         <i class="bi bi-x-circle me-2"></i>
                         <div>
-                            <h6 class="alert-heading mb-1">Validation Failed</h6>
-                            <p class="mb-0">${data.message}</p>
+                            <h6 class="alert-heading mb-1">Error</h6>
+                            <p class="mb-0">An error occurred while validating the token. Please try again.</p>
                         </div>
                     </div>
                 `;
-                
-                // Play error sound
-                const audio = new Audio('/sounds/error.mp3');
-                audio.play().catch(() => {}); // Ignore if sound fails to play
-            }
-
-            // Clear the input
-            document.getElementById('token').value = '';
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            resultDiv.innerHTML = `
-                <div class="alert alert-danger d-flex align-items-center mb-0">
-                    <i class="bi bi-x-circle me-2"></i>
-                    <div>
-                        <h6 class="alert-heading mb-1">Error</h6>
-                        <p class="mb-0">An error occurred while validating the token. Please try again.</p>
-                    </div>
-                </div>
-            `;
+            });
         });
-    });
-</script>
-@endpush 
+    </script>
+    @endpush
+</x-app-layout> 
