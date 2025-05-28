@@ -1,66 +1,22 @@
-@extends('layouts.app')
-
-@section('content')
-    <!-- Breadcrumbs -->
-    <nav aria-label="breadcrumb" class="mb-4">
-        <ol class="breadcrumb">
-            <li class="breadcrumb-item">
-                <a href="{{ route('scanner.dashboard') }}" class="text-decoration-none">
-                    <i class="bi bi-house-door me-2"></i>Dashboard
+<x-app-layout>
+    <x-page-header 
+        title="{{ auth()->user()->hasRole('admin') ? 'Available Events' : 'Your Assigned Events' }}"
+        :breadcrumbs="[
+            'Dashboard' => route('scanner.dashboard'),
+            'Events' => null
+        ]"
+    >
+        <x-slot name="actions">
+            <div class="d-flex gap-2">
+                <a href="{{ route('scanner.scan.index') }}" class="btn btn-primary">
+                    <i class="bi bi-upc-scan me-2"></i>Start Scanning
                 </a>
-            </li>
-            <li class="breadcrumb-item active">Available Events</li>
-        </ol>
-    </nav>
-
-    <!-- Header Content -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2 class="h4 mb-1">
-                @if(auth()->user()->hasRole('admin'))
-                    Available Events
-                @else
-                    Your Assigned Events
-                @endif
-            </h2>
-            <p class="text-muted mb-0">
-                @if(auth()->user()->hasRole('admin'))
-                    Select any event to start scanning attendees
-                @else
-                    Select an event to start scanning attendees
-                @endif
-            </p>
-        </div>
-        <a href="{{ route('scanner.dashboard') }}" class="btn btn-outline-secondary">
-            <i class="bi bi-arrow-left me-2"></i>Back to Dashboard
-        </a>
-    </div>
-
-    <!-- Page Header -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h5 class="card-title mb-1">
-                        @if(auth()->user()->hasRole('admin'))
-                            All Available Events
-                        @else
-                            Your Assigned Events
-                        @endif
-                    </h5>
-                    <p class="text-muted mb-0">Select an event to start scanning or managing attendees</p>
-                </div>
-                <div class="d-flex gap-2">
-                    <a href="{{ route('scanner.scan.index') }}" class="btn btn-primary">
-                        <i class="bi bi-upc-scan me-2"></i>Start Scanning
-                    </a>
-                    <a href="{{ route('scanner.validate.index') }}" class="btn btn-outline-secondary">
-                        <i class="bi bi-key-fill me-2"></i>Manual Validation
-                    </a>
-                </div>
+                <a href="{{ route('scanner.validate.index') }}" class="btn btn-outline-secondary">
+                    <i class="bi bi-key-fill me-2"></i>Manual Validation
+                </a>
             </div>
-        </div>
-    </div>
+        </x-slot>
+    </x-page-header>
 
     <!-- Events Grid -->
     <div class="row g-4">
@@ -169,4 +125,4 @@
             {{ $events->links() }}
         </div>
     @endif
-@endsection 
+</x-app-layout> 
