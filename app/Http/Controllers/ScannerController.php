@@ -368,14 +368,6 @@ class ScannerController extends Controller
 
         // Check if ticket is already used
         if ($attendee->ticket && $attendee->ticket->status === 'used') {
-            // Log the duplicate validation attempt
-            ScanLog::create([
-                'ticket_id' => $attendee->ticket->id,
-                'scanner_id' => $user->id,
-                'status' => 'duplicate',
-                'notes' => 'Manual token validation - Duplicate scan'
-            ]);
-
             return response()->json([
                 'success' => false,
                 'message' => 'This ticket has already been used.',
@@ -387,9 +379,16 @@ class ScannerController extends Controller
         // Update ticket status if exists
         if ($attendee->ticket) {
             DB::transaction(function() use ($attendee, $user) {
+                $now = now();
                 $attendee->ticket->update([
                     'status' => 'used',
-                    'used_at' => now()
+                    'used_at' => $now
+                ]);
+
+                // Update attendee registration status
+                $attendee->update([
+                    'registration_status' => 'checked_in',
+                    'checked_in_at' => $now
                 ]);
 
                 // Log the successful validation
@@ -398,6 +397,14 @@ class ScannerController extends Controller
                     'scanner_id' => $user->id,
                     'status' => 'success',
                     'notes' => 'Manual token validation'
+                ]);
+
+                // Log the successful check-in
+                Log::info('Attendee checked in via manual validation', [
+                    'attendee_id' => $attendee->id,
+                    'ticket_id' => $attendee->ticket->id,
+                    'event_id' => $attendee->event_id,
+                    'scanner_id' => $user->id
                 ]);
             });
 
@@ -722,14 +729,6 @@ class ScannerController extends Controller
 
                 // Check if ticket is already used
                 if ($attendee->ticket && $attendee->ticket->status === 'used') {
-                    // Log the duplicate validation attempt
-                    ScanLog::create([
-                        'ticket_id' => $attendee->ticket->id,
-                        'scanner_id' => $user->id,
-                        'status' => 'duplicate',
-                        'notes' => 'QR code scan - Duplicate scan'
-                    ]);
-
                     return response()->json([
                         'success' => false,
                         'message' => 'This ticket has already been used.',

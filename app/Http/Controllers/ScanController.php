@@ -96,14 +96,6 @@ class ScanController extends Controller
 
             // Check if already checked in
             if ($attendee->ticket->status === 'used') {
-                // Log the duplicate scan
-                ScanLog::create([
-                    'ticket_id' => $attendee->ticket->id,
-                    'scanner_id' => auth()->id(),
-                    'status' => 'duplicate',
-                    'notes' => 'Duplicate scan attempt'
-                ]);
-
                 return response()->json([
                     'status' => 'error',
                     'message' => 'Attendee already checked in.',
@@ -241,13 +233,6 @@ class ScanController extends Controller
 
             // Check if ticket is already used
             if ($attendee->ticket->status === 'used') {
-                // Log the duplicate scan
-                ScanLog::create([
-                    'ticket_id' => $attendee->ticket->id,
-                    'scanner_id' => null, // Public check-in
-                    'status' => 'duplicate',
-                    'notes' => 'Public check-in attempt'
-                ]);
                 $data = [
                     'success' => false,
                     'message' => 'Ticket already used',
@@ -325,14 +310,6 @@ class ScanController extends Controller
 
         // Check if the ticket is already used
         if ($attendee->ticket && $attendee->ticket->status === 'used') {
-            // Log the duplicate scan attempt
-            ScanLog::create([
-                'scanner_id' => $scanner->id,
-                'ticket_id' => $attendee->ticket->id,
-                'status' => 'duplicate',
-                'notes' => 'Manual token validation - Duplicate scan'
-            ]);
-
             if ($request->expectsJson()) {
                 return response()->json([
                     'status' => 'warning',
@@ -346,10 +323,17 @@ class ScanController extends Controller
 
         // Update ticket status
         if ($attendee->ticket) {
+            $now = now();
             $attendee->ticket->update([
                 'status' => 'used',
-                'checked_in_at' => now(),
+                'checked_in_at' => $now,
                 'checked_in_by' => $scanner->id
+            ]);
+
+            // Update attendee registration status
+            $attendee->update([
+                'registration_status' => 'checked_in',
+                'checked_in_at' => $now
             ]);
 
             // Log the successful scan
@@ -358,6 +342,14 @@ class ScanController extends Controller
                 'ticket_id' => $attendee->ticket->id,
                 'status' => 'success',
                 'notes' => 'Manual token validation'
+            ]);
+
+            // Log the successful check-in
+            Log::info('Attendee checked in via manual validation', [
+                'attendee_id' => $attendee->id,
+                'ticket_id' => $attendee->ticket->id,
+                'event_id' => $attendee->event_id,
+                'scanner_id' => $scanner->id
             ]);
 
             if ($request->expectsJson()) {
