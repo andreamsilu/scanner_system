@@ -71,6 +71,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Phone</th>
+                                <th>Token</th>
                                 <th>Registration Status</th>
                                 <th>Ticket Status</th>
                                 <th>Registration Date</th>
@@ -82,6 +83,9 @@
                                 <tr>
                                     <td>{{ $attendee->name }}</td>
                                     <td>{{ $attendee->phone ?? 'N/A' }}</td>
+                                    <td>
+                                        <code class="bg-light px-2 py-1 rounded">{{ $attendee->token }}</code>
+                                    </td>
                                     <td>
                                         <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'primary') }}">
                                             {{ $attendee->registration_status === 'unchecked_in' ? 'Unchecked In' : ucfirst($attendee->registration_status) }}
