@@ -72,15 +72,18 @@ class AttendeeController extends Controller
         try {
             DB::beginTransaction();
 
-            // Check if attendee already exists for this event (only if email is provided)
-            if (!empty($validated['email'])) {
-                $existingAttendee = $event->attendees()
-                    ->where('email', $validated['email'])
-                    ->first();
+            // Set default email if none provided
+            if (empty($validated['email'])) {
+                $validated['email'] = 'admin@gmail.com';
+            }
 
-                if ($existingAttendee) {
-                    throw new \Exception('An attendee with this email already exists for this event.');
-                }
+            // Check if attendee already exists for this event
+            $existingAttendee = $event->attendees()
+                ->where('email', $validated['email'])
+                ->first();
+
+            if ($existingAttendee) {
+                throw new \Exception('An attendee with this email already exists for this event.');
             }
 
             // Generate unique token (7 digits)
@@ -213,8 +216,13 @@ class AttendeeController extends Controller
         try {
             DB::beginTransaction();
 
-            // Check if email is being changed and if it's unique for this event (only if email is provided)
-            if (!empty($validated['email']) && $validated['email'] !== $attendee->email) {
+            // Set default email if none provided
+            if (empty($validated['email'])) {
+                $validated['email'] = 'admin@gmail.com';
+            }
+
+            // Check if email is being changed and if it's unique for this event
+            if ($validated['email'] !== $attendee->email) {
                 $exists = $event->attendees()
                     ->where('email', $validated['email'])
                     ->where('id', '!=', $attendee->id)
