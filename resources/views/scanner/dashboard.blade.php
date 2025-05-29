@@ -99,10 +99,12 @@
                                                 {{ $event->attendees->count() }}
                                             </td>
                                             <td>
-                                                <a href="{{ route('scanner.select-event', $event) }}" 
-                                                   class="btn btn-primary btn-sm">
-                                                    <i class="bi bi-upc-scan me-1"></i> Scan
-                                                </a>
+                                                <form action="{{ route('scanner.events.select', $event) }}" method="POST" class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-primary btn-sm">
+                                                        <i class="bi bi-upc-scan me-1"></i> Scan
+                                                    </button>
+                                                </form>
                                             </td>
                                         </tr>
                                     @endforeach

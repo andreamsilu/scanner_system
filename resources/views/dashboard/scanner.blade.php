@@ -33,14 +33,14 @@
                            class="btn btn-primary btn-sm">
                             <i class="bi bi-upc-scan me-1"></i>Continue Scanning
                         </a>
-                        <form action="{{ route('scanner.events.select', ['event' => $selectedEvent->id]) }}" 
+                        <form action="{{ route('scanner.events.deselect', ['event' => $selectedEvent->id]) }}" 
                               method="POST" 
                               class="d-inline"
-                              onsubmit="return confirm('Are you sure you want to change the selected event?');">
+                              onsubmit="return confirm('Are you sure you want to deselect this event?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit" class="btn btn-outline-secondary btn-sm ms-2">
-                                <i class="bi bi-x-circle me-1"></i>Change Event
+                                <i class="bi bi-x-circle me-1"></i>Deselect Event
                             </button>
                         </form>
                     </div>
