@@ -51,7 +51,7 @@
                                                id="email" 
                                                name="email" 
                                                value="{{ old('email') }}" 
-                                               required>
+                                        >
                                         @error('email')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
