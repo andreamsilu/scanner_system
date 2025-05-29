@@ -119,81 +119,43 @@ class BulkUploadController extends Controller
             ]);
 
             $extension = pathinfo($path, PATHINFO_EXTENSION);
-            $records = [];
-
-            if (in_array($extension, ['xlsx', 'xls'])) {
-                // Process Excel file
-                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(Storage::path($path));
-                $worksheet = $spreadsheet->getActiveSheet();
-                $headers = [];
-                $firstRow = true;
-
-                foreach ($worksheet->getRowIterator() as $row) {
-                    $cellIterator = $row->getCellIterator();
-                    $cellIterator->setIterateOnlyExistingCells(false);
-                    $rowData = [];
-
-                    foreach ($cellIterator as $cell) {
-                        $value = $cell->getValue();
-                        if ($firstRow) {
-                            $headers[] = strtolower(trim($value));
-                        } else {
-                            $rowData[] = $value;
-                        }
-                    }
-
-                    if ($firstRow) {
-                        $firstRow = false;
-                        continue;
-                    }
-
-                    if (!empty(array_filter($rowData))) {
-                        $records[] = array_combine($headers, $rowData);
-                    }
-                }
-            } else {
-                // Process CSV file
-                $csv = Reader::createFromPath(Storage::path($path), 'r');
-                $csv->setHeaderOffset(0);
-                $records = iterator_to_array($csv->getRecords());
-            }
-
+            $records = $this->getRecordsFromFile($path, $extension);
             $totalRecords = count($records);
-            $bulkUpload->update(['total_records' => $totalRecords]);
-
-            Log::info('Total records found', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'total_records' => $totalRecords
-            ]);
-
             $processed = 0;
             $failed = 0;
             $errors = [];
 
             foreach ($records as $index => $record) {
                 try {
-                    DB::beginTransaction();
-
                     // Validate required fields
                     if (empty($record['name']) || empty($record['phone'])) {
                         throw new \Exception('Name and phone are required fields');
                     }
 
-                    // Generate unique token
-                    $token = Str::random(7);
-                    while (Attendee::where('token', $token)->exists()) {
-                        $token = Str::random(7);
+                    // Check for existing attendee with same email for this event
+                    if (!empty($record['email'])) {
+                        $existingAttendee = Attendee::where('event_id', $event->id)
+                            ->where('email', $record['email'])
+                            ->first();
+
+                        if ($existingAttendee) {
+                            throw new \Exception("Duplicate email '{$record['email']}' for this event. Attendee already exists with name: {$existingAttendee->name}");
+                        }
                     }
+
+                    DB::beginTransaction();
+
+                    // Generate unique token
+                    $token = Attendee::generateUniqueToken();
 
                     // Create attendee
                     $attendee = Attendee::create([
                         'event_id' => $event->id,
-                        'name' => $record['name'] ?? '',
-                        'phone' => $record['phone'] ?? '',
+                        'name' => $record['name'],
+                        'phone' => $record['phone'],
                         'email' => $record['email'] ?? null,
                         'position' => $record['position'] ?? null,
                         'token' => $token,
-                        'bulk_upload_id' => $bulkUpload->id,
                         'registration_status' => 'registered',
                     ]);
 
@@ -211,45 +173,28 @@ class BulkUploadController extends Controller
                 } catch (\Exception $e) {
                     DB::rollBack();
                     $failed++;
-                    $errorMessage = "Row " . ($index + 2) . ": " . $e->getMessage();
-                    $errors[] = $errorMessage;
-                    
-                    Log::error('Record processing failed', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'record_index' => $index + 2,
+                    $errors[] = [
+                        'row' => $index + 2, // +2 because of header row and 0-based index
                         'error' => $e->getMessage(),
-                        'record_data' => $record
-                    ]);
+                        'data' => $record
+                    ];
                 }
 
-                // Update progress in database
+                // Update progress
+                $progress = ($processed + $failed) / $totalRecords * 100;
                 $bulkUpload->update([
+                    'progress' => $progress,
                     'processed_records' => $processed,
                     'failed_records' => $failed,
-                    'error_message' => !empty($errors) ? implode("\n", $errors) : null,
+                    'error_log' => json_encode($errors),
+                    'status' => ($processed + $failed) === $totalRecords ? 'completed' : 'processing'
                 ]);
-
-                // Log progress every 10 records
-                if ($processed % 10 === 0 || $failed % 10 === 0) {
-                    Log::info('Upload progress update', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'processed' => $processed,
-                        'failed' => $failed,
-                        'total' => $totalRecords
-                    ]);
-                }
             }
 
-            // Update final status
-            $finalStatus = $failed === 0 ? 'completed' : 'failed';
-            $bulkUpload->update(['status' => $finalStatus]);
-
-            Log::info('Bulk upload processing completed', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'status' => $finalStatus,
-                'total_processed' => $processed,
-                'total_failed' => $failed,
-                'total_records' => $totalRecords
+            // Final status update
+            $bulkUpload->update([
+                'status' => $failed === $totalRecords ? 'failed' : 'completed',
+                'completed_at' => now()
             ]);
 
             // Clean up the uploaded file
@@ -314,5 +259,48 @@ class BulkUploadController extends Controller
             return "Processing records... ({$bulkUpload->processed_records} processed, {$bulkUpload->failed_records} failed)";
         }
         return 'Starting upload process...';
+    }
+
+    private function getRecordsFromFile($path, $extension)
+    {
+        if (in_array($extension, ['xlsx', 'xls'])) {
+            // Process Excel file
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(Storage::path($path));
+            $worksheet = $spreadsheet->getActiveSheet();
+            $headers = [];
+            $firstRow = true;
+            $records = [];
+
+            foreach ($worksheet->getRowIterator() as $row) {
+                $cellIterator = $row->getCellIterator();
+                $cellIterator->setIterateOnlyExistingCells(false);
+                $rowData = [];
+
+                foreach ($cellIterator as $cell) {
+                    $value = $cell->getValue();
+                    if ($firstRow) {
+                        $headers[] = strtolower(trim($value));
+                    } else {
+                        $rowData[] = $value;
+                    }
+                }
+
+                if ($firstRow) {
+                    $firstRow = false;
+                    continue;
+                }
+
+                if (!empty(array_filter($rowData))) {
+                    $records[] = array_combine($headers, $rowData);
+                }
+            }
+        } else {
+            // Process CSV file
+            $csv = Reader::createFromPath(Storage::path($path), 'r');
+            $csv->setHeaderOffset(0);
+            $records = iterator_to_array($csv->getRecords());
+        }
+
+        return $records;
     }
 } 
