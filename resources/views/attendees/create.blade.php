@@ -45,16 +45,18 @@
 
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="email" class="form-label">Email</label>
+                                        <label for="email" class="form-label">Email <span class="text-muted">(Optional)</span></label>
                                         <input type="email" 
                                                class="form-control @error('email') is-invalid @enderror" 
                                                id="email" 
                                                name="email" 
-                                               value="{{ old('email') }}" 
+                                               value="{{ old('email') }}"
+                                               placeholder="Enter email (optional)"
                                         >
                                         @error('email')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
+                                        <small class="form-text text-muted">Email is optional but must be unique if provided.</small>
                                     </div>
                                 </div>
 

@@ -51,16 +51,18 @@
 
                                 <div class="col-md-6">
                                     <div class="form-group">
-                                        <label for="email" class="form-label">Email</label>
+                                        <label for="email" class="form-label">Email <span class="text-muted">(Optional)</span></label>
                                         <input type="email" 
                                                class="form-control @error('email') is-invalid @enderror" 
                                                id="email" 
                                                name="email" 
-                                               value="{{ old('email', $attendee->email) }}" 
-                                               required>
+                                               value="{{ old('email', $attendee->email) }}"
+                                               placeholder="Enter email (optional)"
+                                        >
                                         @error('email')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
+                                        <small class="form-text text-muted">Email is optional but must be unique if provided.</small>
                                     </div>
                                 </div>
 
@@ -188,13 +190,16 @@
             $('form').on('submit', function(e) {
                 let isValid = true;
                 const email = $('#email').val();
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-                if (!emailRegex.test(email)) {
-                    $('#email').addClass('is-invalid');
-                    isValid = false;
-                } else {
-                    $('#email').removeClass('is-invalid');
+                
+                // Only validate email if it's provided
+                if (email) {
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(email)) {
+                        $('#email').addClass('is-invalid');
+                        isValid = false;
+                    } else {
+                        $('#email').removeClass('is-invalid');
+                    }
                 }
 
                 if (!isValid) {
