@@ -202,13 +202,41 @@
             display: table;
             clear: both;
         }
+        
+        /* Processing overlay styles */
+        #uploadProcessingOverlay {
+            backdrop-filter: blur(5px);
+            transition: opacity 0.3s ease-in-out;
+        }
+        
+        #uploadProcessingOverlay .progress {
+            height: 0.5rem;
+        }
+        
+        #uploadProcessingOverlay .progress-bar {
+            transition: width 0.5s ease-in-out;
+        }
     </style>
     @endpush
 
     <!-- Bulk Upload Modal -->
     <div class="modal fade" id="bulkUploadModal" tabindex="-1" aria-labelledby="bulkUploadModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg">
-            <div class="modal-content">
+            <div class="modal-content position-relative">
+                <!-- Processing Overlay -->
+                <div id="uploadProcessingOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-90 d-none" style="z-index: 1050;">
+                    <div class="d-flex flex-column align-items-center justify-content-center h-100">
+                        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <h5 class="text-primary mb-2">Processing Upload</h5>
+                        <p class="text-muted mb-0" id="uploadStatus">Please wait while we process your file...</p>
+                        <div class="progress mt-3" style="width: 80%;">
+                            <div id="uploadProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="modal-header">
                     <h5 class="modal-title" id="bulkUploadModalLabel">
                         <i class="bi bi-upload me-2"></i>Bulk Upload Attendees
@@ -383,18 +411,36 @@
             table.buttons().container().addClass('float-start');
         });
 
-        // Handle form submission
+        // Handle form submission with enhanced loading state
         document.getElementById('bulkUploadForm').addEventListener('submit', function(e) {
             e.preventDefault();
             
             const form = this;
             const formData = new FormData(form);
             const submitButton = form.querySelector('button[type="submit"]');
+            const overlay = document.getElementById('uploadProcessingOverlay');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const uploadProgress = document.getElementById('uploadProgress');
+            
+            // Show processing overlay
+            overlay.classList.remove('d-none');
             
             // Disable submit button and show loading state
             submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processing...';
             
+            // Simulate progress updates (you can remove this in production)
+            let progress = 0;
+            const progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += 10;
+                    uploadProgress.style.width = progress + '%';
+                    if (progress === 30) uploadStatus.textContent = 'Validating file format...';
+                    if (progress === 60) uploadStatus.textContent = 'Processing attendee records...';
+                    if (progress === 90) uploadStatus.textContent = 'Finalizing upload...';
+                }
+            }, 1000);
+
             fetch(form.action, {
                 method: 'POST',
                 body: formData,
@@ -404,33 +450,51 @@
             })
             .then(response => response.json())
             .then(data => {
-                // Close modal
-                const modal = bootstrap.Modal.getInstance(document.getElementById('bulkUploadModal'));
-                modal.hide();
+                clearInterval(progressInterval);
+                uploadProgress.style.width = '100%';
+                uploadStatus.textContent = 'Upload complete!';
                 
-                // Show success message
-                if (data.success) {
-                    // Redirect to status page if provided
-                    if (data.redirect) {
-                        window.location.href = data.redirect;
+                // Close modal after a short delay
+                setTimeout(() => {
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('bulkUploadModal'));
+                    modal.hide();
+                    
+                    // Show success message
+                    if (data.success) {
+                        // Redirect to status page if provided
+                        if (data.redirect) {
+                            window.location.href = data.redirect;
+                        } else {
+                            // Show success message and reload page
+                            alert('Bulk upload completed successfully!');
+                            window.location.reload();
+                        }
                     } else {
-                        // Show success message and reload page
-                        alert('Bulk upload started successfully. You will be notified when it\'s complete.');
-                        window.location.reload();
+                        // Show error message
+                        alert(data.message || 'An error occurred during upload.');
                     }
-                } else {
-                    // Show error message
-                    alert(data.message || 'An error occurred during upload.');
-                }
+                }, 1000);
             })
             .catch(error => {
+                clearInterval(progressInterval);
                 console.error('Error:', error);
+                uploadStatus.textContent = 'Upload failed!';
+                uploadProgress.classList.remove('progress-bar-striped', 'progress-bar-animated');
+                uploadProgress.classList.add('bg-danger');
                 alert('An error occurred during upload. Please try again.');
             })
             .finally(() => {
                 // Reset button state
                 submitButton.disabled = false;
                 submitButton.innerHTML = '<i class="bi bi-upload me-2"></i>Upload and Process';
+                
+                // Hide overlay after a delay
+                setTimeout(() => {
+                    overlay.classList.add('d-none');
+                    uploadProgress.style.width = '0%';
+                    uploadProgress.classList.remove('bg-danger');
+                    uploadProgress.classList.add('progress-bar-striped', 'progress-bar-animated');
+                }, 2000);
             });
         });
     </script>
