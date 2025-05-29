@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 use League\Csv\Reader;
 use Illuminate\Support\Facades\Log;
+use App\Events\BulkUploadStatus;
 
 class BulkUploadController extends Controller
 {
@@ -67,38 +68,27 @@ class BulkUploadController extends Controller
                 'status' => 'processing',
             ]);
 
-            Log::info('Bulk upload record created', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'event_id' => $event->id,
-                'filename' => $bulkUpload->filename
-            ]);
+            // Broadcast initial status
+            broadcast(new BulkUploadStatus(
+                $bulkUpload,
+                'processing',
+                ['percent' => 0],
+                'Starting upload process...'
+            ))->toOthers();
 
             // Store the file
             $path = $request->file('csv_file')->store('bulk-uploads');
-            Log::info('File stored successfully', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'storage_path' => $path
-            ]);
 
             // Process the upload in the background
             dispatch(function() use ($path, $bulkUpload, $event) {
-                Log::info('Starting background processing', [
-                    'bulk_upload_id' => $bulkUpload->id,
-                    'event_id' => $event->id,
-                    'file_path' => $path
-                ]);
                 $this->processUpload($path, $bulkUpload, $event);
             })->afterResponse();
-
-            Log::info('Background job dispatched', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'event_id' => $event->id
-            ]);
 
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Bulk upload started successfully.',
+                    'bulk_upload_id' => $bulkUpload->id,
                     'redirect' => route('events.attendees.bulk-upload.status', ['event' => $event, 'bulkUpload' => $bulkUpload])
                 ]);
             }
@@ -113,6 +103,16 @@ class BulkUploadController extends Controller
                 'event_id' => $event->id,
                 'user_id' => auth()->id()
             ]);
+
+            if (isset($bulkUpload)) {
+                broadcast(new BulkUploadStatus(
+                    $bulkUpload,
+                    'failed',
+                    ['percent' => 0],
+                    'Upload failed: ' . $e->getMessage(),
+                    [$e->getMessage()]
+                ))->toOthers();
+            }
             
             if ($request->ajax()) {
                 return response()->json([
@@ -131,11 +131,12 @@ class BulkUploadController extends Controller
     protected function processUpload(string $path, BulkUpload $bulkUpload, Event $event)
     {
         try {
-            Log::info('Starting file processing', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'file_path' => $path,
-                'event_id' => $event->id
-            ]);
+            broadcast(new BulkUploadStatus(
+                $bulkUpload,
+                'processing',
+                ['percent' => 5],
+                'Reading file...'
+            ))->toOthers();
 
             $extension = pathinfo($path, PATHINFO_EXTENSION);
             $records = [];
@@ -192,12 +193,14 @@ class BulkUploadController extends Controller
             }
 
             $totalRecords = count($records);
-            Log::info('Total records found', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'total_records' => $totalRecords
-            ]);
-
             $bulkUpload->update(['total_records' => $totalRecords]);
+
+            broadcast(new BulkUploadStatus(
+                $bulkUpload,
+                'processing',
+                ['percent' => 10],
+                "Found {$totalRecords} records to process"
+            ))->toOthers();
 
             $processed = 0;
             $failed = 0;
@@ -274,12 +277,44 @@ class BulkUploadController extends Controller
                     DB::commit();
                     $processed++;
 
+                    // Calculate progress percentage
+                    $percent = min(90, 10 + (($processed + $failed) / $totalRecords * 80));
+                    
+                    // Broadcast progress every 5 records or on errors
+                    if ($processed % 5 === 0 || $failed > 0) {
+                        broadcast(new BulkUploadStatus(
+                            $bulkUpload,
+                            'processing',
+                            [
+                                'percent' => $percent,
+                                'processed' => $processed,
+                                'failed' => $failed,
+                                'total' => $totalRecords
+                            ],
+                            "Processing records... ({$processed} processed, {$failed} failed)"
+                        ))->toOthers();
+                    }
+
                 } catch (\Exception $e) {
                     DB::rollBack();
                     $failed++;
                     $errorMessage = "Row " . ($index + 2) . ": " . $e->getMessage();
                     $errors[] = $errorMessage;
                     
+                    // Broadcast error immediately
+                    broadcast(new BulkUploadStatus(
+                        $bulkUpload,
+                        'processing',
+                        [
+                            'percent' => min(90, 10 + (($processed + $failed) / $totalRecords * 80)),
+                            'processed' => $processed,
+                            'failed' => $failed,
+                            'total' => $totalRecords
+                        ],
+                        "Error processing record " . ($index + 2),
+                        [$errorMessage]
+                    ))->toOthers();
+
                     Log::error('Record processing failed', [
                         'bulk_upload_id' => $bulkUpload->id,
                         'record_index' => $index + 2,
@@ -288,42 +323,31 @@ class BulkUploadController extends Controller
                     ]);
                 }
 
-                // Update progress
+                // Update progress in database
                 $bulkUpload->update([
                     'processed_records' => $processed,
                     'failed_records' => $failed,
                     'error_message' => !empty($errors) ? implode("\n", $errors) : null,
                 ]);
-
-                // Log progress every 10 records
-                if ($processed % 10 === 0 || $failed % 10 === 0) {
-                    Log::info('Upload progress update', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'processed' => $processed,
-                        'failed' => $failed,
-                        'total' => $totalRecords
-                    ]);
-                }
             }
 
             // Update final status
             $finalStatus = $failed === 0 ? 'completed' : 'failed';
             $bulkUpload->update(['status' => $finalStatus]);
 
-            Log::info('Bulk upload processing completed', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'status' => $finalStatus,
-                'total_processed' => $processed,
-                'total_failed' => $failed,
-                'total_records' => $totalRecords
-            ]);
+            // Broadcast final status
+            broadcast(new BulkUploadStatus(
+                $bulkUpload,
+                $finalStatus,
+                ['percent' => 100],
+                $failed === 0 
+                    ? "Upload completed successfully. Processed {$processed} records."
+                    : "Upload completed with errors. Processed {$processed} records, {$failed} failed.",
+                $errors
+            ))->toOthers();
 
             // Clean up the uploaded file
             Storage::delete($path);
-            Log::info('Uploaded file cleaned up', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'file_path' => $path
-            ]);
 
         } catch (\Exception $e) {
             Log::error('Bulk upload processing failed', [
@@ -337,6 +361,15 @@ class BulkUploadController extends Controller
                 'status' => 'failed',
                 'error_message' => $e->getMessage(),
             ]);
+
+            // Broadcast failure
+            broadcast(new BulkUploadStatus(
+                $bulkUpload,
+                'failed',
+                ['percent' => 0],
+                'Upload failed: ' . $e->getMessage(),
+                [$e->getMessage()]
+            ))->toOthers();
         }
     }
 
