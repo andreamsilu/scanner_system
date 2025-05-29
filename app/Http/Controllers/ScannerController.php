@@ -13,6 +13,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Models\Attendee;
+use Illuminate\Support\Facades\Log;
 
 class ScannerController extends Controller
 {
@@ -426,6 +427,7 @@ class ScannerController extends Controller
     public function validateToken(Request $request): JsonResponse
     {
         try {
+            // Use the same validation as manual validation
             $request->validate([
                 'token' => 'required|string'
             ]);
@@ -438,7 +440,8 @@ class ScannerController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Please select an event first before scanning.',
-                    'code' => 'NO_EVENT_SELECTED'
+                    'code' => 'NO_EVENT_SELECTED',
+                    'redirect' => route('scanner.events.index')
                 ], 422);
             }
 
@@ -449,7 +452,8 @@ class ScannerController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Selected event no longer exists. Please select a new event.',
-                    'code' => 'EVENT_NOT_FOUND'
+                    'code' => 'EVENT_NOT_FOUND',
+                    'redirect' => route('scanner.events.index')
                 ], 422);
             }
 
@@ -459,145 +463,83 @@ class ScannerController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'You are not authorized to scan for this event.',
-                    'code' => 'UNAUTHORIZED_EVENT'
+                    'code' => 'UNAUTHORIZED_EVENT',
+                    'redirect' => route('scanner.events.index')
                 ], 403);
             }
 
-            // Use a database transaction with a lock to prevent race conditions
-            return DB::transaction(function() use ($request, $user, $eventId) {
-                // Find the attendee by token with a lock to prevent concurrent updates
-                $attendee = Attendee::where('token', $request->token)
-                    ->where('event_id', $eventId)
-                    ->with(['ticket' => function($query) {
-                        $query->lockForUpdate();
-                    }])
-                    ->lockForUpdate() // Lock the attendee record as well
-                    ->first();
+            // Find the attendee by token
+            $attendee = Attendee::where('token', $request->token)
+                ->where('event_id', $eventId)
+                ->with(['ticket'])
+                ->first();
 
-                if (!$attendee) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Invalid token or token not for this event.',
-                        'code' => 'INVALID_TOKEN'
-                    ], 422);
-                }
-
-                // Check if ticket exists
-                if (!$attendee->ticket) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No valid ticket found for this token.',
-                        'code' => 'NO_TICKET'
-                    ], 422);
-                }
-
-                // Check if attendee is already checked in
-                if ($attendee->registration_status === 'checked_in') {
-                    // Check for recent duplicate scan attempts (within last 5 minutes)
-                    $recentDuplicate = ScanLog::where('ticket_id', $attendee->ticket->id)
-                        ->where('scanner_id', $user->id)
-                        ->where('status', 'duplicate')
-                        ->where('created_at', '>=', now()->subMinutes(5))
-                        ->exists();
-
-                    // Only log if it's not a recent duplicate attempt
-                    if (!$recentDuplicate) {
-                        ScanLog::create([
-                            'ticket_id' => $attendee->ticket->id,
-                            'scanner_id' => $user->id,
-                            'status' => 'duplicate',
-                            'notes' => 'QR code scan - Duplicate scan attempt (Already checked in)'
-                        ]);
-                    }
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'This attendee has already been checked in.',
-                        'code' => 'ALREADY_CHECKED_IN',
-                        'attendee' => [
-                            'name' => $attendee->name,
-                            'email' => $attendee->email,
-                            'checked_in_at' => $attendee->checked_in_at
-                        ]
-                    ], 422);
-                }
-
-                // Check if ticket is already used
-                if ($attendee->ticket->status === 'used') {
-                    // Check for recent duplicate scan attempts (within last 5 minutes)
-                    $recentDuplicate = ScanLog::where('ticket_id', $attendee->ticket->id)
-                        ->where('scanner_id', $user->id)
-                        ->where('status', 'duplicate')
-                        ->where('created_at', '>=', now()->subMinutes(5))
-                        ->exists();
-
-                    // Only log if it's not a recent duplicate attempt
-                    if (!$recentDuplicate) {
-                        ScanLog::create([
-                            'ticket_id' => $attendee->ticket->id,
-                            'scanner_id' => $user->id,
-                            'status' => 'duplicate',
-                            'notes' => 'QR code scan - Duplicate scan attempt (Ticket used)'
-                        ]);
-                    }
-
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'This ticket has already been used.',
-                        'code' => 'TICKET_USED',
-                        'attendee' => [
-                            'name' => $attendee->name,
-                            'email' => $attendee->email,
-                            'checked_in_at' => $attendee->ticket->used_at
-                        ]
-                    ], 422);
-                }
-
-                // Check for any recent successful scans (within last 5 minutes)
-                $recentScan = ScanLog::where('ticket_id', $attendee->ticket->id)
-                    ->where('status', 'success')
-                    ->where('created_at', '>=', now()->subMinutes(5))
-                    ->exists();
-
-                if ($recentScan) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'This ticket was recently checked in.',
-                        'code' => 'RECENT_SCAN',
-                        'attendee' => [
-                            'name' => $attendee->name,
-                            'email' => $attendee->email
-                        ]
-                    ], 422);
-                }
-
-                // Update both ticket status and attendee registration status
-                $now = now();
-                $attendee->ticket->update([
-                    'status' => 'used',
-                    'used_at' => $now
+            if (!$attendee) {
+                // Log the invalid token attempt
+                Log::warning('Invalid token scan attempt', [
+                    'token' => $request->token,
+                    'event_id' => $eventId,
+                    'scanner_id' => $user->id
                 ]);
 
-                $attendee->update([
-                    'registration_status' => 'checked_in',
-                    'checked_in_at' => $now
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid token or token not for this event.',
+                    'code' => 'INVALID_TOKEN'
+                ], 422);
+            }
+
+            // Check if ticket is already used
+            if ($attendee->ticket && $attendee->ticket->status === 'used') {
+                // Log the duplicate validation attempt
+                ScanLog::create([
+                    'ticket_id' => $attendee->ticket->id,
+                    'scanner_id' => $user->id,
+                    'status' => 'duplicate',
+                    'notes' => 'QR code scan - Duplicate scan'
                 ]);
 
-                // Create scan log with unique constraint check
-                try {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'This ticket has already been used.',
+                    'code' => 'TICKET_USED',
+                    'attendee' => [
+                        'name' => $attendee->name,
+                        'email' => $attendee->email
+                    ]
+                ], 422);
+            }
+
+            // Update ticket status if exists
+            if ($attendee->ticket) {
+                DB::transaction(function() use ($attendee, $user) {
+                    $now = now();
+                    $attendee->ticket->update([
+                        'status' => 'used',
+                        'used_at' => $now
+                    ]);
+
+                    $attendee->update([
+                        'registration_status' => 'checked_in',
+                        'checked_in_at' => $now
+                    ]);
+
+                    // Log the successful validation
                     ScanLog::create([
                         'ticket_id' => $attendee->ticket->id,
                         'scanner_id' => $user->id,
                         'status' => 'success',
                         'notes' => 'QR code scan - Check-in successful'
                     ]);
-                } catch (\Exception $e) {
-                    // If we get a duplicate entry error, roll back the transaction
-                    if (str_contains($e->getMessage(), 'Duplicate entry')) {
-                        throw new \Exception('Duplicate scan detected');
-                    }
-                    throw $e;
-                }
+
+                    // Log the successful check-in
+                    Log::info('Attendee checked in successfully', [
+                        'attendee_id' => $attendee->id,
+                        'ticket_id' => $attendee->ticket->id,
+                        'event_id' => $attendee->event_id,
+                        'scanner_id' => $user->id
+                    ]);
+                });
 
                 return response()->json([
                     'success' => true,
@@ -605,16 +547,27 @@ class ScannerController extends Controller
                     'attendee' => [
                         'name' => $attendee->name,
                         'email' => $attendee->email,
-                        'checked_in_at' => $now
+                        'checked_in_at' => now()->format('M d, Y h:i A')
                     ]
                 ]);
-            }, 5); // Retry transaction up to 5 times if deadlock occurs
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'No valid ticket found for this token.',
+                'code' => 'NO_TICKET',
+                'attendee' => [
+                    'name' => $attendee->name,
+                    'email' => $attendee->email
+                ]
+            ], 422);
 
         } catch (\Exception $e) {
-            \Log::error('QR code scan validation failed', [
+            Log::error('QR code scan validation failed', [
                 'error' => $e->getMessage(),
                 'token' => $request->token ?? null,
-                'user_id' => auth()->id()
+                'user_id' => auth()->id(),
+                'event_id' => session('selected_event_id')
             ]);
 
             return response()->json([
