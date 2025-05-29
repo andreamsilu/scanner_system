@@ -434,9 +434,12 @@ class ScannerController extends Controller
                 'user_id' => auth()->id()
             ]);
 
-            // Use the same validation as manual validation
+            // Validate token format - must be exactly 7 digits
             $request->validate([
-                'token' => 'required|string'
+                'token' => ['required', 'string', 'size:7', 'regex:/^[0-9]{7}$/']
+            ], [
+                'token.size' => 'Token must be exactly 7 digits.',
+                'token.regex' => 'Token must contain only numbers.'
             ]);
 
             $user = auth()->user();
@@ -490,15 +493,17 @@ class ScannerController extends Controller
             }
 
             // First, check if token exists without event constraint
-            $tokenExists = Attendee::where('token', $request->token)->exists();
+            $tokenExists = Attendee::where('token', '=', $request->token)->exists();
             Log::info('Token existence check', [
                 'token' => $request->token,
-                'exists' => $tokenExists
+                'exists' => $tokenExists,
+                'token_type' => gettype($request->token),
+                'token_length' => strlen($request->token)
             ]);
 
             // Find the attendee by token with event constraint
-            $attendee = Attendee::where('token', $request->token)
-                ->where('event_id', $eventId)
+            $attendee = Attendee::where('token', '=', $request->token)
+                ->where('event_id', '=', $eventId)
                 ->with(['ticket', 'event'])
                 ->first();
 
@@ -513,9 +518,14 @@ class ScannerController extends Controller
                     'id' => $attendee->id,
                     'name' => $attendee->name,
                     'email' => $attendee->email,
+                    'token' => $attendee->token, // Log the actual token from database
                     'has_ticket' => !is_null($attendee->ticket),
                     'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null
-                ] : null
+                ] : null,
+                'query' => [
+                    'token_condition' => 'token = ' . $request->token,
+                    'event_condition' => 'event_id = ' . $eventId
+                ]
             ]);
 
             if (!$attendee) {
@@ -525,9 +535,11 @@ class ScannerController extends Controller
                     'event_id' => $eventId,
                     'scanner_id' => $user->id,
                     'token_exists' => $tokenExists,
-                    'token_exists_in_other_event' => $tokenExists ? Attendee::where('token', $request->token)
+                    'token_exists_in_other_event' => $tokenExists ? Attendee::where('token', '=', $request->token)
                         ->where('event_id', '!=', $eventId)
-                        ->exists() : false
+                        ->exists() : false,
+                    'token_in_db' => $tokenExists ? Attendee::where('token', '=', $request->token)
+                        ->first(['token', 'event_id']) : null
                 ]);
 
                 return response()->json([
