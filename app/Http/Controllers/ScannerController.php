@@ -427,20 +427,41 @@ class ScannerController extends Controller
     public function validateToken(Request $request): JsonResponse
     {
         try {
-            // Log the incoming request
-            Log::info('Token validation attempt', [
-                'token' => $request->token,
-                'event_id' => session('selected_event_id'),
-                'user_id' => auth()->id()
+            // Log the raw request data
+            Log::info('Raw token validation request', [
+                'raw_token' => $request->token,
+                'request_method' => $request->method(),
+                'request_content_type' => $request->header('Content-Type'),
+                'request_all' => $request->all()
+            ]);
+
+            // Clean and normalize the token
+            $token = trim($request->token);
+            
+            // Log the cleaned token
+            Log::info('Cleaned token', [
+                'original_token' => $request->token,
+                'cleaned_token' => $token,
+                'token_length' => strlen($token),
+                'token_type' => gettype($token)
             ]);
 
             // Validate token format - must be exactly 7 digits
-            $request->validate([
-                'token' => ['required', 'string', 'size:7', 'regex:/^[0-9]{7}$/']
-            ], [
-                'token.size' => 'Token must be exactly 7 digits.',
-                'token.regex' => 'Token must contain only numbers.'
-            ]);
+            try {
+                $request->validate([
+                    'token' => ['required', 'string', 'size:7', 'regex:/^[0-9]{7}$/']
+                ], [
+                    'token.size' => 'Token must be exactly 7 digits.',
+                    'token.regex' => 'Token must contain only numbers.'
+                ]);
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                Log::warning('Token validation failed', [
+                    'token' => $token,
+                    'errors' => $e->errors(),
+                    'validation_rules' => ['required', 'string', 'size:7', 'regex:/^[0-9]{7}$/']
+                ]);
+                throw $e;
+            }
 
             $user = auth()->user();
             $eventId = session('selected_event_id');
@@ -448,8 +469,9 @@ class ScannerController extends Controller
             // Check if event is selected
             if (!$eventId) {
                 Log::warning('No event selected for token validation', [
-                    'token' => $request->token,
-                    'user_id' => $user->id
+                    'token' => $token,
+                    'user_id' => $user->id,
+                    'session_data' => session()->all()
                 ]);
                 return response()->json([
                     'success' => false,
@@ -460,12 +482,14 @@ class ScannerController extends Controller
             }
 
             // Get the selected event
-            $event = Event::find($eventId);
-            if (!$event) {
-                Log::warning('Selected event not found', [
-                    'token' => $request->token,
+            try {
+                $event = Event::findOrFail($eventId);
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                Log::error('Event not found', [
                     'event_id' => $eventId,
-                    'user_id' => $user->id
+                    'token' => $token,
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage()
                 ]);
                 session()->forget('selected_event_id');
                 return response()->json([
@@ -479,9 +503,11 @@ class ScannerController extends Controller
             // Verify scanner is authorized for this event
             if (!$user->hasRole('admin') && !$user->events()->where('events.id', $eventId)->exists()) {
                 Log::warning('Unauthorized scanner attempt', [
-                    'token' => $request->token,
+                    'token' => $token,
                     'event_id' => $eventId,
-                    'user_id' => $user->id
+                    'user_id' => $user->id,
+                    'user_roles' => $user->roles->pluck('name'),
+                    'user_events' => $user->events()->pluck('events.id')
                 ]);
                 session()->forget('selected_event_id');
                 return response()->json([
@@ -493,53 +519,71 @@ class ScannerController extends Controller
             }
 
             // First, check if token exists without event constraint
-            $tokenExists = Attendee::where('token', '=', $request->token)->exists();
-            Log::info('Token existence check', [
-                'token' => $request->token,
-                'exists' => $tokenExists,
-                'token_type' => gettype($request->token),
-                'token_length' => strlen($request->token)
-            ]);
+            try {
+                $tokenExists = Attendee::where('token', '=', $token)->exists();
+                Log::info('Token existence check', [
+                    'token' => $token,
+                    'exists' => $tokenExists,
+                    'token_type' => gettype($token),
+                    'token_length' => strlen($token),
+                    'query' => DB::getQueryLog()
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error checking token existence', [
+                    'token' => $token,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
 
             // Find the attendee by token with event constraint
-            $attendee = Attendee::where('token', '=', $request->token)
-                ->where('event_id', '=', $eventId)
-                ->with(['ticket', 'event'])
-                ->first();
+            try {
+                $attendee = Attendee::where('token', '=', $token)
+                    ->where('event_id', '=', $eventId)
+                    ->with(['ticket', 'event'])
+                    ->first();
 
-            // Log detailed attendee lookup results
-            Log::info('Attendee lookup results', [
-                'token' => $request->token,
-                'event_id' => $eventId,
-                'attendee_found' => !is_null($attendee),
-                'attendee_event_id' => $attendee ? $attendee->event_id : null,
-                'selected_event_id' => $eventId,
-                'attendee_details' => $attendee ? [
-                    'id' => $attendee->id,
-                    'name' => $attendee->name,
-                    'email' => $attendee->email,
-                    'token' => $attendee->token, // Log the actual token from database
-                    'has_ticket' => !is_null($attendee->ticket),
-                    'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null
-                ] : null,
-                'query' => [
-                    'token_condition' => 'token = ' . $request->token,
-                    'event_condition' => 'event_id = ' . $eventId
-                ]
-            ]);
+                // Log detailed attendee lookup results
+                Log::info('Attendee lookup results', [
+                    'token' => $token,
+                    'event_id' => $eventId,
+                    'attendee_found' => !is_null($attendee),
+                    'attendee_event_id' => $attendee ? $attendee->event_id : null,
+                    'selected_event_id' => $eventId,
+                    'attendee_details' => $attendee ? [
+                        'id' => $attendee->id,
+                        'name' => $attendee->name,
+                        'email' => $attendee->email,
+                        'token' => $attendee->token,
+                        'has_ticket' => !is_null($attendee->ticket),
+                        'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null
+                    ] : null,
+                    'query' => DB::getQueryLog()
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Error looking up attendee', [
+                    'token' => $token,
+                    'event_id' => $eventId,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw $e;
+            }
 
             if (!$attendee) {
                 // Log the invalid token attempt with more details
                 Log::warning('Invalid token scan attempt', [
-                    'token' => $request->token,
+                    'token' => $token,
                     'event_id' => $eventId,
                     'scanner_id' => $user->id,
                     'token_exists' => $tokenExists,
-                    'token_exists_in_other_event' => $tokenExists ? Attendee::where('token', '=', $request->token)
+                    'token_exists_in_other_event' => $tokenExists ? Attendee::where('token', '=', $token)
                         ->where('event_id', '!=', $eventId)
                         ->exists() : false,
-                    'token_in_db' => $tokenExists ? Attendee::where('token', '=', $request->token)
-                        ->first(['token', 'event_id']) : null
+                    'token_in_db' => $tokenExists ? Attendee::where('token', '=', $token)
+                        ->first(['token', 'event_id']) : null,
+                    'query_log' => DB::getQueryLog()
                 ]);
 
                 return response()->json([
@@ -622,19 +666,40 @@ class ScannerController extends Controller
                 ]
             ], 422);
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::warning('Token validation failed', [
+                'token' => $request->token ?? null,
+                'errors' => $e->errors(),
+                'user_id' => auth()->id(),
+                'event_id' => session('selected_event_id')
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->errors()['token'][0] ?? 'Invalid token format.',
+                'code' => 'VALIDATION_ERROR'
+            ], 422);
+
         } catch (\Exception $e) {
             Log::error('QR code scan validation failed', [
                 'error' => $e->getMessage(),
+                'error_type' => get_class($e),
                 'token' => $request->token ?? null,
                 'user_id' => auth()->id(),
                 'event_id' => session('selected_event_id'),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all(),
+                'session_data' => session()->all()
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'An error occurred while processing the scan. Please try again.',
-                'code' => 'SERVER_ERROR'
+                'code' => 'SERVER_ERROR',
+                'debug_info' => config('app.debug') ? [
+                    'error_type' => get_class($e),
+                    'error_message' => $e->getMessage()
+                ] : null
             ], 500);
         }
     }
