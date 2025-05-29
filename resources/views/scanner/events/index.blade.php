@@ -85,7 +85,7 @@
                                    class="btn btn-sm btn-outline-secondary">
                                     <i class="bi bi-eye me-1"></i>View
                                 </a>
-                                <form action="{{ route('scanner.select-event', $event) }}" method="POST" class="d-inline">
+                                <form action="{{ route('scanner.events.select', $event) }}" method="POST" class="d-inline">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-primary">
                                         <i class="bi bi-upc-scan me-1"></i>Scan

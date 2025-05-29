@@ -51,7 +51,7 @@ Route::middleware('auth')->group(function () {
         // Dashboard and Event Management
         Route::get('/dashboard', [ScannerController::class, 'dashboard'])->name('dashboard');
         Route::get('/events', [ScannerController::class, 'events'])->name('events.index');
-        Route::get('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('events.select');
+        Route::post('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('events.select');
         Route::delete('/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('events.deselect');
         Route::get('/events/{event}/attendees', [ScannerController::class, 'showEventAttendees'])->name('events.attendees');
         
@@ -74,10 +74,6 @@ Route::middleware('auth')->group(function () {
         Route::post('/scan/start', [ScannerController::class, 'startScanner'])->name('scan.start');
         Route::post('/scan/stop', [ScannerController::class, 'stopScanner'])->name('scan.stop');
         Route::get('/scan/status', [ScannerController::class, 'getScannerStatus'])->name('scan.status');
-
-        // Event selection routes
-        Route::post('/events/{event}/select', [ScannerController::class, 'selectEvent'])->name('select-event');
-        Route::delete('/events/{event}/deselect', [ScannerController::class, 'deselectEvent'])->name('events.deselect');
     });
 
     // Admin Routes

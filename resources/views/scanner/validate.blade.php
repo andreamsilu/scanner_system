@@ -46,7 +46,7 @@
 
                         <div class="list-group mt-3">
                             @forelse($events as $event)
-                                <form action="{{ route('scanner.select-event', $event) }}" method="POST" class="d-inline w-100">
+                                <form action="{{ route('scanner.events.select', $event) }}" method="POST" class="d-inline w-100">
                                     @csrf
                                     <button type="submit" 
                                             class="list-group-item list-group-item-action w-100 text-start {{ session('selected_event_id') == $event->id ? 'active' : '' }}">
