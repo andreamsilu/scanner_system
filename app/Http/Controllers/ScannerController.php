@@ -427,27 +427,58 @@ class ScannerController extends Controller
     public function validateToken(Request $request): JsonResponse
     {
         try {
-            // Log the raw request data
+            // Log the raw request data with detailed token information
             Log::info('Raw token validation request', [
                 'raw_token' => $request->token,
+                'token_length' => strlen($request->token),
+                'token_bytes' => bin2hex($request->token), // Log hex representation to see any hidden characters
+                'token_type' => gettype($request->token),
                 'request_method' => $request->method(),
                 'request_content_type' => $request->header('Content-Type'),
                 'request_all' => $request->all()
             ]);
 
-            // Clean and normalize the token
-            $token = trim($request->token);
+            // Clean and normalize the token - remove any whitespace or special characters
+            $token = preg_replace('/[^0-9]/', '', $request->token);
             
             // Log the cleaned token
             Log::info('Cleaned token', [
                 'original_token' => $request->token,
                 'cleaned_token' => $token,
-                'token_length' => strlen($token),
-                'token_type' => gettype($token)
+                'cleaned_length' => strlen($token),
+                'cleaned_type' => gettype($token),
+                'is_numeric' => is_numeric($token),
+                'is_7_digits' => strlen($token) === 7 && ctype_digit($token)
             ]);
 
             // Validate token format - must be exactly 7 digits
             try {
+                // First check if the cleaned token is valid
+                if (strlen($token) !== 7 || !ctype_digit($token)) {
+                    Log::warning('Token format validation failed', [
+                        'original_token' => $request->token,
+                        'cleaned_token' => $token,
+                        'length' => strlen($token),
+                        'is_numeric' => is_numeric($token),
+                        'is_7_digits' => strlen($token) === 7 && ctype_digit($token)
+                    ]);
+                    
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Token must be exactly 7 digits.',
+                        'code' => 'INVALID_TOKEN_FORMAT',
+                        'debug' => [
+                            'original_length' => strlen($request->token),
+                            'cleaned_length' => strlen($token),
+                            'is_numeric' => is_numeric($token)
+                        ]
+                    ], 422);
+                }
+
+                // If we get here, the token is valid, so update the request with the cleaned token
+                $request->merge(['token' => $token]);
+                
+                // Now validate the cleaned token
                 $request->validate([
                     'token' => ['required', 'string', 'size:7', 'regex:/^[0-9]{7}$/']
                 ], [
@@ -456,7 +487,8 @@ class ScannerController extends Controller
                 ]);
             } catch (\Illuminate\Validation\ValidationException $e) {
                 Log::warning('Token validation failed', [
-                    'token' => $token,
+                    'original_token' => $request->token,
+                    'cleaned_token' => $token,
                     'errors' => $e->errors(),
                     'validation_rules' => ['required', 'string', 'size:7', 'regex:/^[0-9]{7}$/']
                 ]);
@@ -668,7 +700,8 @@ class ScannerController extends Controller
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::warning('Token validation failed', [
-                'token' => $request->token ?? null,
+                'original_token' => $request->token ?? null,
+                'cleaned_token' => $token ?? null,
                 'errors' => $e->errors(),
                 'user_id' => auth()->id(),
                 'event_id' => session('selected_event_id')
@@ -677,14 +710,20 @@ class ScannerController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->errors()['token'][0] ?? 'Invalid token format.',
-                'code' => 'VALIDATION_ERROR'
+                'code' => 'VALIDATION_ERROR',
+                'debug' => [
+                    'original_length' => strlen($request->token ?? ''),
+                    'cleaned_length' => strlen($token ?? ''),
+                    'is_numeric' => is_numeric($token ?? '')
+                ]
             ], 422);
 
         } catch (\Exception $e) {
             Log::error('QR code scan validation failed', [
                 'error' => $e->getMessage(),
                 'error_type' => get_class($e),
-                'token' => $request->token ?? null,
+                'original_token' => $request->token ?? null,
+                'cleaned_token' => $token ?? null,
                 'user_id' => auth()->id(),
                 'event_id' => session('selected_event_id'),
                 'trace' => $e->getTraceAsString(),
@@ -698,7 +737,12 @@ class ScannerController extends Controller
                 'code' => 'SERVER_ERROR',
                 'debug_info' => config('app.debug') ? [
                     'error_type' => get_class($e),
-                    'error_message' => $e->getMessage()
+                    'error_message' => $e->getMessage(),
+                    'token_info' => [
+                        'original_length' => strlen($request->token ?? ''),
+                        'cleaned_length' => strlen($token ?? ''),
+                        'is_numeric' => is_numeric($token ?? '')
+                    ]
                 ] : null
             ], 500);
         }
