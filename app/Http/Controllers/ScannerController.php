@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use App\Models\Attendee;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class ScannerController extends Controller
 {
@@ -430,6 +431,23 @@ class ScannerController extends Controller
         DB::enableQueryLog();
         
         try {
+            // Check database connection first
+            try {
+                DB::connection()->getPdo();
+                Log::info('Database connection successful');
+            } catch (\Exception $e) {
+                Log::error('Database connection failed', [
+                    'error' => $e->getMessage(),
+                    'error_code' => $e->getCode(),
+                    'error_type' => get_class($e)
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to connect to database. Please try again.',
+                    'code' => 'DB_CONNECTION_ERROR'
+                ], 500);
+            }
+
             // Log the raw request data with detailed token information
             Log::info('Raw token validation request', [
                 'raw_token' => $request->token,
@@ -439,7 +457,8 @@ class ScannerController extends Controller
                 'request_method' => $request->method(),
                 'request_content_type' => $request->header('Content-Type'),
                 'request_all' => $request->all(),
-                'request_headers' => $request->headers->all()
+                'request_headers' => $request->headers->all(),
+                'db_connection' => DB::connection()->getDatabaseName()
             ]);
 
             // Clean and normalize the token - remove any whitespace or special characters
@@ -543,6 +562,19 @@ class ScannerController extends Controller
 
             // Get the selected event
             try {
+                // Check if events table exists
+                if (!Schema::hasTable('events')) {
+                    Log::error('Events table does not exist', [
+                        'token' => $token,
+                        'user_id' => $user->id
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Database configuration error. Please contact support.',
+                        'code' => 'DB_TABLE_MISSING'
+                    ], 500);
+                }
+
                 $event = Event::findOrFail($eventId);
                 Log::info('Event found', [
                     'event_id' => $eventId,
@@ -578,6 +610,23 @@ class ScannerController extends Controller
 
             // Verify scanner is authorized for this event
             try {
+                // Check if users and role tables exist
+                if (!Schema::hasTable('users') || !Schema::hasTable('roles')) {
+                    Log::error('Required tables missing', [
+                        'token' => $token,
+                        'user_id' => $user->id,
+                        'tables_exist' => [
+                            'users' => Schema::hasTable('users'),
+                            'roles' => Schema::hasTable('roles')
+                        ]
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Database configuration error. Please contact support.',
+                        'code' => 'DB_TABLE_MISSING'
+                    ], 500);
+                }
+
                 $isAuthorized = $user->hasRole('admin') || $user->events()->where('events.id', $eventId)->exists();
                 Log::info('Authorization check', [
                     'user_id' => $user->id,
@@ -617,6 +666,19 @@ class ScannerController extends Controller
 
             // Find the attendee by token
             try {
+                // Check if attendees table exists
+                if (!Schema::hasTable('attendees')) {
+                    Log::error('Attendees table does not exist', [
+                        'token' => $token,
+                        'user_id' => $user->id
+                    ]);
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Database configuration error. Please contact support.',
+                        'code' => 'DB_TABLE_MISSING'
+                    ], 500);
+                }
+
                 $attendee = Attendee::where('token', '=', $token)
                     ->where('event_id', '=', $eventId)
                     ->with(['ticket', 'event'])
@@ -773,13 +835,24 @@ class ScannerController extends Controller
                 'token' => $token ?? null,
                 'user_id' => auth()->id(),
                 'event_id' => session('selected_event_id'),
-                'queries' => DB::getQueryLog()
+                'queries' => DB::getQueryLog(),
+                'db_connection' => [
+                    'name' => DB::connection()->getDatabaseName(),
+                    'driver' => DB::connection()->getDriverName(),
+                    'host' => config('database.connections.mysql.host'),
+                    'database' => config('database.connections.mysql.database')
+                ]
             ]);
 
             return response()->json([
                 'success' => false,
                 'message' => 'Database error occurred. Please try again.',
-                'code' => 'DATABASE_ERROR'
+                'code' => 'DATABASE_ERROR',
+                'debug_info' => config('app.debug') ? [
+                    'error_type' => get_class($e),
+                    'error_code' => $e->getCode(),
+                    'error_message' => $e->getMessage()
+                ] : null
             ], 500);
 
         } catch (\Exception $e) {
@@ -796,7 +869,13 @@ class ScannerController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all(),
                 'session_data' => session()->all(),
-                'queries' => DB::getQueryLog()
+                'queries' => DB::getQueryLog(),
+                'db_connection' => [
+                    'name' => DB::connection()->getDatabaseName(),
+                    'driver' => DB::connection()->getDriverName(),
+                    'host' => config('database.connections.mysql.host'),
+                    'database' => config('database.connections.mysql.database')
+                ]
             ]);
 
             return response()->json([
@@ -805,8 +884,8 @@ class ScannerController extends Controller
                 'code' => 'SERVER_ERROR',
                 'debug_info' => config('app.debug') ? [
                     'error_type' => get_class($e),
-                    'error_message' => $e->getMessage(),
                     'error_code' => $e->getCode(),
+                    'error_message' => $e->getMessage(),
                     'error_file' => $e->getFile(),
                     'error_line' => $e->getLine(),
                     'token_info' => [
