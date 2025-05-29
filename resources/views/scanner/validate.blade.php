@@ -29,10 +29,13 @@
                                         {{ $selectedEvent->formatted_date_range }}
                                     </small>
                                 </div>
-                                <a href="{{ route('scanner.deselect-event', ['event' => $selectedEvent->id]) }}" 
-                                   class="btn btn-outline-danger w-100">
-                                    <i class="bi bi-x-circle me-2"></i>Deselect Event
-                                </a>
+                                <form action="{{ route('scanner.events.deselect', $selectedEvent) }}" method="POST" class="d-inline w-100">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-outline-danger w-100">
+                                        <i class="bi bi-x-circle me-2"></i>Deselect Event
+                                    </button>
+                                </form>
                             @endif
                         @else
                             <div class="alert alert-warning mb-3">

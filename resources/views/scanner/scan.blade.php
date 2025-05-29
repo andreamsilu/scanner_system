@@ -9,9 +9,13 @@
                 <a href="{{ route('scanner.events.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-2"></i>Back to Events
                 </a>
-                <a href="{{ route('scanner.deselect-event', ['event' => $event->id]) }}" class="btn btn-outline-danger">
-                    <i class="bi bi-x-circle me-2"></i>Deselect Event
-                </a>
+                <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-outline-danger">
+                        <i class="bi bi-x-circle me-2"></i>Deselect Event
+                    </button>
+                </form>
             </div>
         </div>
     </x-slot>
