@@ -427,6 +427,13 @@ class ScannerController extends Controller
     public function validateToken(Request $request): JsonResponse
     {
         try {
+            // Log the incoming request
+            Log::info('Token validation attempt', [
+                'token' => $request->token,
+                'event_id' => session('selected_event_id'),
+                'user_id' => auth()->id()
+            ]);
+
             // Use the same validation as manual validation
             $request->validate([
                 'token' => 'required|string'
@@ -437,6 +444,10 @@ class ScannerController extends Controller
             
             // Check if event is selected
             if (!$eventId) {
+                Log::warning('No event selected for token validation', [
+                    'token' => $request->token,
+                    'user_id' => $user->id
+                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Please select an event first before scanning.',
@@ -448,6 +459,11 @@ class ScannerController extends Controller
             // Get the selected event
             $event = Event::find($eventId);
             if (!$event) {
+                Log::warning('Selected event not found', [
+                    'token' => $request->token,
+                    'event_id' => $eventId,
+                    'user_id' => $user->id
+                ]);
                 session()->forget('selected_event_id');
                 return response()->json([
                     'success' => false,
@@ -459,6 +475,11 @@ class ScannerController extends Controller
 
             // Verify scanner is authorized for this event
             if (!$user->hasRole('admin') && !$user->events()->where('events.id', $eventId)->exists()) {
+                Log::warning('Unauthorized scanner attempt', [
+                    'token' => $request->token,
+                    'event_id' => $eventId,
+                    'user_id' => $user->id
+                ]);
                 session()->forget('selected_event_id');
                 return response()->json([
                     'success' => false,
@@ -468,18 +489,45 @@ class ScannerController extends Controller
                 ], 403);
             }
 
-            // Find the attendee by token
+            // First, check if token exists without event constraint
+            $tokenExists = Attendee::where('token', $request->token)->exists();
+            Log::info('Token existence check', [
+                'token' => $request->token,
+                'exists' => $tokenExists
+            ]);
+
+            // Find the attendee by token with event constraint
             $attendee = Attendee::where('token', $request->token)
                 ->where('event_id', $eventId)
-                ->with(['ticket'])
+                ->with(['ticket', 'event'])
                 ->first();
 
+            // Log detailed attendee lookup results
+            Log::info('Attendee lookup results', [
+                'token' => $request->token,
+                'event_id' => $eventId,
+                'attendee_found' => !is_null($attendee),
+                'attendee_event_id' => $attendee ? $attendee->event_id : null,
+                'selected_event_id' => $eventId,
+                'attendee_details' => $attendee ? [
+                    'id' => $attendee->id,
+                    'name' => $attendee->name,
+                    'email' => $attendee->email,
+                    'has_ticket' => !is_null($attendee->ticket),
+                    'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null
+                ] : null
+            ]);
+
             if (!$attendee) {
-                // Log the invalid token attempt
+                // Log the invalid token attempt with more details
                 Log::warning('Invalid token scan attempt', [
                     'token' => $request->token,
                     'event_id' => $eventId,
-                    'scanner_id' => $user->id
+                    'scanner_id' => $user->id,
+                    'token_exists' => $tokenExists,
+                    'token_exists_in_other_event' => $tokenExists ? Attendee::where('token', $request->token)
+                        ->where('event_id', '!=', $eventId)
+                        ->exists() : false
                 ]);
 
                 return response()->json([
@@ -567,7 +615,8 @@ class ScannerController extends Controller
                 'error' => $e->getMessage(),
                 'token' => $request->token ?? null,
                 'user_id' => auth()->id(),
-                'event_id' => session('selected_event_id')
+                'event_id' => session('selected_event_id'),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
