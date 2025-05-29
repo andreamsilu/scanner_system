@@ -261,21 +261,25 @@
                     <form action="{{ route('events.attendees.bulk-upload.store', $event) }}" method="POST" enctype="multipart/form-data" id="bulkUploadForm">
                         @csrf
                         <div class="mb-4">
-                            <label for="csv_file" class="form-label">CSV File</label>
+                            <label for="csv_file" class="form-label">Upload File</label>
                             <input type="file" 
                                    name="csv_file" 
                                    id="csv_file" 
-                                   accept=".csv,.txt" 
+                                   accept=".xlsx,.xls,.csv" 
                                    required
                                    class="form-control @error('csv_file') is-invalid @enderror">
                             @error('csv_file')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
+                            <small class="form-text text-muted">Accepted formats: Excel (.xlsx, .xls) or CSV (.csv)</small>
                         </div>
 
                         <div class="alert alert-warning">
                             <h6 class="alert-heading mb-2">Important Notes:</h6>
                             <ul class="mb-0 ps-3">
+                                <li>Only Excel (.xlsx, .xls) and CSV (.csv) files are accepted</li>
+                                <li>Required columns: name, phone</li>
+                                <li>Optional columns: email, position</li>
                                 <li>Each attendee will automatically receive a unique token and QR code</li>
                                 <li>The process may take some time depending on the number of records</li>
                                 <li>You will be notified when the upload is complete</li>

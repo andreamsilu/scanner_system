@@ -38,7 +38,15 @@ class BulkUploadController extends Controller
     public function store(Request $request, Event $event)
     {
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:10240', // 10MB max
+            'csv_file' => [
+                'required',
+                'file',
+                'mimes:xlsx,xls,csv', // Only allow Excel and CSV files
+                'max:10240', // 10MB max
+            ],
+        ], [
+            'csv_file.mimes' => 'Only Excel (.xlsx, .xls) and CSV (.csv) files are allowed.',
+            'csv_file.max' => 'The file size must not exceed 10MB.',
         ]);
 
         try {
@@ -89,11 +97,47 @@ class BulkUploadController extends Controller
     protected function processUpload(string $path, BulkUpload $bulkUpload, Event $event)
     {
         try {
-            $csv = Reader::createFromPath(Storage::path($path), 'r');
-            $csv->setHeaderOffset(0);
+            $extension = pathinfo($path, PATHINFO_EXTENSION);
+            $records = [];
 
-            $records = $csv->getRecords();
-            $totalRecords = count($csv);
+            if (in_array($extension, ['xlsx', 'xls'])) {
+                // Process Excel file
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(Storage::path($path));
+                $worksheet = $spreadsheet->getActiveSheet();
+                $headers = [];
+                $firstRow = true;
+
+                foreach ($worksheet->getRowIterator() as $row) {
+                    $cellIterator = $row->getCellIterator();
+                    $cellIterator->setIterateOnlyExistingCells(false);
+                    $rowData = [];
+
+                    foreach ($cellIterator as $cell) {
+                        $value = $cell->getValue();
+                        if ($firstRow) {
+                            $headers[] = strtolower(trim($value));
+                        } else {
+                            $rowData[] = $value;
+                        }
+                    }
+
+                    if ($firstRow) {
+                        $firstRow = false;
+                        continue;
+                    }
+
+                    if (!empty(array_filter($rowData))) {
+                        $records[] = array_combine($headers, $rowData);
+                    }
+                }
+            } else {
+                // Process CSV file
+                $csv = Reader::createFromPath(Storage::path($path), 'r');
+                $csv->setHeaderOffset(0);
+                $records = $csv->getRecords();
+            }
+
+            $totalRecords = count($records);
             $bulkUpload->update(['total_records' => $totalRecords]);
 
             $processed = 0;
@@ -103,6 +147,11 @@ class BulkUploadController extends Controller
             foreach ($records as $index => $record) {
                 try {
                     DB::beginTransaction();
+
+                    // Validate required fields
+                    if (empty($record['name']) || empty($record['phone'])) {
+                        throw new \Exception('Name and phone are required fields');
+                    }
 
                     // Generate unique token
                     $token = Str::random(7);
@@ -119,23 +168,8 @@ class BulkUploadController extends Controller
                         'position' => $record['position'] ?? null,
                         'token' => $token,
                         'bulk_upload_id' => $bulkUpload->id,
-                        'registration_status' => 'registered',
+                        'registration_status' => 'unchecked_in',
                     ]);
-
-                    // Validate required fields
-                    if (empty($record['name']) || empty($record['phone'])) {
-                        throw new \Exception('Name and phone are required fields');
-                    }
-
-                    // Validate phone format if provided
-                    if (!empty($record['phone']) && !preg_match('/^\+?[1-9]\d{1,14}$/', preg_replace('/[^0-9+]/', '', $record['phone']))) {
-                        throw new \Exception('Invalid phone number format');
-                    }
-
-                    // Validate email format if provided
-                    if (!empty($record['email']) && !filter_var($record['email'], FILTER_VALIDATE_EMAIL)) {
-                        throw new \Exception('Invalid email format');
-                    }
 
                     // Create ticket
                     $ticket = Ticket::create([
