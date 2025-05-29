@@ -12,7 +12,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('scan_logs', function (Blueprint $table) {
-            //
+            // Drop any unique constraints first if they exist
+            if (Schema::hasIndex('scan_logs', 'unique_scan_log')) {
+                $table->dropUnique('unique_scan_log');
+            }
+            
+            // Remove the scan_key column
+            $table->dropColumn('scan_key');
         });
     }
 
@@ -22,7 +28,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('scan_logs', function (Blueprint $table) {
-            //
+            // Add the scan_key column back
+            $table->string('scan_key', 32)->after('id');
         });
     }
 };
