@@ -19,8 +19,8 @@
                             <i class="fas fa-times me-1"></i> Deselect Event
                         </button>
                     </form>
-                </div>
-            </x-slot>
+        </div>
+    </x-slot>
         @endif
     </x-page-header>
 
@@ -289,12 +289,12 @@
         messageDiv.className = `alert alert-${type} mb-3`;
         messageDiv.textContent = message;
         messageDiv.classList.remove('d-none');
-        
+                    
         // Hide message after 5 seconds
-        setTimeout(() => {
+                    setTimeout(() => {
             messageDiv.classList.add('d-none');
         }, 5000);
-    }
+                }
 
     async function onScanSuccess(decodedText, decodedResult) {
         if (!isScanning) return;
@@ -320,7 +320,7 @@
             audio.play();
 
             showMessage(data.message, data.success ? 'success' : 'danger');
-
+                
             // If successful, refresh the page after a short delay to update recent scans
             if (data.success) {
                 setTimeout(() => {
@@ -336,7 +336,7 @@
         function onScanFailure(error) {
         // Handle scan failure silently
         console.warn(`QR code scan failed: ${error}`);
-    }
+        }
 
     // Check scanner status on page load
     document.addEventListener('DOMContentLoaded', async function() {
