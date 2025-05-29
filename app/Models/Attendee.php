@@ -24,14 +24,29 @@ class Attendee extends Model
         'token',
         'qr_code',
         'registration_status',
-        'checked_in_at'
+        'checked_in_at',
+        'bulk_upload_id'
     ];
 
     protected $casts = [
         'checked_in_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'deleted_at' => 'datetime'
+        'deleted_at' => 'datetime',
+        'email' => 'string'
+    ];
+
+    /**
+     * The validation rules that apply to the model.
+     *
+     * @var array<string, string>
+     */
+    public static $rules = [
+        'name' => 'required|string|max:255',
+        'email' => 'nullable|email|max:255',
+        'phone' => 'required|string|max:20',
+        'position' => 'nullable|string|max:255',
+        'event_id' => 'required|exists:events,id'
     ];
 
     protected static function boot()

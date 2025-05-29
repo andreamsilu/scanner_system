@@ -62,8 +62,8 @@ class AttendeeController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255',
-            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|string|email|max:255',
+            'phone' => 'required|string|max:20',
             'position' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
             'requires_ticket' => 'boolean'
@@ -72,13 +72,15 @@ class AttendeeController extends Controller
         try {
             DB::beginTransaction();
 
-            // Check if attendee already exists for this event
-            $existingAttendee = $event->attendees()
-                ->where('email', $validated['email'])
-                ->first();
+            // Check if attendee already exists for this event (only if email is provided)
+            if (!empty($validated['email'])) {
+                $existingAttendee = $event->attendees()
+                    ->where('email', $validated['email'])
+                    ->first();
 
-            if ($existingAttendee) {
-                throw new \Exception('An attendee with this email already exists for this event.');
+                if ($existingAttendee) {
+                    throw new \Exception('An attendee with this email already exists for this event.');
+                }
             }
 
             // Generate unique token (7 digits)
@@ -203,16 +205,16 @@ class AttendeeController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'nullable|string|max:20',
+            'email' => 'nullable|email|max:255',
+            'phone' => 'required|string|max:20',
             'position' => 'nullable|string|max:255'
         ]);
 
         try {
             DB::beginTransaction();
 
-            // Check if email is being changed and if it's unique for this event
-            if ($validated['email'] !== $attendee->email) {
+            // Check if email is being changed and if it's unique for this event (only if email is provided)
+            if (!empty($validated['email']) && $validated['email'] !== $attendee->email) {
                 $exists = $event->attendees()
                     ->where('email', $validated['email'])
                     ->where('id', '!=', $attendee->id)
