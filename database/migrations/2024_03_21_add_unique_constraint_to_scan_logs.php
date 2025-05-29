@@ -12,22 +12,15 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // First, add a new column to store the scan timestamp in a format suitable for unique constraint
+        // Make scan_key nullable and remove unique constraint
         Schema::table('scan_logs', function (Blueprint $table) {
-            $table->string('scan_key', 32)->after('created_at')->nullable();
-        });
-
-        // Update existing records with a unique scan key
-        DB::statement('UPDATE scan_logs SET scan_key = CONCAT(ticket_id, "_", scanner_id, "_", DATE_FORMAT(created_at, "%Y%m%d%H%i%s"))');
-
-        // Make the scan_key column not nullable
-        Schema::table('scan_logs', function (Blueprint $table) {
-            $table->string('scan_key', 32)->nullable(false)->change();
-        });
-
-        // Add unique constraint on scan_key
-        Schema::table('scan_logs', function (Blueprint $table) {
-            $table->unique('scan_key', 'unique_scan_log');
+            // Drop the unique constraint if it exists
+            if (Schema::hasIndex('scan_logs', 'unique_scan_log')) {
+                $table->dropUnique('unique_scan_log');
+            }
+            
+            // Modify scan_key to be nullable
+            $table->string('scan_key', 32)->nullable()->change();
         });
     }
 
@@ -37,8 +30,11 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('scan_logs', function (Blueprint $table) {
-            $table->dropUnique('unique_scan_log');
-            $table->dropColumn('scan_key');
+            // Make scan_key not nullable again
+            $table->string('scan_key', 32)->nullable(false)->change();
+            
+            // Re-add the unique constraint
+            $table->unique('scan_key', 'unique_scan_log');
         });
     }
 }; 
