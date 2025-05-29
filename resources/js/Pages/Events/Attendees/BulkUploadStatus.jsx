@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, router } from '@inertiajs/react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Button } from '@/Components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/Components/ui/card';
 import { Progress } from '@/Components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/Components/ui/alert';
 import { AlertCircle, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
-import Echo from 'laravel-echo';
+import axios from 'axios';
 
 export default function BulkUploadStatus({ auth, event, bulkUpload }) {
     const [status, setStatus] = useState(bulkUpload.status);
@@ -18,36 +18,47 @@ export default function BulkUploadStatus({ auth, event, bulkUpload }) {
     });
     const [message, setMessage] = useState('');
     const [errors, setErrors] = useState([]);
-    const [isSubscribed, setIsSubscribed] = useState(false);
 
     useEffect(() => {
-        // Subscribe to the private channel for this bulk upload
-        const echo = new Echo({
-            broadcaster: 'pusher',
-            key: import.meta.env.VITE_PUSHER_APP_KEY,
-            cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER,
-            forceTLS: true
-        });
+        let pollInterval;
 
-        const channel = echo.private(`bulk-upload.${bulkUpload.id}`);
+        const pollStatus = async () => {
+            try {
+                const response = await axios.get(route('events.attendees.bulk-upload.status.get', {
+                    event: event.id,
+                    bulkUpload: bulkUpload.id
+                }));
 
-        channel.listen('.bulk-upload.status', (e) => {
-            console.log('Received status update:', e);
-            setStatus(e.status);
-            setProgress(e.progress);
-            setMessage(e.message);
-            if (e.errors && e.errors.length > 0) {
-                setErrors(prev => [...prev, ...e.errors]);
+                const data = response.data;
+                setStatus(data.status);
+                setProgress(data.progress);
+                setMessage(data.message);
+                if (data.errors && data.errors.length > 0) {
+                    setErrors(data.errors);
+                }
+
+                // Stop polling if upload is complete or failed
+                if (data.status === 'completed' || data.status === 'failed') {
+                    clearInterval(pollInterval);
+                }
+            } catch (error) {
+                console.error('Error polling status:', error);
+                clearInterval(pollInterval);
             }
-        });
+        };
 
-        setIsSubscribed(true);
+        // Start polling if still processing
+        if (status === 'processing') {
+            pollStatus(); // Initial poll
+            pollInterval = setInterval(pollStatus, 2000); // Poll every 2 seconds
+        }
 
         return () => {
-            channel.stopListening('.bulk-upload.status');
-            echo.leave(`bulk-upload.${bulkUpload.id}`);
+            if (pollInterval) {
+                clearInterval(pollInterval);
+            }
         };
-    }, [bulkUpload.id]);
+    }, [event.id, bulkUpload.id, status]);
 
     const getStatusIcon = () => {
         switch (status) {
@@ -145,7 +156,7 @@ export default function BulkUploadStatus({ auth, event, bulkUpload }) {
                             </Button>
                             {status === 'completed' && (
                                 <Button
-                                    onClick={() => window.location.href = route('events.attendees.index', event)}
+                                    onClick={() => router.visit(route('events.attendees.index', event))}
                                 >
                                     View Attendees
                                 </Button>
