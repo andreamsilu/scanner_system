@@ -9,9 +9,12 @@
                 <a href="{{ route('scanner.events.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left me-2"></i>Back to Events
                 </a>
-                <a href="{{ route('scanner.select-event', ['event' => $event->id]) }}" class="btn btn-primary">
-                    <i class="bi bi-upc-scan me-2"></i>Start Scanning
-                </a>
+                <form action="{{ route('scanner.select-event', ['event' => $event->id]) }}" method="POST" class="d-inline">
+                    @csrf
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-upc-scan me-2"></i>Start Scanning
+                    </button>
+                </form>
             </div>
         </div>
     </x-slot>
