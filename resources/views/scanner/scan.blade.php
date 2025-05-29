@@ -13,7 +13,7 @@
                     @csrf
                     @method('DELETE')
                     <button type="submit" class="btn btn-outline-danger">
-                        <i class="bi bi-x-circle me-2"></i>Deselect Event
+                    <i class="bi bi-x-circle me-2"></i>Deselect Event
                     </button>
                 </form>
             </div>

@@ -13,9 +13,9 @@
                 </a>
                 <a href="{{ route('scanner.validate.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-key-fill me-2"></i>Manual Validation
-                </a>
-            </div>
-        </x-slot>
+            </a>
+        </div>
+    </x-slot>
     </x-page-header>
 
     <!-- Events Grid -->
@@ -28,8 +28,8 @@
                             <div class="flex-shrink-0">
                                 <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
                                     <span class="h5 mb-0 text-primary">
-                                        {{ substr($event->name, 0, 1) }}
-                                    </span>
+                                    {{ substr($event->name, 0, 1) }}
+                                </span>
                                 </div>
                             </div>
                             <div class="ms-3">
@@ -42,12 +42,12 @@
 
                         <div class="mb-3">
                             <div class="d-flex align-items-center text-muted mb-2">
-                                <i class="bi bi-calendar-event me-2"></i>
-                                {{ $event->start_date->format('M d, Y') }} - {{ $event->end_date->format('M d, Y') }}
+                            <i class="bi bi-calendar-event me-2"></i>
+                            {{ $event->start_date->format('M d, Y') }} - {{ $event->end_date->format('M d, Y') }}
                             </div>
                             <div class="d-flex align-items-center text-muted">
-                                <i class="bi bi-geo-alt me-2"></i>
-                                {{ $event->location }}
+                            <i class="bi bi-geo-alt me-2"></i>
+                            {{ $event->location }}
                             </div>
                         </div>
 
@@ -102,19 +102,19 @@
                     <div class="card-body text-center py-5">
                         <i class="bi bi-calendar-x display-4 text-muted mb-3"></i>
                         <h5 class="card-title">
-                            @if(auth()->user()->hasRole('admin'))
-                                No Active Events
-                            @else
-                                No Assigned Events
-                            @endif
-                        </h5>
+                                @if(auth()->user()->hasRole('admin'))
+                                    No Active Events
+                                @else
+                                    No Assigned Events
+                                @endif
+                            </h5>
                         <p class="text-muted mb-0">
-                            @if(auth()->user()->hasRole('admin'))
-                                There are no active events available at the moment.
-                            @else
-                                You have not been assigned to any events yet. Please contact your administrator.
-                            @endif
-                        </p>
+                                @if(auth()->user()->hasRole('admin'))
+                                    There are no active events available at the moment.
+                                @else
+                                    You have not been assigned to any events yet. Please contact your administrator.
+                                @endif
+                            </p>
                     </div>
                 </div>
             </div>
@@ -124,7 +124,7 @@
     <!-- Pagination -->
     @if($events->hasPages())
         <div class="mt-4">
-            {{ $events->links() }}
-        </div>
+        {{ $events->links() }}
+    </div>
     @endif
 </x-app-layout> 

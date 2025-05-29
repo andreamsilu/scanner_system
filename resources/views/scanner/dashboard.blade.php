@@ -102,7 +102,7 @@
                                                 <form action="{{ route('scanner.events.select', $event) }}" method="POST" class="d-inline">
                                                     @csrf
                                                     <button type="submit" class="btn btn-primary btn-sm">
-                                                        <i class="bi bi-upc-scan me-1"></i> Scan
+                                                    <i class="bi bi-upc-scan me-1"></i> Scan
                                                     </button>
                                                 </form>
                                             </td>

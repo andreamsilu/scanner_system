@@ -689,7 +689,7 @@ class ScannerController extends Controller
                 $attendee = Attendee::where('token', '=', $token)
                     ->where('event_id', '=', $eventId)
                     ->with(['ticket', 'event'])
-                    ->first();
+                ->first();
 
                 Log::info('Attendee lookup results', [
                     'token' => $token,
@@ -720,25 +720,25 @@ class ScannerController extends Controller
                         'queries' => DB::getQueryLog()
                     ]);
 
-                    return response()->json([
-                        'success' => false,
+                return response()->json([
+                    'success' => false,
                         'message' => 'Invalid token or token not for this event.',
                         'code' => 'INVALID_TOKEN'
-                    ], 422);
-                }
+                ], 422);
+            }
 
                 // Check if ticket is already used
                 if ($attendee->ticket && $attendee->ticket->status === 'used') {
-                    return response()->json([
-                        'success' => false,
+            return response()->json([
+                'success' => false,
                         'message' => 'This ticket has already been used.',
                         'code' => 'TICKET_USED',
                         'attendee' => [
                             'name' => $attendee->name,
                             'email' => $attendee->email
                         ]
-                    ], 422);
-                }
+            ], 422);
+        }
 
                 // Update ticket status if exists
                 if ($attendee->ticket) {
@@ -757,8 +757,8 @@ class ScannerController extends Controller
                         // Log the successful validation
                         ScanLog::create([
                             'ticket_id' => $attendee->ticket->id,
-                            'scanner_id' => $user->id,
-                            'status' => 'success',
+            'scanner_id' => $user->id,
+            'status' => 'success',
                             'notes' => 'QR code scan - Check-in successful'
                         ]);
 
@@ -771,9 +771,9 @@ class ScannerController extends Controller
                         ]);
                     });
 
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Check-in successful!',
+        return response()->json([
+            'success' => true,
+            'message' => 'Check-in successful!',
                         'attendee' => [
                             'name' => $attendee->name,
                             'email' => $attendee->email,

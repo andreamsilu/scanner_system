@@ -84,7 +84,7 @@ class BulkUploadController extends Controller
                 ]);
             }
 
-            return redirect()->route('events.attendees.index', $event)
+            return redirect()->route('events.attendees.bulk-upload.status', ['event' => $event, 'bulkUpload' => $bulkUpload])
                 ->with('success', 'Bulk upload started. You will be notified when it\'s complete.');
 
         } catch (\Exception $e) {
@@ -107,7 +107,7 @@ class BulkUploadController extends Controller
     }
 
     /**
-     * Process the uploaded CSV file
+     * Process the uploaded file
      */
     protected function processUpload(string $path, BulkUpload $bulkUpload, Event $event)
     {
@@ -155,7 +155,7 @@ class BulkUploadController extends Controller
                 // Process CSV file
                 $csv = Reader::createFromPath(Storage::path($path), 'r');
                 $csv->setHeaderOffset(0);
-                $records = $csv->getRecords();
+                $records = iterator_to_array($csv->getRecords());
             }
 
             $totalRecords = count($records);
@@ -194,7 +194,7 @@ class BulkUploadController extends Controller
                         'position' => $record['position'] ?? null,
                         'token' => $token,
                         'bulk_upload_id' => $bulkUpload->id,
-                        'registration_status' => 'unchecked_in',
+                        'registration_status' => 'registered',
                     ]);
 
                     // Create ticket
@@ -202,16 +202,8 @@ class BulkUploadController extends Controller
                         'event_id' => $event->id,
                         'attendee_id' => $attendee->id,
                         'status' => 'active',
+                        'ticket_number' => Ticket::generateTicketNumber(),
                     ]);
-
-                    // Generate QR code
-                    $qrCodePath = $this->qrCodeService->generateQRCode(
-                        $token,
-                        $attendee->name,
-                        $event->name
-                    );
-
-                    $attendee->update(['qr_code_path' => $qrCodePath]);
 
                     DB::commit();
                     $processed++;
@@ -287,6 +279,9 @@ class BulkUploadController extends Controller
         return view('attendees.bulk-upload-status', compact('bulkUpload'));
     }
 
+    /**
+     * Get current upload status
+     */
     public function getStatus(BulkUpload $bulkUpload)
     {
         return response()->json([
@@ -304,6 +299,9 @@ class BulkUploadController extends Controller
         ]);
     }
 
+    /**
+     * Get status message based on upload status
+     */
     protected function getStatusMessage(BulkUpload $bulkUpload): string
     {
         if ($bulkUpload->status === 'completed') {

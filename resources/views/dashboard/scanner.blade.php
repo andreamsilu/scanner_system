@@ -34,7 +34,7 @@
                               class="d-inline">
                             @csrf
                             <button type="submit" class="btn btn-primary btn-sm">
-                                <i class="bi bi-upc-scan me-1"></i>Continue Scanning
+                            <i class="bi bi-upc-scan me-1"></i>Continue Scanning
                             </button>
                         </form>
                         <form action="{{ route('scanner.events.deselect', ['event' => $selectedEvent->id]) }}" 
@@ -217,7 +217,7 @@
                                                           class="d-inline">
                                                         @csrf
                                                         <button type="submit" class="btn btn-primary btn-sm">
-                                                            <i class="bi bi-upc-scan me-1"></i>Start Scanning
+                                                        <i class="bi bi-upc-scan me-1"></i>Start Scanning
                                                         </button>
                                                     </form>
                                                 </div>
