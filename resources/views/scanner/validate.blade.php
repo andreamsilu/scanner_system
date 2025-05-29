@@ -46,26 +46,29 @@
 
                         <div class="list-group mt-3">
                             @forelse($events as $event)
-                                <a href="{{ route('scanner.select-event', ['event' => $event->id]) }}" 
-                                   class="list-group-item list-group-item-action {{ session('selected_event_id') == $event->id ? 'active' : '' }}">
-                                    <div class="d-flex w-100 justify-content-between align-items-center">
-                                        <h6 class="mb-1">{{ $event->name }}</h6>
-                                        {!! $event->status_badge !!}
-                                    </div>
-                                    <small class="text-muted">
-                                        {{ $event->formatted_date_range }}
-                                    </small>
-                                    <div class="mt-2">
-                                        <small class="d-block">
-                                            <i class="bi bi-people me-1"></i>
-                                            {{ $event->attendees_count }} Attendees
+                                <form action="{{ route('scanner.select-event', $event) }}" method="POST" class="d-inline w-100">
+                                    @csrf
+                                    <button type="submit" 
+                                            class="list-group-item list-group-item-action w-100 text-start {{ session('selected_event_id') == $event->id ? 'active' : '' }}">
+                                        <div class="d-flex w-100 justify-content-between align-items-center">
+                                            <h6 class="mb-1">{{ $event->name }}</h6>
+                                            {!! $event->status_badge !!}
+                                        </div>
+                                        <small class="text-muted">
+                                            {{ $event->formatted_date_range }}
                                         </small>
-                                        <small class="d-block">
-                                            <i class="bi bi-check-circle me-1"></i>
-                                            {{ $event->scanned_count ?? 0 }} Checked In
-                                        </small>
-                                    </div>
-                                </a>
+                                        <div class="mt-2">
+                                            <small class="d-block">
+                                                <i class="bi bi-people me-1"></i>
+                                                {{ $event->attendees_count }} Attendees
+                                            </small>
+                                            <small class="d-block">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                {{ $event->scanned_count ?? 0 }} Checked In
+                                            </small>
+                                        </div>
+                                    </button>
+                                </form>
                             @empty
                                 <div class="text-center py-4">
                                     <i class="bi bi-calendar-x text-muted fs-1"></i>

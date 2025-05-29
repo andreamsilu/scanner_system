@@ -88,9 +88,11 @@
                 <i class="bi bi-calendar-x display-4 text-muted mb-3"></i>
                 <h5 class="card-title">No Event Selected</h5>
                 <p class="card-text text-muted">Please select an event to start validating tickets</p>
-                <a href="{{ route('scanner.events.index') }}" class="btn btn-primary">
-                    <i class="bi bi-calendar-event me-2"></i>Select Event
-                </a>
+                <form action="{{ route('scanner.events.index') }}" method="GET" class="d-inline">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-calendar-event me-2"></i>Select Event
+                    </button>
+                </form>
             </div>
         </div>
     @endif
