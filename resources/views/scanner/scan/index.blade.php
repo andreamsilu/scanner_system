@@ -66,9 +66,13 @@
                                             {{ $event->start_date->format('M d, Y') }} - {{ $event->end_date->format('M d, Y') }}
                                         </small>
                                     </div>
-                                    <a href="{{ route('scanner.events.deselect', $event) }}" class="btn btn-sm btn-outline-danger">
-                                        <i class="fas fa-times me-1"></i> Deselect Event
-                                    </a>
+                                    <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="fas fa-times me-1"></i> Deselect Event
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
