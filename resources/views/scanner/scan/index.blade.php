@@ -17,8 +17,8 @@
                         @method('DELETE')
                         <button type="submit" class="btn btn-link text-danger p-0">Deselect Event</button>
                     </form>
-                </div>
-            </x-slot>
+        </div>
+    </x-slot>
         @endif
     </x-page-header>
 
@@ -134,15 +134,15 @@
                                         @elseif($scan['status_class'] === 'warning') bg-warning
                                         @else bg-danger @endif">
                                         {{ ucfirst($scan['status']) }}
-                                    </span>
+                                            </span>
                                 </div>
                             </div>
-                        @empty
+                                @empty
                             <div class="text-center py-4">
                                 <i class="bi bi-upc-scan display-4 text-muted mb-2"></i>
                                 <p class="text-muted mb-0">No recent scans</p>
                             </div>
-                        @endforelse
+                                @endforelse
                     </div>
                 </div>
             </div>
@@ -254,7 +254,7 @@
 
             const data = await response.json();
             
-            if (data.success) {
+                if (data.success) {
                 // Update UI
                 document.getElementById('scannerStatus').className = 'badge bg-secondary';
                 document.getElementById('scannerStatus').textContent = 'Scanner Inactive';
@@ -325,9 +325,9 @@
             console.error('Error processing scan:', error);
             showMessage('An error occurred while processing the scan. Please try again.', 'danger');
         }
-    }
+        }
 
-    function onScanFailure(error) {
+        function onScanFailure(error) {
         // Handle scan failure silently
         console.warn(`QR code scan failed: ${error}`);
     }
@@ -354,7 +354,7 @@
         if (isScanning) {
             await stopScanner();
         }
-    });
+        });
     </script>
     @endpush
 </x-app-layout> 
