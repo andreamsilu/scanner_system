@@ -15,10 +15,12 @@
                     <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-link text-danger p-0">Deselect Event</button>
+                        <button type="submit" class="btn btn-link text-danger p-0">
+                            <i class="fas fa-times me-1"></i> Deselect Event
+                        </button>
                     </form>
-        </div>
-    </x-slot>
+                </div>
+            </x-slot>
         @endif
     </x-page-header>
 
