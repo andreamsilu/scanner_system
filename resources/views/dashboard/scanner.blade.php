@@ -208,10 +208,14 @@
                                                        class="btn btn-info btn-sm">
                                                         <i class="bi bi-eye me-1"></i>View Attendees
                                                     </a>
-                                                    <a href="{{ route('scanner.events.select', ['event' => $event->id]) }}" 
-                                                       class="btn btn-primary btn-sm">
-                                                        <i class="bi bi-upc-scan me-1"></i>Start Scanning
-                                                    </a>
+                                                    <form action="{{ route('scanner.events.select', ['event' => $event->id]) }}" 
+                                                          method="POST" 
+                                                          class="d-inline">
+                                                        @csrf
+                                                        <button type="submit" class="btn btn-primary btn-sm">
+                                                            <i class="bi bi-upc-scan me-1"></i>Start Scanning
+                                                        </button>
+                                                    </form>
                                                 </div>
                                             </td>
                                         </tr>
