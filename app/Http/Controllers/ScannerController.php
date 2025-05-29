@@ -467,11 +467,12 @@ class ScannerController extends Controller
             return DB::transaction(function() use ($request, $user, $eventId) {
                 // Find the attendee by token with a lock to prevent concurrent updates
                 $attendee = Attendee::where('token', $request->token)
-                ->where('event_id', $eventId)
+                    ->where('event_id', $eventId)
                     ->with(['ticket' => function($query) {
                         $query->lockForUpdate();
                     }])
-                ->first();
+                    ->lockForUpdate() // Lock the attendee record as well
+                    ->first();
 
                 if (!$attendee) {
                     return response()->json([
@@ -490,6 +491,37 @@ class ScannerController extends Controller
                     ], 422);
                 }
 
+                // Check if attendee is already checked in
+                if ($attendee->registration_status === 'checked_in') {
+                    // Check for recent duplicate scan attempts (within last 5 minutes)
+                    $recentDuplicate = ScanLog::where('ticket_id', $attendee->ticket->id)
+                        ->where('scanner_id', $user->id)
+                        ->where('status', 'duplicate')
+                        ->where('created_at', '>=', now()->subMinutes(5))
+                        ->exists();
+
+                    // Only log if it's not a recent duplicate attempt
+                    if (!$recentDuplicate) {
+                        ScanLog::create([
+                            'ticket_id' => $attendee->ticket->id,
+                            'scanner_id' => $user->id,
+                            'status' => 'duplicate',
+                            'notes' => 'QR code scan - Duplicate scan attempt (Already checked in)'
+                        ]);
+                    }
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This attendee has already been checked in.',
+                        'code' => 'ALREADY_CHECKED_IN',
+                        'attendee' => [
+                            'name' => $attendee->name,
+                            'email' => $attendee->email,
+                            'checked_in_at' => $attendee->checked_in_at
+                        ]
+                    ], 422);
+                }
+
                 // Check if ticket is already used
                 if ($attendee->ticket->status === 'used') {
                     // Check for recent duplicate scan attempts (within last 5 minutes)
@@ -505,21 +537,21 @@ class ScannerController extends Controller
                             'ticket_id' => $attendee->ticket->id,
                             'scanner_id' => $user->id,
                             'status' => 'duplicate',
-                            'notes' => 'QR code scan - Duplicate scan attempt'
+                            'notes' => 'QR code scan - Duplicate scan attempt (Ticket used)'
                         ]);
                     }
 
-                return response()->json([
-                    'success' => false,
-                    'message' => 'This ticket has already been used.',
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'This ticket has already been used.',
                         'code' => 'TICKET_USED',
                         'attendee' => [
                             'name' => $attendee->name,
                             'email' => $attendee->email,
                             'checked_in_at' => $attendee->ticket->used_at
                         ]
-                ], 422);
-            }
+                    ], 422);
+                }
 
                 // Check for any recent successful scans (within last 5 minutes)
                 $recentScan = ScanLog::where('ticket_id', $attendee->ticket->id)
@@ -528,30 +560,36 @@ class ScannerController extends Controller
                     ->exists();
 
                 if ($recentScan) {
-            return response()->json([
-                'success' => false,
+                    return response()->json([
+                        'success' => false,
                         'message' => 'This ticket was recently checked in.',
                         'code' => 'RECENT_SCAN',
                         'attendee' => [
                             'name' => $attendee->name,
                             'email' => $attendee->email
                         ]
-            ], 422);
-        }
+                    ], 422);
+                }
 
-                // Update ticket status
+                // Update both ticket status and attendee registration status
+                $now = now();
                 $attendee->ticket->update([
                     'status' => 'used',
-                    'used_at' => now()
+                    'used_at' => $now
+                ]);
+
+                $attendee->update([
+                    'registration_status' => 'checked_in',
+                    'checked_in_at' => $now
                 ]);
 
                 // Create scan log with unique constraint check
                 try {
                     ScanLog::create([
                         'ticket_id' => $attendee->ticket->id,
-            'scanner_id' => $user->id,
-            'status' => 'success',
-                        'notes' => 'QR code scan'
+                        'scanner_id' => $user->id,
+                        'status' => 'success',
+                        'notes' => 'QR code scan - Check-in successful'
                     ]);
                 } catch (\Exception $e) {
                     // If we get a duplicate entry error, roll back the transaction
@@ -561,13 +599,13 @@ class ScannerController extends Controller
                     throw $e;
                 }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Check-in successful!',
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Check-in successful!',
                     'attendee' => [
                         'name' => $attendee->name,
                         'email' => $attendee->email,
-                        'checked_in_at' => now()
+                        'checked_in_at' => $now
                     ]
                 ]);
             }, 5); // Retry transaction up to 5 times if deadlock occurs
