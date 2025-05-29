@@ -132,20 +132,23 @@ class BulkUploadController extends Controller
                         throw new \Exception('Name and phone are required fields');
                     }
 
-                    // Validate email format if provided
-                    if (!empty($record['email']) && !filter_var($record['email'], FILTER_VALIDATE_EMAIL)) {
+                    // Set default email if none provided
+                    if (empty($record['email'])) {
+                        $record['email'] = 'admin@gmail.com';
+                    }
+
+                    // Validate email format
+                    if (!filter_var($record['email'], FILTER_VALIDATE_EMAIL)) {
                         throw new \Exception('Invalid email format: ' . $record['email']);
                     }
 
-                    // Check for existing attendee with same email for this event (only if email is provided)
-                    if (!empty($record['email'])) {
-                        $existingAttendee = Attendee::where('event_id', $event->id)
-                            ->where('email', $record['email'])
-                            ->first();
+                    // Check for existing attendee with same email for this event
+                    $existingAttendee = Attendee::where('event_id', $event->id)
+                        ->where('email', $record['email'])
+                        ->first();
 
-                        if ($existingAttendee) {
-                            throw new \Exception("Duplicate email '{$record['email']}' for this event. Attendee already exists with name: {$existingAttendee->name}");
-                        }
+                    if ($existingAttendee) {
+                        throw new \Exception("Duplicate email '{$record['email']}' for this event. Attendee already exists with name: {$existingAttendee->name}");
                     }
 
                     DB::beginTransaction();
