@@ -92,13 +92,16 @@ Route::middleware('auth')->group(function () {
                 Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
                 
                 // Event tickets management
-                Route::get('/{event}/tickets', [EventController::class, 'tickets'])->name('tickets');
-                Route::get('/{event}/tickets/create/{attendee}', [TicketController::class, 'create'])->name('tickets.create');
-                Route::post('/{event}/tickets/store/{attendee}', [TicketController::class, 'store'])->name('tickets.store');
-                Route::get('/{event}/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
-                Route::post('/{event}/tickets/generate', [TicketController::class, 'generate'])->name('tickets.generate');
-                Route::get('/{event}/tickets/{ticket}/print', [TicketController::class, 'print'])->name('tickets.print');
-                Route::get('/{event}/tickets/{ticket}/export', [TicketController::class, 'export'])->name('tickets.export');
+                Route::prefix('{event}/tickets')->name('events.tickets.')->group(function () {
+                    Route::get('/', [TicketController::class, 'index'])->name('index');
+                    Route::get('/create/{attendee}', [TicketController::class, 'create'])->name('create');
+                    Route::post('/store/{attendee}', [TicketController::class, 'store'])->name('store');
+                    Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
+                    Route::post('/generate', [TicketController::class, 'generate'])->name('generate');
+                    Route::get('/{ticket}/print', [TicketController::class, 'print'])->name('print');
+                    Route::get('/{ticket}/export', [TicketController::class, 'export'])->name('export');
+                    Route::patch('/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('deactivate');
+                });
                 
                 // Scanner Assignment Routes
                 Route::post('/{event}/scanners/assign', [EventController::class, 'assignScanner'])->name('scanners.assign');
