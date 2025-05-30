@@ -98,6 +98,8 @@ Route::middleware('auth')->group(function () {
                 Route::get('/{event}/tickets/{ticket}', [TicketController::class, 'show'])->name('tickets.show');
                 Route::post('/{event}/tickets/generate', [TicketController::class, 'generate'])->name('tickets.generate');
                 Route::patch('/{event}/tickets/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('tickets.deactivate');
+                Route::patch('/{event}/tickets/{ticket}/validate', [TicketController::class, 'validate'])->name('tickets.validate');
+                Route::patch('/{event}/tickets/{ticket}/invalidate', [TicketController::class, 'invalidate'])->name('tickets.invalidate');
                 Route::get('/{event}/tickets/{ticket}/print', [TicketController::class, 'print'])->name('tickets.print');
                 Route::get('/{event}/tickets/{ticket}/export', [TicketController::class, 'export'])->name('tickets.export');
                 

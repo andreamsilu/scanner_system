@@ -140,7 +140,7 @@
                 </div>
                 <div class="card-footer">
                     <div class="d-flex justify-content-between align-items-center">
-                        <a href="{{ route('events.tickets.index', $event) }}" class="btn btn-secondary">
+                        <a href="{{ route('events.tickets', $event) }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-1"></i> Back to Tickets
                         </a>
                         @if($ticket->is_valid)
