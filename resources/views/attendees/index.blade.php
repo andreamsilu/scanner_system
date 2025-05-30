@@ -118,14 +118,6 @@
                                                title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            @if($attendee->ticket)
-                                                <a href="{{ route('tickets.print', $attendee->ticket) }}" 
-                                                   class="btn btn-sm btn-outline-success"
-                                                   title="Print Ticket"
-                                                   target="_blank">
-                                                    <i class="bi bi-printer"></i>
-                                                </a>
-                                            @endif
                                             <a href="{{ route('events.attendees.edit', ['event' => $event, 'attendee' => $attendee]) }}" 
                                                class="btn btn-sm btn-outline-secondary"
                                                title="Edit Attendee">
