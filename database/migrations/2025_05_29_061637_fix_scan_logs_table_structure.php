@@ -16,9 +16,9 @@ return new class extends Migration
         if (Schema::hasColumn('scan_logs', 'scan_key')) {
             // Drop any unique constraints if they exist
             if (Schema::hasIndex('scan_logs', 'unique_scan_log')) {
-                Schema::table('scan_logs', function (Blueprint $table) {
+        Schema::table('scan_logs', function (Blueprint $table) {
                     $table->dropUnique('unique_scan_log');
-                });
+        });
             }
 
             // First, allow NULL values
@@ -42,9 +42,9 @@ return new class extends Migration
             DB::statement('ALTER TABLE scan_logs MODIFY scan_key VARCHAR(32) NOT NULL');
             
             // Re-add the unique constraint
-            Schema::table('scan_logs', function (Blueprint $table) {
+        Schema::table('scan_logs', function (Blueprint $table) {
                 $table->unique('scan_key', 'unique_scan_log');
-            });
+        });
         }
     }
 };
