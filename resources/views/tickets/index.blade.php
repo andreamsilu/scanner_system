@@ -76,7 +76,7 @@
                                 </td>
                                 <td class="py-2">
                                     @if($ticket->last_scan)
-                                        <span class="text-muted" title="{{ $ticket->last_scan->created_at->format('F j, Y g:i A') }}">
+                                        <span class="text-muted" title="{{ $ticket->last_scan->created_at->format('d-m-Y H:i') }}">
                                             {{ $ticket->last_scan->created_at->diffForHumans() }}
                                         </span>
                                     @else
@@ -84,7 +84,7 @@
                                     @endif
                                 </td>
                                 <td class="py-2">
-                                    <span class="text-muted">{{ $ticket->created_at->format('M j, Y') }}</span>
+                                    <span class="text-muted">{{ $ticket->created_at->format('d-m-Y') }}</span>
                                 </td>
                                 <td class="py-2 text-end">
                                     <div class="btn-group btn-group-sm">

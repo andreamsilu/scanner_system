@@ -88,7 +88,7 @@
                                     </td>
                                     <td>
                                         @if($attendee->ticket && $attendee->ticket->scanLogs->isNotEmpty())
-                                            <span class="text-muted" title="{{ $attendee->ticket->scanLogs->first()->created_at->format('M d, Y h:i A') }}">
+                                            <span class="text-muted" title="{{ $attendee->ticket->scanLogs->first()->created_at->format('d-m-Y H:i') }}">
                                                 {{ $attendee->ticket->scanLogs->first()->created_at->diffForHumans() }}
                                             </span>
                                             <br>
@@ -99,7 +99,7 @@
                                             <span class="text-muted">Not scanned</span>
                                         @endif
                                     </td>
-                                    <td>{{ $attendee->created_at->format('M d, Y') }}</td>
+                                    <td>{{ $attendee->created_at->format('d-m-Y') }}</td>
                                     <td class="text-end">
                                         <div class="btn-group">
                                             <button type="button" 
