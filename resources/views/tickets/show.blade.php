@@ -248,19 +248,19 @@
         </div>
         
         <div id="shareButtons" class="share-buttons">
-            <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(route('tickets.show', $ticket->token)) }}" 
+            <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->id])) }}" 
                target="_blank" class="social-share-btn facebook">
                 <i class="fab fa-facebook-f"></i> Facebook
             </a>
-            <a href="https://twitter.com/intent/tweet?text={{ urlencode('Check out my ticket for ' . $ticket->event->name) }}&url={{ urlencode(route('tickets.show', $ticket->token)) }}" 
+            <a href="https://twitter.com/intent/tweet?text={{ urlencode('Check out my ticket for ' . $ticket->event->name) }}&url={{ urlencode(route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->id])) }}" 
                target="_blank" class="social-share-btn twitter">
                 <i class="fab fa-twitter"></i> Twitter
             </a>
-            <a href="https://wa.me/?text={{ urlencode('Check out my ticket for ' . $ticket->event->name . ': ' . route('tickets.show', $ticket->token)) }}" 
+            <a href="https://wa.me/?text={{ urlencode('Check out my ticket for ' . $ticket->event->name . ': ' . route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->id])) }}" 
                target="_blank" class="social-share-btn whatsapp">
                 <i class="fab fa-whatsapp"></i> WhatsApp
             </a>
-            <a href="https://t.me/share/url?url={{ urlencode(route('tickets.show', $ticket->token)) }}&text={{ urlencode('Check out my ticket for ' . $ticket->event->name) }}" 
+            <a href="https://t.me/share/url?url={{ urlencode(route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->id])) }}&text={{ urlencode('Check out my ticket for ' . $ticket->event->name) }}" 
                target="_blank" class="social-share-btn telegram">
                 <i class="fab fa-telegram"></i> Telegram
             </a>
