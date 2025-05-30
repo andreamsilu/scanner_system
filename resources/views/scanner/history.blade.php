@@ -97,7 +97,7 @@
                         <tbody>
                             @forelse($scans as $scan)
                                 <tr>
-                                    <td>{{ $scan->created_at->format('M d, Y h:i A') }}</td>
+                                    <td>{{ $scan->created_at->format('d-m-Y H:i') }}</td>
                                     <td>
                                         @if($scan->ticket && $scan->ticket->attendee)
                                             {{ $scan->ticket->attendee->name }}

@@ -1,0 +1,388 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Event;
+use App\Models\Ticket;
+use App\Models\SmsLog;
+use App\Models\SmsTemplate;
+use App\Services\SmsService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class SmsManagementController extends Controller
+{
+    protected $smsService;
+
+    public function __construct(SmsService $smsService)
+    {
+        $this->smsService = $smsService;
+    }
+
+    /**
+     * Display the SMS management dashboard
+     */
+    public function index(Request $request)
+    {
+        $events = Event::withCount(['tickets', 'attendees'])
+            ->when($request->search, function($query, $search) {
+                $query->where('name', 'like', "%{$search}%");
+            })
+            ->latest()
+            ->paginate(10);
+
+        return view('sms.management.index', compact('events'));
+    }
+
+    /**
+     * Display SMS management for a specific event
+     */
+    public function showEvent(Event $event, Request $request)
+    {
+        $templates = SmsTemplate::where('is_active', true)->get();
+        
+        $attendees = $event->attendees()
+            ->with(['tickets' => function($query) use ($event) {
+                $query->where('event_id', $event->id);
+            }])
+            ->when($request->search, function($query, $search) {
+                $query->where(function($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                      ->orWhere('email', 'like', "%{$search}%")
+                      ->orWhere('phone', 'like', "%{$search}%");
+                });
+            })
+            ->paginate(15);
+
+        $smsStats = SmsLog::whereJsonContains('metadata->event_id', $event->id)
+            ->select('type', DB::raw('count(*) as count'))
+            ->groupBy('type')
+            ->get();
+
+        $recentLogs = SmsLog::whereJsonContains('metadata->event_id', $event->id)
+            ->with(['metadata'])
+            ->latest()
+            ->take(10)
+            ->get();
+
+        return view('sms.management.event', compact(
+            'event',
+            'templates',
+            'attendees',
+            'smsStats',
+            'recentLogs'
+        ));
+    }
+
+    /**
+     * Send SMS to selected attendees
+     */
+    public function sendBulkSms(Request $request, Event $event)
+    {
+        $request->validate([
+            'attendee_ids' => 'required|array',
+            'attendee_ids.*' => 'exists:attendees,id',
+            'template_id' => 'required|exists:sms_templates,id',
+            'message' => 'required|string|max:160'
+        ]);
+
+        $template = SmsTemplate::findOrFail($request->template_id);
+        $attendees = $event->attendees()->whereIn('id', $request->attendee_ids)->get();
+        
+        $successCount = 0;
+        $failedCount = 0;
+        $results = [];
+
+        foreach ($attendees as $attendee) {
+            $ticket = $attendee->tickets()->where('event_id', $event->id)->first();
+            
+            if (!$ticket || !$attendee->phone) {
+                $failedCount++;
+                $results[] = [
+                    'attendee' => $attendee->name,
+                    'status' => 'failed',
+                    'reason' => !$attendee->phone ? 'No phone number' : 'No ticket found'
+                ];
+                continue;
+            }
+
+            $data = [
+                'user_name' => $attendee->name,
+                'event_name' => $event->name,
+                'date' => $event->date->format('F j, Y g:i A'),
+                'location' => $event->location,
+                'ticket_number' => $ticket->ticket_number,
+                'ticket_type' => $ticket->type,
+                'ticket_price' => $ticket->price
+            ];
+
+            $success = $this->smsService->send(
+                $attendee->phone,
+                $request->message,
+                $template->type,
+                [
+                    'event_id' => $event->id,
+                    'attendee_id' => $attendee->id,
+                    'ticket_id' => $ticket->id
+                ]
+            );
+
+            if ($success) {
+                $successCount++;
+                $results[] = [
+                    'attendee' => $attendee->name,
+                    'status' => 'success'
+                ];
+            } else {
+                $failedCount++;
+                $results[] = [
+                    'attendee' => $attendee->name,
+                    'status' => 'failed',
+                    'reason' => 'SMS sending failed'
+                ];
+            }
+        }
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => "Sent {$successCount} messages successfully, {$failedCount} failed",
+                'results' => $results
+            ]);
+        }
+
+        return redirect()->route('sms.management.event', $event)
+            ->with('success', "Sent {$successCount} messages successfully, {$failedCount} failed")
+            ->with('results', $results);
+    }
+
+    /**
+     * Send invitation SMS to an attendee
+     */
+    public function sendAttendeeInvitation(Request $request, Event $event)
+    {
+        $request->validate([
+            'attendee_id' => 'required|exists:attendees,id',
+            'ticket_id' => 'required|exists:tickets,id'
+        ]);
+
+        $attendee = $event->attendees()->findOrFail($request->attendee_id);
+        $ticket = $attendee->tickets()->findOrFail($request->ticket_id);
+
+        $success = $this->smsService->sendAttendeeInvitation($attendee, $event, $ticket);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => $success,
+                'message' => $success ? 'Invitation sent successfully' : 'Failed to send invitation'
+            ]);
+        }
+
+        return redirect()->route('sms.management.event', $event)
+            ->with($success ? 'success' : 'error', 
+                $success ? 'Invitation sent successfully' : 'Failed to send invitation');
+    }
+
+    /**
+     * Send event reminder SMS
+     */
+    public function sendEventReminder(Request $request, Event $event)
+    {
+        $request->validate([
+            'ticket_id' => 'required|exists:tickets,id'
+        ]);
+
+        $ticket = Ticket::findOrFail($request->ticket_id);
+        $success = $this->smsService->sendEventReminder($ticket);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => $success,
+                'message' => $success ? 'Reminder sent successfully' : 'Failed to send reminder'
+            ]);
+        }
+
+        return redirect()->route('sms.management.event', $event)
+            ->with($success ? 'success' : 'error', 
+                $success ? 'Reminder sent successfully' : 'Failed to send reminder');
+    }
+
+    /**
+     * Send ticket usage notification
+     */
+    public function sendTicketUsageNotification(Request $request, Event $event)
+    {
+        $request->validate([
+            'ticket_id' => 'required|exists:tickets,id',
+            'entry_point' => 'required|string'
+        ]);
+
+        $ticket = Ticket::findOrFail($request->ticket_id);
+        $success = $this->smsService->sendTicketUsageNotification($ticket, $request->entry_point);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => $success,
+                'message' => $success ? 'Notification sent successfully' : 'Failed to send notification'
+            ]);
+        }
+
+        return redirect()->route('sms.management.event', $event)
+            ->with($success ? 'success' : 'error', 
+                $success ? 'Notification sent successfully' : 'Failed to send notification');
+    }
+
+    /**
+     * Get SMS templates
+     */
+    public function getTemplates(Request $request)
+    {
+        $templates = SmsTemplate::when($request->type, function($query, $type) {
+            $query->where('type', $type);
+        })->where('is_active', true)->get();
+
+        if ($request->wantsJson()) {
+            return response()->json(['templates' => $templates]);
+        }
+
+        return view('sms.management.templates', compact('templates'));
+    }
+
+    /**
+     * Store a new SMS template
+     */
+    public function storeTemplate(Request $request)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|string|max:50',
+            'content' => 'required|string|max:160',
+            'is_active' => 'boolean'
+        ]);
+
+        $template = SmsTemplate::create($request->all());
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'template' => $template
+            ]);
+        }
+
+        return redirect()->route('sms.management.templates')
+            ->with('success', 'Template created successfully');
+    }
+
+    /**
+     * Update an SMS template
+     */
+    public function updateTemplate(Request $request, SmsTemplate $template)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|string|max:50',
+            'content' => 'required|string|max:160',
+            'is_active' => 'boolean'
+        ]);
+
+        $template->update($request->all());
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'template' => $template
+            ]);
+        }
+
+        return redirect()->route('sms.management.templates')
+            ->with('success', 'Template updated successfully');
+    }
+
+    /**
+     * Delete an SMS template
+     */
+    public function deleteTemplate(SmsTemplate $template)
+    {
+        $template->delete();
+
+        if (request()->wantsJson()) {
+            return response()->json(['success' => true]);
+        }
+
+        return redirect()->route('sms.management.templates')
+            ->with('success', 'Template deleted successfully');
+    }
+
+    /**
+     * Get SMS logs for an event
+     */
+    public function getEventLogs(Event $event, Request $request)
+    {
+        $logs = SmsLog::whereJsonContains('metadata->event_id', $event->id)
+            ->when($request->type, function($query, $type) {
+                $query->where('type', $type);
+            })
+            ->when($request->status, function($query, $status) {
+                $query->where('status', $status);
+            })
+            ->when($request->search, function($query, $search) {
+                $query->where('to', 'like', "%{$search}%")
+                    ->orWhere('message', 'like', "%{$search}%");
+            })
+            ->with(['metadata'])
+            ->latest()
+            ->paginate(15);
+
+        if ($request->wantsJson()) {
+            return response()->json(['logs' => $logs]);
+        }
+
+        return view('sms.management.logs', compact('event', 'logs'));
+    }
+
+    /**
+     * Export SMS logs for an event
+     */
+    public function exportLogs(Event $event, Request $request)
+    {
+        $logs = SmsLog::whereJsonContains('metadata->event_id', $event->id)
+            ->when($request->type, function($query, $type) {
+                $query->where('type', $type);
+            })
+            ->when($request->status, function($query, $status) {
+                $query->where('status', $status);
+            })
+            ->with(['metadata'])
+            ->latest()
+            ->get();
+
+        $filename = "sms-logs-{$event->id}-" . now()->format('Y-m-d') . '.csv';
+        
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => "attachment; filename=\"$filename\"",
+        ];
+
+        $callback = function() use ($logs) {
+            $file = fopen('php://output', 'w');
+            
+            // Add headers
+            fputcsv($file, ['Type', 'To', 'Message', 'Status', 'Created At']);
+            
+            // Add data
+            foreach ($logs as $log) {
+                fputcsv($file, [
+                    $log->type,
+                    $log->to,
+                    $log->message,
+                    $log->status,
+                    $log->created_at
+                ]);
+            }
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+} 

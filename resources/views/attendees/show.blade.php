@@ -70,13 +70,13 @@
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label text-muted small">Registration Date</label>
-                                    <p class="mb-0 fw-medium">{{ $attendee->created_at->format('M d, Y H:i') }}</p>
+                                    <p class="mb-0 fw-medium">{{ $attendee->created_at->format('d-m-Y H:i') }}</p>
                                 </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label text-muted small">Last Updated</label>
-                                    <p class="mb-0 fw-medium">{{ $attendee->updated_at->format('M d, Y H:i') }}</p>
+                                    <p class="mb-0 fw-medium">{{ $attendee->updated_at->format('d-m-Y H:i') }}</p>
                                 </div>
                             </div>
                         </div>
@@ -175,13 +175,13 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label text-muted small">Created At</label>
-                                        <p class="mb-0 fw-medium">{{ $attendee->ticket->created_at->format('M d, Y H:i') }}</p>
+                                        <p class="mb-0 fw-medium">{{ $attendee->ticket->created_at->format('d-m-Y H:i') }}</p>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label text-muted small">Last Updated</label>
-                                        <p class="mb-0 fw-medium">{{ $attendee->ticket->updated_at->format('M d, Y H:i') }}</p>
+                                        <p class="mb-0 fw-medium">{{ $attendee->ticket->updated_at->format('d-m-Y H:i') }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -230,7 +230,7 @@
                                     <tbody>
                                         @foreach($attendee->ticket->scan_logs as $log)
                                             <tr>
-                                                <td>{{ $log->created_at->format('M d, Y H:i:s') }}</td>
+                                                <td>{{ $log->created_at->format('d-m-Y H:i:s') }}</td>
                                                 <td>{{ $log->scanner->name ?? 'System' }}</td>
                                                 <td>
                                                     <span class="badge bg-{{ $log->status === 'valid' ? 'success' : 'danger' }}">
@@ -270,8 +270,8 @@
                         <div class="mb-3">
                             <label class="form-label text-muted small">Date</label>
                             <p class="mb-0 fw-medium">
-                                {{ $event->start_date->format('M d, Y') }} - 
-                                {{ $event->end_date->format('M d, Y') }}
+                                {{ $event->start_date->format('d-m-Y') }} - 
+                                {{ $event->end_date->format('d-m-Y') }}
                             </p>
                         </div>
                         <div class="mb-3">
