@@ -119,7 +119,7 @@
                                                 <i class="bi bi-eye"></i>
                                             </a>
                                             @if($attendee->ticket)
-                                                <a href="{{ route('events.tickets.print', ['event' => $event, 'ticket' => $attendee->ticket]) }}" 
+                                                <a href="{{ route('tickets.print', $attendee->ticket) }}" 
                                                    class="btn btn-sm btn-outline-success"
                                                    title="Print Ticket"
                                                    target="_blank">
