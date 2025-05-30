@@ -87,7 +87,7 @@
                                 <td>{{ $ticket->created_at->format('M j, Y g:i A') }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="{{ route('tickets.show', $ticket) }}" 
+                                        <a href="{{ route('events.tickets.show', $ticket) }}" 
                                            class="btn btn-sm btn-info" 
                                            title="View Details">
                                             <i class="bi bi-eye"></i>
