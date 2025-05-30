@@ -1,8 +1,8 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot:title>
+        Ticket Details
+    </x-slot>
 
-@section('title', 'Ticket Details')
-
-@section('content')
     <div class="row">
         <div class="col-12">
             <div class="card">
@@ -135,72 +135,72 @@
         </div>
     </div>
 
-    @push('styles')
-    <style>
-        @media print {
-            body * {
-                visibility: hidden;
+    <x-slot:styles>
+        <style>
+            @media print {
+                body * {
+                    visibility: hidden;
+                }
+                #printableTicket, #printableTicket * {
+                    visibility: visible;
+                }
+                #printableTicket {
+                    position: absolute;
+                    left: 0;
+                    top: 0;
+                    width: 100%;
+                }
+                .ticket-qr {
+                    margin: 2rem 0;
+                }
+                .ticket-details {
+                    margin: 2rem 0;
+                }
             }
-            #printableTicket, #printableTicket * {
-                visibility: visible;
+            .qr-code-container {
+                border: 1px solid #dee2e6;
+                border-radius: 0.5rem;
             }
-            #printableTicket {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-            }
-            .ticket-qr {
-                margin: 2rem 0;
-            }
-            .ticket-details {
-                margin: 2rem 0;
-            }
-        }
-        .qr-code-container {
-            border: 1px solid #dee2e6;
-            border-radius: 0.5rem;
-        }
-    </style>
-    @endpush
+        </style>
+    </x-slot>
 
-    @push('scripts')
-    <script>
-        function printTicket() {
-            window.print();
-        }
+    <x-slot:scripts>
+        <script>
+            function printTicket() {
+                window.print();
+            }
 
-        function shareViaWhatsApp() {
-            const text = `Ticket for {{ $event->name }}\n\n` +
-                        `Attendee: {{ $ticket->attendee->name }}\n` +
-                        `Ticket ID: {{ $ticket->token }}\n` +
-                        `Event Date: {{ $event->start_date->format('M d, Y') }}\n\n` +
-                        `View ticket: {{ route('tickets.verify', $ticket->token) }}`;
-            
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-            window.open(whatsappUrl, '_blank');
-        }
+            function shareViaWhatsApp() {
+                const text = `Ticket for {{ $event->name }}\n\n` +
+                            `Attendee: {{ $ticket->attendee->name }}\n` +
+                            `Ticket ID: {{ $ticket->token }}\n` +
+                            `Event Date: {{ $event->start_date->format('M d, Y') }}\n\n` +
+                            `View ticket: {{ route('tickets.verify', $ticket->token) }}`;
+                
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                window.open(whatsappUrl, '_blank');
+            }
 
-        function shareViaSMS() {
-            const text = `Ticket for {{ $event->name }}\n\n` +
-                        `Attendee: {{ $ticket->attendee->name }}\n` +
-                        `Ticket ID: {{ $ticket->token }}\n` +
-                        `Event Date: {{ $event->start_date->format('M d, Y') }}\n\n` +
-                        `View ticket: {{ route('tickets.verify', $ticket->token) }}`;
-            
-            const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
-            window.location.href = smsUrl;
-        }
+            function shareViaSMS() {
+                const text = `Ticket for {{ $event->name }}\n\n` +
+                            `Attendee: {{ $ticket->attendee->name }}\n` +
+                            `Ticket ID: {{ $ticket->token }}\n` +
+                            `Event Date: {{ $event->start_date->format('M d, Y') }}\n\n` +
+                            `View ticket: {{ route('tickets.verify', $ticket->token) }}`;
+                
+                const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
+                window.location.href = smsUrl;
+            }
 
-        function copyTicketLink() {
-            const ticketUrl = '{{ route('tickets.verify', $ticket->token) }}';
-            navigator.clipboard.writeText(ticketUrl).then(() => {
-                alert('Ticket link copied to clipboard!');
-            }).catch(err => {
-                console.error('Failed to copy ticket link:', err);
-                alert('Failed to copy ticket link. Please try again.');
-            });
-        }
-    </script>
-    @endpush
-@endsection 
+            function copyTicketLink() {
+                const ticketUrl = '{{ route('tickets.verify', $ticket->token) }}';
+                navigator.clipboard.writeText(ticketUrl).then(() => {
+                    alert('Ticket link copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy ticket link:', err);
+                    alert('Failed to copy ticket link. Please try again.');
+                });
+            }
+        </script>
+    </x-slot>
+</x-app-layout> 
