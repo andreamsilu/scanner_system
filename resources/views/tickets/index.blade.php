@@ -20,40 +20,39 @@
     @endif
 
     <div class="card">
-        <div class="card-body">
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover" id="tickets-table">
-                    <thead>
+                <table class="table table-hover table-sm mb-0" id="tickets-table">
+                    <thead class="table-light">
                         <tr>
-                            <th>Attendee Name</th>
-                            <th>Event</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th>Last Scan</th>
-                            <th>Created At</th>
-                            <th>Actions</th>
+                            <th class="py-2">Attendee</th>
+                            <th class="py-2">Event</th>
+                            <th class="py-2">Type</th>
+                            <th class="py-2">Status</th>
+                            <th class="py-2">Last Scan</th>
+                            <th class="py-2">Created</th>
+                            <th class="py-2 text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($tickets as $ticket)
                             <tr>
-                                <td>
+                                <td class="py-2">
                                     @if($ticket->attendee)
-                                        <div>
-                                            <span>{{ $ticket->attendee->name }}</span>
-                                            <br>
-                                            <small class="text-muted">ID: {{ $ticket->token }}</small>
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-medium">{{ $ticket->attendee->name }}</span>
+                                            <small class="text-muted">#{{ $ticket->token }}</small>
                                         </div>
                                     @else
                                         <span class="text-muted">Unassigned</span>
                                     @endif
                                 </td>
-                                <td>
-                                    <a href="{{ route('events.show', $ticket->event) }}">
-                                        {{ $ticket->event->name }}
+                                <td class="py-2">
+                                    <a href="{{ route('events.show', $ticket->event) }}" class="text-decoration-none">
+                                        {{ Str::limit($ticket->event->name, 20) }}
                                     </a>
                                 </td>
-                                <td>
+                                <td class="py-2">
                                     @php
                                         $ticketType = $ticket->type;
                                         $badgeClass = match($ticketType) {
@@ -64,48 +63,44 @@
                                             default => 'bg-secondary'
                                         };
                                     @endphp
-                                    <span class="badge {{ $badgeClass }}">
+                                    <span class="badge {{ $badgeClass }} px-2 py-1">
                                         {{ ucfirst($ticketType) }}
                                     </span>
                                 </td>
-                                <td>
+                                <td class="py-2">
                                     @if($ticket->is_active)
-                                        <span class="badge bg-success">Active</span>
+                                        <span class="badge bg-success px-2 py-1">Active</span>
                                     @else
-                                        <span class="badge bg-danger">Inactive</span>
+                                        <span class="badge bg-danger px-2 py-1">Inactive</span>
                                     @endif
                                 </td>
-                                <td>
+                                <td class="py-2">
                                     @if($ticket->last_scan)
-                                        <span title="{{ $ticket->last_scan->created_at->format('F j, Y g:i A') }}">
+                                        <span class="text-muted" title="{{ $ticket->last_scan->created_at->format('F j, Y g:i A') }}">
                                             {{ $ticket->last_scan->created_at->diffForHumans() }}
                                         </span>
                                     @else
                                         <span class="text-muted">Never</span>
                                     @endif
                                 </td>
-                                <td>{{ $ticket->created_at->format('M j, Y g:i A') }}</td>
-                                <td>
-                                    <div class="btn-group">
+                                <td class="py-2">
+                                    <span class="text-muted">{{ $ticket->created_at->format('M j, Y') }}</span>
+                                </td>
+                                <td class="py-2 text-end">
+                                    <div class="btn-group btn-group-sm">
                                         <a href="{{ route('events.events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" 
-                                           class="btn btn-sm btn-info" 
+                                           class="btn btn-outline-info" 
                                            title="View Details">
                                             <i class="bi bi-eye"></i>
                                         </a>
                                         <button type="button"
-                                                class="btn btn-sm btn-primary"
+                                                class="btn btn-outline-primary"
                                                 title="Print Ticket"
                                                 onclick="printTicket('{{ route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
                                             <i class="bi bi-printer"></i>
                                         </button>
-                                        <a href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}"
-                                           class="btn btn-sm btn-danger"
-                                           title="Download PDF"
-                                           target="_blank">
-                                            <i class="bi bi-file-pdf"></i>
-                                        </a>
                                         <button type="button" 
-                                                class="btn btn-sm btn-success" 
+                                                class="btn btn-outline-success" 
                                                 title="Share Ticket"
                                                 data-bs-toggle="dropdown" 
                                                 aria-expanded="false">
@@ -114,23 +109,23 @@
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
                                                 <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fab fa-whatsapp me-2"></i> Share via WhatsApp
+                                                    <i class="fab fa-whatsapp me-2"></i> WhatsApp
                                                 </a>
                                             </li>
                                             <li>
                                                 <a class="dropdown-item" href="#" onclick="shareViaSMS('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fas fa-sms me-2"></i> Share via SMS
+                                                    <i class="fas fa-sms me-2"></i> SMS
                                                 </a>
                                             </li>
                                             <li>
                                                 <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fas fa-link me-2"></i> Copy Ticket Link
+                                                    <i class="fas fa-link me-2"></i> Copy Link
                                                 </a>
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
                                                 <a class="dropdown-item" href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
-                                                    <i class="bi bi-file-pdf me-2"></i> Download as PDF
+                                                    <i class="bi bi-file-pdf me-2"></i> Download PDF
                                                 </a>
                                             </li>
                                         </ul>
@@ -142,7 +137,7 @@
                                                 @csrf
                                                 @method('PATCH')
                                                 <button type="submit" 
-                                                        class="btn btn-sm btn-warning" 
+                                                        class="btn btn-outline-warning" 
                                                         title="Deactivate">
                                                     <i class="bi bi-x-circle"></i>
                                                 </button>
@@ -153,18 +148,68 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="8" class="text-center">No tickets found.</td>
+                                <td colspan="7" class="text-center py-3">No tickets found.</td>
                             </tr>
                         @endforelse
                     </tbody>
                 </table>
             </div>
 
-            <div class="mt-4">
-                {{ $tickets->links() }}
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+                <div class="text-muted small">
+                    Showing {{ $tickets->firstItem() ?? 0 }} to {{ $tickets->lastItem() ?? 0 }} of {{ $tickets->total() }} entries
+                </div>
+                <div>
+                    {{ $tickets->links() }}
+                </div>
             </div>
         </div>
     </div>
+
+    @push('styles')
+    <style>
+        @media print {
+            .table {
+                font-size: 11px;
+            }
+            .btn-group {
+                display: none !important;
+            }
+            .table td, .table th {
+                padding: 0.25rem !important;
+            }
+            .badge {
+                font-size: 10px;
+            }
+        }
+
+        .table-sm td, .table-sm th {
+            padding: 0.5rem;
+        }
+        
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+        }
+
+        .badge {
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .dropdown-menu {
+            font-size: 0.875rem;
+            min-width: 180px;
+        }
+
+        .pagination {
+            margin-bottom: 0;
+        }
+        .pagination .page-link {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    </style>
+    @endpush
 
     @push('scripts')
     <script>
@@ -172,22 +217,30 @@
             $('#tickets-table').DataTable({
                 processing: true,
                 pageLength: 15,
-                order: [[5, 'desc']], // Sort by created_at by default
-                dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
+                order: [[5, 'desc']],
+                dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>' +
                      '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 buttons: [
                     {
                         extend: 'collection',
                         text: '<i class="bi bi-download me-2"></i>Export',
-                        className: 'btn btn-primary',
+                        className: 'btn btn-sm btn-primary',
                         buttons: [
                             {
                                 extend: 'excel',
                                 text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
-                                className: 'btn btn-success',
+                                className: 'btn btn-sm btn-success',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                                    columns: [0, 1, 2, 3, 4, 5],
+                                    format: {
+                                        body: function(data, row, column, node) {
+                                            if (column === 0) {
+                                                return $(data).find('.fw-medium').text();
+                                            }
+                                            return data;
+                                        }
+                                    }
                                 },
                                 title: 'Tickets List',
                                 messageTop: 'Generated on: ' + new Date().toLocaleDateString()
@@ -195,33 +248,57 @@
                             {
                                 extend: 'pdf',
                                 text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
-                                className: 'btn btn-danger',
+                                className: 'btn btn-sm btn-danger',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                                    columns: [0, 1, 2, 3, 4, 5],
+                                    format: {
+                                        body: function(data, row, column, node) {
+                                            if (column === 0) {
+                                                return $(data).find('.fw-medium').text();
+                                            }
+                                            return data;
+                                        }
+                                    }
                                 },
                                 title: 'Tickets List',
                                 messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
                                 customize: function(doc) {
-                                    doc.defaultStyle.fontSize = 10;
-                                    doc.styles.tableHeader.fontSize = 11;
+                                    doc.defaultStyle.fontSize = 9;
+                                    doc.styles.tableHeader.fontSize = 10;
                                     doc.styles.tableHeader.fillColor = '#f8f9fa';
                                     doc.styles.tableHeader.color = '#212529';
-                                    doc.pageMargins = [40, 60, 40, 60];
+                                    doc.pageMargins = [20, 40, 20, 40];
+                                    doc.defaultStyle.alignment = 'left';
+                                    doc.styles.tableHeader.alignment = 'left';
                                 }
                             },
                             {
                                 extend: 'print',
                                 text: '<i class="bi bi-printer me-2"></i>Print',
-                                className: 'btn btn-info',
+                                className: 'btn btn-sm btn-info',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                                    columns: [0, 1, 2, 3, 4, 5],
+                                    format: {
+                                        body: function(data, row, column, node) {
+                                            if (column === 0) {
+                                                return $(data).find('.fw-medium').text();
+                                            }
+                                            return data;
+                                        }
+                                    }
                                 },
                                 title: 'Tickets List',
                                 messageTop: 'Generated on: ' + new Date().toLocaleDateString()
                             }
                         ]
                     }
-                ]
+                ],
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search tickets...",
+                    lengthMenu: "_MENU_ per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ tickets"
+                }
             });
         });
 
