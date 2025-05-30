@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Ticket Details</h1>
         <div>
-            <a href="{{ url('/events/' . $ticket->event->id . '/tickets') }}" class="btn btn-secondary">
+            <a href="{{ route('events.tickets.index', $ticket->event) }}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Tickets
             </a>
         </div>
@@ -22,76 +22,98 @@
     <div class="row">
         <div class="col-md-8">
             <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Ticket Information</h5>
+                </div>
                 <div class="card-body">
-                    <div class="ticket" style="max-width: 800px; margin: 0 auto; border: 2px solid #000; border-radius: 10px; padding: 20px; position: relative; background: #fff;">
-                        <div class="watermark" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 72px; color: rgba(0, 0, 0, 0.1); white-space: nowrap; pointer-events: none;">EVENT TICKET</div>
-                        
-                        <div class="ticket-header" style="text-align: center; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 2px dashed #000;">
-                            <h1 class="event-name" style="font-size: 24px; font-weight: bold; margin: 0; color: #000;">{{ $ticket->event->name }}</h1>
-                            <div class="event-details" style="font-size: 16px; color: #666; margin: 10px 0;">
-                                <p>{{ $ticket->event->venue }}</p>
-                                <p>{{ $ticket->event->start_date->format('F j, Y g:i A') }}</p>
-                            </div>
-                        </div>
-
-                        <div class="welcome-message" style="text-align: center; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 1px dashed #000;">
-                            <h3 style="color: #0d6efd; margin-bottom: 15px;">Karibu! (Welcome!)</h3>
-                            <p style="margin-bottom: 10px;">Mpendwa {{ $ticket->attendee->name }},</p>
-                            <p style="margin-bottom: 10px;">Tunafurahi kukualika kwenye {{ $ticket->event->name }}. Uwepo wako utafanya tukio hili liwe la kipekee zaidi.</p>
-                            <p style="margin-bottom: 15px;">Tafadhali wasilisha tiketi hii kwenye ukumbi kwa ajili ya kuingia.</p>
-                            <hr style="margin: 15px 0; border-top: 1px dashed #000;">
-                            <p style="font-style: italic; color: #666; margin: 0;">
-                                (We are delighted to invite you to {{ $ticket->event->name }}. Your presence will make this event even more special. Please present this ticket at the venue for entry.)
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h4 class="text-primary mb-3">{{ $ticket->attendee->name }}</h4>
+                            @if($ticket->attendee->email)
+                                <p class="mb-1">
+                                    <i class="bi bi-envelope me-2"></i>
+                                    {{ $ticket->attendee->email }}
+                                </p>
+                            @endif
+                            @if($ticket->attendee->phone)
+                                <p class="mb-1">
+                                    <i class="bi bi-telephone me-2"></i>
+                                    {{ $ticket->attendee->phone }}
+                                </p>
+                            @endif
+                            <p class="mb-1">
+                                <i class="bi bi-ticket-detailed me-2"></i>
+                                Token: {{ $ticket->token }}
                             </p>
                         </div>
-
-                        <div class="ticket-content" style="display: flex; justify-content: space-between; margin: 20px 0;">
-                            <div class="ticket-info" style="flex: 1; padding-right: 20px;">
-                                <div class="attendee-info">
-                                    <h3>Attendee Information</h3>
-                                    <p><strong>Name:</strong> {{ $ticket->attendee->name }}</p>
-                                    <p><strong>Email:</strong> {{ $ticket->attendee->email }}</p>
-                                    @if($ticket->attendee->phone)
-                                        <p><strong>Phone:</strong> {{ $ticket->attendee->phone }}</p>
+                        <div class="col-md-6">
+                            <div class="d-flex flex-column align-items-end">
+                                <div class="mb-2">
+                                    @if($ticket->is_active)
+                                        <span class="badge bg-success">Active</span>
+                                    @else
+                                        <span class="badge bg-danger">Inactive</span>
                                     @endif
                                 </div>
-
-                                <div class="ticket-details">
-                                    <h3>Ticket Details</h3>
-                                    <p><strong>Ticket ID:</strong> <span class="ticket-id" style="font-family: monospace; font-size: 18px; background: #f5f5f5; padding: 5px 10px; border-radius: 5px; display: inline-block; margin: 10px 0;">{{ $ticket->token }}</span></p>
-                                    <p><strong>Type:</strong> <span class="ticket-type {{ $ticket->type }}" style="display: inline-block; padding: 5px 15px; border-radius: 20px; font-weight: bold; margin: 10px 0; 
-                                        @php
-                                            $bgColor = match($ticket->type) {
-                                                'vip' => '#ffd700',
-                                                'regular' => '#e0e0e0',
-                                                'single' => '#90caf9',
-                                                'double' => '#a5d6a7',
-                                                default => '#e0e0e0'
-                                            };
-                                        @endphp
-                                        background: {{ $bgColor }};">{{ ucfirst($ticket->type) }}</span></p>
-                                    <p><strong>Status:</strong> {{ $ticket->is_active ? 'Active' : 'Inactive' }}</p>
-                                    <p><strong>Issued:</strong> {{ $ticket->created_at->format('F j, Y g:i A') }}</p>
+                                <div class="mb-2">
+                                    @php
+                                        $ticketType = $ticket->type;
+                                        $badgeClass = match($ticketType) {
+                                            'vip' => 'bg-warning',
+                                            'regular' => 'bg-secondary',
+                                            'single' => 'bg-primary',
+                                            'double' => 'bg-success',
+                                            default => 'bg-secondary'
+                                        };
+                                    @endphp
+                                    <span class="badge {{ $badgeClass }}">
+                                        {{ ucfirst($ticketType) }}
+                                    </span>
                                 </div>
-                            </div>
-
-                            <div class="qr-code" style="flex: 1; text-align: center;">
-                                @if($ticket->attendee->qr_code)
-                                    <img src="{{ $ticket->attendee->qr_code_url }}" 
-                                         alt="QR Code" 
-                                         style="max-width: 200px; height: auto;">
-                                    <p>Scan this QR code for check-in</p>
-                                @else
-                                    {!! QrCode::size(200)->generate(route('tickets.verify', $ticket->token)) !!}
-                                    <p>Scan this QR code for check-in</p>
-                                @endif
+                                <p class="text-muted mb-0">
+                                    Created: {{ $ticket->created_at->format('M j, Y g:i A') }}
+                                </p>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="ticket-footer" style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 2px dashed #000; font-size: 12px; color: #666;">
-                            <p>This ticket is non-transferable and must be presented at the event.</p>
-                            <p>For any questions, please contact the event organizer.</p>
-                            <p>Printed on {{ now()->format('F j, Y g:i A') }}</p>
+                    <div class="row">
+                        <div class="col-12">
+                            <h5 class="mb-3">Event Information</h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered">
+                                    <tbody>
+                                        <tr>
+                                            <th style="width: 200px;">Event Name</th>
+                                            <td>
+                                                <a href="{{ route('events.show', $ticket->event) }}">
+                                                    {{ $ticket->event->name }}
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Event Date</th>
+                                            <td>{{ $ticket->event->start_date->format('F j, Y g:i A') }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Venue</th>
+                                            <td>{{ $ticket->event->venue }}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Last Scan</th>
+                                            <td>
+                                                @if($ticket->last_scan)
+                                                    <span title="{{ $ticket->last_scan->created_at->format('F j, Y g:i A') }}">
+                                                        {{ $ticket->last_scan->created_at->diffForHumans() }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-muted">Never</span>
+                                                @endif
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -107,10 +129,10 @@
                     <div class="d-grid gap-2">
                         <button type="button" 
                                 class="btn btn-primary" 
-                                onclick="printTicket('{{ route('tickets.print', $ticket) }}')">
+                                onclick="printTicket('{{ route('events.tickets.print', [$ticket->event, $ticket]) }}')">
                             <i class="bi bi-printer me-2"></i> Print Ticket
                         </button>
-                        <a href="{{ route('tickets.export', $ticket) }}" 
+                        <a href="{{ route('events.tickets.export', [$ticket->event, $ticket]) }}" 
                            class="btn btn-danger" 
                            target="_blank">
                             <i class="bi bi-file-pdf me-2"></i> Download PDF
@@ -141,7 +163,7 @@
                             </ul>
                         </div>
                         @if($ticket->is_active)
-                            <form action="{{ route('tickets.deactivate', $ticket) }}" 
+                            <form action="{{ route('events.tickets.deactivate', [$ticket->event, $ticket]) }}" 
                                   method="POST" 
                                   onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
                                 @csrf
