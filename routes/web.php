@@ -99,7 +99,7 @@ Route::middleware('auth')->group(function () {
                     Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
                     Route::post('/generate', [TicketController::class, 'generate'])->name('generate');
                     Route::get('/{ticket}/print', [TicketController::class, 'print'])->name('print');
-                    Route::get('/{ticket}/export', [TicketController::class, 'export'])->name('export');
+                    Route::get('/{ticket}/export', [TicketController::class, 'exportTicket'])->name('export');
                     Route::patch('/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('deactivate');
                 });
                 

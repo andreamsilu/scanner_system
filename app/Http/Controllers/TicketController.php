@@ -244,4 +244,21 @@ class TicketController extends Controller
 
         return view('tickets.verify', compact('ticket', 'event', 'attendee'));
     }
+
+    /**
+     * Export a single ticket as PDF
+     */
+    public function exportTicket(Event $event, $token)
+    {
+        $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
+            $query->where('token', $token);
+        })
+        ->where('event_id', $event->id)
+        ->with(['attendee', 'event'])
+        ->firstOrFail();
+
+        $pdf = \PDF::loadView('tickets.show', compact('ticket'));
+        
+        return $pdf->download('ticket-' . $ticket->token . '.pdf');
+    }
 } 
