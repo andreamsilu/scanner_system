@@ -177,3 +177,7 @@ Route::middleware('auth')->group(function () {
 
 // Public check-in route (no auth required)
 Route::get('/check-in/{token}', [ScanController::class, 'checkIn'])->name('scanner.check-in');
+
+// Ticket Verification Route (Public)
+Route::get('/tickets/{token}/verify', [App\Http\Controllers\TicketController::class, 'verify'])
+    ->name('tickets.verify');
