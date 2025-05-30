@@ -244,42 +244,4 @@ class TicketController extends Controller
 
         return view('tickets.verify', compact('ticket', 'event', 'attendee'));
     }
-
-    /**
-     * Validate a ticket
-     */
-    public function validate(Event $event, $token)
-    {
-        $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
-            $query->where('token', $token);
-        })->where('event_id', $event->id)->firstOrFail();
-
-        $ticket->update([
-            'is_valid' => true,
-            'validated_at' => now()
-        ]);
-
-        return redirect()
-            ->route('events.tickets.show', [$event, $ticket])
-            ->with('success', 'Ticket has been validated successfully.');
-    }
-
-    /**
-     * Invalidate a ticket
-     */
-    public function invalidate(Event $event, $token)
-    {
-        $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
-            $query->where('token', $token);
-        })->where('event_id', $event->id)->firstOrFail();
-
-        $ticket->update([
-            'is_valid' => false,
-            'invalidated_at' => now()
-        ]);
-
-        return redirect()
-            ->route('events.tickets.show', [$event, $ticket])
-            ->with('success', 'Ticket has been invalidated successfully.');
-    }
 } 

@@ -47,7 +47,6 @@
                         <div class="ticket-details">
                             <p><strong>Attendee:</strong> {{ $ticket->attendee->name }}</p>
                             <p><strong>Ticket ID:</strong> {{ $ticket->token }}</p>
-                            <p><strong>Status:</strong> {{ $ticket->is_valid ? 'Valid' : 'Invalid' }}</p>
                         </div>
                     </div>
 
@@ -77,13 +76,6 @@
                                 <dt class="col-sm-4">Ticket ID:</dt>
                                 <dd class="col-sm-8">{{ $ticket->token }}</dd>
 
-                                <dt class="col-sm-4">Status:</dt>
-                                <dd class="col-sm-8">
-                                    <span class="badge bg-{{ $ticket->is_valid ? 'success' : 'danger' }}">
-                                        {{ $ticket->is_valid ? 'Valid' : 'Invalid' }}
-                                    </span>
-                                </dd>
-
                                 <dt class="col-sm-4">Created:</dt>
                                 <dd class="col-sm-8">{{ $ticket->created_at->format('M d, Y H:i') }}</dd>
 
@@ -100,7 +92,7 @@
                         <div class="qr-code-container p-3 bg-light rounded d-inline-block">
                             {!! QrCode::size(200)->generate(route('tickets.verify', $ticket->token)) !!}
                         </div>
-                        <p class="text-muted mt-2">Scan this QR code to verify the ticket</p>
+                        <p class="text-muted mt-2">Scan this QR code to view the ticket</p>
                     </div>
 
                     <!-- Scan History -->
@@ -111,7 +103,6 @@
                                 <thead>
                                     <tr>
                                         <th>Scanner</th>
-                                        <th>Status</th>
                                         <th>Time</th>
                                         <th>Notes</th>
                                     </tr>
@@ -120,11 +111,6 @@
                                     @foreach($ticket->scanLogs as $log)
                                         <tr>
                                             <td>{{ $log->scanner->name }}</td>
-                                            <td>
-                                                <span class="badge bg-{{ $log->status === 'success' ? 'success' : 'danger' }}">
-                                                    {{ ucfirst($log->status) }}
-                                                </span>
-                                            </td>
                                             <td>{{ $log->created_at->format('M d, Y H:i:s') }}</td>
                                             <td>{{ $log->notes }}</td>
                                         </tr>
@@ -139,27 +125,10 @@
                     @endif
                 </div>
                 <div class="card-footer">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-start">
                         <a href="{{ route('events.tickets', $event) }}" class="btn btn-secondary">
                             <i class="fas fa-arrow-left me-1"></i> Back to Tickets
                         </a>
-                        @if($ticket->is_valid)
-                            <form action="{{ route('events.tickets.invalidate', [$event, $ticket]) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to invalidate this ticket?')">
-                                    <i class="fas fa-ban me-1"></i> Invalidate Ticket
-                                </button>
-                            </form>
-                        @else
-                            <form action="{{ route('events.tickets.validate', [$event, $ticket]) }}" method="POST" class="d-inline">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" class="btn btn-success" onclick="return confirm('Are you sure you want to validate this ticket?')">
-                                    <i class="fas fa-check me-1"></i> Validate Ticket
-                                </button>
-                            </form>
-                        @endif
                     </div>
                 </div>
             </div>
