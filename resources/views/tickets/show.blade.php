@@ -107,10 +107,10 @@
                     <div class="d-grid gap-2">
                         <button type="button" 
                                 class="btn btn-primary" 
-                                onclick="printTicket('{{ route('tickets.print', $ticket) }}')">
+                                onclick="printTicket('{{ url('/events/' . $ticket->event->id . '/tickets/' . $ticket->token . '/print') }}')">
                             <i class="bi bi-printer me-2"></i> Print Ticket
                         </button>
-                        <a href="{{ route('tickets.export', $ticket) }}" 
+                        <a href="{{ url('/events/' . $ticket->event->id . '/tickets/' . $ticket->token . '/export') }}" 
                            class="btn btn-danger" 
                            target="_blank">
                             <i class="bi bi-file-pdf me-2"></i> Download PDF
@@ -124,17 +124,17 @@
                             </button>
                             <ul class="dropdown-menu w-100">
                                 <li>
-                                    <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
+                                    <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ url('/tickets/verify/' . $ticket->token) }}')">
                                         <i class="fab fa-whatsapp me-2"></i> Share via WhatsApp
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="#" onclick="shareViaSMS('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
+                                    <a class="dropdown-item" href="#" onclick="shareViaSMS('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ url('/tickets/verify/' . $ticket->token) }}')">
                                         <i class="fas fa-sms me-2"></i> Share via SMS
                                     </a>
                                 </li>
                                 <li>
-                                    <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
+                                    <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ url('/tickets/verify/' . $ticket->token) }}')">
                                         <i class="fas fa-link me-2"></i> Copy Ticket Link
                                     </a>
                                 </li>
