@@ -4,10 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ticket - {{ $ticket->attendee->name }}</title>
-    <meta property="og:title" content="Ticket for {{ $ticket->event->name }}">
-    <meta property="og:description" content="Event ticket for {{ $ticket->attendee->name }}">
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
     <style>
         @page {
             size: A4;
@@ -118,58 +114,7 @@
                 display: none;
             }
         }
-        .action-buttons {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-        .action-button {
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            transition: all 0.3s ease;
-            color: white;
-        }
-        .print-btn { background-color: #0d6efd; }
-        .download-btn { background-color: #198754; }
-        .share-btn { background-color: #6c757d; }
-        .action-button:hover {
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }
-        .share-buttons {
-            display: none;
-            gap: 10px;
-            margin-top: 15px;
-            justify-content: center;
-        }
-        .share-buttons.active {
-            display: flex;
-        }
-        .social-share-btn {
-            padding: 8px 15px;
-            border-radius: 5px;
-            color: white;
-            text-decoration: none;
-            font-size: 14px;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        .facebook { background-color: #1877f2; }
-        .twitter { background-color: #1da1f2; }
-        .whatsapp { background-color: #25d366; }
-        .telegram { background-color: #0088cc; }
     </style>
-    <!-- Font Awesome for icons -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
     <div class="ticket">
@@ -235,64 +180,9 @@
     </div>
 
     <div class="no-print" style="text-align: center; margin-top: 20px;">
-        <div class="action-buttons">
-            <button onclick="window.print()" class="action-button print-btn">
-                <i class="fas fa-print"></i> Print Ticket
-            </button>
-            <button onclick="downloadTicket()" class="action-button download-btn">
-                <i class="fas fa-download"></i> Download PDF
-            </button>
-            <button onclick="toggleShareButtons()" class="action-button share-btn">
-                <i class="fas fa-share-alt"></i> Share
-            </button>
-        </div>
-        
-        <div id="shareButtons" class="share-buttons">
-            <a href="https://www.facebook.com/sharer/sharer.php?u={{ urlencode(route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->id])) }}" 
-               target="_blank" class="social-share-btn facebook">
-                <i class="fab fa-facebook-f"></i> Facebook
-            </a>
-            <a href="https://twitter.com/intent/tweet?text={{ urlencode('Check out my ticket for ' . $ticket->event->name) }}&url={{ urlencode(route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->id])) }}" 
-               target="_blank" class="social-share-btn twitter">
-                <i class="fab fa-twitter"></i> Twitter
-            </a>
-            <a href="https://wa.me/?text={{ urlencode('Check out my ticket for ' . $ticket->event->name . ': ' . route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->id])) }}" 
-               target="_blank" class="social-share-btn whatsapp">
-                <i class="fab fa-whatsapp"></i> WhatsApp
-            </a>
-            <a href="https://t.me/share/url?url={{ urlencode(route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->id])) }}&text={{ urlencode('Check out my ticket for ' . $ticket->event->name) }}" 
-               target="_blank" class="social-share-btn telegram">
-                <i class="fab fa-telegram"></i> Telegram
-            </a>
-        </div>
+        <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
+            Print Ticket
+        </button>
     </div>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <script>
-        function toggleShareButtons() {
-            const shareButtons = document.getElementById('shareButtons');
-            shareButtons.classList.toggle('active');
-        }
-
-        function downloadTicket() {
-            const element = document.querySelector('.ticket');
-            const opt = {
-                margin: 1,
-                filename: 'ticket-{{ $ticket->token }}.pdf',
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-            };
-
-            // Remove watermark temporarily for PDF
-            const watermark = document.querySelector('.watermark');
-            if (watermark) watermark.style.display = 'none';
-
-            html2pdf().set(opt).from(element).save().then(() => {
-                // Restore watermark after PDF generation
-                if (watermark) watermark.style.display = 'block';
-            });
-        }
-    </script>
 </body>
 </html> 
