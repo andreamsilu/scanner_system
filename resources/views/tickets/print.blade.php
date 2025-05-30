@@ -150,27 +150,13 @@
 
             <div class="qr-code">
                 @if($ticket->attendee->qr_code)
-                    <!-- Debug information -->
-                    <div style="background: #f8f9fa; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 12px;">
-                        <h4 style="margin: 0 0 10px 0;">Debug Information:</h4>
-                        <p><strong>QR Code Path:</strong> {{ $ticket->attendee->qr_code }}</p>
-                        <p><strong>QR Code URL:</strong> {{ $ticket->attendee->qr_code_url }}</p>
-                        <p><strong>Storage Path:</strong> {{ storage_path('app/public/' . $ticket->attendee->qr_code) }}</p>
-                        <p><strong>File Exists:</strong> {{ file_exists(storage_path('app/public/' . $ticket->attendee->qr_code)) ? 'Yes' : 'No' }}</p>
-                        <p><strong>File Permissions:</strong> {{ file_exists(storage_path('app/public/' . $ticket->attendee->qr_code)) ? substr(sprintf('%o', fileperms(storage_path('app/public/' . $ticket->attendee->qr_code))), -4) : 'N/A' }}</p>
-                        <p><strong>File Owner:</strong> {{ file_exists(storage_path('app/public/' . $ticket->attendee->qr_code)) ? posix_getpwuid(fileowner(storage_path('app/public/' . $ticket->attendee->qr_code)))['name'] : 'N/A' }}</p>
-                        <p><strong>File Group:</strong> {{ file_exists(storage_path('app/public/' . $ticket->attendee->qr_code)) ? posix_getgrgid(filegroup(storage_path('app/public/' . $ticket->attendee->qr_code)))['name'] : 'N/A' }}</p>
-                        <p><strong>File Size:</strong> {{ file_exists(storage_path('app/public/' . $ticket->attendee->qr_code)) ? filesize(storage_path('app/public/' . $ticket->attendee->qr_code)) . ' bytes' : 'N/A' }}</p>
-                        <p><strong>Storage Link:</strong> {{ is_link(public_path('storage')) ? 'Yes' : 'No' }}</p>
-                        <p><strong>Storage Link Target:</strong> {{ is_link(public_path('storage')) ? readlink(public_path('storage')) : 'N/A' }}</p>
-                    </div>
                     <img src="{{ $ticket->attendee->qr_code_url }}" 
                          alt="QR Code" 
-                         onerror="this.onerror=null; console.log('QR Code failed to load:', this.src); this.style.border='2px solid red';"
                          style="max-width: 200px; height: auto;">
                     <p>Scan this QR code for check-in</p>
                 @else
-                    <p>No QR code available</p>
+                    {!! QrCode::size(200)->generate(route('tickets.verify', $ticket->token)) !!}
+                    <p>Scan this QR code for check-in</p>
                 @endif
             </div>
         </div>
