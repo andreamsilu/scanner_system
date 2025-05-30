@@ -25,9 +25,8 @@
                 <table class="table table-hover" id="tickets-table">
                     <thead>
                         <tr>
-                            <th>Ticket ID</th>
-                            <th>Event</th>
                             <th>Attendee</th>
+                            <th>Event</th>
                             <th>Type</th>
                             <th>Status</th>
                             <th>Last Scan</th>
@@ -38,20 +37,21 @@
                     <tbody>
                         @forelse($tickets as $ticket)
                             <tr>
-                                <td>{{ $ticket->ticket_id }}</td>
+                                <td>
+                                    @if($ticket->attendee)
+                                        <a href="{{ route('events.attendees.show', ['event' => $ticket->event, 'attendee' => $ticket->attendee]) }}">
+                                            {{ $ticket->attendee->name }}
+                                        </a>
+                                        <br>
+                                        <small class="text-muted">Token: {{ $ticket->token }}</small>
+                                    @else
+                                        <span class="text-muted">Unassigned</span>
+                                    @endif
+                                </td>
                                 <td>
                                     <a href="{{ route('events.show', $ticket->event) }}">
                                         {{ $ticket->event->name }}
                                     </a>
-                                </td>
-                                <td>
-                                    @if($ticket->attendee)
-                                        <a href="{{ route('attendees.show', $ticket->attendee) }}">
-                                            {{ $ticket->attendee->name }}
-                                        </a>
-                                    @else
-                                        <span class="text-muted">Unassigned</span>
-                                    @endif
                                 </td>
                                 <td>
                                     @php
