@@ -98,8 +98,8 @@
                                                 onclick="printTicket('{{ route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
                                             <i class="bi bi-printer"></i>
                                         </button>
-                                        <a href="{{ route('tickets.export', $ticket) }}" 
-                                           class="btn btn-sm btn-danger" 
+                                        <a href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}"
+                                           class="btn btn-sm btn-danger"
                                            title="Download PDF"
                                            target="_blank">
                                             <i class="bi bi-file-pdf"></i>
