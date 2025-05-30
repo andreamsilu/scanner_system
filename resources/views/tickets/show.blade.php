@@ -161,49 +161,6 @@
                 border: 1px solid #dee2e6;
                 border-radius: 0.5rem;
             }
-        </style>
-    </x-slot>
-
-    <x-slot:scripts>
-        <script>
-            function printTicket() {
-                window.print();
-            }
-
-            function shareViaWhatsApp() {
-                const text = `Ticket for {{ $event->name }}\n\n` +
-                            `Attendee: {{ $ticket->attendee->name }}\n` +
-                            `Ticket ID: {{ $ticket->token }}\n` +
-                            `Event Date: {{ $event->start_date->format('M d, Y') }}\n\n` +
-                            `View ticket: {{ route('tickets.verify', $ticket->token) }}`;
-                
-                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-                window.open(whatsappUrl, '_blank');
-            }
-
-            function shareViaSMS() {
-                const text = `Ticket for {{ $event->name }}\n\n` +
-                            `Attendee: {{ $ticket->attendee->name }}\n` +
-                            `Ticket ID: {{ $ticket->token }}\n` +
-                            `Event Date: {{ $event->start_date->format('M d, Y') }}\n\n` +
-                            `View ticket: {{ route('tickets.verify', $ticket->token) }}`;
-                
-                const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
-                window.location.href = smsUrl;
-            }
-
-            function copyTicketLink() {
-                const ticketUrl = '{{ route('tickets.verify', $ticket->token) }}';
-                navigator.clipboard.writeText(ticketUrl).then(() => {
-                    alert('Ticket link copied to clipboard!');
-                }).catch(err => {
-                    console.error('Failed to copy ticket link:', err);
-                    alert('Failed to copy ticket link. Please try again.');
-                });
-            }
-        </script>
-    </x-slot>
-</x-app-layout> 
             .event-logo {
                 max-width: 150px;
                 height: auto;
