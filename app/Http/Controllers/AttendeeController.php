@@ -66,7 +66,8 @@ class AttendeeController extends Controller
             'phone' => 'required|string|max:20',
             'position' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
-            'requires_ticket' => 'boolean'
+            'requires_ticket' => 'boolean',
+            'ticket_type' => 'required_if:requires_ticket,1|in:single,double,regular,vip'
         ]);
 
         try {
@@ -139,7 +140,7 @@ class AttendeeController extends Controller
                 // Create ticket for attendee
                 $ticketData = [
                     'event_id' => $event->id,
-                    'type' => 'regular',
+                    'type' => $request->input('ticket_type'),
                     'status' => 'active',
                     'token' => $token,
                     'ticket_number' => $ticketNumber,
