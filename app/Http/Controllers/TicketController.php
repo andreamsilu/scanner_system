@@ -221,4 +221,27 @@ class TicketController extends Controller
                 ->with('error', $e->getMessage());
         }
     }
+
+    /**
+     * Verify a ticket's validity
+     *
+     * @param string $token
+     * @return \Illuminate\View\View
+     */
+    public function verify(string $token)
+    {
+        $ticket = Ticket::whereHas('attendee', function ($query) use ($token) {
+            $query->where('token', $token)
+                  ->whereNull('deleted_at');
+        })->first();
+
+        if (!$ticket) {
+            abort(404, 'Ticket not found');
+        }
+
+        $event = $ticket->event;
+        $attendee = $ticket->attendee;
+
+        return view('tickets.verify', compact('ticket', 'event', 'attendee'));
+    }
 } 
