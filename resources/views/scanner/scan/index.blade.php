@@ -155,6 +155,12 @@
         </div>
     </div>
 
+    @push('meta')
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    @endpush
+
     @push('styles')
     <style>
         .scanner-container {
@@ -188,6 +194,39 @@
         .scanner-buttons .btn {
             min-width: 120px;
         }
+
+        /* iOS-specific styles */
+        @supports (-webkit-touch-callout: none) {
+            #reader {
+                -webkit-transform: translateZ(0);
+                transform: translateZ(0);
+            }
+            
+            #reader video {
+                -webkit-transform: translateZ(0);
+                transform: translateZ(0);
+                object-fit: cover;
+            }
+        }
+
+        /* Prevent iOS zoom on input focus */
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        input[type="number"] {
+            font-size: 16px !important;
+        }
+
+        /* Improve touch targets for iOS */
+        .btn {
+            min-height: 44px;
+            padding: 12px 20px;
+        }
+
+        /* Prevent pull-to-refresh on iOS */
+        body {
+            overscroll-behavior-y: none;
+        }
     </style>
     @endpush
 
@@ -199,6 +238,18 @@
 
     async function startScanner() {
         try {
+            // Request camera permission explicitly
+            const stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { 
+                    facingMode: "environment",
+                    width: { min: 640, ideal: 1280, max: 1920 },
+                    height: { min: 480, ideal: 720, max: 1080 }
+                } 
+            });
+            
+            // Stop the stream as we'll use it through the scanner
+            stream.getTracks().forEach(track => track.stop());
+
             const response = await fetch('{{ route("scanner.scan.start") }}', {
                 method: 'POST',
                 headers: {
@@ -217,7 +268,7 @@
                 document.getElementById('startScanner').classList.add('d-none');
                 document.getElementById('stopScanner').classList.remove('d-none');
                 
-                // Initialize scanner
+                // Initialize scanner with iOS-specific settings
                 if (!html5QrcodeScanner) {
                     html5QrcodeScanner = new Html5QrcodeScanner(
                         "reader",
@@ -229,7 +280,11 @@
                                 facingMode: "environment",
                                 width: { min: 640, ideal: 1280, max: 1920 },
                                 height: { min: 480, ideal: 720, max: 1080 }
-                            }
+                            },
+                            formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
+                            showTorchButtonIfSupported: true,
+                            showZoomSliderIfSupported: true,
+                            defaultZoomValueIfSupported: 2
                         }
                     );
 
@@ -243,7 +298,19 @@
             }
         } catch (error) {
             console.error('Error starting scanner:', error);
-            showMessage('Failed to start scanner. Please try again.', 'danger');
+            let errorMessage = 'Failed to start scanner. ';
+            
+            if (error.name === 'NotAllowedError') {
+                errorMessage += 'Camera access was denied. Please allow camera access in your browser settings.';
+            } else if (error.name === 'NotFoundError') {
+                errorMessage += 'No camera found. Please ensure your device has a camera.';
+            } else if (error.name === 'NotReadableError') {
+                errorMessage += 'Camera is already in use by another application.';
+            } else if (error.name === 'SecurityError') {
+                errorMessage += 'Camera access is not allowed in this context. Please use HTTPS.';
+            }
+            
+            showMessage(errorMessage, 'danger');
         }
     }
 
