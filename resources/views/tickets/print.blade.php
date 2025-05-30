@@ -52,17 +52,11 @@
             text-align: center;
             color: #7a6a4f;
         }
-        .invitation-content h1 {
-            font-size: 2.2rem;
-            letter-spacing: 0.15em;
-            margin: 0.5em 0 0.2em 0;
-            font-weight: 700;
-        }
-        .invitation-content h2 {
-            font-size: 1.2rem;
-            letter-spacing: 0.1em;
-            margin: 0.2em 0 1.2em 0;
-            font-weight: 400;
+        .invitation-content .invitation-message {
+            font-size: 1.1rem;
+            font-style: italic;
+            color: #bfa46d;
+            margin-bottom: 2em;
         }
         .invitation-content .names {
             font-size: 2rem;
@@ -70,43 +64,38 @@
             letter-spacing: 0.18em;
             margin: 0.7em 0 0.2em 0;
         }
-        .invitation-content .and {
-            font-family: 'Georgia', serif;
+        .invitation-content .is-invited {
+            font-size: 1.1rem;
             font-style: italic;
-            font-size: 1.1rem;
-            margin: 0.2em 0 0.2em 0;
             color: #bfa46d;
+            margin: 0.2em 0 0.2em 0;
         }
-        .invitation-content .details {
+        .invitation-content .event-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            margin: 0.5em 0 1.2em 0;
+        }
+        .invitation-content .event-details {
             font-size: 1.1rem;
             margin: 1.5em 0 0.5em 0;
             color: #7a6a4f;
         }
-        .invitation-content .venue {
-            font-size: 1rem;
-            margin: 0.5em 0 0.5em 0;
-            color: #7a6a4f;
+        .invitation-content .ticket-id {
+            font-size: 1.1rem;
+            letter-spacing: 0.1em;
+            margin: 2em 0 0.5em 0;
+            color: #bfa46d;
+            font-family: monospace;
         }
-        .invitation-content .rsvp {
-            font-size: 1rem;
-            margin: 1.5em 0 0.5em 0;
-            color: #7a6a4f;
+        .invitation-content .qr {
+            margin: 2em 0 0 0;
         }
         .invitation-content .footer {
             font-size: 1rem;
             font-style: italic;
             margin: 1.5em 0 0 0;
             color: #bfa46d;
-        }
-        .invitation-content .ticket-id {
-            font-size: 1.1rem;
-            letter-spacing: 0.1em;
-            margin: 1em 0 0.5em 0;
-            color: #bfa46d;
-            font-family: monospace;
-        }
-        .invitation-content .qr {
-            margin: 2em 0 0 0;
         }
         @media print {
             body {
@@ -126,28 +115,21 @@
     <div class="invitation-border">
         <div class="border-pattern">
             <div class="invitation-content">
-                <h2>PLEASE JOIN US<br><span style="font-size:1.1em;font-style:italic;">for the event</span></h2>
-                <div class="names">{{ strtoupper($ticket->attendee->name) }}</div>
-                <div class="and">for<br>{{ strtoupper($ticket->event->name) }}</div>
-                <div class="details">
-                    {{ $ticket->event->start_date->format('l, F j, Y') }}<br>
-                    at {{ $ticket->event->start_date->format('g:i A') }}
+                <div class="invitation-message">
+                    We are delighted to invite you to our special event. Your presence will make this occasion even more memorable.<br>
+                    Please present this ticket at the entrance.
                 </div>
-                <div class="venue">
-                    {{ $ticket->event->venue }}<br>
-                    {{ $ticket->event->location }}
+                <div class="names">{{ strtoupper($ticket->attendee->name) }}</div>
+                <div class="is-invited">is invited to</div>
+                <div class="event-name">{{ strtoupper($ticket->event->name) }}</div>
+                <div class="event-details">
+                    <strong>Location:</strong> {{ $ticket->event->location }}<br>
+                    <strong>Venue:</strong> {{ $ticket->event->venue }}<br>
+                    <strong>Date:</strong> {{ $ticket->event->start_date->format('l, F j, Y') }}<br>
+                    <strong>Time:</strong> {{ $ticket->event->start_date->format('g:i A') }} - {{ $ticket->event->end_date->format('g:i A') }}
                 </div>
                 <div class="ticket-id">
-                    Ticket ID: {{ $ticket->token }}<br>
-                    Type: {{ ucfirst($ticket->type) }}
-                </div>
-                <div class="rsvp">
-                    Issued: {{ $ticket->created_at->format('F j, Y') }}<br>
-                    Status: {{ ucfirst($ticket->status) }}
-                </div>
-                <div class="footer">
-                    Please present this ticket at the event<br>
-                    <span style="font-size:0.95em;">Reception to follow</span>
+                    Ticket ID: {{ $ticket->token }}
                 </div>
                 <div class="qr">
                     @if($ticket->attendee->qr_code)
@@ -155,6 +137,9 @@
                     @else
                         {!! QrCode::size(140)->generate(route('tickets.verify', $ticket->token)) !!}
                     @endif
+                </div>
+                <div class="footer">
+                    Reception to follow
                 </div>
             </div>
         </div>
