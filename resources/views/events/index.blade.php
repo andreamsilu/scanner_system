@@ -73,7 +73,7 @@
                                            title="Manage Attendees">
                                             <i class="bi bi-people"></i>
                                         </a>
-                                        <a href="{{ route('events.tickets', $event) }}" 
+                                        <a href="{{ route('events.events.tickets.index', $event) }}" 
                                            class="btn btn-sm btn-outline-primary" 
                                            title="Manage Tickets">
                                             <i class="bi bi-ticket-perforated"></i>
