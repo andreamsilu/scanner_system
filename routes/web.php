@@ -15,6 +15,7 @@ use App\Http\Controllers\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\BulkUploadController;
+use App\Http\Controllers\SmsManagementController;
 
 // Authentication Routes
 /* Removed (or commented out) the fallback route (or any route named 'welcome') so that if a user (or a seeder) tries to redirect to route('welcome') (or GET /) then a 404 (or a fallback) is returned (and no "Route [welcome] not defined" error is thrown). */
@@ -183,3 +184,26 @@ Route::get('/check-in/{token}', [ScanController::class, 'checkIn'])->name('scann
 // Ticket Verification Route (Public)
 Route::get('/tickets/{token}/verify', [App\Http\Controllers\TicketController::class, 'verify'])
     ->name('tickets.verify');
+
+// SMS Management Routes
+Route::prefix('sms-management')->name('sms.management.')->middleware(['auth'])->group(function () {
+    // Dashboard and Event Management
+    Route::get('/', [SmsManagementController::class, 'index'])->name('index');
+    Route::get('/event/{event}', [SmsManagementController::class, 'showEvent'])->name('event');
+    
+    // SMS Sending Routes
+    Route::post('/event/{event}/send-bulk', [SmsManagementController::class, 'sendBulkSms'])->name('send-bulk');
+    Route::post('/event/{event}/send-invitation', [SmsManagementController::class, 'sendAttendeeInvitation'])->name('send-invitation');
+    Route::post('/event/{event}/send-reminder', [SmsManagementController::class, 'sendEventReminder'])->name('send-reminder');
+    Route::post('/event/{event}/send-ticket-notification', [SmsManagementController::class, 'sendTicketUsageNotification'])->name('send-ticket-notification');
+    
+    // Template Management
+    Route::get('/templates', [SmsManagementController::class, 'getTemplates'])->name('templates');
+    Route::post('/templates', [SmsManagementController::class, 'storeTemplate'])->name('templates.store');
+    Route::put('/templates/{template}', [SmsManagementController::class, 'updateTemplate'])->name('templates.update');
+    Route::delete('/templates/{template}', [SmsManagementController::class, 'deleteTemplate'])->name('templates.delete');
+    
+    // Logs and Reports
+    Route::get('/event/{event}/logs', [SmsManagementController::class, 'getEventLogs'])->name('logs');
+    Route::get('/event/{event}/logs/export', [SmsManagementController::class, 'exportLogs'])->name('logs.export');
+});
