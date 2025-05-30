@@ -7,7 +7,18 @@
         <div class="col-12">
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Ticket Details</h5>
+                    <div>
+                        <h5 class="card-title mb-0">Ticket Details</h5>
+                        <div class="mt-2">
+                            <h4 class="text-primary mb-0">{{ $ticket->attendee->name }}</h4>
+                            @if($ticket->attendee->email)
+                                <small class="text-muted">{{ $ticket->attendee->email }}</small>
+                            @endif
+                            @if($ticket->attendee->phone)
+                                <small class="text-muted d-block">{{ $ticket->attendee->phone }}</small>
+                            @endif
+                        </div>
+                    </div>
                     <div class="btn-group">
                         <button type="button" class="btn btn-primary" onclick="printTicket()">
                             <i class="fas fa-print me-1"></i> Print Ticket
