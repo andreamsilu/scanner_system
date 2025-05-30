@@ -1,257 +1,471 @@
 @extends('layouts.app')
 
 @section('content')
-<div class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-        <div>
-            <h1 class="text-2xl font-bold text-gray-800">{{ $event->name }}</h1>
-            <p class="text-gray-600">{{ $event->date->format('F j, Y g:i A') }} at {{ $event->location }}</p>
-        </div>
-        <div class="flex space-x-4">
-            <button onclick="openSendSmsModal()" 
-                    class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                Send SMS
-            </button>
-        </div>
-    </div>
+<div class="container-fluid">
+    <x-page-header 
+        title="SMS Management - {{ $event->name }}"
+        :breadcrumbs="[
+            'SMS Management' => route('sms.management.index'),
+            $event->name => null
+        ]"
+    />
 
-    <!-- SMS Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        @foreach($smsStats as $stat)
-        <div class="bg-white rounded-lg shadow p-6">
-            <h3 class="text-lg font-semibold text-gray-800 mb-2">
-                {{ ucfirst(str_replace('_', ' ', $stat->type)) }}
-            </h3>
-            <p class="text-3xl font-bold text-blue-600">{{ $stat->count }}</p>
-        </div>
-        @endforeach
-    </div>
-
-    <!-- Recent SMS Logs -->
-    <div class="bg-white rounded-lg shadow mb-8">
-        <div class="px-6 py-4 border-b border-gray-200">
-            <h2 class="text-lg font-semibold text-gray-800">Recent SMS Activity</h2>
-        </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">To</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($recentLogs as $log)
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                            {{ ucfirst(str_replace('_', ' ', $log->type)) }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $log->to }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                                {{ $log->status === 'delivered' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800' }}">
-                                {{ $log->status }}
-                            </span>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $log->created_at->format('M d, Y g:i A') }}
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Attendees List -->
-    <div class="bg-white rounded-lg shadow">
-        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center">
-            <h2 class="text-lg font-semibold text-gray-800">Attendees</h2>
-            <div class="relative">
-                <input type="text" 
-                       id="searchAttendees" 
-                       placeholder="Search attendees..." 
-                       class="w-64 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <!-- Event Stats -->
+    <div class="row g-2 mb-4">
+        <div class="col-md-3">
+            <div class="card border h-100 stat-card">
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-0 text-muted small">Total SMS Sent</h6>
+                            <h5 class="card-title mb-0">{{ $event->sms_logs_count }}</h5>
+                            <small class="text-muted small">For this event</small>
+                        </div>
+                        <div class="p-1 rounded-circle bg-info bg-opacity-10 text-info">
+                            <i class="bi bi-chat-dots"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                            <input type="checkbox" id="selectAll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        </th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Phone</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ticket</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    @foreach($attendees as $attendee)
-                    <tr>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <input type="checkbox" 
-                                   name="attendee_ids[]" 
-                                   value="{{ $attendee->id }}"
-                                   class="attendee-checkbox rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            <div class="text-sm font-medium text-gray-900">{{ $attendee->name }}</div>
-                            <div class="text-sm text-gray-500">{{ $attendee->email }}</div>
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {{ $attendee->phone ?? 'No phone number' }}
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if($attendee->tickets->isNotEmpty())
-                                <div class="text-sm text-gray-900">{{ $attendee->tickets->first()->ticket_number }}</div>
-                                <div class="text-sm text-gray-500">{{ $attendee->tickets->first()->type }}</div>
-                            @else
-                                <span class="text-sm text-red-600">No ticket</span>
-                            @endif
-                        </td>
-                        <td class="px-6 py-4 whitespace-nowrap">
-                            @if(!$attendee->phone)
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
-                                    No Phone
-                                </span>
-                            @elseif($attendee->tickets->isEmpty())
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                    No Ticket
-                                </span>
-                            @else
-                                <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                                    Ready
-                                </span>
-                            @endif
-                        </td>
-                    </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <div class="col-md-3">
+            <div class="card border h-100 stat-card">
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-0 text-muted small">Success Rate</h6>
+                            <h5 class="card-title mb-0">
+                                @php
+                                    $successRate = $event->sms_logs_count > 0 
+                                        ? round(($event->sms_logs->where('status', 'delivered')->count() / $event->sms_logs_count) * 100, 1)
+                                        : 0;
+                                @endphp
+                                {{ $successRate }}%
+                            </h5>
+                            <small class="text-muted small">Delivered messages</small>
+                        </div>
+                        <div class="p-1 rounded-circle bg-{{ $successRate >= 90 ? 'success' : ($successRate >= 70 ? 'warning' : 'danger') }} bg-opacity-10 text-{{ $successRate >= 90 ? 'success' : ($successRate >= 70 ? 'warning' : 'danger') }}">
+                            <i class="bi bi-{{ $successRate >= 90 ? 'check-circle' : ($successRate >= 70 ? 'exclamation-circle' : 'x-circle') }}"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="px-6 py-4 border-t border-gray-200">
-            {{ $attendees->links() }}
+        <div class="col-md-3">
+            <div class="card border h-100 stat-card">
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-0 text-muted small">Total Attendees</h6>
+                            <h5 class="card-title mb-0">{{ $event->attendees_count }}</h5>
+                            <small class="text-muted small">Registered attendees</small>
+                        </div>
+                        <div class="p-1 rounded-circle bg-primary bg-opacity-10 text-primary">
+                            <i class="bi bi-people"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card border h-100 stat-card">
+                <div class="card-body p-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="card-subtitle mb-0 text-muted small">Last SMS Sent</h6>
+                            <h5 class="card-title mb-0">
+                                @if($event->sms_logs->isNotEmpty())
+                                    {{ $event->sms_logs->first()->created_at->format('M d, g:i A') }}
+                                @else
+                                    Never
+                                @endif
+                            </h5>
+                            <small class="text-muted small">Most recent message</small>
+                        </div>
+                        <div class="p-1 rounded-circle bg-secondary bg-opacity-10 text-secondary">
+                            <i class="bi bi-clock-history"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="row g-4">
+        <!-- Attendees List -->
+        <div class="col-md-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Attendees</h5>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="selectAllBtn">
+                            <i class="bi bi-check-square me-2"></i>Select All
+                        </button>
+                        <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#sendSmsModal">
+                            <i class="bi bi-send me-2"></i>Send SMS
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="attendeesTable">
+                            <thead>
+                                <tr>
+                                    <th width="40">
+                                        <div class="form-check">
+                                            <input type="checkbox" class="form-check-input" id="selectAll">
+                                        </div>
+                                    </th>
+                                    <th>Name</th>
+                                    <th>Phone</th>
+                                    <th>Ticket</th>
+                                    <th>Status</th>
+                                    <th>Last SMS</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($attendees as $attendee)
+                                    <tr>
+                                        <td>
+                                            <div class="form-check">
+                                                <input type="checkbox" class="form-check-input attendee-checkbox" 
+                                                       value="{{ $attendee->id }}" 
+                                                       data-phone="{{ $attendee->phone_number }}">
+                                            </div>
+                                        </td>
+                                        <td>{{ $attendee->name }}</td>
+                                        <td>{{ $attendee->phone_number }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ $attendee->ticket->status_color }}">
+                                                {{ $attendee->ticket->ticket_number }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            @if($attendee->phone_number)
+                                                <span class="badge bg-success">Has Phone</span>
+                                            @else
+                                                <span class="badge bg-danger">No Phone</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($attendee->last_sms)
+                                                <span class="text-muted small">
+                                                    {{ $attendee->last_sms->created_at->diffForHumans() }}
+                                                </span>
+                                            @else
+                                                <span class="text-muted small">Never</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <div class="btn-group">
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-primary send-single-sms"
+                                                        data-attendee-id="{{ $attendee->id }}"
+                                                        data-attendee-name="{{ $attendee->name }}"
+                                                        data-attendee-phone="{{ $attendee->phone_number }}">
+                                                    <i class="bi bi-send"></i>
+                                                </button>
+                                                <button type="button" 
+                                                        class="btn btn-sm btn-outline-secondary dropdown-toggle dropdown-toggle-split" 
+                                                        data-bs-toggle="dropdown">
+                                                </button>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#viewSmsHistoryModal" 
+                                                           data-attendee-id="{{ $attendee->id }}">
+                                                            <i class="bi bi-clock-history me-2"></i>View SMS History
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SMS Templates & Recent Activity -->
+        <div class="col-md-4">
+            <!-- Templates -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Available Templates</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        @foreach($templates as $template)
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ $template->name }}</h6>
+                                    <span class="badge bg-{{ $template->is_active ? 'success' : 'secondary' }}">
+                                        {{ $template->is_active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </div>
+                                <p class="mb-1 small text-muted">{{ Str::limit($template->content, 60) }}</p>
+                                <small class="text-muted">Type: {{ ucfirst(str_replace('_', ' ', $template->type)) }}</small>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent SMS Activity -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="card-title mb-0">Recent SMS Activity</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div class="list-group list-group-flush">
+                        @forelse($recent_logs as $log)
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ $log->recipient_name }}</h6>
+                                    <span class="badge bg-{{ $log->status === 'delivered' ? 'success' : ($log->status === 'failed' ? 'danger' : 'warning') }}">
+                                        {{ ucfirst($log->status) }}
+                                    </span>
+                                </div>
+                                <p class="mb-1 small">{{ Str::limit($log->content, 60) }}</p>
+                                <small class="text-muted">{{ $log->created_at->diffForHumans() }}</small>
+                            </div>
+                        @empty
+                            <div class="list-group-item text-center py-4">
+                                <div class="text-muted">
+                                    <i class="bi bi-chat-dots fa-2x mb-2"></i>
+                                    <p class="mb-0">No recent SMS activity</p>
+                                </div>
+                            </div>
+                        @endforelse
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 </div>
 
 <!-- Send SMS Modal -->
-<div id="sendSmsModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full">
-    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3">
-            <h3 class="text-lg font-medium text-gray-900 mb-4">Send SMS to Selected Attendees</h3>
-            <form id="sendSmsForm" class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Template</label>
-                    <select name="template_id" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        @foreach($templates as $template)
-                            <option value="{{ $template->id }}">{{ $template->name }}</option>
-                        @endforeach
-                    </select>
+<div class="modal fade" id="sendSmsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="sendSmsForm" action="{{ route('sms.management.event.bulk-send', $event) }}" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">Send SMS to Selected Attendees</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700">Message</label>
-                    <textarea name="message" 
-                              rows="4" 
-                              class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                              maxlength="160"></textarea>
-                    <p class="mt-1 text-sm text-gray-500">Characters remaining: <span id="charCount">160</span></p>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Template</label>
+                        <select name="template_id" class="form-select" required>
+                            <option value="">Select a template...</option>
+                            @foreach($templates as $template)
+                                <option value="{{ $template->id }}">{{ $template->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Custom Message (Optional)</label>
+                        <textarea name="custom_message" class="form-control" rows="3" maxlength="160"></textarea>
+                        <small class="text-muted">Leave empty to use template. Available variables: {user_name}, {event_name}, {date}, {location}, {ticket_number}</small>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <span id="selectedCount">0</span> attendees selected
+                    </div>
                 </div>
-                <div class="flex justify-end space-x-3">
-                    <button type="button" 
-                            onclick="closeSendSmsModal()"
-                            class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                        Cancel
-                    </button>
-                    <button type="submit"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        Send SMS
-                    </button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Send SMS</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
+<!-- View SMS History Modal -->
+<div class="modal fade" id="viewSmsHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">SMS History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="table-responsive">
+                    <table class="table" id="smsHistoryTable">
+                        <thead>
+                            <tr>
+                                <th>Time</th>
+                                <th>Type</th>
+                                <th>Content</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Will be populated via AJAX -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@push('styles')
+<link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+<style>
+    .stat-card {
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .dropdown-menu {
+        min-width: 200px;
+    }
+    .list-group-item {
+        border-left: none;
+        border-right: none;
+    }
+    .list-group-item:first-child {
+        border-top: none;
+    }
+    .list-group-item:last-child {
+        border-bottom: none;
+    }
+</style>
+@endpush
+
 @push('scripts')
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
 <script>
-// Modal functions
-function openSendSmsModal() {
-    const selectedCount = document.querySelectorAll('.attendee-checkbox:checked').length;
-    if (selectedCount === 0) {
-        alert('Please select at least one attendee');
-        return;
-    }
-    document.getElementById('sendSmsModal').classList.remove('hidden');
-}
-
-function closeSendSmsModal() {
-    document.getElementById('sendSmsModal').classList.add('hidden');
-}
-
-// Select all functionality
-document.getElementById('selectAll').addEventListener('change', function(e) {
-    document.querySelectorAll('.attendee-checkbox').forEach(checkbox => {
-        checkbox.checked = e.target.checked;
+$(document).ready(function() {
+    // Initialize DataTable
+    const attendeesTable = $('#attendeesTable').DataTable({
+        order: [[1, 'asc']],
+        pageLength: 10,
+        language: {
+            search: "",
+            searchPlaceholder: "Search attendees..."
+        },
+        columnDefs: [
+            { orderable: false, targets: [0, -1] }
+        ]
     });
-});
 
-// Character count
-document.querySelector('textarea[name="message"]').addEventListener('input', function(e) {
-    const remaining = 160 - e.target.value.length;
-    document.getElementById('charCount').textContent = remaining;
-});
+    // Select All functionality
+    let allSelected = false;
+    $('#selectAll').on('change', function() {
+        allSelected = $(this).prop('checked');
+        $('.attendee-checkbox').prop('checked', allSelected);
+        updateSelectedCount();
+    });
 
-// Search functionality
-document.getElementById('searchAttendees').addEventListener('input', function(e) {
-    const search = e.target.value;
-    window.location.href = `{{ route('sms.management.event', $event) }}?search=${encodeURIComponent(search)}`;
-});
+    $('.attendee-checkbox').on('change', function() {
+        updateSelectedCount();
+        // Update select all checkbox
+        const totalCheckboxes = $('.attendee-checkbox').length;
+        const checkedCheckboxes = $('.attendee-checkbox:checked').length;
+        $('#selectAll').prop('checked', totalCheckboxes === checkedCheckboxes);
+    });
 
-// Send SMS form submission
-document.getElementById('sendSmsForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const selectedAttendees = Array.from(document.querySelectorAll('.attendee-checkbox:checked'))
-        .map(checkbox => checkbox.value);
-    
-    const formData = new FormData(this);
-    formData.append('attendee_ids', JSON.stringify(selectedAttendees));
-    
-    try {
-        const response = await fetch(`{{ route('sms.management.send-bulk', $event) }}`, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                'Accept': 'application/json',
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                attendee_ids: selectedAttendees,
-                template_id: formData.get('template_id'),
-                message: formData.get('message')
-            })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            alert(result.message);
-            closeSendSmsModal();
-            window.location.reload();
-        } else {
-            alert('Failed to send SMS: ' + result.message);
-        }
-    } catch (error) {
-        alert('An error occurred while sending SMS');
-        console.error(error);
+    $('#selectAllBtn').on('click', function() {
+        allSelected = !allSelected;
+        $('#selectAll').prop('checked', allSelected).trigger('change');
+    });
+
+    function updateSelectedCount() {
+        const count = $('.attendee-checkbox:checked').length;
+        $('#selectedCount').text(count);
     }
+
+    // Send SMS Form handling
+    $('#sendSmsForm').on('submit', function(e) {
+        e.preventDefault();
+        const selectedAttendees = $('.attendee-checkbox:checked').map(function() {
+            return $(this).val();
+        }).get();
+
+        if (selectedAttendees.length === 0) {
+            alert('Please select at least one attendee');
+            return;
+        }
+
+        const formData = new FormData(this);
+        formData.append('attendee_ids', JSON.stringify(selectedAttendees));
+
+        $.ajax({
+            url: $(this).attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                if (response.success) {
+                    alert(`Successfully sent ${response.success_count} messages. ${response.failure_count} failed.`);
+                    location.reload();
+                } else {
+                    alert('Error sending messages: ' + response.message);
+                }
+            },
+            error: function(xhr) {
+                alert('Error sending messages. Please try again.');
+            }
+        });
+    });
+
+    // View SMS History
+    $('#viewSmsHistoryModal').on('show.bs.modal', function(e) {
+        const attendeeId = $(e.relatedTarget).data('attendee-id');
+        const modal = $(this);
+        
+        // Clear existing data
+        modal.find('#smsHistoryTable tbody').empty();
+        
+        // Fetch SMS history
+        $.get(`/api/sms/attendee/${attendeeId}/history`, function(response) {
+            if (response.data.length > 0) {
+                response.data.forEach(log => {
+                    modal.find('#smsHistoryTable tbody').append(`
+                        <tr>
+                            <td>${log.created_at}</td>
+                            <td>${log.type}</td>
+                            <td>${log.content}</td>
+                            <td>
+                                <span class="badge bg-${log.status === 'delivered' ? 'success' : (log.status === 'failed' ? 'danger' : 'warning')}">
+                                    ${log.status}
+                                </span>
+                            </td>
+                        </tr>
+                    `);
+                });
+            } else {
+                modal.find('#smsHistoryTable tbody').append(`
+                    <tr>
+                        <td colspan="4" class="text-center py-4">
+                            <div class="text-muted">
+                                <i class="bi bi-chat-dots fa-2x mb-2"></i>
+                                <p class="mb-0">No SMS history found</p>
+                            </div>
+                        </td>
+                    </tr>
+                `);
+            }
+        });
+    });
+
+    // Character counter for custom message
+    $('textarea[name="custom_message"]').on('input', function() {
+        const remaining = 160 - $(this).val().length;
+        $(this).next('small').text(`Characters remaining: ${remaining}`);
+    });
 });
 </script>
 @endpush
