@@ -7,7 +7,7 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1 class="h3 mb-0">Ticket Details</h1>
         <div>
-            <a href="{{ route('tickets.index') }}" class="btn btn-secondary">
+            <a href="{{ route('events.tickets.index', $ticket->event) }}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Tickets
             </a>
         </div>
