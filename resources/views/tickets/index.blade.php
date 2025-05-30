@@ -39,18 +39,10 @@
                             <tr>
                                 <td>
                                     @if($ticket->attendee)
-                                        <div class="d-flex flex-column">
-                                            <a href="{{ route('events.attendees.show', ['event' => $ticket->event, 'attendee' => $ticket->attendee]) }}" 
-                                               class="text-primary fw-semibold text-decoration-none">
-                                                {{ $ticket->attendee->name }}
-                                            </a>
-                                            @if($ticket->attendee->email)
-                                                <small class="text-muted">{{ $ticket->attendee->email }}</small>
-                                            @endif
-                                            @if($ticket->attendee->phone)
-                                                <small class="text-muted">{{ $ticket->attendee->phone }}</small>
-                                            @endif
-                                            <small class="text-muted mt-1">Token: {{ $ticket->token }}</small>
+                                        <div>
+                                            <span>{{ $ticket->attendee->name }}</span>
+                                            <br>
+                                            <small class="text-muted">ID: {{ $ticket->token }}</small>
                                         </div>
                                     @else
                                         <span class="text-muted">Unassigned</span>
