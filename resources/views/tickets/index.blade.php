@@ -19,136 +19,197 @@
         </div>
     @endif
 
-    <style>
-        .ticket-invite {
-            max-width: 600px;
-            margin: 40px auto;
-            background: #f9f6f2;
-            border-radius: 12px;
-            border: 2px solid #e0c68a;
-            box-shadow: 0 2px 16px rgba(0,0,0,0.04);
-            padding: 2.5rem 2rem 2rem 2rem;
-            position: relative;
-            font-family: 'Georgia', 'Times New Roman', serif;
-        }
-        .ticket-invite .border-deco {
-            border: 2px solid #e0c68a;
-            border-radius: 10px;
-            padding: 2rem 1.5rem;
-            position: relative;
-        }
-        .ticket-invite .border-deco:before,
-        .ticket-invite .border-deco:after {
-            content: '';
-            position: absolute;
-            left: 0; right: 0;
-            height: 2px;
-            background: repeating-linear-gradient(90deg, #e0c68a, #e0c68a 8px, transparent 8px, transparent 16px);
-        }
-        .ticket-invite .border-deco:before { top: 0; }
-        .ticket-invite .border-deco:after { bottom: 0; }
-        .ticket-invite h2 {
-            font-size: 2.2rem;
-            letter-spacing: 0.12em;
-            color: #a68a3f;
-            margin-bottom: 0.5rem;
-            font-weight: 700;
-        }
-        .ticket-invite h3 {
-            font-size: 1.2rem;
-            color: #a68a3f;
-            margin-bottom: 2rem;
-            font-weight: 400;
-            font-style: italic;
-        }
-        .ticket-invite .section-title {
-            font-size: 1.1rem;
-            color: #bfa14a;
-            margin-top: 1.5rem;
-            margin-bottom: 0.5rem;
-            letter-spacing: 0.08em;
-            font-weight: 600;
-        }
-        .ticket-invite .info {
-            font-size: 1.05rem;
-            color: #5a4a1a;
-            margin-bottom: 0.5rem;
-        }
-        .ticket-invite .details {
-            font-size: 1rem;
-            color: #7a6a3a;
-            margin-bottom: 0.5rem;
-        }
-        .ticket-invite .gold {
-            color: #bfa14a;
-        }
-        .ticket-invite .qr {
-            margin: 2rem 0 1rem 0;
-            text-align: center;
-        }
-        .ticket-invite .actions {
-            margin-top: 1.5rem;
-            text-align: center;
-        }
-        @media print {
-            body { background: #fff !important; }
-            .ticket-invite { box-shadow: none !important; margin: 0 auto; }
-            .actions { display: none !important; }
-        }
-    </style>
+    <div class="card">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover table-sm mb-0" id="tickets-table">
+                    <thead class="table-light">
+                        <tr>
+                            <th class="py-2">Attendee</th>
+                            <th class="py-2">Event</th>
+                            <th class="py-2">Type</th>
+                            <th class="py-2">Status</th>
+                            <th class="py-2">Last Scan</th>
+                            <th class="py-2">Created</th>
+                            <th class="py-2 text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($tickets as $ticket)
+                            <tr>
+                                <td class="py-2">
+                                    @if($ticket->attendee)
+                                        <div class="d-flex flex-column">
+                                            <span class="fw-medium">{{ $ticket->attendee->name }}</span>
+                                            <small class="text-muted">#{{ $ticket->token }}</small>
+                                        </div>
+                                    @else
+                                        <span class="text-muted">Unassigned</span>
+                                    @endif
+                                </td>
+                                <td class="py-2">
+                                    <a href="{{ route('events.show', $ticket->event) }}" class="text-decoration-none">
+                                        {{ Str::limit($ticket->event->name, 20) }}
+                                    </a>
+                                </td>
+                                <td class="py-2">
+                                    @php
+                                        $ticketType = $ticket->type;
+                                        $badgeClass = match($ticketType) {
+                                            'vip' => 'bg-warning',
+                                            'regular' => 'bg-secondary',
+                                            'single' => 'bg-primary',
+                                            'double' => 'bg-success',
+                                            default => 'bg-secondary'
+                                        };
+                                    @endphp
+                                    <span class="badge {{ $badgeClass }} px-2 py-1">
+                                        {{ ucfirst($ticketType) }}
+                                    </span>
+                                </td>
+                                <td class="py-2">
+                                    @if($ticket->is_active)
+                                        <span class="badge bg-success px-2 py-1">Active</span>
+                                    @else
+                                        <span class="badge bg-danger px-2 py-1">Inactive</span>
+                                    @endif
+                                </td>
+                                <td class="py-2">
+                                    @if($ticket->last_scan)
+                                        <span class="text-muted" title="{{ $ticket->last_scan->created_at->format('F j, Y g:i A') }}">
+                                            {{ $ticket->last_scan->created_at->diffForHumans() }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">Never</span>
+                                    @endif
+                                </td>
+                                <td class="py-2">
+                                    <span class="text-muted">{{ $ticket->created_at->format('M j, Y') }}</span>
+                                </td>
+                                <td class="py-2 text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ route('events.events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" 
+                                           class="btn btn-outline-info" 
+                                           title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="btn btn-outline-primary"
+                                                title="Print Ticket"
+                                                onclick="printTicket('{{ route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
+                                            <i class="bi bi-printer"></i>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-outline-success" 
+                                                title="Share Ticket"
+                                                data-bs-toggle="dropdown" 
+                                                aria-expanded="false">
+                                            <i class="bi bi-share"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
+                                                    <i class="fab fa-whatsapp me-2"></i> WhatsApp
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="shareViaSMS('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
+                                                    <i class="fas fa-sms me-2"></i> SMS
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
+                                                    <i class="fas fa-link me-2"></i> Copy Link
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
+                                                    <i class="bi bi-file-pdf me-2"></i> Download PDF
+                                                </a>
+                                            </li>
+                                        </ul>
+                                        @if($ticket->is_active)
+                                            <form action="{{ route('tickets.deactivate', $ticket) }}" 
+                                                  method="POST" 
+                                                  class="d-inline"
+                                                  onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
+                                                @csrf
+                                                @method('PATCH')
+                                                <button type="submit" 
+                                                        class="btn btn-outline-warning" 
+                                                        title="Deactivate">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                            </form>
+                                        @endif
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="7" class="text-center py-3">No tickets found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
 
-    <div class="container">
-        @forelse($tickets as $ticket)
-            <div class="ticket-invite">
-                <div class="border-deco">
-                    <div class="text-center mb-4">
-                        <div class="gold" style="letter-spacing:0.15em; font-size:0.95rem;">TICKET FOR</div>
-                        <h2>{{ strtoupper($ticket->event->name) }}</h2>
-                        <h3>Admit One</h3>
-                    </div>
-                    <div class="section-title text-center">Attendee</div>
-                    <div class="info text-center" style="font-size:1.3rem; font-weight:600; letter-spacing:0.08em;">
-                        {{ $ticket->attendee ? strtoupper($ticket->attendee->name) : 'UNASSIGNED' }}
-                    </div>
-                    <div class="details text-center">
-                        Ticket Type: <span class="gold">{{ ucfirst($ticket->type) }}</span><br>
-                        Ticket ID: <span class="gold">{{ $ticket->token }}</span>
-                    </div>
-                    <div class="section-title text-center">Event Details</div>
-                    <div class="details text-center">
-                        <span class="gold">Date:</span> {{ $ticket->event->start_date->format('l, F j, Y') }}<br>
-                        <span class="gold">Time:</span> {{ $ticket->event->start_date->format('g:i A') }}<br>
-                        <span class="gold">Venue:</span> {{ $ticket->event->venue }}<br>
-                        <span class="gold">Location:</span> {{ $ticket->event->location }}
-                    </div>
-                    <div class="qr">
-                        @if(isset($ticket->qr_code_url))
-                            <img src="{{ $ticket->qr_code_url }}" alt="QR Code" style="width:120px; height:120px;" />
-                        @else
-                            <div class="gold" style="font-size:0.95rem;">QR Code Unavailable</div>
-                        @endif
-                    </div>
-                    <div class="details text-center" style="font-size:0.95rem;">
-                        Issued: {{ $ticket->created_at->format('M d, Y') }}<br>
-                        Status: <span class="gold">{{ $ticket->is_active ? 'Active' : 'Inactive' }}</span>
-                    </div>
-                    <div class="actions">
-                        <a href="{{ route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" class="btn btn-outline-primary me-2" target="_blank">
-                            <i class="bi bi-printer"></i> Print
-                        </a>
-                        <a href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" class="btn btn-outline-danger me-2" target="_blank">
-                            <i class="bi bi-file-pdf"></i> PDF
-                        </a>
-                        <button type="button" class="btn btn-outline-success" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
-                            <i class="bi bi-link-45deg"></i> Copy Link
-                        </button>
-                    </div>
+            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
+                <div class="text-muted small">
+                    Showing {{ $tickets->firstItem() ?? 0 }} to {{ $tickets->lastItem() ?? 0 }} of {{ $tickets->total() }} entries
+                </div>
+                <div>
+                    {{ $tickets->links() }}
                 </div>
             </div>
-        @empty
-            <div class="alert alert-info text-center mt-5">No tickets found.</div>
-        @endforelse
+        </div>
     </div>
+
+    @push('styles')
+    <style>
+        @media print {
+            .table {
+                font-size: 11px;
+            }
+            .btn-group {
+                display: none !important;
+            }
+            .table td, .table th {
+                padding: 0.25rem !important;
+            }
+            .badge {
+                font-size: 10px;
+            }
+        }
+
+        .table-sm td, .table-sm th {
+            padding: 0.5rem;
+        }
+        
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.5rem;
+        }
+
+        .badge {
+            font-weight: 500;
+            letter-spacing: 0.3px;
+        }
+
+        .dropdown-menu {
+            font-size: 0.875rem;
+            min-width: 180px;
+        }
+
+        .pagination {
+            margin-bottom: 0;
+        }
+        .pagination .page-link {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+    </style>
+    @endpush
 
     @push('scripts')
     <script>
