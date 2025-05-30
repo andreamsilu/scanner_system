@@ -125,8 +125,8 @@
                 <div class="event-details">
                     <strong>Location:</strong> {{ $ticket->event->location }}<br>
                     <strong>Venue:</strong> {{ $ticket->event->venue }}<br>
-                    <strong>Date:</strong> {{ $ticket->event->start_date->format('l, F j, Y') }}<br>
-                    <strong>Time:</strong> {{ $ticket->event->start_date->format('g:i A') }} - {{ $ticket->event->end_date->format('g:i A') }}<br>
+                    <strong>Date:</strong> {{ $ticket->event->start_date->format('d-m-Y') }}<br>
+                    <strong>Time:</strong> {{ $ticket->event->start_date->format('H:i') }} - {{ $ticket->event->end_date->format('H:i') }}<br>
                     <span style="display:inline-block;margin-top:1em;font-size:1.1em;color:#bfa46d;font-weight:bold;letter-spacing:0.08em;">Ticket Type: {{ ucfirst($ticket->type) }}</span>
                 </div>
                 <div class="ticket-id">
