@@ -23,14 +23,11 @@
 </head>
 <body>
     <div class="wrapper">
-        <!-- Sidebar -->
-        @include('layouts.partials.sidebar')
+        <!-- Navigation and Sidebar -->
+        @include('layouts.navigation')
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Top Navigation -->
-            @include('layouts.partials.navigation')
-
             <!-- Main Content Area -->
             <main class="content">
                 <div class="container-fluid py-4">
