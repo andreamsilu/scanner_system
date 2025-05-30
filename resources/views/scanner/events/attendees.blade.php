@@ -58,6 +58,7 @@
                                 <th>Email</th>
                                 <th>Phone</th>
                                 <th>Ticket Status</th>
+                                <th>Ticket Type</th>
                                 <th>Last Scan</th>
                                 <th>Registered</th>
                                 <th class="text-end">Actions</th>
@@ -76,6 +77,13 @@
                                             </span>
                                         @else
                                             <span class="badge bg-secondary">No Ticket</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($attendee->ticket)
+                                            <span class="badge bg-info text-dark">{{ ucfirst($attendee->ticket->type) }}</span>
+                                        @else
+                                            <span class="text-muted">-</span>
                                         @endif
                                     </td>
                                     <td>
