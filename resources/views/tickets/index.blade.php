@@ -95,7 +95,7 @@
                                         <button type="button"
                                                 class="btn btn-sm btn-primary"
                                                 title="Print Ticket"
-                                                onclick="printTicket('{{ route('events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
+                                                onclick="printTicket('{{ route('tickets.print', $ticket) }}')">
                                             <i class="bi bi-printer"></i>
                                         </button>
                                         <a href="{{ route('tickets.export', $ticket) }}" 
