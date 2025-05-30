@@ -1,17 +1,17 @@
-@extends('layouts.app')
-
-@section('title', 'Tickets')
-
-@section('content')
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="h3 mb-0">Tickets</h1>
-        <div>
+<x-app-layout>
+    <x-page-header 
+        title="Tickets"
+        :breadcrumbs="[
+            'Events' => route('events.index'),
+            'Tickets' => null
+        ]"
+    >
+        <x-slot name="actions">
             <a href="{{ route('events.index') }}" class="btn btn-secondary">
                 <i class="bi bi-arrow-left"></i> Back to Events
             </a>
-        </div>
-    </div>
+        </x-slot>
+    </x-page-header>
 
     @if(session('success'))
         <div class="alert alert-success">
@@ -165,104 +165,103 @@
             </div>
         </div>
     </div>
-</div>
-@endsection
 
-@push('scripts')
-<script>
-    $(document).ready(function() {
-        $('#tickets-table').DataTable({
-            processing: true,
-            pageLength: 15,
-            order: [[5, 'desc']], // Sort by created_at by default
-            dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
-                 '<"row"<"col-sm-12"tr>>' +
-                 '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-            buttons: [
-                {
-                    extend: 'collection',
-                    text: '<i class="bi bi-download me-2"></i>Export',
-                    className: 'btn btn-primary',
-                    buttons: [
-                        {
-                            extend: 'excel',
-                            text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
-                            className: 'btn btn-success',
-                            exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+    @push('scripts')
+    <script>
+        $(document).ready(function() {
+            $('#tickets-table').DataTable({
+                processing: true,
+                pageLength: 15,
+                order: [[5, 'desc']], // Sort by created_at by default
+                dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                buttons: [
+                    {
+                        extend: 'collection',
+                        text: '<i class="bi bi-download me-2"></i>Export',
+                        className: 'btn btn-primary',
+                        buttons: [
+                            {
+                                extend: 'excel',
+                                text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
+                                className: 'btn btn-success',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                                },
+                                title: 'Tickets List',
+                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
                             },
-                            title: 'Tickets List',
-                            messageTop: 'Generated on: ' + new Date().toLocaleDateString()
-                        },
-                        {
-                            extend: 'pdf',
-                            text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
-                            className: 'btn btn-danger',
-                            exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                            {
+                                extend: 'pdf',
+                                text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
+                                className: 'btn btn-danger',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                                },
+                                title: 'Tickets List',
+                                messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
+                                customize: function(doc) {
+                                    doc.defaultStyle.fontSize = 10;
+                                    doc.styles.tableHeader.fontSize = 11;
+                                    doc.styles.tableHeader.fillColor = '#f8f9fa';
+                                    doc.styles.tableHeader.color = '#212529';
+                                    doc.pageMargins = [40, 60, 40, 60];
+                                }
                             },
-                            title: 'Tickets List',
-                            messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
-                            customize: function(doc) {
-                                doc.defaultStyle.fontSize = 10;
-                                doc.styles.tableHeader.fontSize = 11;
-                                doc.styles.tableHeader.fillColor = '#f8f9fa';
-                                doc.styles.tableHeader.color = '#212529';
-                                doc.pageMargins = [40, 60, 40, 60];
+                            {
+                                extend: 'print',
+                                text: '<i class="bi bi-printer me-2"></i>Print',
+                                className: 'btn btn-info',
+                                exportOptions: {
+                                    columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                                },
+                                title: 'Tickets List',
+                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
                             }
-                        },
-                        {
-                            extend: 'print',
-                            text: '<i class="bi bi-printer me-2"></i>Print',
-                            className: 'btn btn-info',
-                            exportOptions: {
-                                columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
-                            },
-                            title: 'Tickets List',
-                            messageTop: 'Generated on: ' + new Date().toLocaleDateString()
-                        }
-                    ]
-                }
-            ]
+                        ]
+                    }
+                ]
+            });
         });
-    });
 
-    function printTicket(url) {
-        const printWindow = window.open(url, '_blank');
-        printWindow.onload = function() {
-            printWindow.print();
-        };
-    }
+        function printTicket(url) {
+            const printWindow = window.open(url, '_blank');
+            printWindow.onload = function() {
+                printWindow.print();
+            };
+        }
 
-    function shareViaWhatsApp(eventName, attendeeName, token, eventDate, ticketUrl) {
-        const text = `Ticket for ${eventName}\n\n` +
-                    `Attendee: ${attendeeName}\n` +
-                    `Token: ${token}\n` +
-                    `Event Date: ${eventDate}\n\n` +
-                    `View ticket: ${ticketUrl}`;
-        
-        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-        window.open(whatsappUrl, '_blank');
-    }
+        function shareViaWhatsApp(eventName, attendeeName, token, eventDate, ticketUrl) {
+            const text = `Ticket for ${eventName}\n\n` +
+                        `Attendee: ${attendeeName}\n` +
+                        `Token: ${token}\n` +
+                        `Event Date: ${eventDate}\n\n` +
+                        `View ticket: ${ticketUrl}`;
+            
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(whatsappUrl, '_blank');
+        }
 
-    function shareViaSMS(eventName, attendeeName, token, eventDate, ticketUrl) {
-        const text = `Ticket for ${eventName}\n\n` +
-                    `Attendee: ${attendeeName}\n` +
-                    `Token: ${token}\n` +
-                    `Event Date: ${eventDate}\n\n` +
-                    `View ticket: ${ticketUrl}`;
-        
-        const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
-        window.location.href = smsUrl;
-    }
+        function shareViaSMS(eventName, attendeeName, token, eventDate, ticketUrl) {
+            const text = `Ticket for ${eventName}\n\n` +
+                        `Attendee: ${attendeeName}\n` +
+                        `Token: ${token}\n` +
+                        `Event Date: ${eventDate}\n\n` +
+                        `View ticket: ${ticketUrl}`;
+            
+            const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
+            window.location.href = smsUrl;
+        }
 
-    function copyTicketLink(ticketUrl) {
-        navigator.clipboard.writeText(ticketUrl).then(() => {
-            alert('Ticket link copied to clipboard!');
-        }).catch(err => {
-            console.error('Failed to copy ticket link:', err);
-            alert('Failed to copy ticket link. Please try again.');
-        });
-    }
-</script>
-@endpush 
+        function copyTicketLink(ticketUrl) {
+            navigator.clipboard.writeText(ticketUrl).then(() => {
+                alert('Ticket link copied to clipboard!');
+            }).catch(err => {
+                console.error('Failed to copy ticket link:', err);
+                alert('Failed to copy ticket link. Please try again.');
+            });
+        }
+    </script>
+    @endpush
+</x-app-layout> 
