@@ -129,7 +129,7 @@
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <a class="dropdown-item" href="{{ route('tickets.export', $ticket) }}" target="_blank">
+                                                <a class="dropdown-item" href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
                                                     <i class="bi bi-file-pdf me-2"></i> Download as PDF
                                                 </a>
                                             </li>
