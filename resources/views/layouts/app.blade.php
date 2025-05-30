@@ -186,84 +186,18 @@
 
     <title>{{ config('app.name', 'Laravel') }}</title>
 
-    <!-- Bootstrap CSS -->
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Bootstrap Icons -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    
-    <!-- DataTables CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css" rel="stylesheet">
-    
-    <!-- Custom CSS -->
-    <style>
-        [x-cloak] { display: none !important; }
-        body {
-            min-height: 100vh;
-            display: flex;
-            background-color: #f8f9fa;
-        }
-        
-        .content-wrapper {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            margin-left: 250px;
-            transition: margin-left 0.3s ease-in-out;
-            position: relative;
-            z-index: 1;
-        }
-        
-        @media (max-width: 991.98px) {
-            .content-wrapper {
-                margin-left: 0;
-                padding-top: 60px; /* Account for fixed navbar */
-            }
-        }
-        
-        main {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-        }
+    <link href="{{ asset('css/app.css') }}" rel="stylesheet">
 
-        /* Breadcrumb and header container */
-        .breadcrumb-container,
-        .header-container {
-            position: relative;
-            z-index: 2;
-        }
-
-        /* Content area */
-        .content-area {
-            flex: 1;
-            padding: 1.5rem 0;
-            position: relative;
-            z-index: 1;
-        }
-
-        /* Ensure alerts don't overlap with fixed navbar */
-        .alert {
-            margin: 1rem 0;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* Container padding adjustments */
-        .container-fluid {
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-        }
-
-        @media (max-width: 767.98px) {
-            .container-fluid {
-                padding-left: 1rem;
-                padding-right: 1rem;
-            }
-        }
-    </style>
-
+    @stack('meta')
     @stack('styles')
 </head>
 <body>
@@ -271,33 +205,31 @@
         <!-- Sidebar -->
         @include('layouts.partials.sidebar')
 
-        <div class="main">
+        <!-- Main Content -->
+        <div class="main-content">
             <!-- Top Navigation -->
             @include('layouts.partials.navigation')
 
+            <!-- Main Content Area -->
             <main class="content">
                 <div class="container-fluid py-4">
-                @if (session('success'))
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        {{ session('success') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
-
-                @if (session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        {{ session('error') }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                @endif
-
-                    @if(isset($slot))
-                        {{ $slot }}
-                    @else
-                @yield('content')
+                    @if (session('success'))
+                        <div class="alert alert-success alert-dismissible fade show" role="alert">
+                            {{ session('success') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
                     @endif
-            </div>
-        </main>
+
+                    @if (session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    @endif
+
+                    @yield('content')
+                </div>
+            </main>
         </div>
     </div>
 
