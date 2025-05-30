@@ -87,7 +87,7 @@
                                 <td>{{ $ticket->created_at->format('M j, Y g:i A') }}</td>
                                 <td>
                                     <div class="btn-group">
-                                        <a href="{{ route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->id]) }}" 
+                                        <a href="{{ route('tickets.show', $ticket) }}" 
                                            class="btn btn-sm btn-info" 
                                            title="View Details">
                                             <i class="bi bi-eye"></i>
@@ -95,10 +95,10 @@
                                         <button type="button" 
                                                 class="btn btn-sm btn-primary" 
                                                 title="Print Ticket"
-                                                onclick="printTicket('{{ route('events.tickets.print', ['event' => $ticket->event_id, 'ticket' => $ticket->id]) }}')">
+                                                onclick="printTicket('{{ route('tickets.print', $ticket) }}')">
                                             <i class="bi bi-printer"></i>
                                         </button>
-                                        <a href="{{ route('events.tickets.export', ['event' => $ticket->event_id, 'ticket' => $ticket->id]) }}" 
+                                        <a href="{{ route('tickets.export', $ticket) }}" 
                                            class="btn btn-sm btn-danger" 
                                            title="Download PDF"
                                            target="_blank">
@@ -129,13 +129,13 @@
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <a class="dropdown-item" href="{{ route('events.tickets.export', ['event' => $ticket->event_id, 'ticket' => $ticket->id]) }}" target="_blank">
+                                                <a class="dropdown-item" href="{{ route('tickets.export', $ticket) }}" target="_blank">
                                                     <i class="bi bi-file-pdf me-2"></i> Download as PDF
                                                 </a>
                                             </li>
                                         </ul>
                                         @if($ticket->is_active)
-                                            <form action="{{ route('events.tickets.deactivate', ['event' => $ticket->event_id, 'ticket' => $ticket->id]) }}" 
+                                            <form action="{{ route('tickets.deactivate', $ticket) }}" 
                                                   method="POST" 
                                                   class="d-inline"
                                                   onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
@@ -247,4 +247,22 @@
 
     function shareViaSMS(eventName, attendeeName, token, eventDate, ticketUrl) {
         const text = `Ticket for ${eventName}\n\n` +
-                    `Attendee: ${attendeeName}\n`
+                    `Attendee: ${attendeeName}\n` +
+                    `Token: ${token}\n` +
+                    `Event Date: ${eventDate}\n\n` +
+                    `View ticket: ${ticketUrl}`;
+        
+        const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
+        window.location.href = smsUrl;
+    }
+
+    function copyTicketLink(ticketUrl) {
+        navigator.clipboard.writeText(ticketUrl).then(() => {
+            alert('Ticket link copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy ticket link:', err);
+            alert('Failed to copy ticket link. Please try again.');
+        });
+    }
+</script>
+@endpush 
