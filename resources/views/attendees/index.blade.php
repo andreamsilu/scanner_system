@@ -74,6 +74,7 @@
                                 <th>Token</th>
                                 <th>Registration Status</th>
                                 <th>Ticket Status</th>
+                                <th>Ticket Type</th>
                                 <th>Registration Date</th>
                                 <th>Actions</th>
                             </tr>
@@ -106,6 +107,13 @@
                                             @endif
                                         @else
                                             <span class="badge bg-secondary">No Ticket</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($attendee->ticket)
+                                            <span class="badge bg-info text-dark">{{ ucfirst($attendee->ticket->type) }}</span>
+                                        @else
+                                            <span class="text-muted">-</span>
                                         @endif
                                     </td>
                                     <td>
