@@ -128,6 +128,17 @@
             </div>
         </div>
 
+        <div class="welcome-message" style="text-align: center; margin: 20px 0; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 1px dashed #000;">
+            <h3 style="color: #0d6efd; margin-bottom: 15px;">Karibu! (Welcome!)</h3>
+            <p style="margin-bottom: 10px;">Mpendwa {{ $ticket->attendee->name }},</p>
+            <p style="margin-bottom: 10px;">Tunafurahi kukualika kwenye {{ $ticket->event->name }}. Uwepo wako utafanya tukio hili liwe la kipekee zaidi.</p>
+            <p style="margin-bottom: 15px;">Tafadhali wasilisha tiketi hii kwenye ukumbi kwa ajili ya kuingia.</p>
+            <hr style="margin: 15px 0; border-top: 1px dashed #000;">
+            <p style="font-style: italic; color: #666; margin: 0;">
+                (We are delighted to invite you to {{ $ticket->event->name }}. Your presence will make this event even more special. Please present this ticket at the venue for entry.)
+            </p>
+        </div>
+
         <div class="ticket-content">
             <div class="ticket-info">
                 <div class="attendee-info">
