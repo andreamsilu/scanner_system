@@ -92,12 +92,36 @@
                                            title="View Details">
                                             <i class="bi bi-eye"></i>
                                         </a>
-                                        <a href="{{ route('tickets.print', $ticket) }}" 
-                                           class="btn btn-sm btn-primary" 
-                                           title="Print Ticket"
-                                           target="_blank">
+                                        <button type="button" 
+                                                class="btn btn-sm btn-primary" 
+                                                title="Print Ticket"
+                                                onclick="printTicket('{{ route('tickets.print', $ticket) }}')">
                                             <i class="bi bi-printer"></i>
-                                        </a>
+                                        </button>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-success" 
+                                                title="Share Ticket"
+                                                data-bs-toggle="dropdown" 
+                                                aria-expanded="false">
+                                            <i class="bi bi-share"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
+                                                    <i class="fab fa-whatsapp me-2"></i> Share via WhatsApp
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="shareViaSMS('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
+                                                    <i class="fas fa-sms me-2"></i> Share via SMS
+                                                </a>
+                                            </li>
+                                            <li>
+                                                <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
+                                                    <i class="fas fa-link me-2"></i> Copy Ticket Link
+                                                </a>
+                                            </li>
+                                        </ul>
                                         @if($ticket->is_active)
                                             <form action="{{ route('tickets.deactivate', $ticket) }}" 
                                                   method="POST" 
@@ -145,5 +169,43 @@
             ]
         });
     });
+
+    function printTicket(url) {
+        const printWindow = window.open(url, '_blank');
+        printWindow.onload = function() {
+            printWindow.print();
+        };
+    }
+
+    function shareViaWhatsApp(eventName, attendeeName, token, eventDate, ticketUrl) {
+        const text = `Ticket for ${eventName}\n\n` +
+                    `Attendee: ${attendeeName}\n` +
+                    `Token: ${token}\n` +
+                    `Event Date: ${eventDate}\n\n` +
+                    `View ticket: ${ticketUrl}`;
+        
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+        window.open(whatsappUrl, '_blank');
+    }
+
+    function shareViaSMS(eventName, attendeeName, token, eventDate, ticketUrl) {
+        const text = `Ticket for ${eventName}\n\n` +
+                    `Attendee: ${attendeeName}\n` +
+                    `Token: ${token}\n` +
+                    `Event Date: ${eventDate}\n\n` +
+                    `View ticket: ${ticketUrl}`;
+        
+        const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
+        window.location.href = smsUrl;
+    }
+
+    function copyTicketLink(ticketUrl) {
+        navigator.clipboard.writeText(ticketUrl).then(() => {
+            alert('Ticket link copied to clipboard!');
+        }).catch(err => {
+            console.error('Failed to copy ticket link:', err);
+            alert('Failed to copy ticket link. Please try again.');
+        });
+    }
 </script>
 @endpush 

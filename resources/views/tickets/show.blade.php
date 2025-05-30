@@ -41,40 +41,60 @@
                             @if($event->logo_path)
                                 <img src="{{ asset('storage/' . $event->logo_path) }}" alt="{{ $event->name }}" class="event-logo mb-3" style="max-width: 150px;">
                             @endif
-                            <h4 class="mb-2">{{ $event->name }}</h4>
-                            <p class="mb-0">{{ $event->start_date->format('M d, Y') }} - {{ $event->end_date->format('M d, Y') }}</p>
+                            <h4 class="mb-2 text-primary">{{ $event->name }}</h4>
+                            <p class="mb-0 text-muted">{{ $event->start_date->format('M d, Y') }} - {{ $event->end_date->format('M d, Y') }}</p>
                         </div>
 
-                        <div class="invitation-message text-center mb-4">
-                            <h5 class="mb-3">You're Invited!</h5>
-                            <p class="mb-2">Dear {{ $ticket->attendee->name }},</p>
-                            <p class="mb-2">We are delighted to invite you to {{ $event->name }}. Your presence will make this event even more special.</p>
-                            <p class="mb-0">Please present this ticket at the venue for entry.</p>
+                        <div class="invitation-message text-center mb-4 p-4 border rounded bg-light">
+                            <h5 class="mb-3 text-primary">Karibu! (Welcome!)</h5>
+                            <p class="mb-2">Mpendwa {{ $ticket->attendee->name }},</p>
+                            <p class="mb-2">Tunafurahi kukualika kwenye {{ $event->name }}. Uwepo wako utafanya tukio hili liwe la kipekee zaidi.</p>
+                            <p class="mb-0">Tafadhali wasilisha tiketi hii kwenye ukumbi kwa ajili ya kuingia.</p>
+                            <hr class="my-3">
+                            <p class="mb-0 fst-italic">(We are delighted to invite you to {{ $event->name }}. Your presence will make this event even more special. Please present this ticket at the venue for entry.)</p>
                         </div>
 
-                        <div class="ticket-qr text-center mb-4">
+                        <div class="ticket-qr text-center mb-4 p-3 border rounded bg-white">
                             {!! QrCode::size(200)->generate(route('tickets.verify', $ticket->token)) !!}
+                            <p class="text-muted mt-2 mb-0">Scan hii kwa ajili ya kuthibitisha tiketi</p>
+                            <p class="text-muted small">(Scan this to verify the ticket)</p>
                         </div>
-                        <div class="ticket-details">
-                            <p><strong>Attendee:</strong> {{ $ticket->attendee->name }}</p>
-                            <p><strong>Token:</strong> {{ $ticket->token }}</p>
-                            @if($event->venue)
-                                <p><strong>Venue:</strong> {{ $event->venue }}</p>
-                            @endif
-                            @if($event->start_time)
-                                <p><strong>Time:</strong> {{ $event->start_time }}</p>
-                            @endif
+
+                        <div class="ticket-details p-4 border rounded">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="text-primary mb-3">Maelezo ya Mgeni</h6>
+                                    <p><strong>Jina:</strong> {{ $ticket->attendee->name }}</p>
+                                    <p><strong>Barua pepe:</strong> {{ $ticket->attendee->email }}</p>
+                                    <p><strong>Simu:</strong> {{ $ticket->attendee->phone }}</p>
+                                    @if($ticket->attendee->position)
+                                        <p><strong>Cheo:</strong> {{ $ticket->attendee->position }}</p>
+                                    @endif
+                                </div>
+                                <div class="col-md-6">
+                                    <h6 class="text-primary mb-3">Maelezo ya Tiketi</h6>
+                                    <p><strong>Token:</strong> {{ $ticket->token }}</p>
+                                    @if($event->venue)
+                                        <p><strong>Mahali:</strong> {{ $event->venue }}</p>
+                                    @endif
+                                    @if($event->start_time)
+                                        <p><strong>Muda:</strong> {{ $event->start_time }}</p>
+                                    @endif
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <!-- Regular ticket information -->
                     <div class="row mb-4">
                         <div class="col-12">
-                            <div class="invitation-card bg-light rounded p-4 mb-4 text-center">
-                                <h5 class="mb-3">You're Invited!</h5>
-                                <p class="mb-2">Dear {{ $ticket->attendee->name }},</p>
-                                <p class="mb-2">We are delighted to invite you to {{ $event->name }}. Your presence will make this event even more special.</p>
-                                <p class="mb-0">Please present this ticket at the venue for entry.</p>
+                            <div class="invitation-card bg-gradient bg-light rounded p-4 mb-4 text-center border shadow-sm">
+                                <h5 class="mb-3 text-primary">Karibu! (Welcome!)</h5>
+                                <p class="mb-2">Mpendwa {{ $ticket->attendee->name }},</p>
+                                <p class="mb-2">Tunafurahi kukualika kwenye {{ $event->name }}. Uwepo wako utafanya tukio hili liwe la kipekee zaidi.</p>
+                                <p class="mb-0">Tafadhali wasilisha tiketi hii kwenye ukumbi kwa ajili ya kuingia.</p>
+                                <hr class="my-3">
+                                <p class="mb-0 fst-italic">(We are delighted to invite you to {{ $event->name }}. Your presence will make this event even more special. Please present this ticket at the venue for entry.)</p>
                             </div>
                         </div>
                         <div class="col-md-6">
@@ -182,6 +202,7 @@
                     left: 0;
                     top: 0;
                     width: 100%;
+                    padding: 20px;
                 }
                 .ticket-qr {
                     margin: 2rem 0;
@@ -191,23 +212,41 @@
                 }
                 .invitation-message {
                     margin: 2rem 0;
-                    padding: 1rem;
-                    border: 1px solid #dee2e6;
+                    padding: 1.5rem;
+                    border: 2px solid #dee2e6;
                     border-radius: 0.5rem;
+                    background-color: #f8f9fa !important;
+                }
+                .text-primary {
+                    color: #0d6efd !important;
+                }
+                .border {
+                    border: 1px solid #dee2e6 !important;
+                }
+                .bg-light {
+                    background-color: #f8f9fa !important;
                 }
             }
             .qr-code-container {
                 border: 1px solid #dee2e6;
                 border-radius: 0.5rem;
+                background-color: white;
+                padding: 1rem;
+                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
             }
             .invitation-card {
                 border: 1px solid #dee2e6;
-                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+                box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+                background: linear-gradient(to bottom right, #ffffff, #f8f9fa);
             }
             .event-logo {
                 max-width: 150px;
                 height: auto;
                 margin-bottom: 1rem;
+                filter: drop-shadow(0 0.125rem 0.25rem rgba(0, 0, 0, 0.075));
+            }
+            .bg-gradient {
+                background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
             }
         </style>
     </x-slot>
@@ -215,7 +254,28 @@
     <x-slot:scripts>
         <script>
             function printTicket() {
+                // Hide all elements except the printable ticket
+                const elementsToHide = document.querySelectorAll('body > *:not(#printableTicket)');
+                elementsToHide.forEach(el => el.style.display = 'none');
+                
+                // Show the printable ticket
+                const printableTicket = document.getElementById('printableTicket');
+                printableTicket.classList.remove('d-none');
+                printableTicket.style.display = 'block';
+                printableTicket.style.position = 'absolute';
+                printableTicket.style.left = '0';
+                printableTicket.style.top = '0';
+                printableTicket.style.width = '100%';
+                printableTicket.style.padding = '20px';
+                printableTicket.style.backgroundColor = 'white';
+                
+                // Print
                 window.print();
+                
+                // Restore the original display
+                elementsToHide.forEach(el => el.style.display = '');
+                printableTicket.classList.add('d-none');
+                printableTicket.style = '';
             }
 
             function shareViaWhatsApp() {
