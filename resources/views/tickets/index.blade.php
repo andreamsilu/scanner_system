@@ -87,10 +87,15 @@
                                 <td>{{ $ticket->created_at->format('M j, Y g:i A') }}</td>
                                 <td>
                                     <div class="btn-group">
+                                        <a href="{{ route('events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" 
+                                           class="btn btn-sm btn-info" 
+                                           title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
                                         <button type="button"
                                                 class="btn btn-sm btn-primary"
                                                 title="Print Ticket"
-                                                onclick="printTicket('{{ route('tickets.print', $ticket) }}')">
+                                                onclick="printTicket('{{ route('events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
                                             <i class="bi bi-printer"></i>
                                         </button>
                                         <a href="{{ route('tickets.export', $ticket) }}" 
