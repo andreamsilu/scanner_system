@@ -38,20 +38,45 @@
                     <!-- Print-only ticket design (hidden by default) -->
                     <div id="printableTicket" class="d-none">
                         <div class="text-center mb-4">
-                            <h4>{{ $event->name }}</h4>
+                            @if($event->logo_path)
+                                <img src="{{ asset('storage/' . $event->logo_path) }}" alt="{{ $event->name }}" class="event-logo mb-3" style="max-width: 150px;">
+                            @endif
+                            <h4 class="mb-2">{{ $event->name }}</h4>
                             <p class="mb-0">{{ $event->start_date->format('M d, Y') }} - {{ $event->end_date->format('M d, Y') }}</p>
                         </div>
+
+                        <div class="invitation-message text-center mb-4">
+                            <h5 class="mb-3">You're Invited!</h5>
+                            <p class="mb-2">Dear {{ $ticket->attendee->name }},</p>
+                            <p class="mb-2">We are delighted to invite you to {{ $event->name }}. Your presence will make this event even more special.</p>
+                            <p class="mb-0">Please present this ticket at the venue for entry.</p>
+                        </div>
+
                         <div class="ticket-qr text-center mb-4">
                             {!! QrCode::size(200)->generate(route('tickets.verify', $ticket->token)) !!}
                         </div>
                         <div class="ticket-details">
                             <p><strong>Attendee:</strong> {{ $ticket->attendee->name }}</p>
-                            <p><strong>Ticket ID:</strong> {{ $ticket->token }}</p>
+                            <p><strong>Token:</strong> {{ $ticket->token }}</p>
+                            @if($event->venue)
+                                <p><strong>Venue:</strong> {{ $event->venue }}</p>
+                            @endif
+                            @if($event->start_time)
+                                <p><strong>Time:</strong> {{ $event->start_time }}</p>
+                            @endif
                         </div>
                     </div>
 
                     <!-- Regular ticket information -->
                     <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="invitation-card bg-light rounded p-4 mb-4 text-center">
+                                <h5 class="mb-3">You're Invited!</h5>
+                                <p class="mb-2">Dear {{ $ticket->attendee->name }},</p>
+                                <p class="mb-2">We are delighted to invite you to {{ $event->name }}. Your presence will make this event even more special.</p>
+                                <p class="mb-0">Please present this ticket at the venue for entry.</p>
+                            </div>
+                        </div>
                         <div class="col-md-6">
                             <h6 class="text-muted mb-3">Attendee Information</h6>
                             <dl class="row mb-0">
@@ -71,18 +96,26 @@
                             </dl>
                         </div>
                         <div class="col-md-6">
-                            <h6 class="text-muted mb-3">Ticket Information</h6>
+                            <h6 class="text-muted mb-3">Event Information</h6>
                             <dl class="row mb-0">
-                                <dt class="col-sm-4">Ticket ID:</dt>
-                                <dd class="col-sm-8">{{ $ticket->token }}</dd>
+                                <dt class="col-sm-4">Event:</dt>
+                                <dd class="col-sm-8">{{ $event->name }}</dd>
 
-                                <dt class="col-sm-4">Created:</dt>
-                                <dd class="col-sm-8">{{ $ticket->created_at->format('M d, Y H:i') }}</dd>
+                                <dt class="col-sm-4">Date:</dt>
+                                <dd class="col-sm-8">{{ $event->start_date->format('M d, Y') }}</dd>
 
-                                @if($ticket->last_scanned_at)
-                                    <dt class="col-sm-4">Last Scanned:</dt>
-                                    <dd class="col-sm-8">{{ $ticket->last_scanned_at->format('M d, Y H:i') }}</dd>
+                                @if($event->venue)
+                                    <dt class="col-sm-4">Venue:</dt>
+                                    <dd class="col-sm-8">{{ $event->venue }}</dd>
                                 @endif
+
+                                @if($event->start_time)
+                                    <dt class="col-sm-4">Time:</dt>
+                                    <dd class="col-sm-8">{{ $event->start_time }}</dd>
+                                @endif
+
+                                <dt class="col-sm-4">Token:</dt>
+                                <dd class="col-sm-8">{{ $ticket->token }}</dd>
                             </dl>
                         </div>
                     </div>
@@ -156,10 +189,25 @@
                 .ticket-details {
                     margin: 2rem 0;
                 }
+                .invitation-message {
+                    margin: 2rem 0;
+                    padding: 1rem;
+                    border: 1px solid #dee2e6;
+                    border-radius: 0.5rem;
+                }
             }
             .qr-code-container {
                 border: 1px solid #dee2e6;
                 border-radius: 0.5rem;
+            }
+            .invitation-card {
+                border: 1px solid #dee2e6;
+                box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            }
+            .event-logo {
+                max-width: 150px;
+                height: auto;
+                margin-bottom: 1rem;
             }
         </style>
     </x-slot>
@@ -173,7 +221,7 @@
             function shareViaWhatsApp() {
                 const text = `Ticket for {{ $event->name }}\n\n` +
                             `Attendee: {{ $ticket->attendee->name }}\n` +
-                            `Ticket ID: {{ $ticket->token }}\n` +
+                            `Token: {{ $ticket->token }}\n` +
                             `Event Date: {{ $event->start_date->format('M d, Y') }}\n\n` +
                             `View ticket: {{ route('tickets.verify', $ticket->token) }}`;
                 
@@ -184,7 +232,7 @@
             function shareViaSMS() {
                 const text = `Ticket for {{ $event->name }}\n\n` +
                             `Attendee: {{ $ticket->attendee->name }}\n` +
-                            `Ticket ID: {{ $ticket->token }}\n` +
+                            `Token: {{ $ticket->token }}\n` +
                             `Event Date: {{ $event->start_date->format('M d, Y') }}\n\n` +
                             `View ticket: {{ route('tickets.verify', $ticket->token) }}`;
                 
