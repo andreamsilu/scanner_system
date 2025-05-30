@@ -98,6 +98,12 @@
                                                 onclick="printTicket('{{ route('tickets.print', $ticket) }}')">
                                             <i class="bi bi-printer"></i>
                                         </button>
+                                        <a href="{{ route('tickets.export', $ticket) }}" 
+                                           class="btn btn-sm btn-danger" 
+                                           title="Download PDF"
+                                           target="_blank">
+                                            <i class="bi bi-file-pdf"></i>
+                                        </a>
                                         <button type="button" 
                                                 class="btn btn-sm btn-success" 
                                                 title="Share Ticket"
@@ -119,6 +125,12 @@
                                             <li>
                                                 <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
                                                     <i class="fas fa-link me-2"></i> Copy Ticket Link
+                                                </a>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('tickets.export', $ticket) }}" target="_blank">
+                                                    <i class="bi bi-file-pdf me-2"></i> Download as PDF
                                                 </a>
                                             </li>
                                         </ul>
@@ -162,10 +174,55 @@
         $('#tickets-table').DataTable({
             processing: true,
             pageLength: 15,
-            order: [[6, 'desc']], // Sort by created_at by default
-            dom: 'Bfrtip',
+            order: [[5, 'desc']], // Sort by created_at by default
+            dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
+                 '<"row"<"col-sm-12"tr>>' +
+                 '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
             buttons: [
-                'copy', 'csv', 'excel', 'pdf', 'print'
+                {
+                    extend: 'collection',
+                    text: '<i class="bi bi-download me-2"></i>Export',
+                    className: 'btn btn-primary',
+                    buttons: [
+                        {
+                            extend: 'excel',
+                            text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
+                            className: 'btn btn-success',
+                            exportOptions: {
+                                columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                            },
+                            title: 'Tickets List',
+                            messageTop: 'Generated on: ' + new Date().toLocaleDateString()
+                        },
+                        {
+                            extend: 'pdf',
+                            text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
+                            className: 'btn btn-danger',
+                            exportOptions: {
+                                columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                            },
+                            title: 'Tickets List',
+                            messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
+                            customize: function(doc) {
+                                doc.defaultStyle.fontSize = 10;
+                                doc.styles.tableHeader.fontSize = 11;
+                                doc.styles.tableHeader.fillColor = '#f8f9fa';
+                                doc.styles.tableHeader.color = '#212529';
+                                doc.pageMargins = [40, 60, 40, 60];
+                            }
+                        },
+                        {
+                            extend: 'print',
+                            text: '<i class="bi bi-printer me-2"></i>Print',
+                            className: 'btn btn-info',
+                            exportOptions: {
+                                columns: [0, 1, 2, 3, 4, 5] // Exclude actions column
+                            },
+                            title: 'Tickets List',
+                            messageTop: 'Generated on: ' + new Date().toLocaleDateString()
+                        }
+                    ]
+                }
             ]
         });
     });
