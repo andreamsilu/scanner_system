@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Contracts\SmsServiceInterface;
 use App\Models\Event;
 use App\Models\Ticket;
+use App\Models\SmsLog;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
@@ -39,8 +40,20 @@ class SmsService
         try {
             $result = $this->smsProvider->send($to, $message);
 
-            // Log the SMS activity
+            // Create SMS log entry
+            $log = SmsLog::create([
+                'to' => $to,
+                'message' => $message,
+                'type' => $type,
+                'status' => $result['status'] ?? 'sent',
+                'message_id' => $result['message_id'] ?? null,
+                'metadata' => $metadata,
+                'provider' => $this->smsProvider->getProviderName(),
+            ]);
+
+            // Log to Laravel's logging system as well
             Log::channel('sms')->info('SMS sent', [
+                'log_id' => $log->id,
                 'to' => $to,
                 'type' => $type,
                 'message_id' => $result['message_id'] ?? null,
@@ -48,9 +61,22 @@ class SmsService
                 'provider' => $this->smsProvider->getProviderName(),
             ]);
 
-            return $result;
+            return array_merge($result, ['log_id' => $log->id]);
         } catch (\Exception $e) {
+            // Create error log entry
+            $log = SmsLog::create([
+                'to' => $to,
+                'message' => $message,
+                'type' => $type,
+                'status' => 'failed',
+                'metadata' => $metadata,
+                'provider' => $this->smsProvider->getProviderName(),
+                'error' => $e->getMessage(),
+            ]);
+
+            // Log to Laravel's logging system
             Log::channel('sms')->error('SMS sending failed', [
+                'log_id' => $log->id,
                 'to' => $to,
                 'type' => $type,
                 'error' => $e->getMessage(),
