@@ -15,7 +15,7 @@
                     <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-link text-danger p-0">
+                        <button type="submit" class="btn btn-sm btn-link text-danger p-0">
                             <i class="fas fa-times me-1"></i> Deselect Event
                         </button>
                     </form>
@@ -41,10 +41,10 @@
                                     <span class="badge bg-secondary" id="scannerStatus">Scanner Inactive</span>
                                 </div>
                                 <div class="scanner-buttons">
-                                    <button type="button" class="btn btn-success" id="startScanner" onclick="startScanner()">
+                                    <button type="button" class="btn btn-sm btn-success" id="startScanner" onclick="startScanner()">
                                         <i class="fas fa-play me-1"></i> Start Scanner
                                     </button>
-                                    <button type="button" class="btn btn-danger d-none" id="stopScanner" onclick="stopScanner()">
+                                    <button type="button" class="btn btn-sm btn-danger d-none" id="stopScanner" onclick="stopScanner()">
                                         <i class="fas fa-stop me-1"></i> Stop Scanner
                                     </button>
                                 </div>
@@ -64,15 +64,15 @@
                             <div class="mt-4">
                                 <form id="manualEntryForm" class="mb-4">
                                     @csrf
-                                    <div class="input-group input-group-lg">
+                                    <div class="input-group">
                                         <input type="text" 
                                                class="form-control" 
                                                id="manualToken" 
                                                placeholder="Enter ticket token manually"
                                                pattern="[A-Za-z0-9]+"
                                                title="Please enter a valid token">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="bi bi-search me-2"></i>Validate
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-search me-1"></i>Validate
                                         </button>
                                     </div>
                                 </form>
@@ -170,7 +170,17 @@
             padding: 0.5rem 1rem;
         }
         .scanner-buttons .btn {
-            min-width: 120px;
+            min-width: 100px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+        .input-group .btn {
+            padding: 0.25rem 0.75rem;
+            font-size: 0.875rem;
+        }
+        .input-group .form-control {
+            font-size: 0.875rem;
+            padding: 0.25rem 0.75rem;
         }
         .list-group-item {
             padding: 1rem;
@@ -208,8 +218,8 @@
 
         /* Improve touch targets for iOS */
         .btn {
-            min-height: 44px;
-            padding: 12px 20px;
+            min-height: auto;
+            padding: 0.25rem 0.75rem;
         }
 
         /* Prevent pull-to-refresh on iOS */
