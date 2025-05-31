@@ -1,0 +1,196 @@
+<x-app-layout>
+    <x-slot name="header">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
+            <div class="d-flex align-items-center">
+                <a href="{{ route('scanner.dashboard') }}" class="btn btn-sm btn-link text-muted p-0 me-3">
+                    <i class="bi bi-arrow-left fs-4"></i>
+                </a>
+                <h2 class="h4 mb-0">Manual Token Validation</h2>
+            </div>
+        </div>
+    </x-slot>
+
+    <div class="row g-4">
+        <!-- Validation Form -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">Validate Ticket</h5>
+                </div>
+                <div class="card-body">
+                    @if(session('selected_event_id'))
+                        <form id="validateForm" class="mb-4">
+                            @csrf
+                            <div class="mb-3">
+                                <label for="token" class="form-label">Ticket Token</label>
+                                <div class="input-group">
+                                    <input type="text" 
+                                           class="form-control" 
+                                           id="token" 
+                                           name="token"
+                                           placeholder="Enter ticket token"
+                                           pattern="[A-Za-z0-9]+"
+                                           title="Please enter a valid token"
+                                           autocomplete="off"
+                                           required>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bi bi-check-lg me-1"></i>Validate
+                                    </button>
+                                </div>
+                                <div class="form-text">Enter the ticket token to validate manually</div>
+                            </div>
+                        </form>
+
+                        <!-- Validation Result -->
+                        <div id="validationResult" class="alert d-none">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-shrink-0">
+                                    <i class="bi fs-4"></i>
+                                </div>
+                                <div class="flex-grow-1 ms-3">
+                                    <h5 class="alert-heading mb-1"></h5>
+                                    <p class="mb-0"></p>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="bi bi-calendar-x text-muted" style="font-size: 2.5rem;"></i>
+                            <p class="text-muted mt-3 mb-0">Please select an event first</p>
+                            <a href="{{ route('scanner.events.index') }}" class="btn btn-primary mt-3">
+                                <i class="bi bi-calendar me-1"></i>Select Event
+                            </a>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Validations -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3">
+                    <h5 class="card-title mb-0">Recent Validations</h5>
+                </div>
+                <div class="card-body p-0">
+                    @if($recent_validations->count() > 0)
+                        <div class="list-group list-group-flush">
+                            @foreach($recent_validations as $validation)
+                                <div class="list-group-item">
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="mb-1">{{ $validation['attendee'] }}</h6>
+                                            <small class="text-muted d-block">{{ $validation['time'] }}</small>
+                                            @if($validation['email'])
+                                                <small class="text-muted d-block">{{ $validation['email'] }}</small>
+                                            @endif
+                                        </div>
+                                        <span class="badge bg-{{ $validation['status_class'] }}">
+                                            {{ ucfirst($validation['status']) }}
+                                        </span>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center py-4">
+                            <i class="bi bi-clock-history text-muted" style="font-size: 2.5rem;"></i>
+                            <p class="text-muted mt-3 mb-0">No recent validations</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @push('scripts')
+    <script>
+        document.getElementById('validateForm')?.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const token = document.getElementById('token').value;
+            const resultDiv = document.getElementById('validationResult');
+            const submitBtn = this.querySelector('button[type="submit"]');
+            
+            // Disable form while processing
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Validating...';
+            
+            try {
+                const response = await fetch('{{ route("scanner.validate.manual") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ token })
+                });
+                
+                const data = await response.json();
+                
+                // Update result display
+                resultDiv.className = `alert alert-${data.success ? 'success' : 'danger'} d-block`;
+                resultDiv.querySelector('.bi').className = `bi ${data.success ? 'bi-check-circle' : 'bi-x-circle'} fs-4`;
+                resultDiv.querySelector('.alert-heading').textContent = data.success ? 'Valid Ticket' : 'Invalid Ticket';
+                resultDiv.querySelector('p').textContent = data.message;
+                
+                // Play sound
+                const audio = new Audio(data.success ? 
+                    '{{ asset("sounds/success.mp3") }}' : 
+                    '{{ asset("sounds/error.mp3") }}'
+                );
+                audio.play();
+                
+                // Clear input
+                document.getElementById('token').value = '';
+                
+                // Refresh page after success to update recent validations
+                if (data.success) {
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+            } catch (error) {
+                console.error('Validation error:', error);
+                resultDiv.className = 'alert alert-danger d-block';
+                resultDiv.querySelector('.bi').className = 'bi bi-exclamation-circle fs-4';
+                resultDiv.querySelector('.alert-heading').textContent = 'Error';
+                resultDiv.querySelector('p').textContent = 'An error occurred while validating the ticket. Please try again.';
+            } finally {
+                // Re-enable form
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Validate';
+            }
+        });
+    </script>
+    @endpush
+
+    @push('styles')
+    <style>
+        @media (max-width: 768px) {
+            .card-body {
+                padding: 1rem;
+            }
+            .list-group-item {
+                padding: 0.75rem;
+            }
+        }
+        @media (max-width: 576px) {
+            .card-header {
+                padding: 0.75rem 1rem;
+            }
+            .card-body {
+                padding: 0.75rem;
+            }
+            .btn {
+                padding: 0.375rem 0.75rem;
+                font-size: 0.875rem;
+            }
+            .input-group .form-control {
+                font-size: 0.875rem;
+            }
+        }
+    </style>
+    @endpush
+</x-app-layout> 
