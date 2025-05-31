@@ -52,7 +52,7 @@
 
                             <!-- Scanner View -->
                             <div class="text-center mb-4">
-                                <div id="reader" class="scanner-view mx-auto" style="width: 100%; max-width: 600px; min-height: 400px; background: #000; position: relative;">
+                                <div id="reader" class="scanner-view mx-auto" style="width: 100%; max-width: 400px; min-height: 300px; background: #000; position: relative;">
                                     <!-- Camera feed will be inserted here -->
                                 </div>
                             </div>
@@ -141,6 +141,8 @@
             background: #f8f9fa;
             border-radius: 0.5rem;
             padding: 1.5rem;
+            max-width: 800px;
+            margin: 0 auto;
         }
         .scanner-view {
             border-radius: 0.5rem;
@@ -155,6 +157,7 @@
             height: auto !important;
             border-radius: 0.5rem;
             object-fit: cover;
+            max-height: 300px;
         }
         .scanner-controls {
             background: #fff;
@@ -260,17 +263,17 @@
                         "reader",
                         {
                             fps: 10,
-                            qrbox: { width: 300, height: 300 },
+                            qrbox: { width: 250, height: 250 },
                             aspectRatio: 1.0,
                             videoConstraints: {
                                 facingMode: "environment",
-                                width: { min: 640, ideal: 1280, max: 1920 },
-                                height: { min: 480, ideal: 720, max: 1080 }
+                                width: { min: 320, ideal: 640, max: 1280 },
+                                height: { min: 240, ideal: 480, max: 720 }
                             },
                             formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
                             showTorchButtonIfSupported: true,
                             showZoomSliderIfSupported: true,
-                            defaultZoomValueIfSupported: 2
+                            defaultZoomValueIfSupported: 1.5
                         }
                     );
 
