@@ -108,6 +108,7 @@
                                                     data-ticket-id="{{ $ticket->id }}"
                                                     data-attendee-name="{{ $ticket->attendee->name }}"
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
+                                                    data-attendee-id="{{ $ticket->attendee->id }}"
                                                     data-event-name="{{ $ticket->event->name }}">
                                                 <i class="bi bi-envelope"></i>
                                             </button>
@@ -359,8 +360,10 @@
             const attendeeName = $(this).data('attendee-name');
             const attendeePhone = $(this).data('attendee-phone');
             const eventName = $(this).data('event-name');
+            const attendeeId = $(this).data('attendee-id');
             
             $('#invitationTicketId').val(ticketId);
+            $('#invitationAttendeeId').val(attendeeId);
             $('#invitationAttendeeName').text(attendeeName);
             $('#invitationAttendeePhone').text(attendeePhone);
             $('#invitationEventName').text(eventName);
@@ -405,9 +408,10 @@
                     <h5 class="modal-title" id="sendInvitationModalLabel">Send Invitation SMS</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation') }}" method="POST">
+                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => $ticket->event->id]) }}" method="POST">
                     @csrf
                     <input type="hidden" name="ticket_id" id="invitationTicketId">
+                    <input type="hidden" name="attendee_id" id="invitationAttendeeId">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">Attendee</label>
