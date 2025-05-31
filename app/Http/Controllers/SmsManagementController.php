@@ -9,29 +9,45 @@ use App\Models\SmsTemplate;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\View;
 
 class SmsManagementController extends Controller
 {
-    protected $smsService;
+    /**
+     * The SMS service instance
+     *
+     * @var SmsService
+     */
+    protected SmsService $smsService;
 
+    /**
+     * Create a new controller instance
+     */
     public function __construct(SmsService $smsService)
     {
         $this->smsService = $smsService;
+        $this->middleware('auth');
     }
 
     /**
      * Display the SMS management dashboard
+     *
+     * @return \Illuminate\View\View
      */
-    public function index(Request $request)
+    public function index()
     {
-        $events = Event::withCount(['tickets', 'attendees'])
-            ->when($request->search, function($query, $search) {
-                $query->where('name', 'like', "%{$search}%");
-            })
-            ->latest()
-            ->paginate(10);
-
-        return view('sms.management.index', compact('events'));
+        try {
+            $balance = $this->smsService->getBalance();
+            
+            return view('sms.management.index', [
+                'balance' => $balance,
+                'provider' => $this->smsService->getProviderName(),
+            ]);
+        } catch (\Exception $e) {
+            return view('sms.management.index', [
+                'error' => 'Unable to fetch SMS balance: ' . $e->getMessage(),
+            ]);
+        }
     }
 
     /**
@@ -384,5 +400,61 @@ class SmsManagementController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Send a test SMS
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function sendTest(Request $request)
+    {
+        $request->validate([
+            'phone' => 'required|string',
+            'message' => 'required|string|max:160',
+        ]);
+
+        try {
+            $result = $this->smsService->sendNotification(
+                $request->phone,
+                $request->message,
+                ['test' => true]
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Test SMS sent successfully',
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send test SMS: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get the status of a message
+     *
+     * @param string $messageId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getMessageStatus(string $messageId)
+    {
+        try {
+            $status = $this->smsService->getMessageStatus($messageId);
+
+            return response()->json([
+                'success' => true,
+                'data' => $status,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get message status: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 } 
