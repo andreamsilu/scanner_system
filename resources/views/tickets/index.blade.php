@@ -99,6 +99,19 @@
                                                 onclick="printTicket('{{ route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
                                             <i class="bi bi-printer"></i>
                                         </button>
+                                        @if($ticket->attendee && $ticket->attendee->phone)
+                                            <button type="button"
+                                                    class="btn btn-outline-success send-invitation-btn"
+                                                    title="Send Invitation SMS"
+                                                    data-bs-toggle="modal"
+                                                    data-bs-target="#sendInvitationModal"
+                                                    data-ticket-id="{{ $ticket->id }}"
+                                                    data-attendee-name="{{ $ticket->attendee->name }}"
+                                                    data-attendee-phone="{{ $ticket->attendee->phone }}"
+                                                    data-event-name="{{ $ticket->event->name }}">
+                                                <i class="bi bi-envelope"></i>
+                                            </button>
+                                        @endif
                                         <button type="button" 
                                                 class="btn btn-outline-success" 
                                                 title="Share Ticket"
@@ -339,6 +352,90 @@
                 alert('Failed to copy ticket link. Please try again.');
             });
         }
+
+        // Handle SMS Invitation
+        $('.send-invitation-btn').click(function() {
+            const ticketId = $(this).data('ticket-id');
+            const attendeeName = $(this).data('attendee-name');
+            const attendeePhone = $(this).data('attendee-phone');
+            const eventName = $(this).data('event-name');
+            
+            $('#invitationTicketId').val(ticketId);
+            $('#invitationAttendeeName').text(attendeeName);
+            $('#invitationAttendeePhone').text(attendeePhone);
+            $('#invitationEventName').text(eventName);
+        });
+
+        $('#sendInvitationForm').submit(function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+            
+            submitBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Sending...');
+            
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success('Invitation SMS sent successfully');
+                        $('#sendInvitationModal').modal('hide');
+                    } else {
+                        toastr.error(response.message || 'Failed to send invitation SMS');
+                    }
+                },
+                error: function(xhr) {
+                    toastr.error(xhr.responseJSON?.message || 'Failed to send invitation SMS');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
     </script>
     @endpush
+
+    <!-- Send Invitation Modal -->
+    <div class="modal fade" id="sendInvitationModal" tabindex="-1" aria-labelledby="sendInvitationModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sendInvitationModalLabel">Send Invitation SMS</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation') }}" method="POST">
+                    @csrf
+                    <input type="hidden" name="ticket_id" id="invitationTicketId">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Attendee</label>
+                            <p class="mb-0" id="invitationAttendeeName"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Phone Number</label>
+                            <p class="mb-0" id="invitationAttendeePhone"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Event</label>
+                            <p class="mb-0" id="invitationEventName"></p>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Message</label>
+                            <textarea class="form-control" id="message" name="message" rows="4" required 
+                                      placeholder="Enter your invitation message..."></textarea>
+                            <small class="text-muted">You can use variables like {name}, {event}, {date}, {location}, {ticket_number}</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send"></i> Send Invitation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </x-app-layout> 
