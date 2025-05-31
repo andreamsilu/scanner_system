@@ -35,19 +35,9 @@
                 <div class="card-body">
                     @if($event)
                         <div class="scanner-container position-relative">
-                            <!-- Scanner Status and Controls -->
-                            <div class="scanner-controls mb-4 d-flex justify-content-between align-items-center">
-                                <div class="scanner-status">
-                                    <span class="badge bg-secondary" id="scannerStatus">Scanner Inactive</span>
-                                </div>
-                                <div class="scanner-buttons">
-                                    <button type="button" class="btn btn-sm btn-success" id="startScanner" onclick="startScanner()">
-                                        <i class="fas fa-play me-1"></i> Start Scanner
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-danger d-none" id="stopScanner" onclick="stopScanner()">
-                                        <i class="fas fa-stop me-1"></i> Stop Scanner
-                                    </button>
-                                </div>
+                            <!-- Scanner Status -->
+                            <div class="scanner-status mb-3">
+                                <span class="badge bg-secondary" id="scannerStatus">Scanner Inactive</span>
                             </div>
 
                             <!-- Scanner View -->
@@ -226,6 +216,57 @@
         body {
             overscroll-behavior-y: none;
         }
+
+        /* Scanner Button Styles */
+        #reader__scan_region {
+            position: relative;
+        }
+        #reader__scan_region video {
+            border-radius: 0.5rem;
+        }
+        #reader__dashboard {
+            padding: 0.5rem !important;
+            background: #fff !important;
+            border-radius: 0.5rem !important;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+            margin-top: 0.5rem !important;
+        }
+        #reader__dashboard button {
+            font-size: 0.875rem !important;
+            padding: 0.25rem 0.75rem !important;
+            border-radius: 0.25rem !important;
+            margin: 0 0.25rem !important;
+            background: #f8f9fa !important;
+            border: 1px solid #dee2e6 !important;
+            color: #212529 !important;
+        }
+        #reader__dashboard button:hover {
+            background: #e9ecef !important;
+        }
+        #reader__dashboard button#reader__camera_selection {
+            background: #0d6efd !important;
+            color: #fff !important;
+            border-color: #0d6efd !important;
+        }
+        #reader__dashboard button#reader__camera_selection:hover {
+            background: #0b5ed7 !important;
+        }
+        #reader__dashboard button#reader__torch_button {
+            background: #ffc107 !important;
+            color: #000 !important;
+            border-color: #ffc107 !important;
+        }
+        #reader__dashboard button#reader__torch_button:hover {
+            background: #ffca2c !important;
+        }
+        #reader__dashboard button#reader__close_scanner {
+            background: #dc3545 !important;
+            color: #fff !important;
+            border-color: #dc3545 !important;
+        }
+        #reader__dashboard button#reader__close_scanner:hover {
+            background: #bb2d3b !important;
+        }
     </style>
     @endpush
 
@@ -241,8 +282,8 @@
             const stream = await navigator.mediaDevices.getUserMedia({ 
                 video: { 
                     facingMode: "environment",
-                    width: { min: 640, ideal: 1280, max: 1920 },
-                    height: { min: 480, ideal: 720, max: 1080 }
+                    width: { min: 320, ideal: 640, max: 1280 },
+                    height: { min: 240, ideal: 480, max: 720 }
                 } 
             });
             
@@ -264,10 +305,8 @@
                 // Update UI
                 document.getElementById('scannerStatus').className = 'badge bg-success';
                 document.getElementById('scannerStatus').textContent = 'Scanner Active';
-                document.getElementById('startScanner').classList.add('d-none');
-                document.getElementById('stopScanner').classList.remove('d-none');
                 
-                // Initialize scanner with iOS-specific settings
+                // Initialize scanner with built-in buttons
                 if (!html5QrcodeScanner) {
                     html5QrcodeScanner = new Html5QrcodeScanner(
                         "reader",
@@ -283,7 +322,9 @@
                             formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
                             showTorchButtonIfSupported: true,
                             showZoomSliderIfSupported: true,
-                            defaultZoomValueIfSupported: 1.5
+                            defaultZoomValueIfSupported: 1.5,
+                            rememberLastUsedCamera: true,
+                            showCameraSelectionIfSupported: true
                         }
                     );
 
@@ -310,43 +351,6 @@
             }
             
             showMessage(errorMessage, 'danger');
-        }
-    }
-
-    async function stopScanner() {
-        try {
-            const response = await fetch('{{ route("scanner.scan.stop") }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-            
-                if (data.success) {
-                // Update UI
-                document.getElementById('scannerStatus').className = 'badge bg-secondary';
-                document.getElementById('scannerStatus').textContent = 'Scanner Inactive';
-                document.getElementById('startScanner').classList.remove('d-none');
-                document.getElementById('stopScanner').classList.add('d-none');
-                
-                // Stop scanner
-                if (html5QrcodeScanner) {
-                    await html5QrcodeScanner.clear();
-                    html5QrcodeScanner = null;
-                }
-                
-                isScanning = false;
-                showMessage('Scanner stopped successfully.', 'info');
-            } else {
-                showMessage(data.message, 'danger');
-            }
-        } catch (error) {
-            console.error('Error stopping scanner:', error);
-            showMessage('Failed to stop scanner. Please try again.', 'danger');
         }
     }
 
