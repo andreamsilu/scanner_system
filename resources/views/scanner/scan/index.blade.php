@@ -7,22 +7,27 @@
                 </a>
                 <h2 class="h4 mb-0">QR Code Scanner</h2>
             </div>
-            @if(session('selected_event_id'))
-                <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <span class="text-muted small">
-                        {{ $event->name }}
-                    </span>
-                    <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                            <i class="fas fa-times me-1"></i>Deselect
-                        </button>
-                    </form>
-                </div>
-            @endif
         </div>
     </x-slot>
+
+    <!-- Event Banner -->
+    @if(session('selected_event_id'))
+        <div class="alert alert-info alert-dismissible fade show mb-4 py-2" role="alert">
+            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-calendar-check me-2"></i>
+                    <span class="fw-medium">{{ $event->name }}</span>
+                </div>
+                <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
+                    @csrf
+                    @method('DELETE')
+                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-times me-1"></i>Deselect
+                    </button>
+                </form>
+            </div>
+        </div>
+    @endif
 
     <!-- Page Content -->
     <div class="row g-4">
@@ -252,6 +257,34 @@
             .btn-sm {
                 padding: 0.25rem 0.5rem;
                 font-size: 0.75rem;
+            }
+        }
+
+        /* Event Banner Styles */
+        .alert-info {
+            background-color: #e8f4f8;
+            border-color: #bee5eb;
+            color: #0c5460;
+        }
+        .alert-info .btn-outline-danger {
+            color: #dc3545;
+            border-color: #dc3545;
+            background-color: transparent;
+        }
+        .alert-info .btn-outline-danger:hover {
+            color: #fff;
+            background-color: #dc3545;
+        }
+        @media (max-width: 576px) {
+            .alert {
+                padding: 0.5rem 0.75rem;
+            }
+            .alert .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
+            .alert .fw-medium {
+                font-size: 0.875rem;
             }
         }
     </style>
