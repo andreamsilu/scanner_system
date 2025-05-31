@@ -80,18 +80,12 @@
                                 @else bg-warning @endif">
                                 {{ ucfirst($event->status) }}
                             </span>
-                            <div class="btn-group">
-                                <a href="{{ route('events.show', $event) }}" 
-                                   class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-eye me-1"></i>View
-                                </a>
-                                <form action="{{ route('scanner.events.select', $event) }}" method="POST" class="d-inline">
-                                    @csrf
-                                    <button type="submit" class="btn btn-sm btn-primary">
-                                        <i class="bi bi-upc-scan me-1"></i>Scan
-                                    </button>
-                                </form>
-                            </div>
+                            <form action="{{ route('scanner.events.select', $event) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-sm btn-primary">
+                                    <i class="bi bi-upc-scan me-1"></i>Scan
+                                </button>
+                            </form>
                         </div>
                     </div>
                 </div>

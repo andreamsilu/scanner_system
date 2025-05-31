@@ -152,8 +152,6 @@
                                 <thead>
                                     <tr>
                                         <th>Event Name</th>
-                                        <th>Date & Time</th>
-                                        <th>Location</th>
                                         <th>Status</th>
                                         <th>Total Attendees</th>
                                         <th>Scanned</th>
@@ -178,20 +176,11 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                <div>{{ $event->start_date->format('M d, Y') }}</div>
-                                                <small class="text-muted">{{ $event->start_date->format('h:i A') }}</small>
-                                            </td>
-                                            <td>{{ $event->location }}</td>
-                                            <td>
-                                                @php
-                                                    $statusClass = match($event->status) {
-                                                        'active' => 'success',
-                                                        'completed' => 'info',
-                                                        'cancelled' => 'danger',
-                                                        default => 'warning'
-                                                    };
-                                                @endphp
-                                                <span class="badge bg-{{ $statusClass }}">
+                                                <span class="badge rounded-pill 
+                                                    @if($event->status === 'active') bg-success
+                                                    @elseif($event->status === 'completed') bg-primary
+                                                    @elseif($event->status === 'cancelled') bg-danger
+                                                    @else bg-warning @endif">
                                                     {{ ucfirst($event->status) }}
                                                 </span>
                                             </td>
@@ -207,20 +196,14 @@
                                                 </span>
                                             </td>
                                             <td>
-                                                <div class="btn-group">
-                                                    <a href="{{ route('events.show', $event) }}" 
-                                                       class="btn btn-info btn-sm">
-                                                        <i class="bi bi-eye me-1"></i>View Attendees
-                                                    </a>
-                                                    <form action="{{ route('scanner.events.select', ['event' => $event->id]) }}" 
-                                                          method="POST" 
-                                                          class="d-inline">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-primary btn-sm">
+                                                <form action="{{ route('scanner.events.select', ['event' => $event->id]) }}" 
+                                                      method="POST" 
+                                                      class="d-inline">
+                                                    @csrf
+                                                    <button type="submit" class="btn btn-primary btn-sm">
                                                         <i class="bi bi-upc-scan me-1"></i>Start Scanning
-                                                        </button>
-                                                    </form>
-                                                </div>
+                                                    </button>
+                                                </form>
                                             </td>
                                         </tr>
                                     @endforeach
