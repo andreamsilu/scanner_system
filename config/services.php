@@ -41,4 +41,23 @@ return [
         'from_number' => env('TWILIO_FROM_NUMBER'),
     ],
 
+    'sms' => [
+        'default_provider' => env('SMS_PROVIDER', 'vonage'),
+        
+        'vonage' => [
+            'key' => env('VONAGE_KEY'),
+            'secret' => env('VONAGE_SECRET'),
+            'from' => env('VONAGE_FROM_NUMBER'),
+            'default_country_code' => env('SMS_DEFAULT_COUNTRY_CODE', '1'),
+        ],
+
+        // Add more providers here as needed
+        // 'twilio' => [
+        //     'sid' => env('TWILIO_SID'),
+        //     'token' => env('TWILIO_AUTH_TOKEN'),
+        //     'from' => env('TWILIO_FROM_NUMBER'),
+        //     'default_country_code' => env('SMS_DEFAULT_COUNTRY_CODE', '1'),
+        // ],
+    ],
+
 ];
