@@ -2,8 +2,9 @@
 
 namespace App\Providers;
 
-use App\Contracts\SmsServiceInterface;
+use App\Services\NextSmsService;
 use App\Services\VonageSmsService;
+use App\Contracts\SmsServiceInterface;
 use Illuminate\Support\ServiceProvider;
 
 class SmsServiceProvider extends ServiceProvider
@@ -13,15 +14,13 @@ class SmsServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->singleton(SmsServiceInterface::class, function ($app) {
-            // Get the configured SMS provider from config
-            $provider = config('services.sms.default_provider', 'vonage');
+        $this->app->bind(SmsServiceInterface::class, function ($app) {
+            $provider = config('services.sms.default_provider', 'nextsms');
             
-            // Return the appropriate service implementation
-            return match ($provider) {
+            return match($provider) {
+                'nextsms' => new NextSmsService(),
                 'vonage' => new VonageSmsService(),
-                // Add more providers here as needed
-                default => throw new \RuntimeException("Unsupported SMS provider: {$provider}"),
+                default => throw new \InvalidArgumentException("Unsupported SMS provider: {$provider}"),
             };
         });
     }
