@@ -42,8 +42,14 @@ return [
     ],
 
     'sms' => [
-        'default_provider' => env('SMS_PROVIDER', 'vonage'),
+        'default_provider' => env('SMS_PROVIDER', 'nextsms'),
         
+        'nextsms' => [
+            'api_key' => env('NEXTSMS_API_KEY'),
+            'sender_id' => env('NEXTSMS_SENDER_ID'),
+            'default_country_code' => env('SMS_DEFAULT_COUNTRY_CODE', '255'), // Tanzania's country code
+        ],
+
         'vonage' => [
             'key' => env('VONAGE_KEY'),
             'secret' => env('VONAGE_SECRET'),
