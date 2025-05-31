@@ -190,4 +190,5 @@ Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.man
     Route::get('/', [App\Http\Controllers\SmsManagementController::class, 'index'])->name('index');
     Route::get('/logs', [App\Http\Controllers\SmsManagementController::class, 'logs'])->name('logs');
     Route::post('/test', [App\Http\Controllers\SmsManagementController::class, 'sendTest'])->name('test');
+    Route::post('/events/{event}/send-attendee-invitation', [App\Http\Controllers\SmsManagementController::class, 'sendAttendeeInvitation'])->name('send-attendee-invitation');
 });
