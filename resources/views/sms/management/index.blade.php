@@ -1,7 +1,8 @@
-@extends('layouts.app')
+<x-app-layout>
+    <x-slot:title>
+        SMS Management
+    </x-slot>
 
-@section('content')
-<div class="container-fluid">
     <x-page-header 
         title="SMS Management"
         :breadcrumbs="['SMS Management' => null]"
@@ -172,51 +173,50 @@
             </div>
         </div>
     </div>
-</div>
 
-@push('scripts')
-<script>
-document.getElementById('testSmsForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    
-    const form = e.target;
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalBtnText = submitBtn.innerHTML;
-    
-    try {
-        submitBtn.disabled = true;
-        submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+    @push('scripts')
+    <script>
+    document.getElementById('testSmsForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
         
-        const response = await fetch('{{ route("sms.management.test") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({
-                phone: form.phone.value,
-                message: form.message.value
-            })
-        });
+        const form = e.target;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
         
-        const result = await response.json();
-        
-        if (result.success) {
-            toastr.success(result.message);
-            form.reset();
-            // Reload the page to update the logs
-            window.location.reload();
-        } else {
-            toastr.error(result.message);
+        try {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Sending...';
+            
+            const response = await fetch('{{ route("sms.management.test") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                },
+                body: JSON.stringify({
+                    phone: form.phone.value,
+                    message: form.message.value
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                toastr.success(result.message);
+                form.reset();
+                // Reload the page to update the logs
+                window.location.reload();
+            } else {
+                toastr.error(result.message);
+            }
+        } catch (error) {
+            toastr.error('Failed to send test SMS. Please try again.');
+            console.error('Error:', error);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
         }
-    } catch (error) {
-        toastr.error('Failed to send test SMS. Please try again.');
-        console.error('Error:', error);
-    } finally {
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = originalBtnText;
-    }
-});
-</script>
-@endpush
-@endsection 
+    });
+    </script>
+    @endpush
+</x-app-layout> 
