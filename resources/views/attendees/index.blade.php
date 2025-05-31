@@ -83,42 +83,30 @@
                             @forelse($attendees as $attendee)
                                 <tr>
                                     <td>{{ $attendee->name }}</td>
-                                    <td>{{ $attendee->phone ?? 'N/A' }}</td>
+                                    <td>{{ $attendee->phone }}</td>
+                                    <td>{{ $attendee->token }}</td>
                                     <td>
-                                        <code class="bg-light px-2 py-1 rounded">{{ $attendee->token }}</code>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'primary') }}">
-                                            {{ $attendee->registration_status === 'unchecked_in' ? 'Unchecked In' : ucfirst($attendee->registration_status) }}
+                                        <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'info') }}">
+                                            {{ ucfirst($attendee->registration_status) }}
                                         </span>
-                                        @if($attendee->registration_status === 'checked_in' && $attendee->checked_in_at)
-                                            <br>
-                                            <small class="text-muted">Checked in: {{ $attendee->checked_in_at->format('M j, Y g:i A') }}</small>
-                                        @endif
                                     </td>
                                     <td>
                                         @if($attendee->ticket)
-                                            <span class="badge bg-{{ $attendee->ticket->status === 'used' ? 'success' : ($attendee->ticket->status === 'active' ? 'primary' : 'danger') }}">
+                                            <span class="badge bg-{{ $attendee->ticket->status === 'valid' ? 'success' : 'danger' }}">
                                                 {{ ucfirst($attendee->ticket->status) }}
                                             </span>
-                                            @if($attendee->ticket->used_at)
-                                                <br>
-                                                <small class="text-muted">Used: {{ $attendee->ticket->used_at->format('M j, Y g:i A') }}</small>
-                                            @endif
                                         @else
                                             <span class="badge bg-secondary">No Ticket</span>
                                         @endif
                                     </td>
                                     <td>
                                         @if($attendee->ticket)
-                                            <span class="badge bg-info text-dark">{{ ucfirst($attendee->ticket->type) }}</span>
+                                            <span class="badge bg-primary">{{ ucfirst($attendee->ticket->type) }}</span>
                                         @else
-                                            <span class="text-muted">-</span>
+                                            -
                                         @endif
                                     </td>
-                                    <td>
-                                        {{ $attendee->created_at->format('M j, Y g:i A') }}
-                                    </td>
+                                    <td>{{ $attendee->created_at->format('d-m-Y H:i') }}</td>
                                     <td>
                                         <div class="btn-group">
                                             <a href="{{ route('events.attendees.show', ['event' => $event, 'attendee' => $attendee]) }}" 
@@ -148,7 +136,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="text-center py-4">
+                                    <td colspan="8" class="text-center py-4">
                                         <div class="text-muted">
                                             <i class="bi bi-people fs-1 d-block mb-2"></i>
                                             <p class="mb-0">No attendees found.</p>
@@ -159,12 +147,6 @@
                         </tbody>
                     </table>
                 </div>
-
-                @if($attendees->hasPages())
-                    <div class="d-flex justify-content-center mt-4">
-                        {{ $attendees->withQueryString()->links() }}
-                    </div>
-                @endif
             </div>
         </div>
     </div>
@@ -331,8 +313,9 @@
                 responsive: true,
                 processing: true,
                 serverSide: false, // Set to false since we're using blade rendering
-                pageLength: 10,
-                order: [[4, 'desc']], // Sort by registration date by default
+                pageLength: 15,
+                lengthMenu: [[10, 15, 25, 50, -1], [10, 15, 25, 50, "All"]],
+                order: [[6, 'desc']], // Sort by registration date by default
                 dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>' +
                      '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
@@ -340,24 +323,14 @@
                     {
                         extend: 'collection',
                         text: '<i class="bi bi-download me-2"></i>Export',
-                        className: 'btn btn-primary',
+                        className: 'btn btn-sm btn-primary',
                         buttons: [
                             {
                                 extend: 'excel',
                                 text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
-                                className: 'btn btn-success',
+                                className: 'btn btn-sm btn-success',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4] // Exclude actions column
-                                },
-                                title: '{{ $event->name }} - Attendees List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
-                            },
-                            {
-                                extend: 'csv',
-                                text: '<i class="bi bi-file-earmark-text me-2"></i>CSV',
-                                className: 'btn btn-info',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4] // Exclude actions column
+                                    columns: [0, 1, 2, 3, 4, 5, 6]
                                 },
                                 title: '{{ $event->name }} - Attendees List',
                                 messageTop: 'Generated on: ' + new Date().toLocaleDateString()
@@ -365,9 +338,9 @@
                             {
                                 extend: 'pdf',
                                 text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
-                                className: 'btn btn-danger',
+                                className: 'btn btn-sm btn-danger',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4] // Exclude actions column
+                                    columns: [0, 1, 2, 3, 4, 5, 6]
                                 },
                                 title: '{{ $event->name }} - Attendees List',
                                 messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
@@ -380,13 +353,14 @@
                                 }
                             },
                             {
-                                extend: 'copy',
-                                text: '<i class="bi bi-clipboard me-2"></i>Copy',
-                                className: 'btn btn-secondary',
+                                extend: 'print',
+                                text: '<i class="bi bi-printer me-2"></i>Print',
+                                className: 'btn btn-sm btn-info',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4] // Exclude actions column
+                                    columns: [0, 1, 2, 3, 4, 5, 6]
                                 },
-                                title: '{{ $event->name }} - Attendees List'
+                                title: '{{ $event->name }} - Attendees List',
+                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
                             }
                         ]
                     }
@@ -394,7 +368,7 @@
                 columnDefs: [
                     { 
                         orderable: false, 
-                        targets: [5], // Disable sorting on actions column
+                        targets: [7], // Disable sorting on actions column
                         searchable: false
                     }
                 ],
