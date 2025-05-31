@@ -492,17 +492,18 @@ class SmsManagementController extends Controller
             });
         }
 
-        // Load attendee information from metadata
+        // Get paginated results
         $logs = $query->latest()
-            ->get()
-            ->map(function ($log) {
-                $metadata = $log->metadata ?? [];
-                $log->attendee_name = $metadata['attendee_name'] ?? null;
-                $log->attendee_phone = $metadata['attendee_phone'] ?? $log->to;
-                return $log;
-            })
             ->paginate(20)
             ->withQueryString();
+
+        // Add attendee information to each log item
+        $logs->getCollection()->transform(function ($log) {
+            $metadata = $log->metadata ?? [];
+            $log->attendee_name = $metadata['attendee_name'] ?? null;
+            $log->attendee_phone = $metadata['attendee_phone'] ?? $log->to;
+            return $log;
+        });
 
         return view('sms.management.logs', compact('logs'));
     }
