@@ -2,7 +2,7 @@
     <x-slot name="header">
         <div class="d-flex justify-content-between align-items-center">
             <div class="d-flex align-items-center">
-                <a href="{{ route('scanner.dashboard') }}" class="btn btn-link text-muted p-0 me-3">
+                <a href="{{ route('scanner.dashboard') }}" class="btn btn-sm btn-link text-muted p-0 me-3">
                     <i class="bi bi-arrow-left fs-4"></i>
                 </a>
                 <h2 class="h4 mb-0">QR Code Scanner</h2>
@@ -73,7 +73,7 @@
                             <i class="fas fa-qrcode fa-3x text-muted mb-3"></i>
                             <h5>No Event Selected</h5>
                             <p class="text-muted">Please select an event to start scanning QR codes.</p>
-                            <a href="{{ route('scanner.events.index') }}" class="btn btn-primary">
+                            <a href="{{ route('scanner.events.index') }}" class="btn btn-sm btn-primary">
                                 <i class="fas fa-calendar me-1"></i> Select Event
                             </a>
                         </div>
@@ -87,7 +87,7 @@
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Recent Scans</h5>
-                    <a href="{{ route('scanner.history') }}" class="btn btn-link btn-sm p-0">View All</a>
+                    <a href="{{ route('scanner.history') }}" class="btn btn-sm btn-link p-0">View All</a>
                 </div>
                 <div class="card-body">
                     <div class="list-group list-group-flush">
