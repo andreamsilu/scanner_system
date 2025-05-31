@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
             <div class="d-flex align-items-center">
                 <a href="{{ route('scanner.dashboard') }}" class="btn btn-sm btn-link text-muted p-0 me-3">
                     <i class="bi bi-arrow-left fs-4"></i>
@@ -8,15 +8,15 @@
                 <h2 class="h4 mb-0">QR Code Scanner</h2>
             </div>
             @if(session('selected_event_id'))
-                <div class="d-flex align-items-center gap-3">
-                    <span class="text-muted">
-                        Selected Event: {{ $event->name }}
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-muted small">
+                        {{ $event->name }}
                     </span>
                     <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
                         @csrf
                         @method('DELETE')
-                        <button type="submit" class="btn btn-sm btn-link text-danger p-0">
-                            <i class="fas fa-times me-1"></i> Deselect Event
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                            <i class="fas fa-times me-1"></i>Deselect
                         </button>
                     </form>
                 </div>
@@ -30,7 +30,14 @@
         <div class="col-lg-8">
             <div class="card">
                 <div class="card-header">
-                    <h5 class="card-title mb-0">QR Code Scanner</h5>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">QR Code Scanner</h5>
+                        @if($event)
+                            <button type="button" class="btn btn-sm btn-primary" onclick="startScanner()">
+                                <i class="fas fa-play me-1"></i>Start Scanning
+                            </button>
+                        @endif
+                    </div>
                 </div>
                 <div class="card-body">
                     @if($event)
@@ -209,6 +216,43 @@
         /* Prevent pull-to-refresh on iOS */
         body {
             overscroll-behavior-y: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .scanner-container {
+                padding: 1rem;
+            }
+            .card-header {
+                padding: 0.75rem 1rem;
+            }
+            .card-body {
+                padding: 1rem;
+            }
+            .scanner-view {
+                min-height: 250px;
+            }
+            #reader video {
+                max-height: 250px;
+            }
+            .list-group-item {
+                padding: 0.75rem;
+            }
+        }
+        @media (max-width: 576px) {
+            .scanner-view {
+                min-height: 200px;
+            }
+            #reader video {
+                max-height: 200px;
+            }
+            .card-header h5 {
+                font-size: 1rem;
+            }
+            .btn-sm {
+                padding: 0.25rem 0.5rem;
+                font-size: 0.75rem;
+            }
         }
     </style>
     @endpush
