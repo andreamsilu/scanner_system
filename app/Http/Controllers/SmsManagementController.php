@@ -463,13 +463,44 @@ class SmsManagementController extends Controller
     }
 
     /**
-     * Display all SMS logs with pagination.
+     * Display all SMS logs with pagination and filtering.
      *
      * @return \Illuminate\View\View
      */
     public function logs(): View
     {
-        $logs = SmsLog::latest()
+        $query = SmsLog::query();
+
+        // Apply filters
+        if ($type = request('type')) {
+            $query->where('type', $type);
+        }
+
+        if ($status = request('status')) {
+            $query->where('status', $status);
+        }
+
+        if ($provider = request('provider')) {
+            $query->where('provider', $provider);
+        }
+
+        if ($search = request('search')) {
+            $query->where(function($q) use ($search) {
+                $q->where('to', 'like', "%{$search}%")
+                  ->orWhere('message', 'like', "%{$search}%")
+                  ->orWhereJsonContains('metadata->attendee_name', $search);
+            });
+        }
+
+        // Load attendee information from metadata
+        $logs = $query->latest()
+            ->get()
+            ->map(function ($log) {
+                $metadata = $log->metadata ?? [];
+                $log->attendee_name = $metadata['attendee_name'] ?? null;
+                $log->attendee_phone = $metadata['attendee_phone'] ?? $log->to;
+                return $log;
+            })
             ->paginate(20)
             ->withQueryString();
 
