@@ -2,9 +2,7 @@
 
 namespace App\Services;
 
-use Twilio\Rest\Client;
-use App\Models\SmsTemplate;
-use App\Models\SmsLog;
+use App\Contracts\SmsServiceInterface;
 use App\Models\Event;
 use App\Models\Ticket;
 use Illuminate\Support\Facades\Log;
@@ -12,19 +10,19 @@ use Carbon\Carbon;
 
 class SmsService
 {
-    protected $client;
-    protected $fromNumber;
+    /**
+     * The SMS provider instance
+     *
+     * @var SmsServiceInterface
+     */
+    protected SmsServiceInterface $smsProvider;
 
     /**
-     * Initialize SMS service with Twilio client
+     * Create a new SMS service instance
      */
-    public function __construct()
+    public function __construct(SmsServiceInterface $smsProvider)
     {
-        $this->client = new Client(
-            config('services.twilio.sid'),
-            config('services.twilio.auth_token')
-        );
-        $this->fromNumber = config('services.twilio.from_number');
+        $this->smsProvider = $smsProvider;
     }
 
     /**
@@ -32,168 +30,157 @@ class SmsService
      *
      * @param string $to Recipient phone number
      * @param string $message Message content
-     * @param string $type Type of message
+     * @param string $type Type of message (invitation, notification, reminder)
      * @param array $metadata Additional metadata to store
-     * @return bool
+     * @return array
      */
-    public function send(string $to, string $message, string $type = 'notification', array $metadata = []): bool
+    public function send(string $to, string $message, string $type = 'notification', array $metadata = []): array
     {
         try {
-            $response = $this->client->messages->create(
-                $to,
-                [
-                    'from' => $this->fromNumber,
-                    'body' => $message
-                ]
-            );
+            $result = $this->smsProvider->send($to, $message);
 
-            // Log the SMS
-            SmsLog::create([
+            // Log the SMS activity
+            Log::channel('sms')->info('SMS sent', [
                 'to' => $to,
-                'message' => $message,
                 'type' => $type,
-                'status' => $response->status,
-                'sid' => $response->sid,
-                'metadata' => $metadata
+                'message_id' => $result['message_id'] ?? null,
+                'metadata' => $metadata,
+                'provider' => $this->smsProvider->getProviderName(),
             ]);
 
-            return true;
+            return $result;
         } catch (\Exception $e) {
-            Log::error('SMS sending failed: ' . $e->getMessage(), [
+            Log::channel('sms')->error('SMS sending failed', [
                 'to' => $to,
                 'type' => $type,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'metadata' => $metadata,
+                'provider' => $this->smsProvider->getProviderName(),
             ]);
-            return false;
+
+            throw $e;
         }
     }
 
     /**
-     * Send an attendee invitation SMS
+     * Send an invitation SMS
      *
-     * @param Event $event
-     * @param array $attendeeData
-     * @return bool
+     * @param Ticket $ticket The ticket to send invitation for
+     * @return array
      */
-    public function sendAttendeeInvitation(Event $event, array $attendeeData): bool
+    public function sendInvitation(Ticket $ticket): array
     {
-        $template = SmsTemplate::where('type', 'attendee_invitation')->first();
-        
-        if (!$template) {
-            Log::error('Attendee invitation template not found');
-            return false;
-        }
+        $event = $ticket->event;
+        $message = $this->formatInvitationMessage($event, $ticket);
 
-        $data = array_merge([
-            'event_name' => $event->name,
-            'date' => $event->date->format('F j, Y g:i A'),
-            'location' => $event->location,
-            'contact_number' => $event->contact_number ?? config('app.support_phone'),
-            'event_organizer' => $event->organizer_name ?? config('app.name')
-        ], $attendeeData);
-
-        $message = $this->replaceTemplateVariables($template->content, $data);
-        
         return $this->send(
-            $attendeeData['phone'],
+            $ticket->phone,
             $message,
-            'attendee_invitation',
+            'invitation',
             [
+                'ticket_id' => $ticket->id,
                 'event_id' => $event->id,
-                'attendee_id' => $attendeeData['attendee_id'] ?? null,
-                'ticket_id' => $attendeeData['ticket_id'] ?? null
             ]
         );
     }
 
     /**
-     * Send a ticket usage notification
+     * Send a notification SMS
      *
-     * @param Ticket $ticket
-     * @param string $entryPoint
-     * @return bool
+     * @param string $to Recipient phone number
+     * @param string $message Message content
+     * @param array $metadata Additional metadata
+     * @return array
      */
-    public function sendTicketUsageNotification(Ticket $ticket, string $entryPoint): bool
+    public function sendNotification(string $to, string $message, array $metadata = []): array
     {
-        $template = SmsTemplate::where('type', 'ticket_used')->first();
-        
-        if (!$template) {
-            Log::error('Ticket usage notification template not found');
-            return false;
-        }
+        return $this->send($to, $message, 'notification', $metadata);
+    }
 
-        $data = [
-            'user_name' => $ticket->attendee->name,
-            'event_name' => $ticket->event->name,
-            'ticket_number' => $ticket->ticket_number,
-            'used_time' => Carbon::now()->format('F j, Y g:i A'),
-            'entry_point' => $entryPoint,
-            'support_number' => config('app.support_phone')
-        ];
+    /**
+     * Send a reminder SMS
+     *
+     * @param Ticket $ticket The ticket to send reminder for
+     * @return array
+     */
+    public function sendReminder(Ticket $ticket): array
+    {
+        $event = $ticket->event;
+        $message = $this->formatReminderMessage($event, $ticket);
 
-        $message = $this->replaceTemplateVariables($template->content, $data);
-        
         return $this->send(
-            $ticket->attendee->phone,
+            $ticket->phone,
             $message,
-            'ticket_used',
+            'reminder',
             [
                 'ticket_id' => $ticket->id,
-                'event_id' => $ticket->event_id,
-                'entry_point' => $entryPoint
+                'event_id' => $event->id,
             ]
         );
     }
 
     /**
-     * Send an event reminder
+     * Format an invitation message
      *
-     * @param Ticket $ticket
-     * @return bool
-     */
-    public function sendEventReminder(Ticket $ticket): bool
-    {
-        $template = SmsTemplate::where('type', 'ticket_reminder')->first();
-        
-        if (!$template) {
-            Log::error('Event reminder template not found');
-            return false;
-        }
-
-        $data = [
-            'user_name' => $ticket->attendee->name,
-            'event_name' => $ticket->event->name,
-            'date' => $ticket->event->date->format('F j, Y g:i A'),
-            'location' => $ticket->event->location,
-            'ticket_number' => $ticket->ticket_number,
-            'event_organizer' => $ticket->event->organizer_name ?? config('app.name')
-        ];
-
-        $message = $this->replaceTemplateVariables($template->content, $data);
-        
-        return $this->send(
-            $ticket->attendee->phone,
-            $message,
-            'ticket_reminder',
-            [
-                'ticket_id' => $ticket->id,
-                'event_id' => $ticket->event_id
-            ]
-        );
-    }
-
-    /**
-     * Replace template variables with actual data
-     *
-     * @param string $template
-     * @param array $data
+     * @param Event $event The event
+     * @param Ticket $ticket The ticket
      * @return string
      */
-    protected function replaceTemplateVariables(string $template, array $data): string
+    protected function formatInvitationMessage(Event $event, Ticket $ticket): string
     {
-        foreach ($data as $key => $value) {
-            $template = str_replace("{{$key}}", $value, $template);
-        }
-        return $template;
+        return strtr(
+            "You're invited to {event_name}! Date: {event_date}. Location: {event_location}. " .
+            "Your ticket code: {ticket_code}. Visit {ticket_url} to view your ticket.",
+            [
+                '{event_name}' => $event->name,
+                '{event_date}' => Carbon::parse($event->date)->format('F j, Y g:i A'),
+                '{event_location}' => $event->location,
+                '{ticket_code}' => $ticket->code,
+                '{ticket_url}' => route('tickets.show', $ticket->code),
+            ]
+        );
+    }
+
+    /**
+     * Format a reminder message
+     *
+     * @param Event $event The event
+     * @param Ticket $ticket The ticket
+     * @return string
+     */
+    protected function formatReminderMessage(Event $event, Ticket $ticket): string
+    {
+        return strtr(
+            "Reminder: {event_name} is tomorrow! Date: {event_date}. Location: {event_location}. " .
+            "Your ticket code: {ticket_code}. Visit {ticket_url} to view your ticket.",
+            [
+                '{event_name}' => $event->name,
+                '{event_date}' => Carbon::parse($event->date)->format('F j, Y g:i A'),
+                '{event_location}' => $event->location,
+                '{ticket_code}' => $ticket->code,
+                '{ticket_url}' => route('tickets.show', $ticket->code),
+            ]
+        );
+    }
+
+    /**
+     * Get the SMS provider's balance
+     *
+     * @return array
+     */
+    public function getBalance(): array
+    {
+        return $this->smsProvider->getBalance();
+    }
+
+    /**
+     * Get the status of a message
+     *
+     * @param string $messageId The message ID
+     * @return array
+     */
+    public function getMessageStatus(string $messageId): array
+    {
+        return $this->smsProvider->getStatus($messageId);
     }
 } 
