@@ -303,14 +303,14 @@
                     <div class="card-body">
                         <div class="d-grid gap-2">
                             @if($attendee->ticket)
-                                <a href="{{ route('events.tickets.print', [$event, $attendee->ticket]) }}" 
+                                <a href="{{ route('events.events.tickets.print', [$event, $attendee->ticket]) }}"
                                    class="btn btn-outline-primary"
                                    target="_blank">
                                     <i class="bi bi-printer me-2"></i>Print Ticket
                                 </a>
                                 @if($attendee->ticket->status === 'valid')
-                                    <form action="{{ route('events.tickets.invalidate', [$event, $attendee->ticket]) }}" 
-                                          method="POST" 
+                                    <form action="{{ route('events.events.tickets.deactivate', [$event, $attendee->ticket]) }}"
+                                          method="POST"
                                           class="d-inline"
                                           onsubmit="return confirm('Are you sure you want to invalidate this ticket? This action cannot be undone.')">
                                         @csrf
