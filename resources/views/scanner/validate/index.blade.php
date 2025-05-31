@@ -34,7 +34,7 @@
                 </div>
                 <div class="card-body">
                     @if($event)
-                        <form id="validateForm" class="mb-4">
+                        <form id="validateForm" action="{{ route('scanner.scan.index', ['event' => $event->id]) }}" method="GET" class="mb-4">
                             @csrf
                             <div class="mb-3">
                                 <label for="token" class="form-label">Ticket Token</label>
@@ -51,7 +51,7 @@
                                            required
                                            autofocus>
                                     <button type="submit" class="btn btn-primary btn-lg">
-                                        <i class="bi bi-check-lg me-1"></i>Validate
+                                        <i class="bi bi-upc-scan me-1"></i>Scan
                                     </button>
                                 </div>
                                 <div class="form-text">Enter the 7-digit ticket token to validate manually</div>
@@ -122,63 +122,22 @@
 
     @push('scripts')
     <script>
-        document.getElementById('validateForm')?.addEventListener('submit', async function(e) {
+        document.getElementById('validateForm')?.addEventListener('submit', function(e) {
             e.preventDefault();
             
             const token = document.getElementById('token').value;
-            const resultDiv = document.getElementById('validationResult');
-            const submitBtn = this.querySelector('button[type="submit"]');
-            
-            // Disable form while processing
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Validating...';
-            
-            try {
-                const response = await fetch('{{ route("scanner.validate.manual") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ token })
-                });
-                
-                const data = await response.json();
-                
-                // Update result display
-                resultDiv.className = `alert alert-${data.success ? 'success' : 'danger'} d-block`;
-                resultDiv.querySelector('.bi').className = `bi ${data.success ? 'bi-check-circle' : 'bi-x-circle'} fs-4`;
-                resultDiv.querySelector('.alert-heading').textContent = data.success ? 'Valid Ticket' : 'Invalid Ticket';
-                resultDiv.querySelector('p').textContent = data.message;
-                
-                // Play sound
-                const audio = new Audio(data.success ? 
-                    '{{ asset("sounds/success.mp3") }}' : 
-                    '{{ asset("sounds/error.mp3") }}'
-                );
-                audio.play();
-                
-                // Clear input and focus
-                document.getElementById('token').value = '';
-                document.getElementById('token').focus();
-                
-                // Refresh page after success to update recent validations
-                if (data.success) {
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
-                }
-            } catch (error) {
-                console.error('Validation error:', error);
+            if (token.length === 7 && /^\d+$/.test(token)) {
+                // Store token in session storage for scan page
+                sessionStorage.setItem('manual_token', token);
+                // Redirect to scan page
+                window.location.href = this.action;
+            } else {
+                // Show validation error
+                const resultDiv = document.getElementById('validationResult');
                 resultDiv.className = 'alert alert-danger d-block';
                 resultDiv.querySelector('.bi').className = 'bi bi-exclamation-circle fs-4';
-                resultDiv.querySelector('.alert-heading').textContent = 'Error';
-                resultDiv.querySelector('p').textContent = 'An error occurred while validating the ticket. Please try again.';
-            } finally {
-                // Re-enable form
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Validate';
+                resultDiv.querySelector('.alert-heading').textContent = 'Invalid Token';
+                resultDiv.querySelector('p').textContent = 'Please enter a valid 7-digit token.';
             }
         });
 
