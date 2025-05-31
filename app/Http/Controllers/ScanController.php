@@ -371,32 +371,4 @@ class ScanController extends Controller
         }
         return back()->with('error', 'No valid ticket found for this token');
     }
-
-    /**
-     * Display the token validation page
-     */
-    public function validatePage(): View
-    {
-        $scanner = Auth::user();
-        
-        // Get recent validations for this scanner
-        $recent_validations = ScanLog::with(['ticket.attendee', 'ticket.event'])
-            ->where('scanner_id', $scanner->id)
-            ->where('notes', 'like', '%Manual token validation%')
-            ->latest()
-            ->take(10)
-            ->get()
-            ->map(function($scan) {
-                return [
-                    'time' => $scan->created_at->diffForHumans(),
-                    'attendee' => $scan->ticket->attendee->name ?? 'Invalid Ticket',
-                    'event' => $scan->ticket->event->name ?? 'N/A',
-                    'status' => $scan->status,
-                    'status_class' => $scan->status === 'success' ? 'success' : 
-                                    ($scan->status === 'duplicate' ? 'warning' : 'danger')
-                ];
-            });
-
-        return view('scanner.validate', compact('recent_validations'));
-    }
 } 
