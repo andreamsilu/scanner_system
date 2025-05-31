@@ -1,13 +1,13 @@
 <x-app-layout>
-    <x-page-header 
-        title="QR Code Scanner"
-        :breadcrumbs="[
-            'Dashboard' => route('scanner.dashboard'),
-            'QR Code Scanner' => null
-        ]"
-    >
-        @if(session('selected_event_id'))
-            <x-slot name="actions">
+    <x-slot name="header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <a href="{{ route('scanner.dashboard') }}" class="btn btn-link text-muted p-0 me-3">
+                    <i class="bi bi-arrow-left fs-4"></i>
+                </a>
+                <h2 class="h4 mb-0">QR Code Scanner</h2>
+            </div>
+            @if(session('selected_event_id'))
                 <div class="d-flex align-items-center gap-3">
                     <span class="text-muted">
                         Selected Event: {{ $event->name }}
@@ -19,10 +19,10 @@
                             <i class="fas fa-times me-1"></i> Deselect Event
                         </button>
                     </form>
+                </div>
+            @endif
         </div>
     </x-slot>
-        @endif
-    </x-page-header>
 
     <!-- Page Content -->
     <div class="row g-4">
