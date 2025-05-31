@@ -9,9 +9,9 @@ use App\Models\SmsTemplate;
 use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\View;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
+use Illuminate\View\View;
 
 class SmsManagementController extends Controller
 {
