@@ -314,11 +314,12 @@
                 processing: true,
                 serverSide: false, // Set to false since we're using blade rendering
                 pageLength: 15,
-                lengthMenu: [[10, 15, 25, 50, -1], [10, 15, 25, 50, "All"]],
+                lengthMenu: [[15, 25, 50, 100, -1], [15, 25, 50, 100, "All"]], // Changed default options
                 order: [[6, 'desc']], // Sort by registration date by default
                 dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>' +
                      '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                pagingType: 'full_numbers', // Added full pagination controls
                 buttons: [
                     {
                         extend: 'collection',
@@ -384,7 +385,8 @@
                         first: '<i class="bi bi-chevron-double-left"></i>',
                         previous: '<i class="bi bi-chevron-left"></i>',
                         next: '<i class="bi bi-chevron-right"></i>',
-                        last: '<i class="bi bi-chevron-double-right"></i>'
+                        last: '<i class="bi bi-chevron-double-right"></i>',
+                        page: '<span class="mx-1">_PAGE_</span>'
                     }
                 },
                 drawCallback: function() {
