@@ -77,33 +77,6 @@
                                     </div>
                                 </form>
                             </div>
-
-                            <!-- Recent Scans -->
-                            <div class="mt-4">
-                                <h6 class="mb-3">Recent Scans</h6>
-                                <div class="list-group">
-                                    @forelse($recent_scans as $scan)
-                                        <div class="list-group-item">
-                                            <div class="d-flex justify-content-between align-items-center">
-                                                <div>
-                                                    <h6 class="mb-1">{{ $scan['attendee'] }}</h6>
-                                                    <small class="text-muted">
-                                                        Scanned by {{ $scan['scanner'] }} • {{ $scan['time'] }}
-                                                    </small>
-                                                </div>
-                                                <span class="badge bg-{{ $scan['status_class'] }}">
-                                                    {{ ucfirst($scan['status']) }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    @empty
-                                        <div class="list-group-item text-center text-muted py-4">
-                                            <i class="bi bi-clock-history fs-4 mb-2"></i>
-                                            <p class="mb-0">No scans yet</p>
-                                        </div>
-                                    @endforelse
-                                </div>
-                            </div>
                         </div>
                     @else
                         <div class="text-center py-5">
