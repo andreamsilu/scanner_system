@@ -11,11 +11,11 @@
                 <a href="{{ route('scanner.scan.index') }}" class="btn btn-primary">
                     <i class="bi bi-upc-scan me-2"></i>Start Scanning
                 </a>
-                <a href="{{ route('scanner.validate.index') }}" class="btn btn-outline-secondary">
+                <a href="{{ route('scanner.scan.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-key-fill me-2"></i>Manual Validation
-            </a>
-        </div>
-    </x-slot>
+                </a>
+            </div>
+        </x-slot>
     </x-page-header>
 
     <!-- Events Grid -->

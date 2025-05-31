@@ -63,9 +63,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/scan', [ScannerController::class, 'scan'])->name('scan.index');
         Route::post('/scan/validate', [ScannerController::class, 'validateToken'])->name('scan.validate');
         
-        // Manual Token Validation Routes
-        Route::get('/validate', [ScannerController::class, 'validatePage'])->name('validate.index');
-        Route::post('/validate/token', [ScannerController::class, 'validateManualToken'])->name('validate.token');
+        // Manual Token Validation Routes - Redirect to scan page
+        Route::get('/validate', [ScannerController::class, 'scan'])->name('validate.index');
         
         // History and Reports
         Route::get('/history', [ScannerController::class, 'history'])->name('history');
