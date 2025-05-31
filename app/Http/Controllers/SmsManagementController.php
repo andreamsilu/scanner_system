@@ -10,6 +10,8 @@ use App\Services\SmsService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Http\JsonResponse;
 
 class SmsManagementController extends Controller
 {
@@ -34,20 +36,19 @@ class SmsManagementController extends Controller
      *
      * @return \Illuminate\View\View
      */
-    public function index()
+    public function index(): View
     {
         try {
+            // Get provider balance if available
             $balance = $this->smsService->getBalance();
-            
-            return view('sms.management.index', [
-                'balance' => $balance,
-                'provider' => $this->smsService->getProviderName(),
-            ]);
+            $provider = config('sms.default');
         } catch (\Exception $e) {
-            return view('sms.management.index', [
-                'error' => 'Unable to fetch SMS balance: ' . $e->getMessage(),
-            ]);
+            Log::error('Failed to fetch SMS provider balance: ' . $e->getMessage());
+            $balance = null;
+            $provider = null;
         }
+
+        return view('sms.management.index', compact('balance', 'provider'));
     }
 
     /**
@@ -408,26 +409,29 @@ class SmsManagementController extends Controller
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function sendTest(Request $request)
+    public function sendTest(Request $request): JsonResponse
     {
         $request->validate([
-            'phone' => 'required|string',
-            'message' => 'required|string|max:160',
+            'phone' => ['required', 'string', 'regex:/^\+[1-9]\d{1,14}$/'],
+            'message' => ['required', 'string', 'max:160'],
         ]);
 
         try {
-            $result = $this->smsService->sendNotification(
+            $result = $this->smsService->send(
                 $request->phone,
                 $request->message,
+                'test',
                 ['test' => true]
             );
 
             return response()->json([
                 'success' => true,
                 'message' => 'Test SMS sent successfully',
-                'data' => $result,
+                'log_id' => $result['log_id'] ?? null,
             ]);
         } catch (\Exception $e) {
+            Log::error('Failed to send test SMS: ' . $e->getMessage());
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send test SMS: ' . $e->getMessage(),
@@ -456,5 +460,19 @@ class SmsManagementController extends Controller
                 'message' => 'Failed to get message status: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Display all SMS logs with pagination.
+     *
+     * @return \Illuminate\View\View
+     */
+    public function logs(): View
+    {
+        $logs = SmsLog::latest()
+            ->paginate(20)
+            ->withQueryString();
+
+        return view('sms.management.logs', compact('logs'));
     }
 } 

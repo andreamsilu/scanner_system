@@ -186,24 +186,8 @@ Route::get('/tickets/{token}/verify', [App\Http\Controllers\TicketController::cl
     ->name('tickets.verify');
 
 // SMS Management Routes
-Route::prefix('sms-management')->name('sms.management.')->middleware(['auth'])->group(function () {
-    // Dashboard and Event Management
-    Route::get('/', [SmsManagementController::class, 'index'])->name('index');
-    Route::get('/event/{event}', [SmsManagementController::class, 'showEvent'])->name('event');
-    
-    // SMS Sending Routes
-    Route::post('/event/{event}/send-bulk', [SmsManagementController::class, 'sendBulkSms'])->name('send-bulk');
-    Route::post('/event/{event}/send-invitation', [SmsManagementController::class, 'sendAttendeeInvitation'])->name('send-invitation');
-    Route::post('/event/{event}/send-reminder', [SmsManagementController::class, 'sendEventReminder'])->name('send-reminder');
-    Route::post('/event/{event}/send-ticket-notification', [SmsManagementController::class, 'sendTicketUsageNotification'])->name('send-ticket-notification');
-    
-    // Template Management
-    Route::get('/templates', [SmsManagementController::class, 'getTemplates'])->name('templates');
-    Route::post('/templates', [SmsManagementController::class, 'storeTemplate'])->name('templates.store');
-    Route::put('/templates/{template}', [SmsManagementController::class, 'updateTemplate'])->name('templates.update');
-    Route::delete('/templates/{template}', [SmsManagementController::class, 'deleteTemplate'])->name('templates.delete');
-    
-    // Logs and Reports
-    Route::get('/event/{event}/logs', [SmsManagementController::class, 'getEventLogs'])->name('logs');
-    Route::get('/event/{event}/logs/export', [SmsManagementController::class, 'exportLogs'])->name('logs.export');
+Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.management.')->group(function () {
+    Route::get('/', [App\Http\Controllers\SmsManagementController::class, 'index'])->name('index');
+    Route::get('/logs', [App\Http\Controllers\SmsManagementController::class, 'logs'])->name('logs');
+    Route::post('/test', [App\Http\Controllers\SmsManagementController::class, 'sendTest'])->name('test');
 });
