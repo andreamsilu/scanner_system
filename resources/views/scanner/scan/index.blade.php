@@ -206,66 +206,9 @@
             font-size: 16px !important;
         }
 
-        /* Improve touch targets for iOS */
-        .btn {
-            min-height: auto;
-            padding: 0.25rem 0.75rem;
-        }
-
         /* Prevent pull-to-refresh on iOS */
         body {
             overscroll-behavior-y: none;
-        }
-
-        /* Scanner Button Styles */
-        #reader__scan_region {
-            position: relative;
-        }
-        #reader__scan_region video {
-            border-radius: 0.5rem;
-        }
-        #reader__dashboard {
-            padding: 0.5rem !important;
-            background: #fff !important;
-            border-radius: 0.5rem !important;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
-            margin-top: 0.5rem !important;
-        }
-        #reader__dashboard button {
-            font-size: 0.875rem !important;
-            padding: 0.25rem 0.75rem !important;
-            border-radius: 0.25rem !important;
-            margin: 0 0.25rem !important;
-            background: #f8f9fa !important;
-            border: 1px solid #dee2e6 !important;
-            color: #212529 !important;
-        }
-        #reader__dashboard button:hover {
-            background: #e9ecef !important;
-        }
-        #reader__dashboard button#reader__camera_selection {
-            background: #0d6efd !important;
-            color: #fff !important;
-            border-color: #0d6efd !important;
-        }
-        #reader__dashboard button#reader__camera_selection:hover {
-            background: #0b5ed7 !important;
-        }
-        #reader__dashboard button#reader__torch_button {
-            background: #ffc107 !important;
-            color: #000 !important;
-            border-color: #ffc107 !important;
-        }
-        #reader__dashboard button#reader__torch_button:hover {
-            background: #ffca2c !important;
-        }
-        #reader__dashboard button#reader__close_scanner {
-            background: #dc3545 !important;
-            color: #fff !important;
-            border-color: #dc3545 !important;
-        }
-        #reader__dashboard button#reader__close_scanner:hover {
-            background: #bb2d3b !important;
         }
     </style>
     @endpush
