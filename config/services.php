@@ -35,35 +35,13 @@ return [
         ],
     ],
 
-    'twilio' => [
-        'sid' => env('TWILIO_SID'),
-        'auth_token' => env('TWILIO_AUTH_TOKEN'),
-        'from_number' => env('TWILIO_FROM_NUMBER'),
-    ],
-
     'sms' => [
-        'default_provider' => env('SMS_PROVIDER', 'nextsms'),
-        
         'nextsms' => [
+            'api_url' => env('NEXTSMS_API_URL', 'https://api.nextsms.com/v1'),
             'api_key' => env('NEXTSMS_API_KEY'),
             'sender_id' => env('NEXTSMS_SENDER_ID'),
             'default_country_code' => env('SMS_DEFAULT_COUNTRY_CODE', '255'), // Tanzania's country code
         ],
-
-        'vonage' => [
-            'key' => env('VONAGE_KEY'),
-            'secret' => env('VONAGE_SECRET'),
-            'from' => env('VONAGE_FROM_NUMBER'),
-            'default_country_code' => env('SMS_DEFAULT_COUNTRY_CODE', '1'),
-        ],
-
-        // Add more providers here as needed
-        // 'twilio' => [
-        //     'sid' => env('TWILIO_SID'),
-        //     'token' => env('TWILIO_AUTH_TOKEN'),
-        //     'from' => env('TWILIO_FROM_NUMBER'),
-        //     'default_country_code' => env('SMS_DEFAULT_COUNTRY_CODE', '1'),
-        // ],
     ],
 
 ];

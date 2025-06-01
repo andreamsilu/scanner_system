@@ -15,9 +15,17 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Attendee;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use App\Services\SmsService;
 
 class ScannerController extends Controller
 {
+    protected $smsService;
+
+    public function __construct(SmsService $smsService)
+    {
+        $this->smsService = $smsService;
+    }
+
     /**
      * Display the scanner dashboard with assigned events and statistics
      * 
@@ -769,6 +777,31 @@ class ScannerController extends Controller
                             'event_id' => $attendee->event_id,
                             'scanner_id' => $user->id
                         ]);
+
+                        // Send SMS notification if attendee has a phone number
+                        if ($attendee->phone) {
+                            try {
+                                $message = "Dear {$attendee->name}, your ticket for {$attendee->event->name} has been used at {$now->format('M d, Y h:i A')}. Thank you for attending!";
+                                
+                                $this->smsService->send(
+                                    $attendee->phone,
+                                    $message
+                                );
+
+                                Log::info('Ticket usage SMS sent successfully', [
+                                    'attendee_id' => $attendee->id,
+                                    'ticket_id' => $attendee->ticket->id,
+                                    'event_id' => $attendee->event_id
+                                ]);
+                            } catch (\Exception $e) {
+                                Log::error('Failed to send ticket usage SMS', [
+                                    'attendee_id' => $attendee->id,
+                                    'ticket_id' => $attendee->ticket->id,
+                                    'event_id' => $attendee->event_id,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        }
                     });
 
         return response()->json([
