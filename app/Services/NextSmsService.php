@@ -12,7 +12,7 @@ class NextSmsService extends BaseSmsService
      *
      * @var string
      */
-    protected string $baseUrl = 'https://messaging-service.co.tz';
+    protected string $baseUrl;
 
     /**
      * Create a new NextSMS service instance
@@ -20,6 +20,7 @@ class NextSmsService extends BaseSmsService
     public function __construct()
     {
         parent::__construct();
+        $this->baseUrl = $this->config['api_url'] ?? 'https://messaging-service.co.tz/api/sms/v1';
     }
 
     /**
@@ -37,14 +38,28 @@ class NextSmsService extends BaseSmsService
                 throw new \InvalidArgumentException('Invalid phone number format');
             }
 
+            // Log the request for debugging
+            Log::info('Sending SMS request', [
+                'url' => $this->baseUrl . '/test/text/single',
+                'to' => $to,
+                'message' => $message,
+                'sender_id' => $this->config['sender_id']
+            ]);
+
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->config['api_key'],
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/api/sms/v1/text/single', [
+            ])->post($this->baseUrl . '/test/text/single', [
                 'recipient' => $this->formatPhoneNumber($to),
                 'sender_id' => $this->config['sender_id'],
                 'message' => $message,
                 'type' => 'text'
+            ]);
+
+            // Log the response for debugging
+            Log::info('SMS API response', [
+                'status' => $response->status(),
+                'body' => $response->body()
             ]);
 
             if (!$response->successful()) {
