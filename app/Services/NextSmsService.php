@@ -12,7 +12,15 @@ class NextSmsService extends BaseSmsService
      *
      * @var string
      */
-    protected string $baseUrl = 'https://api.nextsms.com/v1';
+    protected string $baseUrl = 'https://messaging-service.co.tz';
+
+    /**
+     * Create a new NextSMS service instance
+     */
+    public function __construct()
+    {
+        parent::__construct();
+    }
 
     /**
      * Send an SMS message
@@ -32,11 +40,11 @@ class NextSmsService extends BaseSmsService
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->config['api_key'],
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/messages', [
-                'to' => $this->formatPhoneNumber($to),
-                'from' => $this->config['sender_id'],
-                'text' => $message,
-                'type' => 'text',
+            ])->post($this->baseUrl . '/api/sms/v1/text/single', [
+                'recipient' => $this->formatPhoneNumber($to),
+                'sender_id' => $this->config['sender_id'],
+                'message' => $message,
+                'type' => 'text'
             ]);
 
             if (!$response->successful()) {
@@ -50,7 +58,8 @@ class NextSmsService extends BaseSmsService
                 'message_id' => $result['message_id'] ?? null,
                 'to' => $to,
                 'status' => $result['status'] ?? 'sent',
-                'remaining_balance' => $result['balance'] ?? null,
+                'cost' => $result['cost'] ?? null,
+                'units' => $result['units'] ?? null
             ];
 
             $this->logActivity('send', $responseData);
