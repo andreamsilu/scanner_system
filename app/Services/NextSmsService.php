@@ -46,10 +46,13 @@ class NextSmsService extends BaseSmsService
                 'sender_id' => $this->config['sender_id']
             ]);
 
+            // Format the API key for authorization
+            $apiKey = base64_encode($this->config['api_key']);
+
             $response = Http::timeout(30) // Increase timeout to 30 seconds
                 ->retry(3, 100) // Retry 3 times with 100ms delay between attempts
                 ->withHeaders([
-                    'Authorization' => 'Bearer ' . $this->config['api_key'],
+                    'Authorization' => 'Basic ' . $apiKey, // Changed to Basic auth with base64 encoded API key
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json'
                 ])
@@ -78,7 +81,8 @@ class NextSmsService extends BaseSmsService
                     'body' => $response->body(),
                     'headers' => $response->headers(),
                     'to' => $to,
-                    'message' => $message
+                    'message' => $message,
+                    'auth_header' => 'Basic ' . substr($apiKey, 0, 10) . '...' // Log partial auth header for debugging
                 ]);
                 throw new \Exception($errorMessage);
             }
@@ -134,9 +138,12 @@ class NextSmsService extends BaseSmsService
     public function getBalance(): array
     {
         try {
+            $apiKey = base64_encode($this->config['api_key']);
+            
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->config['api_key'],
+                'Authorization' => 'Basic ' . $apiKey,
                 'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
             ])->get($this->baseUrl . '/balance');
 
             if (!$response->successful()) {
@@ -172,9 +179,12 @@ class NextSmsService extends BaseSmsService
     public function getStatus(string $messageId): array
     {
         try {
+            $apiKey = base64_encode($this->config['api_key']);
+            
             $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->config['api_key'],
+                'Authorization' => 'Basic ' . $apiKey,
                 'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
             ])->get($this->baseUrl . '/messages/' . $messageId);
 
             if (!$response->successful()) {
