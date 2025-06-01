@@ -191,3 +191,26 @@ Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.man
     Route::post('/test', [App\Http\Controllers\SmsManagementController::class, 'sendTest'])->name('test');
     Route::post('/events/{event}/send-attendee-invitation', [App\Http\Controllers\SmsManagementController::class, 'sendAttendeeInvitation'])->name('send-attendee-invitation');
 });
+
+// Temporary SMS Test Route
+Route::get('/test-sms-send', function() {
+    try {
+        $smsService = app(App\Services\NextSmsService::class);
+        $phone = '+255754289824'; // Format the number with country code
+        $message = 'Test message from Scannable Event System at ' . now()->format('Y-m-d H:i:s');
+        
+        $result = $smsService->send($phone, $message);
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Test SMS sent',
+            'result' => $result
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to send SMS',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
