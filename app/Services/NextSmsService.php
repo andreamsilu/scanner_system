@@ -46,24 +46,41 @@ class NextSmsService extends BaseSmsService
                 'sender_id' => $this->config['sender_id']
             ]);
 
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->config['api_key'],
-                'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/text/single', [
-                'recipient' => $this->formatPhoneNumber($to),
-                'sender_id' => $this->config['sender_id'],
-                'message' => $message,
-                'type' => 'text'
-            ]);
+            $response = Http::timeout(30) // Increase timeout to 30 seconds
+                ->retry(3, 100) // Retry 3 times with 100ms delay between attempts
+                ->withHeaders([
+                    'Authorization' => 'Bearer ' . $this->config['api_key'],
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ])
+                ->withOptions([
+                    'verify' => true, // Verify SSL certificate
+                    'connect_timeout' => 10, // Connection timeout in seconds
+                ])
+                ->post($this->baseUrl . '/text/single', [
+                    'recipient' => $this->formatPhoneNumber($to),
+                    'sender_id' => $this->config['sender_id'],
+                    'message' => $message,
+                    'type' => 'text'
+                ]);
 
             // Log the response for debugging
             Log::info('SMS API response', [
                 'status' => $response->status(),
-                'body' => $response->body()
+                'body' => $response->body(),
+                'headers' => $response->headers()
             ]);
 
             if (!$response->successful()) {
-                throw new \Exception('NextSMS API error: ' . $response->body());
+                $errorMessage = 'NextSMS API error: ' . $response->body();
+                Log::error('SMS API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'headers' => $response->headers(),
+                    'to' => $to,
+                    'message' => $message
+                ]);
+                throw new \Exception($errorMessage);
             }
 
             $result = $response->json();
@@ -80,12 +97,31 @@ class NextSmsService extends BaseSmsService
             $this->logActivity('send', $responseData);
 
             return $responseData;
-        } catch (\Exception $e) {
-            $this->logActivity('send_error', [
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('SMS connection error', [
                 'error' => $e->getMessage(),
                 'to' => $to,
-            ], 'error');
-
+                'message' => $message,
+                'url' => $this->baseUrl . '/text/single'
+            ]);
+            throw new \Exception('Failed to connect to SMS service. Please try again later.');
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            Log::error('SMS request error', [
+                'error' => $e->getMessage(),
+                'to' => $to,
+                'message' => $message,
+                'response' => $e->response ? [
+                    'status' => $e->response->status(),
+                    'body' => $e->response->body()
+                ] : null
+            ]);
+            throw new \Exception('SMS service request failed. Please try again later.');
+        } catch (\Exception $e) {
+            Log::error('SMS sending failed', [
+                'error' => $e->getMessage(),
+                'to' => $to,
+                'message' => $message
+            ]);
             throw $e;
         }
     }
