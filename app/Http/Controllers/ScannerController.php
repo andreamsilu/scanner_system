@@ -386,7 +386,7 @@ class ScannerController extends Controller
 
         // Update ticket status if exists
         if ($attendee->ticket) {
-            DB::transaction(function() use ($attendee, $user) {
+            DB::transaction(function() use ($attendee, $user, $event) {
                 $now = now();
                 $attendee->ticket->update([
                     'status' => 'used',
@@ -414,6 +414,25 @@ class ScannerController extends Controller
                     'event_id' => $attendee->event_id,
                     'scanner_id' => $user->id
                 ]);
+
+                // Send SMS notification
+                try {
+                    $smsService = app()->make(\App\Services\NextSmsService::class);
+                    $message = "Dear {$attendee->name}, you have been successfully checked in for {$event->name}. Thank you for attending!";
+                    $smsService->send($attendee->phone, $message);
+                    
+                    Log::info('SMS sent for manual check-in', [
+                        'attendee_id' => $attendee->id,
+                        'phone' => $attendee->phone,
+                        'event' => $event->name
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Failed to send SMS for manual check-in', [
+                        'attendee_id' => $attendee->id,
+                        'error' => $e->getMessage()
+                    ]);
+                    // Don't throw the error - we still want to complete the check-in
+                }
             });
 
             return response()->json([
