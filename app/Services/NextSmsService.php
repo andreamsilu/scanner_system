@@ -49,7 +49,7 @@ class NextSmsService extends BaseSmsService
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->config['api_key'],
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/test/text/single', [
+            ])->post($this->baseUrl . '/text/single', [
                 'recipient' => $this->formatPhoneNumber($to),
                 'sender_id' => $this->config['sender_id'],
                 'message' => $message,
