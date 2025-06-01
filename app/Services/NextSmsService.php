@@ -40,7 +40,7 @@ class NextSmsService extends BaseSmsService
 
             // Log the request for debugging
             Log::info('Sending SMS request', [
-                'url' => $this->baseUrl . '/test/text/single',
+                'url' => $this->baseUrl . '/text/single',
                 'to' => $to,
                 'message' => $message,
                 'sender_id' => $this->config['sender_id']
@@ -49,7 +49,7 @@ class NextSmsService extends BaseSmsService
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->config['api_key'],
                 'Content-Type' => 'application/json',
-            ])->post($this->baseUrl . '/test/text/single', [
+            ])->post($this->baseUrl . '/text/single', [
                 'recipient' => $this->formatPhoneNumber($to),
                 'sender_id' => $this->config['sender_id'],
                 'message' => $message,
