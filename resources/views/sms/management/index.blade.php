@@ -40,20 +40,20 @@
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <h6 class="card-subtitle mb-0 text-muted small">Provider Balance</h6>
                                 <button type="button" class="btn btn-link btn-sm p-0 text-muted refresh-balance" title="Refresh Balance">
-                                    <i class="bi bi-arrow-clockwise"></i>
+                                    <i class="fas fa-sync-alt"></i>
                                 </button>
                             </div>
+                            @if(isset($balance) && $balance['success'])
+                                <div class="balance-display">
                             @if(isset($balance))
                                 <h5 class="card-title mb-0">
-                                    {{ number_format($balance['balance'], 2) }} {{ $balance['currency'] }}
+                                    {{ number_format($balance['units']) }} <small class="text-muted">SMS Units</small>
                                 </h5>
                                 <div class="d-flex flex-column">
                                     <small class="text-muted small">{{ $provider }}</small>
-                                    @if(isset($balance['status']))
-                                        <span class="badge bg-{{ $balance['status'] === 'active' ? 'success' : 'warning' }} mt-1">
-                                            {{ ucfirst($balance['status']) }}
-                                        </span>
-                                    @endif
+                                    <span class="badge bg-{{ $balance['status'] === 'critical' ? 'danger' : ($balance['status'] === 'low' ? 'warning' : 'success') }} mt-1">
+                                        {{ ucfirst($balance['status']) }}
+                                    </span>
                                     @if(isset($balance['last_updated']))
                                         <small class="text-muted small mt-1">
                                             Updated: {{ \Carbon\Carbon::parse($balance['last_updated'])->diffForHumans() }}
@@ -251,8 +251,7 @@
                     // Update balance display
                     const balance = response.balance;
                     card.find('.card-title').text(
-                        new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                            .format(balance.balance) + ' ' + balance.currency
+                        number_format(balance.units) + ' <small class="text-muted">SMS Units</small>'
                     );
                     
                     // Update status badge

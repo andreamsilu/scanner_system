@@ -253,13 +253,15 @@ class NextSmsService extends BaseSmsService
 
             $result = $response->json();
             
-            // Handle the new response format
+            // Handle the simple response format with sms_balance
+            $units = (int)($result['sms_balance'] ?? 0);
+            
             $balanceData = [
                 'success' => true,
-                'balance' => $result['data']['balance'] ?? 0,
-                'currency' => $result['data']['currency'] ?? 'TZS',
-                'last_updated' => $result['data']['last_updated'] ?? now()->toIso8601String(),
-                'status' => $result['data']['status'] ?? 'active'
+                'units' => $units,
+                'last_updated' => now()->toIso8601String(),
+                'status' => $this->determineBalanceStatus($units),
+                'provider' => $this->getProviderName()
             ];
 
             $this->logActivity('balance_check', $balanceData);
@@ -274,6 +276,22 @@ class NextSmsService extends BaseSmsService
 
             throw $e;
         }
+    }
+
+    /**
+     * Determine the status of the SMS balance based on available units
+     * 
+     * @param int $units Number of SMS units available
+     * @return string Status of the balance (critical, low, normal)
+     */
+    protected function determineBalanceStatus(int $units): string
+    {
+        if ($units <= 0) {
+            return 'critical';
+        } elseif ($units <= 10) {
+            return 'low';
+        }
+        return 'normal';
     }
 
     /**
