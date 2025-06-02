@@ -209,4 +209,14 @@ class SmsService
     {
         return $this->smsProvider->getStatus($messageId);
     }
+
+    /**
+     * Get the provider's name
+     *
+     * @return string
+     */
+    public function getProviderName(): string
+    {
+        return $this->smsProvider->getProviderName();
+    }
 } 
