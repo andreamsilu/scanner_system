@@ -315,11 +315,26 @@ class NextSmsService extends BaseSmsService
         try {
             $authHeader = $this->getBasicAuthHeader();
             
+            // Log the status check request
+            Log::info('Checking SMS delivery status', [
+                'url' => $this->baseUrl . '/messages/' . $messageId,
+                'message_id' => $messageId,
+                'auth_type' => 'Basic RFC2045-MIME',
+                'username' => $this->config['username'] ?? 'not_set'
+            ]);
+
             $response = Http::withHeaders([
                 'Authorization' => $authHeader,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json'
             ])->get($this->baseUrl . '/messages/' . $messageId);
+
+            // Log the response for debugging
+            Log::info('SMS status response', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'headers' => $response->headers()
+            ]);
 
             if (!$response->successful()) {
                 throw new \Exception('NextSMS API error: ' . $response->body());
@@ -327,12 +342,18 @@ class NextSmsService extends BaseSmsService
 
             $result = $response->json();
             
+            // Map API status to our internal status
+            $status = $this->mapDeliveryStatus($result['status'] ?? 'unknown');
+            
             $statusData = [
                 'success' => true,
                 'message_id' => $messageId,
-                'status' => $result['status'] ?? 'unknown',
+                'status' => $status,
                 'delivered_at' => $result['delivered_at'] ?? null,
                 'error' => $result['error'] ?? null,
+                'provider_status' => $result['status'] ?? 'unknown',
+                'provider_message' => $result['message'] ?? null,
+                'last_updated' => now()->toIso8601String()
             ];
 
             $this->logActivity('status_check', $statusData);
@@ -348,6 +369,29 @@ class NextSmsService extends BaseSmsService
 
             throw $e;
         }
+    }
+
+    /**
+     * Map provider status to internal status
+     *
+     * @param string $providerStatus The status from the provider
+     * @return string Mapped internal status
+     */
+    protected function mapDeliveryStatus(string $providerStatus): string
+    {
+        $statusMap = [
+            'delivered' => 'delivered',
+            'sent' => 'sent',
+            'failed' => 'failed',
+            'pending' => 'sent',
+            'queued' => 'sent',
+            'rejected' => 'failed',
+            'undelivered' => 'failed',
+            'expired' => 'failed',
+            'unknown' => 'unknown'
+        ];
+
+        return $statusMap[strtolower($providerStatus)] ?? 'unknown';
     }
 
     /**
