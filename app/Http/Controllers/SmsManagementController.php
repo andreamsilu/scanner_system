@@ -39,16 +39,26 @@ class SmsManagementController extends Controller
     public function index(): View
     {
         try {
-            // Get provider balance if available
             $balance = $this->smsService->getBalance();
-            $provider = config('sms.default');
-        } catch (\Exception $e) {
-            Log::error('Failed to fetch SMS provider balance: ' . $e->getMessage());
-            $balance = null;
-            $provider = null;
-        }
+            $provider = $this->smsService->getProviderName();
+            
+            // Get recent SMS logs (last 10 entries)
+            $recentLogs = SmsLog::latest()
+                ->take(10)
+                ->get();
 
-        return view('sms.management.index', compact('balance', 'provider'));
+            return view('sms.management.index', compact('balance', 'provider', 'recentLogs'));
+        } catch (\Exception $e) {
+            Log::error('SMS Management Dashboard Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return view('sms.management.index', [
+                'error' => 'Unable to load SMS management dashboard. Please try again later.',
+                'recentLogs' => collect() // Empty collection as fallback
+            ]);
+        }
     }
 
     /**
