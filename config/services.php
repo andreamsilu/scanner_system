@@ -38,6 +38,8 @@ return [
     'sms' => [
         'nextsms' => [
             'api_url' => env('NEXTSMS_API_URL', 'https://messaging-service.co.tz/api/sms/v1'),
+            'username' => env('NEXTSMS_USERNAME'),
+            'password' => env('NEXTSMS_PASSWORD'),
             'api_key' => env('NEXTSMS_API_KEY'),
             'sender_id' => env('NEXTSMS_SENDER_ID'),
             'default_country_code' => env('SMS_DEFAULT_COUNTRY_CODE', '255'), // Tanzania's country code
