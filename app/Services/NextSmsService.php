@@ -130,6 +130,7 @@ class NextSmsService extends BaseSmsService
         }
     }
 
+    
     /**
      * Get the remaining balance/credits
      *
