@@ -43,30 +43,30 @@
                                     <i class="fas fa-sync-alt"></i>
                                 </button>
                             </div>
-                            @if(isset($balance) && $balance['success'])
-                                <div class="balance-display">
-                            @if(isset($balance))
-                                <h5 class="card-title mb-0">
-                                    {{ number_format($balance['units']) }} <small class="text-muted">SMS Units</small>
-                                </h5>
-                                <div class="d-flex flex-column">
-                                    <small class="text-muted small">{{ $provider }}</small>
-                                    <span class="badge bg-{{ $balance['status'] === 'critical' ? 'danger' : ($balance['status'] === 'low' ? 'warning' : 'success') }} mt-1">
-                                        {{ ucfirst($balance['status']) }}
-                                    </span>
-                                    @if(isset($balance['last_updated']))
-                                        <small class="text-muted small mt-1">
-                                            Updated: {{ \Carbon\Carbon::parse($balance['last_updated'])->diffForHumans() }}
-                                        </small>
-                                    @endif
-                                </div>
-                            @else
-                                <h5 class="card-title mb-0">N/A</h5>
-                                <small class="text-muted small">Unable to fetch balance</small>
-                            @endif
-                        </div>
-                        <div class="p-1 rounded-circle bg-success bg-opacity-10 text-success">
-                            <i class="bi bi-wallet2"></i>
+                            <div class="balance-display">
+                                @if(isset($balance) && $balance['success'])
+                                    <h5 class="card-title mb-0">
+                                        {{ number_format($balance['units']) }} <small class="text-muted">SMS Units</small>
+                                    </h5>
+                                    <div class="d-flex flex-column">
+                                        <small class="text-muted small">{{ $provider }}</small>
+                                        <span class="badge bg-{{ $balance['status'] === 'critical' ? 'danger' : ($balance['status'] === 'low' ? 'warning' : 'success') }} mt-1">
+                                            {{ ucfirst($balance['status']) }}
+                                        </span>
+                                        @if(isset($balance['last_updated']))
+                                            <small class="text-muted small mt-1">
+                                                Updated: {{ \Carbon\Carbon::parse($balance['last_updated'])->diffForHumans() }}
+                                            </small>
+                                        @endif
+                                    </div>
+                                @else
+                                    <h5 class="card-title mb-0">N/A</h5>
+                                    <small class="text-muted small">Unable to fetch balance</small>
+                                @endif
+                            </div>
+                            <div class="p-1 rounded-circle bg-success bg-opacity-10 text-success">
+                                <i class="bi bi-wallet2"></i>
+                            </div>
                         </div>
                     </div>
                 </div>
