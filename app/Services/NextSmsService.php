@@ -215,6 +215,29 @@ class NextSmsService extends BaseSmsService
     }
 
     /**
+     * Map the provider's delivery status to our standardized status
+     *
+     * @param string $providerStatus The status from the provider
+     * @return string Our standardized status
+     */
+    protected function mapDeliveryStatus(string $providerStatus): string
+    {
+        $statusMap = [
+            'delivered' => 'delivered',
+            'sent' => 'sent',
+            'failed' => 'failed',
+            'pending' => 'sent',
+            'queued' => 'sent',
+            'rejected' => 'failed',
+            'undelivered' => 'failed',
+            'expired' => 'failed',
+            'unknown' => 'unknown'
+        ];
+
+        return $statusMap[strtolower($providerStatus)] ?? 'unknown';
+    }
+
+    /**
      * Get the sender ID configured for this SMS service
      *
      * @return string
