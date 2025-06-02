@@ -353,7 +353,7 @@ class SmsManagementController extends Controller
                 $query->where('status', $status);
             })
             ->when($request->search, function($query, $search) {
-                $query->where('to', 'like', "%{$search}%")
+                $query->where('recipient', 'like', "%{$search}%")
                     ->orWhere('message', 'like', "%{$search}%");
             })
             ->with(['metadata'])
@@ -400,7 +400,7 @@ class SmsManagementController extends Controller
             foreach ($logs as $log) {
                 fputcsv($file, [
                     $log->type,
-                    $log->to,
+                    $log->recipient,
                     $log->message,
                     $log->status,
                     $log->created_at
@@ -496,7 +496,7 @@ class SmsManagementController extends Controller
 
         if ($search = request('search')) {
             $query->where(function($q) use ($search) {
-                $q->where('to', 'like', "%{$search}%")
+                $q->where('recipient', 'like', "%{$search}%")
                   ->orWhere('message', 'like', "%{$search}%")
                   ->orWhereJsonContains('metadata->attendee_name', $search);
             });
@@ -511,7 +511,7 @@ class SmsManagementController extends Controller
         $logs->getCollection()->transform(function ($log) {
             $metadata = $log->metadata ?? [];
             $log->attendee_name = $metadata['attendee_name'] ?? null;
-            $log->attendee_phone = $metadata['attendee_phone'] ?? $log->to;
+            $log->attendee_phone = $metadata['attendee_phone'] ?? $log->recipient;
             return $log;
         });
 
