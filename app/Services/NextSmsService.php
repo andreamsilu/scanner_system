@@ -215,6 +215,16 @@ class NextSmsService extends BaseSmsService
     }
 
     /**
+     * Get the sender ID configured for this SMS service
+     *
+     * @return string
+     */
+    public function getSenderId(): string
+    {
+        return $this->config['sender_id'] ?? '';
+    }
+
+    /**
      * Get the provider's name
      *
      * @return string
