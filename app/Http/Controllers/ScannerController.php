@@ -804,7 +804,15 @@ class ScannerController extends Controller
                                 
                                 $this->smsService->send(
                                     $attendee->phone,
-                                    $message
+                                    $message,
+                                    'notification',
+                                    [
+                                        'attendee_id' => $attendee->id,
+                                        'ticket_id' => $attendee->ticket->id,
+                                        'event_id' => $attendee->event_id,
+                                        'attendee_name' => $attendee->name,
+                                        'attendee_phone' => $attendee->phone
+                                    ]
                                 );
 
                                 Log::info('Ticket usage SMS sent successfully', [
