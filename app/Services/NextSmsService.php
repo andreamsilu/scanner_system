@@ -20,13 +20,45 @@ class NextSmsService extends BaseSmsService
     public function __construct()
     {
         parent::__construct();
+        
+        // Log the full config for debugging (excluding sensitive data)
+        Log::info('NextSMS Service Configuration', [
+            'config_keys' => array_keys($this->config),
+            'api_url_set' => !empty($this->config['api_url']),
+            'username_set' => !empty($this->config['username']),
+            'password_set' => !empty($this->config['password']),
+            'sender_id_set' => !empty($this->config['sender_id']),
+            'api_url' => $this->config['api_url'] ?? 'not_set',
+            'sender_id' => $this->config['sender_id'] ?? 'not_set'
+        ]);
+
         $this->baseUrl = $this->config['api_url'] ?? 'https://messaging-service.co.tz/api/sms/v1';
+
+        // Validate required credentials with more detailed error
+        if (empty($this->config['username'])) {
+            Log::error('NextSMS username not configured', [
+                'config_keys' => array_keys($this->config),
+                'env_username' => env('NEXTSMS_USERNAME'),
+                'config_username' => $this->config['username'] ?? 'not_set'
+            ]);
+            throw new \RuntimeException('NextSMS username is not properly configured. Please check your .env file and services config.');
+        }
+
+        if (empty($this->config['password'])) {
+            Log::error('NextSMS password not configured', [
+                'config_keys' => array_keys($this->config),
+                'env_password_set' => !empty(env('NEXTSMS_PASSWORD')),
+                'config_password_set' => !empty($this->config['password'])
+            ]);
+            throw new \RuntimeException('NextSMS password is not properly configured. Please check your .env file and services config.');
+        }
 
         // Log the URLs being used (without sensitive data)
         Log::info('NextSMS Service initialized', [
             'base_url' => $this->baseUrl,
             'sender_id' => $this->config['sender_id'] ?? 'not_set',
-            'default_country_code' => $this->config['default_country_code'] ?? '255'
+            'default_country_code' => $this->config['default_country_code'] ?? '255',
+            'username' => $this->config['username'] ?? 'not_set'
         ]);
     }
 
@@ -34,9 +66,27 @@ class NextSmsService extends BaseSmsService
      * Format the API credentials for Basic authentication using RFC2045-MIME Base64
      * 
      * @return string
+     * @throws \RuntimeException if credentials are not properly configured
      */
     protected function getBasicAuthHeader(): string
     {
+        // Log credential status before attempting to use them
+        Log::debug('Preparing Basic Auth Header', [
+            'username_set' => !empty($this->config['username']),
+            'password_set' => !empty($this->config['password']),
+            'username_length' => strlen($this->config['username'] ?? ''),
+            'password_length' => strlen($this->config['password'] ?? '')
+        ]);
+
+        if (empty($this->config['username']) || empty($this->config['password'])) {
+            Log::error('NextSMS credentials missing in getBasicAuthHeader', [
+                'username_set' => !empty($this->config['username']),
+                'password_set' => !empty($this->config['password']),
+                'config_keys' => array_keys($this->config)
+            ]);
+            throw new \RuntimeException('NextSMS credentials (username and password) are not properly configured');
+        }
+
         // Format: username:password
         $credentials = $this->config['username'] . ':' . $this->config['password'];
         
