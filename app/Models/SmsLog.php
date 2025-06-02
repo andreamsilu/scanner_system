@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Carbon\Carbon;
 
 class SmsLog extends Model
 {
@@ -16,14 +17,19 @@ class SmsLog extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'to',
-        'message',
-        'type',
-        'status',
         'message_id',
-        'metadata',
-        'provider',
+        'reference',
+        'recipient',
+        'sender_id',
+        'message',
+        'status',
+        'provider_status',
+        'provider_message',
+        'delivered_at',
+        'last_status_check',
+        'status_check_count',
         'error',
+        'metadata'
     ];
 
     /**
@@ -32,10 +38,9 @@ class SmsLog extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'metadata' => 'array',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
+        'delivered_at' => 'datetime',
+        'last_status_check' => 'datetime',
+        'metadata' => 'array'
     ];
 
     /**
@@ -114,5 +119,67 @@ class SmsLog extends Model
     public function attendee()
     {
         return $this->belongsTo(Attendee::class, 'metadata->attendee_id');
+    }
+
+    /**
+     * Scope a query to only include messages that need status check
+     */
+    public function scopeNeedsStatusCheck($query)
+    {
+        return $query->where(function ($q) {
+            $q->where('status', 'sent')
+              ->orWhere('status', 'unknown')
+              ->orWhereNull('last_status_check')
+              ->orWhere('last_status_check', '<', now()->subMinutes(5));
+        })->where('status_check_count', '<', 10); // Limit retries
+    }
+
+    /**
+     * Update the delivery status of the message
+     */
+    public function updateDeliveryStatus(array $statusData): bool
+    {
+        $this->status = $statusData['status'];
+        $this->provider_status = $statusData['provider_status'];
+        $this->provider_message = $statusData['provider_message'];
+        $this->delivered_at = $statusData['delivered_at'] ? Carbon::parse($statusData['delivered_at']) : null;
+        $this->last_status_check = now();
+        $this->status_check_count = $this->status_check_count + 1;
+        
+        if ($statusData['error']) {
+            $this->error = $statusData['error'];
+        }
+
+        return $this->save();
+    }
+
+    /**
+     * Get the status badge class based on current status
+     */
+    public function getStatusBadgeClass(): string
+    {
+        return match($this->status) {
+            'delivered' => 'success',
+            'sent' => 'info',
+            'failed' => 'danger',
+            default => 'secondary'
+        };
+    }
+
+    /**
+     * Get a human-readable status message
+     */
+    public function getStatusMessage(): string
+    {
+        if ($this->error) {
+            return "Failed: {$this->error}";
+        }
+
+        return match($this->status) {
+            'delivered' => 'Delivered',
+            'sent' => 'Sent',
+            'failed' => 'Failed',
+            default => 'Unknown'
+        };
     }
 } 

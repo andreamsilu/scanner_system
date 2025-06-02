@@ -145,44 +145,59 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>To</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th>Provider</th>
+                            <th>Time</th>
+                            <th>Recipient</th>
                             <th>Message</th>
+                            <th>Status</th>
+                            <th>Details</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse(\App\Models\SmsLog::latest()->take(10)->get() as $log)
+                        @forelse($recentLogs as $log)
                             <tr>
-                                <td>{{ $log->created_at->format('M j, Y g:i A') }}</td>
-                                <td>{{ $log->to }}</td>
+                                <td>{{ $log->created_at->format('M d, Y H:i:s') }}</td>
+                                <td>{{ $log->recipient }}</td>
                                 <td>
-                                    <span class="badge bg-{{ $log->type === 'invitation' ? 'primary' : ($log->type === 'reminder' ? 'warning' : 'info') }}">
-                                        {{ ucfirst($log->type) }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-{{ $log->status === 'sent' ? 'success' : ($log->status === 'failed' ? 'danger' : 'secondary') }}">
-                                        {{ ucfirst($log->status) }}
-                                    </span>
-                                </td>
-                                <td>{{ ucfirst($log->provider) }}</td>
-                                <td>
-                                    <span class="text-truncate d-inline-block" style="max-width: 200px;">
+                                    <div class="text-truncate" style="max-width: 200px;" title="{{ $log->message }}">
                                         {{ $log->message }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ $log->getStatusBadgeClass() }}">
+                                        {{ $log->getStatusMessage() }}
                                     </span>
+                                    @if($log->provider_status && $log->provider_status !== $log->status)
+                                        <small class="text-muted d-block">
+                                            Provider: {{ ucfirst($log->provider_status) }}
+                                        </small>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($log->delivered_at)
+                                        <small class="text-muted d-block">
+                                            Delivered: {{ $log->delivered_at->format('M d, Y H:i:s') }}
+                                        </small>
+                                    @endif
+                                    @if($log->last_status_check)
+                                        <small class="text-muted d-block">
+                                            Last Check: {{ $log->last_status_check->diffForHumans() }}
+                                        </small>
+                                    @endif
+                                    @if($log->reference)
+                                        <small class="text-muted d-block">
+                                            Ref: {{ $log->reference }}
+                                        </small>
+                                    @endif
+                                    @if($log->error)
+                                        <small class="text-danger d-block">
+                                            {{ $log->error }}
+                                        </small>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    <div class="text-muted">
-                                        <i class="bi bi-chat-dots fs-4 d-block mb-2"></i>
-                                        No SMS logs found
-                                    </div>
-                                </td>
+                                <td colspan="5" class="text-center">No SMS logs found</td>
                             </tr>
                         @endforelse
                     </tbody>
