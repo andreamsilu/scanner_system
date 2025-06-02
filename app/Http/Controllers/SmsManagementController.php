@@ -507,4 +507,28 @@ class SmsManagementController extends Controller
 
         return view('sms.management.logs', compact('logs'));
     }
+
+    /**
+     * Refresh the SMS provider balance
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function refreshBalance(): JsonResponse
+    {
+        try {
+            $balance = $this->smsService->getBalance();
+            
+            return response()->json([
+                'success' => true,
+                'balance' => $balance
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to refresh SMS provider balance: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to refresh balance: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 } 
