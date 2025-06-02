@@ -119,6 +119,9 @@ class NextSmsService extends BaseSmsService
 
             $authHeader = $this->getBasicAuthHeader();
             
+            // Generate a unique reference for the message
+            $reference = $options['reference'] ?? 'msg_' . uniqid() . '_' . time();
+            
             // Log the request for debugging (without sensitive data)
             Log::info('Sending SMS request', [
                 'url' => $this->baseUrl . '/text/single',
@@ -126,6 +129,7 @@ class NextSmsService extends BaseSmsService
                 'message' => $message,
                 'sender_id' => $this->config['sender_id'],
                 'username' => $this->config['username'] ?? 'not_set',
+                'reference' => $reference,
                 'auth_header_format' => 'Basic RFC2045-MIME'
             ]);
 
@@ -141,17 +145,18 @@ class NextSmsService extends BaseSmsService
                     'connect_timeout' => 10, // Connection timeout in seconds
                 ])
                 ->post($this->baseUrl . '/text/single', [
-                    'recipient' => $this->formatPhoneNumber($to),
-                    'sender_id' => $this->config['sender_id'],
-                    'message' => $message,
-                    'type' => 'text'
+                    'from' => $this->config['sender_id'],
+                    'to' => $this->formatPhoneNumber($to),
+                    'text' => $message,
+                    'reference' => $reference
                 ]);
 
             // Log the response for debugging
             Log::info('SMS API response', [
                 'status' => $response->status(),
                 'body' => $response->body(),
-                'headers' => $response->headers()
+                'headers' => $response->headers(),
+                'reference' => $reference
             ]);
 
             if (!$response->successful()) {
@@ -162,6 +167,7 @@ class NextSmsService extends BaseSmsService
                     'headers' => $response->headers(),
                     'to' => $to,
                     'message' => $message,
+                    'reference' => $reference,
                     'auth_type' => 'Basic RFC2045-MIME',
                     'username' => $this->config['username'] ?? 'not_set'
                 ]);
@@ -173,6 +179,7 @@ class NextSmsService extends BaseSmsService
             $responseData = [
                 'success' => true,
                 'message_id' => $result['message_id'] ?? null,
+                'reference' => $reference,
                 'to' => $to,
                 'status' => $result['status'] ?? 'sent',
                 'cost' => $result['cost'] ?? null,
@@ -187,6 +194,7 @@ class NextSmsService extends BaseSmsService
                 'error' => $e->getMessage(),
                 'to' => $to,
                 'message' => $message,
+                'reference' => $reference ?? null,
                 'url' => $this->baseUrl . '/text/single',
                 'auth_type' => 'Basic RFC2045-MIME',
                 'username' => $this->config['username'] ?? 'not_set'
@@ -197,6 +205,7 @@ class NextSmsService extends BaseSmsService
                 'error' => $e->getMessage(),
                 'to' => $to,
                 'message' => $message,
+                'reference' => $reference ?? null,
                 'response' => $e->response ? [
                     'status' => $e->response->status(),
                     'body' => $e->response->body()
@@ -210,6 +219,7 @@ class NextSmsService extends BaseSmsService
                 'error' => $e->getMessage(),
                 'to' => $to,
                 'message' => $message,
+                'reference' => $reference ?? null,
                 'auth_type' => 'Basic RFC2045-MIME',
                 'username' => $this->config['username'] ?? 'not_set'
             ]);
