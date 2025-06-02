@@ -37,12 +37,29 @@
                 <div class="card-body p-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-0 text-muted small">Provider Balance</h6>
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <h6 class="card-subtitle mb-0 text-muted small">Provider Balance</h6>
+                                <button type="button" class="btn btn-link btn-sm p-0 text-muted refresh-balance" title="Refresh Balance">
+                                    <i class="bi bi-arrow-clockwise"></i>
+                                </button>
+                            </div>
                             @if(isset($balance))
                                 <h5 class="card-title mb-0">
                                     {{ number_format($balance['balance'], 2) }} {{ $balance['currency'] }}
                                 </h5>
-                                <small class="text-muted small">{{ $provider }}</small>
+                                <div class="d-flex flex-column">
+                                    <small class="text-muted small">{{ $provider }}</small>
+                                    @if(isset($balance['status']))
+                                        <span class="badge bg-{{ $balance['status'] === 'active' ? 'success' : 'warning' }} mt-1">
+                                            {{ ucfirst($balance['status']) }}
+                                        </span>
+                                    @endif
+                                    @if(isset($balance['last_updated']))
+                                        <small class="text-muted small mt-1">
+                                            Updated: {{ \Carbon\Carbon::parse($balance['last_updated'])->diffForHumans() }}
+                                        </small>
+                                    @endif
+                                </div>
                             @else
                                 <h5 class="card-title mb-0">N/A</h5>
                                 <small class="text-muted small">Unable to fetch balance</small>
@@ -217,6 +234,83 @@
             submitBtn.innerHTML = originalBtnText;
         }
     });
+
+    $(document).ready(function() {
+        // Handle balance refresh
+        $('.refresh-balance').on('click', function(e) {
+            e.preventDefault();
+            const button = $(this);
+            const card = button.closest('.stat-card');
+            
+            // Disable button and show loading state
+            button.prop('disabled', true).html('<i class="bi bi-arrow-clockwise spin"></i>');
+            
+            // Make AJAX request to refresh balance
+            $.get('{{ route("sms.management.refresh-balance") }}', function(response) {
+                if (response.success) {
+                    // Update balance display
+                    const balance = response.balance;
+                    card.find('.card-title').text(
+                        new Intl.NumberFormat('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                            .format(balance.balance) + ' ' + balance.currency
+                    );
+                    
+                    // Update status badge
+                    const statusBadge = card.find('.badge');
+                    if (balance.status) {
+                        if (statusBadge.length) {
+                            statusBadge
+                                .removeClass('bg-success bg-warning')
+                                .addClass(balance.status === 'active' ? 'bg-success' : 'bg-warning')
+                                .text(balance.status.charAt(0).toUpperCase() + balance.status.slice(1));
+                        } else {
+                            card.find('.d-flex.flex-column').append(`
+                                <span class="badge bg-${balance.status === 'active' ? 'success' : 'warning'} mt-1">
+                                    ${balance.status.charAt(0).toUpperCase() + balance.status.slice(1)}
+                                </span>
+                            `);
+                        }
+                    }
+                    
+                    // Update last updated time
+                    if (balance.last_updated) {
+                        const lastUpdated = card.find('.text-muted.small:last');
+                        if (lastUpdated.length) {
+                            lastUpdated.text('Updated: ' + moment(balance.last_updated).fromNow());
+                        } else {
+                            card.find('.d-flex.flex-column').append(`
+                                <small class="text-muted small mt-1">
+                                    Updated: ${moment(balance.last_updated).fromNow()}
+                                </small>
+                            `);
+                        }
+                    }
+                    
+                    // Show success toast
+                    toastr.success('Balance updated successfully');
+                } else {
+                    toastr.error(response.message || 'Failed to update balance');
+                }
+            }).fail(function() {
+                toastr.error('Failed to update balance. Please try again.');
+            }).always(function() {
+                // Re-enable button and restore icon
+                button.prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i>');
+            });
+        });
+    });
+
+    // Add CSS for spinning animation
+    document.head.insertAdjacentHTML('beforeend', `
+        <style>
+            .spin {
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `);
     </script>
     @endpush
 </x-app-layout> 
