@@ -372,6 +372,7 @@ class NextSmsService extends BaseSmsService
     }
 
     /**
+<<<<<<< HEAD
      * Map provider status to internal status
      *
      * @param string $providerStatus The status from the provider
@@ -392,6 +393,15 @@ class NextSmsService extends BaseSmsService
         ];
 
         return $statusMap[strtolower($providerStatus)] ?? 'unknown';
+=======
+     * Get the sender ID configured for this SMS service
+     *
+     * @return string
+     */
+    public function getSenderId(): string
+    {
+        return $this->config['sender_id'] ?? '';
+>>>>>>> 4ea26076154e01918ade573a5634be8158521401
     }
 
     /**
