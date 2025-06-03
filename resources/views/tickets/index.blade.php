@@ -21,31 +21,6 @@
 
     <div class="card">
         <div class="card-body">
-            <!-- Search Box -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <div class="input-group search-group">
-                        <span class="input-group-text bg-light">
-                            <i class="bi bi-search"></i>
-                        </span>
-                        <input type="text" 
-                               class="form-control" 
-                               id="global-search" 
-                               placeholder="Type to search tickets..."
-                               value="{{ request('search') }}"
-                               autocomplete="off">
-                        <span class="input-group-text search-status d-none">
-                            <div class="spinner-border spinner-border-sm text-primary" role="status">
-                                <span class="visually-hidden">Searching...</span>
-                            </div>
-                        </span>
-                        <button class="btn btn-outline-secondary" type="button" id="clear-search" title="Clear search">
-                            <i class="bi bi-x-lg"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
             <form id="filter-form" class="row g-3 mb-3">
                 <div class="col-md-3">
                     <label for="event_filter" class="form-label">Event</label>
@@ -332,38 +307,36 @@
             font-size: 0.875rem;
         }
 
-        /* Search box styles */
-        .search-group {
-            position: relative;
-            transition: all 0.2s ease;
+        /* DataTables search box styles */
+        .dataTables_filter {
+            margin-bottom: 1rem;
         }
 
-        .search-group.searching {
+        .dataTables_filter input {
+            margin-left: 0.5rem;
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+
+        .dataTables_filter input:focus {
             border-color: #80bdff;
+            outline: 0;
             box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
         }
 
-        .search-status {
-            position: absolute;
-            right: 40px;
-            background: transparent;
-            border: none;
-            padding: 0.375rem 0.5rem;
+        .dataTables_filter label {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0;
         }
 
-        .search-status .spinner-border {
-            width: 1rem;
-            height: 1rem;
-        }
-
-        .search-group.searching .bi-search {
-            animation: pulse 1s infinite;
-        }
-
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+        .dataTables_filter label::before {
+            content: '\F52A';
+            font-family: 'bootstrap-icons';
+            margin-right: 0.5rem;
+            color: #6c757d;
         }
     </style>
     @endpush
@@ -378,9 +351,6 @@
                     url: window.location.href,
                     type: 'GET',
                     data: function(d) {
-                        // Add search parameter
-                        d.search = $('#global-search').val();
-                        
                         // Add filter parameters
                         d.event_id = $('#event_filter').val();
                         d.type = $('#type_filter').val();
@@ -396,7 +366,6 @@
                         } : null;
                     },
                     dataSrc: function(json) {
-                        // Update Laravel pagination info
                         $('.pagination-info').html(
                             `Showing ${json.pagination.first_item} to ${json.pagination.last_item} of ${json.pagination.total} entries`
                         );
@@ -512,125 +481,12 @@
                      '<"row"<"col-sm-12"tr>>',
                 paging: false,
                 info: false,
-                searching: false,
-                lengthMenu: [[15, 25, 50, -1], [15, 25, 50, "All"]],
-                buttons: [
-                    {
-                        extend: 'collection',
-                        text: '<i class="bi bi-download me-2"></i>Export',
-                        className: 'btn btn-sm btn-primary',
-                        buttons: [
-                            {
-                                extend: 'excel',
-                                text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
-                                className: 'btn btn-sm btn-success',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5],
-                                    format: {
-                                        body: function(data, row, column, node) {
-                                            if (column === 0) {
-                                                return $(data).find('.fw-medium').text();
-                                            }
-                                            return data;
-                                        }
-                                    }
-                                },
-                                title: 'Tickets List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
-                            },
-                            {
-                                extend: 'pdf',
-                                text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
-                                className: 'btn btn-sm btn-danger',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5],
-                                    format: {
-                                        body: function(data, row, column, node) {
-                                            if (column === 0) {
-                                                return $(data).find('.fw-medium').text();
-                                            }
-                                            return data;
-                                        }
-                                    }
-                                },
-                                title: 'Tickets List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
-                                customize: function(doc) {
-                                    doc.defaultStyle.fontSize = 9;
-                                    doc.styles.tableHeader.fontSize = 10;
-                                    doc.styles.tableHeader.fillColor = '#f8f9fa';
-                                    doc.styles.tableHeader.color = '#212529';
-                                    doc.pageMargins = [20, 40, 20, 40];
-                                    doc.defaultStyle.alignment = 'left';
-                                    doc.styles.tableHeader.alignment = 'left';
-                                }
-                            },
-                            {
-                                extend: 'print',
-                                text: '<i class="bi bi-printer me-2"></i>Print',
-                                className: 'btn btn-sm btn-info',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5],
-                                    format: {
-                                        body: function(data, row, column, node) {
-                                            if (column === 0) {
-                                                return $(data).find('.fw-medium').text();
-                                            }
-                                            return data;
-                                        }
-                                    }
-                                },
-                                title: 'Tickets List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
-                            }
-                        ]
-                    }
-                ],
+                searching: true,
                 language: {
                     search: "_INPUT_",
                     searchPlaceholder: "Search tickets...",
                     lengthMenu: "_MENU_ per page",
                     info: "Showing _START_ to _END_ of _TOTAL_ tickets"
-                }
-            });
-
-            // Auto-search functionality
-            const searchInput = $('#global-search');
-            const searchStatus = $('.search-status');
-            const searchGroup = $('.search-group');
-            let searchTimeout;
-
-            function performSearch() {
-                searchStatus.removeClass('d-none');
-                searchGroup.addClass('searching');
-                
-                table.ajax.reload(function() {
-                    searchStatus.addClass('d-none');
-                    searchGroup.removeClass('searching');
-                });
-            }
-
-            // Search as you type
-            searchInput.on('input', function() {
-                clearTimeout(searchTimeout);
-                searchStatus.removeClass('d-none');
-                searchGroup.addClass('searching');
-                
-                searchTimeout = setTimeout(performSearch, 300);
-            });
-
-            // Clear search
-            $('#clear-search').on('click', function() {
-                searchInput.val('');
-                performSearch();
-            });
-
-            // Handle enter key
-            searchInput.on('keypress', function(e) {
-                if (e.which === 13) {
-                    e.preventDefault();
-                    clearTimeout(searchTimeout);
-                    performSearch();
                 }
             });
 
@@ -643,7 +499,7 @@
             // Reset filters
             $('.reset-filters').on('click', function() {
                 $('#filter-form')[0].reset();
-                $('#global-search').val('');
+                table.search('').draw(); // Clear DataTables search
                 table.ajax.reload();
             });
         });
