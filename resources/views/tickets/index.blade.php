@@ -114,7 +114,7 @@
                                                     data-event-time="{{ optional($ticket->event->date)->format('h:i A') ?? 'N/A' }}"
                                                     data-event-location="{{ $ticket->event->location ?? 'N/A' }}"
                                                     data-ticket-code="{{ $ticket->code }}"
-                                                    data-ticket-url="{{ route('tickets.verify', $ticket->code) }}">
+                                                    data-ticket-url="{{ route('tickets.verify', ['token' => $ticket->token]) }}">
                                                 <i class="bi bi-envelope"></i>
                                             </button>
                                         @endif
@@ -127,7 +127,7 @@
                                         </button>
                                         <ul class="dropdown-menu dropdown-menu-end">
                                             <li>
-                                                <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
+                                                <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', ['token' => $ticket->token]) }}')">
                                                     <i class="fab fa-whatsapp me-2"></i> WhatsApp
                                                 </a>
                                             </li>
