@@ -168,15 +168,6 @@
                     </tbody>
                 </table>
             </div>
-
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
-                <div class="text-muted small">
-                    Showing {{ $tickets->firstItem() ?? 0 }} to {{ $tickets->lastItem() ?? 0 }} of {{ $tickets->total() }} entries
-                </div>
-                <div>
-                    {{ $tickets->links() }}
-                </div>
-            </div>
         </div>
     </div>
 
@@ -230,8 +221,152 @@
         $(document).ready(function() {
             $('#tickets-table').DataTable({
                 processing: true,
-                pageLength: 15,
+                serverSide: true,
+                ajax: {
+                    url: '{{ route("tickets.data") }}',
+                    type: 'GET'
+                },
+                columns: [
+                    { 
+                        data: 'attendee',
+                        name: 'attendee',
+                        render: function(data, type, row) {
+                            if (data) {
+                                return `<div class="d-flex flex-column">
+                                    <span class="fw-medium">${data.name}</span>
+                                    <small class="text-muted">#${row.token}</small>
+                                </div>`;
+                            }
+                            return '<span class="text-muted">Unassigned</span>';
+                        }
+                    },
+                    { 
+                        data: 'event',
+                        name: 'event',
+                        render: function(data) {
+                            return `<a href="/events/${data.id}" class="text-decoration-none">${data.name}</a>`;
+                        }
+                    },
+                    { 
+                        data: 'type',
+                        name: 'type',
+                        render: function(data) {
+                            const badgeClass = {
+                                'vip': 'bg-warning',
+                                'regular': 'bg-secondary',
+                                'single': 'bg-primary',
+                                'double': 'bg-success'
+                            }[data] || 'bg-secondary';
+                            return `<span class="badge ${badgeClass} px-2 py-1">${data.charAt(0).toUpperCase() + data.slice(1)}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'status',
+                        name: 'status',
+                        render: function(data) {
+                            const badgeClass = data === 'active' ? 'bg-success' : 'bg-danger';
+                            const statusText = data === 'active' ? 'Active' : 'Inactive';
+                            return `<span class="badge ${badgeClass} px-2 py-1">${statusText}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'last_scan',
+                        name: 'last_scan',
+                        render: function(data) {
+                            return data ? `<span class="text-muted" title="${data.created_at}">${data.diff_for_humans}</span>` : '<span class="text-muted">Never</span>';
+                        }
+                    },
+                    { 
+                        data: 'created_at',
+                        name: 'created_at',
+                        render: function(data) {
+                            return `<span class="text-muted">${data}</span>`;
+                        }
+                    },
+                    { 
+                        data: null,
+                        name: 'actions',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            return `
+                                <div class="btn-group btn-group-sm">
+                                    <a href="/events/${row.event.id}/tickets/${row.token}" 
+                                       class="btn btn-outline-info" 
+                                       title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <button type="button"
+                                            class="btn btn-outline-primary"
+                                            title="Print Ticket"
+                                            onclick="printTicket('/events/${row.event.id}/tickets/${row.token}/print')">
+                                        <i class="bi bi-printer"></i>
+                                    </button>
+                                    ${row.attendee && row.attendee.phone ? `
+                                        <button type="button"
+                                                class="btn btn-outline-success send-invitation-btn"
+                                                title="Send Invitation SMS"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#sendInvitationModal"
+                                                data-ticket-id="${row.id}"
+                                                data-attendee-name="${row.attendee.name}"
+                                                data-attendee-phone="${row.attendee.phone}"
+                                                data-attendee-id="${row.attendee.id}"
+                                                data-event-name="${row.event.name}">
+                                            <i class="bi bi-envelope"></i>
+                                        </button>
+                                    ` : ''}
+                                    <button type="button" 
+                                            class="btn btn-outline-success" 
+                                            title="Share Ticket"
+                                            data-bs-toggle="dropdown" 
+                                            aria-expanded="false">
+                                        <i class="bi bi-share"></i>
+                                    </button>
+                                    <ul class="dropdown-menu dropdown-menu-end">
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('${row.event.name}', '${row.attendee ? row.attendee.name : ''}', '${row.token}', '${row.event.start_date}', '${row.verify_url}')">
+                                                <i class="fab fa-whatsapp me-2"></i> WhatsApp
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="shareViaSMS('${row.event.name}', '${row.attendee ? row.attendee.name : ''}', '${row.token}', '${row.event.start_date}', '${row.verify_url}')">
+                                                <i class="fas fa-sms me-2"></i> SMS
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item" href="#" onclick="copyTicketLink('${row.verify_url}')">
+                                                <i class="fas fa-link me-2"></i> Copy Link
+                                            </a>
+                                        </li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li>
+                                            <a class="dropdown-item" href="/events/${row.event.id}/tickets/${row.token}/export" target="_blank">
+                                                <i class="bi bi-file-pdf me-2"></i> Download PDF
+                                            </a>
+                                        </li>
+                                    </ul>
+                                    ${row.is_active ? `
+                                        <form action="/tickets/${row.id}/deactivate" 
+                                              method="POST" 
+                                              class="d-inline"
+                                              onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
+                                            @csrf
+                                            @method('PATCH')
+                                            <button type="submit" 
+                                                    class="btn btn-outline-warning" 
+                                                    title="Deactivate">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }
+                    }
+                ],
                 order: [[5, 'desc']],
+                pageLength: 20,
                 dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>' +
                      '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
@@ -246,44 +381,15 @@
                                 text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
                                 className: 'btn btn-sm btn-success',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5],
-                                    format: {
-                                        body: function(data, row, column, node) {
-                                            if (column === 0) {
-                                                return $(data).find('.fw-medium').text();
-                                            }
-                                            return data;
-                                        }
-                                    }
-                                },
-                                title: 'Tickets List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
+                                    columns: [0, 1, 2, 3, 4, 5]
+                                }
                             },
                             {
                                 extend: 'pdf',
                                 text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
                                 className: 'btn btn-sm btn-danger',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5],
-                                    format: {
-                                        body: function(data, row, column, node) {
-                                            if (column === 0) {
-                                                return $(data).find('.fw-medium').text();
-                                            }
-                                            return data;
-                                        }
-                                    }
-                                },
-                                title: 'Tickets List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
-                                customize: function(doc) {
-                                    doc.defaultStyle.fontSize = 9;
-                                    doc.styles.tableHeader.fontSize = 10;
-                                    doc.styles.tableHeader.fillColor = '#f8f9fa';
-                                    doc.styles.tableHeader.color = '#212529';
-                                    doc.pageMargins = [20, 40, 20, 40];
-                                    doc.defaultStyle.alignment = 'left';
-                                    doc.styles.tableHeader.alignment = 'left';
+                                    columns: [0, 1, 2, 3, 4, 5]
                                 }
                             },
                             {
@@ -291,18 +397,8 @@
                                 text: '<i class="bi bi-printer me-2"></i>Print',
                                 className: 'btn btn-sm btn-info',
                                 exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5],
-                                    format: {
-                                        body: function(data, row, column, node) {
-                                            if (column === 0) {
-                                                return $(data).find('.fw-medium').text();
-                                            }
-                                            return data;
-                                        }
-                                    }
-                                },
-                                title: 'Tickets List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
+                                    columns: [0, 1, 2, 3, 4, 5]
+                                }
                             }
                         ]
                     }
@@ -311,7 +407,8 @@
                     search: "_INPUT_",
                     searchPlaceholder: "Search tickets...",
                     lengthMenu: "_MENU_ per page",
-                    info: "Showing _START_ to _END_ of _TOTAL_ tickets"
+                    info: "Showing _START_ to _END_ of _TOTAL_ tickets",
+                    processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
                 }
             });
         });
