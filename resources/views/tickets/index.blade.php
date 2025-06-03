@@ -20,6 +20,54 @@
     @endif
 
     <div class="card">
+        <div class="card-body">
+            <form id="filter-form" class="row g-3 mb-3">
+                <div class="col-md-3">
+                    <label for="event_filter" class="form-label">Event</label>
+                    <select class="form-select form-select-sm" id="event_filter" name="event_id">
+                        <option value="">All Events</option>
+                        @foreach($events as $event)
+                            <option value="{{ $event->id }}" {{ request('event_id') == $event->id ? 'selected' : '' }}>
+                                {{ $event->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="type_filter" class="form-label">Ticket Type</label>
+                    <select class="form-select form-select-sm" id="type_filter" name="type">
+                        <option value="">All Types</option>
+                        <option value="vip" {{ request('type') == 'vip' ? 'selected' : '' }}>VIP</option>
+                        <option value="regular" {{ request('type') == 'regular' ? 'selected' : '' }}>Regular</option>
+                        <option value="single" {{ request('type') == 'single' ? 'selected' : '' }}>Single</option>
+                        <option value="double" {{ request('type') == 'double' ? 'selected' : '' }}>Double</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="status_filter" class="form-label">Status</label>
+                    <select class="form-select form-select-sm" id="status_filter" name="status">
+                        <option value="">All Status</option>
+                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="date_from" class="form-label">Date From</label>
+                    <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" 
+                           value="{{ request('date_from') }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="date_to" class="form-label">Date To</label>
+                    <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" 
+                           value="{{ request('date_to') }}">
+                </div>
+                <div class="col-md-1 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary btn-sm w-100">
+                        <i class="bi bi-search"></i> Filter
+                    </button>
+                </div>
+            </form>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover table-sm mb-0" id="tickets-table">
@@ -240,19 +288,45 @@
             display: flex !important;
             margin-bottom: 0;
         }
+
+        /* Filter form styles */
+        .filter-form {
+            background-color: #f8f9fa;
+            border-radius: 0.25rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+        
+        .form-select-sm, .form-control-sm {
+            font-size: 0.875rem;
+        }
     </style>
     @endpush
 
     @push('scripts')
     <script>
         $(document).ready(function() {
-            $('#tickets-table').DataTable({
+            const table = $('#tickets-table').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
                     url: window.location.href,
                     type: 'GET',
                     data: function(d) {
+                        // Add filter parameters
+                        d.event_id = $('#event_filter').val();
+                        d.type = $('#type_filter').val();
+                        d.status = $('#status_filter').val();
+                        d.date_from = $('#date_from').val();
+                        d.date_to = $('#date_to').val();
+                        
+                        // Add pagination and search parameters
                         d.page = (d.start / d.length) + 1;
                         d.search = d.search.value;
                         d.order = d.order[0] ? {
@@ -457,6 +531,18 @@
                     lengthMenu: "_MENU_ per page",
                     info: "Showing _START_ to _END_ of _TOTAL_ tickets"
                 }
+            });
+
+            // Handle filter form submission
+            $('#filter-form').on('submit', function(e) {
+                e.preventDefault();
+                table.ajax.reload();
+            });
+
+            // Reset filters
+            $('.reset-filters').on('click', function() {
+                $('#filter-form')[0].reset();
+                table.ajax.reload();
             });
         });
 
