@@ -12,88 +12,59 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
-use Illuminate\Http\JsonResponse;
 
 class TicketController extends Controller
 {
     /**
      * Display a listing of the tickets.
      */
-    public function index(Request $request): View|JsonResponse
+    public function index(Request $request)
     {
-        if ($request->ajax()) {
-            $query = Ticket::with(['event', 'attendee', 'lastScan']);
+        $query = Ticket::with(['event', 'attendee']);
 
-            // Apply search
-            if ($request->search) {
-                $searchValue = $request->search;
-                $query->where(function($q) use ($searchValue) {
-                    $q->whereHas('attendee', function($q) use ($searchValue) {
-                        $q->where('name', 'like', '%' . $searchValue . '%')
-                          ->orWhere('email', 'like', '%' . $searchValue . '%')
-                          ->orWhere('phone', 'like', '%' . $searchValue . '%');
-                    })
-                    ->orWhere('token', 'like', '%' . $searchValue . '%')
-                    ->orWhere('type', 'like', '%' . $searchValue . '%');
-                });
-            }
+        // Handle search
+        if ($request->search['value'] ?? false) {
+            $searchValue = $request->search['value'];
+            $query->where(function($q) use ($searchValue) {
+                $q->whereHas('attendee', function($q) use ($searchValue) {
+                    $q->where('name', 'like', '%' . $searchValue . '%')
+                      ->orWhere('email', 'like', '%' . $searchValue . '%')
+                      ->orWhere('phone', 'like', '%' . $searchValue . '%');
+                })
+                ->orWhere('token', 'like', '%' . $searchValue . '%')
+                ->orWhere('type', 'like', '%' . $searchValue . '%');
+            });
+        }
 
-            // Apply event filter
-            if ($request->event_filter) {
-                $query->where('event_id', $request->event_filter);
-            }
-
-            // Apply status filter
-            if ($request->status_filter) {
-                $query->where('is_active', $request->status_filter === 'active');
-            }
-
-            // Apply ticket type filter
-            if ($request->type_filter) {
-                $query->where('type', $request->type_filter);
-            }
-
-            // Get total count before pagination
-            $totalRecords = $query->count();
-
-            // Apply ordering
-            if ($request->order) {
-                $orderColumn = $request->order['column'] ?? 5; // Default to created_at
-                $orderDir = $request->order['dir'] ?? 'desc';
-                $columns = ['attendee', 'event', 'type', 'status', 'last_scan', 'created_at'];
-                
-                if (isset($columns[$orderColumn])) {
-                    switch ($columns[$orderColumn]) {
-                        case 'attendee':
-                            $query->join('attendees', 'tickets.attendee_id', '=', 'attendees.id')
-                                  ->orderBy('attendees.name', $orderDir)
-                                  ->select('tickets.*');
-                            break;
-                        case 'event':
-                            $query->join('events', 'tickets.event_id', '=', 'events.id')
-                                  ->orderBy('events.name', $orderDir)
-                                  ->select('tickets.*');
-                            break;
-                        case 'last_scan':
-                            $query->leftJoin('scan_logs', function($join) {
-                                $join->on('tickets.id', '=', 'scan_logs.ticket_id')
-                                     ->whereRaw('scan_logs.id = (SELECT MAX(id) FROM scan_logs WHERE ticket_id = tickets.id)');
-                            })
-                            ->orderBy('scan_logs.created_at', $orderDir)
-                            ->select('tickets.*');
-                            break;
-                        default:
-                            $query->orderBy($columns[$orderColumn], $orderDir);
-                    }
+        // Handle ordering
+        if ($request->order[0] ?? false) {
+            $orderColumn = $request->order[0]['column'] ?? 5; // Default to created_at
+            $orderDir = $request->order[0]['dir'] ?? 'desc';
+            $columns = ['attendee', 'event', 'type', 'status', 'last_scan', 'created_at'];
+            
+            if (isset($columns[$orderColumn])) {
+                if ($columns[$orderColumn] === 'attendee') {
+                    $query->join('attendees', 'tickets.attendee_id', '=', 'attendees.id')
+                          ->orderBy('attendees.name', $orderDir);
+                } elseif ($columns[$orderColumn] === 'event') {
+                    $query->join('events', 'tickets.event_id', '=', 'events.id')
+                          ->orderBy('events.name', $orderDir);
+                } else {
+                    $query->orderBy($columns[$orderColumn], $orderDir);
                 }
-            } else {
-                $query->latest();
             }
+        } else {
+            $query->latest();
+        }
 
-            // Apply pagination
-            $tickets = $query->paginate(15);
+        // Get total count before pagination
+        $totalRecords = $query->count();
+        $totalFiltered = $totalRecords;
 
-            // Transform data for DataTables
+        // Apply pagination
+        $tickets = $query->paginate(15);
+
+        if ($request->ajax()) {
             $data = $tickets->map(function ($ticket) {
                 return [
                     'attendee' => $ticket->attendee ? [
@@ -105,7 +76,7 @@ class TicketController extends Controller
                         'url' => route('events.show', $ticket->event)
                     ],
                     'type' => [
-                        'type' => ucfirst($ticket->type),
+                        'type' => $ticket->type,
                         'badge_class' => match($ticket->type) {
                             'vip' => 'bg-warning',
                             'regular' => 'bg-secondary',
@@ -118,9 +89,9 @@ class TicketController extends Controller
                         'status' => $ticket->is_active ? 'Active' : 'Inactive',
                         'badge_class' => $ticket->is_active ? 'bg-success' : 'bg-danger'
                     ],
-                    'last_scan' => $ticket->lastScan ? [
-                        'time' => $ticket->lastScan->created_at->diffForHumans(),
-                        'full_time' => $ticket->lastScan->created_at->format('d-m-Y H:i')
+                    'last_scan' => $ticket->last_scan ? [
+                        'time' => $ticket->last_scan->created_at->diffForHumans(),
+                        'full_time' => $ticket->last_scan->created_at->format('d-m-Y H:i')
                     ] : null,
                     'created_at' => $ticket->created_at->format('d-m-Y'),
                     'actions' => [
@@ -128,14 +99,7 @@ class TicketController extends Controller
                         'print_url' => route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]),
                         'has_phone' => $ticket->attendee && $ticket->attendee->phone,
                         'is_active' => $ticket->is_active,
-                        'deactivate_url' => route('tickets.deactivate', $ticket),
-                        'event_name' => $ticket->event->name,
-                        'attendee_name' => $ticket->attendee ? $ticket->attendee->name : 'Unassigned',
-                        'attendee_phone' => $ticket->attendee ? $ticket->attendee->phone : null,
-                        'token' => $ticket->token,
-                        'event_date' => $ticket->event->start_date->format('M d, Y'),
-                        'ticket_url' => route('tickets.verify', $ticket->token),
-                        'export_url' => route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token])
+                        'deactivate_url' => route('tickets.deactivate', $ticket)
                     ]
                 ];
             });
@@ -143,24 +107,20 @@ class TicketController extends Controller
             return response()->json([
                 'draw' => $request->draw,
                 'recordsTotal' => $totalRecords,
-                'recordsFiltered' => $totalRecords,
+                'recordsFiltered' => $totalFiltered,
                 'data' => $data,
                 'pagination' => [
-                    'first_item' => $tickets->firstItem(),
-                    'last_item' => $tickets->lastItem(),
-                    'total' => $tickets->total(),
                     'current_page' => $tickets->currentPage(),
                     'last_page' => $tickets->lastPage(),
-                    'per_page' => $tickets->perPage()
+                    'per_page' => $tickets->perPage(),
+                    'total' => $tickets->total(),
+                    'first_item' => $tickets->firstItem(),
+                    'last_item' => $tickets->lastItem()
                 ]
             ]);
         }
 
-        // For non-AJAX requests, get the filter options
-        $events = Event::select('id', 'name')->orderBy('name')->get();
-        $ticketTypes = Ticket::select('type')->distinct()->pluck('type');
-
-        return view('tickets.index', compact('events', 'ticketTypes'));
+        return view('tickets.index', compact('tickets'));
     }
 
     /**

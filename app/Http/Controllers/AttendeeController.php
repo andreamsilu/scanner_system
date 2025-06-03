@@ -27,9 +27,9 @@ class AttendeeController extends Controller
         if ($request->ajax()) {
             $query = $event->attendees()->with(['event', 'ticket']);
 
-            // Apply search
-            if ($request->search) {
-                $searchValue = $request->search;
+        // Apply filters
+            if ($request->search['value']) {
+                $searchValue = $request->search['value'];
                 $query->where(function($q) use ($searchValue) {
                     $q->where('name', 'like', '%' . $searchValue . '%')
                       ->orWhere('email', 'like', '%' . $searchValue . '%')
@@ -38,7 +38,6 @@ class AttendeeController extends Controller
                 });
             }
 
-            // Apply filters
             if ($request->event_filter) {
                 $query->where('event_id', $request->event_filter);
             }
@@ -49,22 +48,21 @@ class AttendeeController extends Controller
 
             // Get total count before pagination
             $totalRecords = $query->count();
+            $totalFiltered = $totalRecords;
 
             // Apply ordering
-            if ($request->order) {
-                $orderColumn = $request->order['column'] ?? 6; // Default to registration date
-                $orderDir = $request->order['dir'] ?? 'desc';
-                $columns = ['name', 'phone', 'token', 'registration_status', 'ticket_status', 'ticket_type', 'created_at'];
-                
-                if (isset($columns[$orderColumn])) {
-                    $query->orderBy($columns[$orderColumn], $orderDir);
-                }
-            } else {
-                $query->latest();
+            $orderColumn = $request->order[0]['column'] ?? 6; // Default to registration date
+            $orderDir = $request->order[0]['dir'] ?? 'desc';
+            $columns = ['name', 'phone', 'token', 'registration_status', 'ticket_status', 'ticket_type', 'created_at'];
+            
+            if (isset($columns[$orderColumn])) {
+                $query->orderBy($columns[$orderColumn], $orderDir);
             }
 
             // Apply pagination
-            $attendees = $query->paginate(15);
+            $start = $request->start ?? 0;
+            $length = $request->length ?? 15;
+            $attendees = $query->skip($start)->take($length)->get();
 
             // Transform data for DataTables
             $data = $attendees->map(function ($attendee) {
@@ -97,22 +95,13 @@ class AttendeeController extends Controller
             return response()->json([
                 'draw' => $request->draw,
                 'recordsTotal' => $totalRecords,
-                'recordsFiltered' => $totalRecords,
-                'data' => $data,
-                'pagination' => [
-                    'first_item' => $attendees->firstItem(),
-                    'last_item' => $attendees->lastItem(),
-                    'total' => $attendees->total(),
-                    'current_page' => $attendees->currentPage(),
-                    'last_page' => $attendees->lastPage(),
-                    'per_page' => $attendees->perPage()
-                ]
+                'recordsFiltered' => $totalFiltered,
+                'data' => $data
             ]);
         }
 
         $events = Event::select('id', 'name')->orderBy('name')->get();
-        $attendees = $event->attendees()->with(['event', 'ticket'])->paginate(15);
-        return view('attendees.index', compact('events', 'event', 'attendees'));
+        return view('attendees.index', compact('events', 'event'));
     }
 
     /**

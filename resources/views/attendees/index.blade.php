@@ -83,15 +83,6 @@
                 </div>
             </div>
         </div>
-
-        <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
-            <div class="text-muted small pagination-info">
-                Showing {{ $attendees->firstItem() ?? 0 }} to {{ $attendees->lastItem() ?? 0 }} of {{ $attendees->total() }} entries
-            </div>
-            <div>
-                {{ $attendees->links() }}
-            </div>
-        </div>
     </div>
 
     @push('styles')
@@ -159,29 +150,6 @@
             padding: 1rem !important;
             text-align: center !important;
             z-index: 1000 !important;
-        }
-
-        /* Hide DataTables info and pagination */
-        .dataTables_info, 
-        .dataTables_paginate,
-        .dataTables_length,
-        .dataTables_filter,
-        div.dataTables_wrapper div.dataTables_info,
-        div.dataTables_wrapper div.dataTables_paginate,
-        div.dataTables_wrapper div.dataTables_length,
-        div.dataTables_wrapper div.dataTables_filter {
-            display: none !important;
-        }
-
-        /* Ensure Laravel pagination is visible */
-        .pagination {
-            display: flex !important;
-            margin-bottom: 0;
-        }
-
-        .pagination .page-link {
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
         }
     </style>
     @endpush
@@ -293,22 +261,9 @@
                     url: "{{ route('events.attendees.index', $event) }}",
                     type: 'GET',
                     data: function(d) {
-                        d.page = (d.start / d.length) + 1;
-                        d.search = d.search.value;
-                        d.order = d.order[0] ? {
-                            column: d.order[0].column,
-                            dir: d.order[0].dir
-                        } : null;
                         // Add custom filters
                         d.event_filter = $('#event_filter').val();
                         d.status = $('#status').val();
-                    },
-                    dataSrc: function(json) {
-                        // Update Laravel pagination info
-                        $('.pagination-info').html(
-                            `Showing ${json.pagination.first_item} to ${json.pagination.last_item} of ${json.pagination.total} entries`
-                        );
-                        return json.data;
                     }
                 },
                 columns: [
@@ -368,13 +323,13 @@
                         }
                     }
                 ],
+                pageLength: 15,
+                lengthMenu: [[15, 25, 50, 100, -1], [15, 25, 50, 100, "All"]],
                 order: [[6, 'desc']], // Sort by registration date by default
-                dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
-                     '<"row"<"col-sm-12"tr>>',
-                paging: false,
-                info: false,
-                searching: true,
-                lengthMenu: [[15, 25, 50, -1], [15, 25, 50, "All"]],
+                dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
+                     '<"row"<"col-sm-12"tr>>' +
+                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                pagingType: 'full_numbers',
                 buttons: [
                     {
                         extend: 'collection',
@@ -425,6 +380,17 @@
                     search: "_INPUT_",
                     searchPlaceholder: "Search attendees...",
                     emptyTable: "No attendees found.",
+                    info: "Showing _START_ to _END_ of _TOTAL_ attendees",
+                    infoEmpty: "Showing 0 to 0 of 0 attendees",
+                    infoFiltered: "(filtered from _MAX_ total attendees)",
+                    lengthMenu: "Show _MENU_ attendees per page",
+                    paginate: {
+                        first: '<i class="bi bi-chevron-double-left"></i>',
+                        previous: '<i class="bi bi-chevron-left"></i>',
+                        next: '<i class="bi bi-chevron-right"></i>',
+                        last: '<i class="bi bi-chevron-double-right"></i>',
+                        page: '<span class="mx-1">_PAGE_</span>'
+                    },
                     processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div> Loading attendees...'
                 },
                 drawCallback: function() {
