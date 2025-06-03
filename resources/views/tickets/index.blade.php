@@ -367,6 +367,31 @@
             $('#invitationAttendeeName').text(attendeeName);
             $('#invitationAttendeePhone').text(attendeePhone);
             $('#invitationEventName').text(eventName);
+
+            // Format and display the message preview
+            const messagePreview = `MWALIKO WA SENDOFF
+
+Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,
+wanayo furaha kubwa kukualika / kuwaalika
+
+Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
+
+${attendeeName.toUpperCase()}
+
+Kwenye sherehe ya SENDOFF ya binti yao mpendwa
+ALICE PIENZI CHAMBILA
+
+Itakayofanyika siku ya ${new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric' })}
+Kuanzia saa ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })}
+
+Katika ukumbi wa ${eventName}
+
+Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
+
+Ticket Code: ${ticketId}
+View Ticket: ${window.location.origin}/tickets/verify/${ticketId}`;
+
+            $('#invitationMessagePreview').text(messagePreview);
         });
 
         $('#sendInvitationForm').submit(function(e) {
@@ -402,7 +427,7 @@
 
     <!-- Send Invitation Modal -->
     <div class="modal fade" id="sendInvitationModal" tabindex="-1" aria-labelledby="sendInvitationModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="sendInvitationModalLabel">Send Invitation SMS</h5>
@@ -413,23 +438,36 @@
                     <input type="hidden" name="ticket_id" id="invitationTicketId">
                     <input type="hidden" name="attendee_id" id="invitationAttendeeId">
                     <div class="modal-body">
-                        <div class="mb-3">
-                            <label class="form-label">Attendee</label>
-                            <p class="mb-0" id="invitationAttendeeName"></p>
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">Attendee</label>
+                                    <p class="mb-0" id="invitationAttendeeName"></p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">Phone Number</label>
+                                    <p class="mb-0" id="invitationAttendeePhone"></p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">Event</label>
+                                    <p class="mb-0" id="invitationEventName"></p>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="alert alert-info mb-3">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    A predefined invitation message will be sent to the attendee.
+                                </div>
+                            </div>
                         </div>
-                        <div class="mb-3">
-                            <label class="form-label">Phone Number</label>
-                            <p class="mb-0" id="invitationAttendeePhone"></p>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Event</label>
-                            <p class="mb-0" id="invitationEventName"></p>
-                        </div>
-                        <div class="mb-3">
-                            <label for="message" class="form-label">Message</label>
-                            <textarea class="form-control" id="message" name="message" rows="4" required 
-                                      placeholder="Enter your invitation message..."></textarea>
-                            <small class="text-muted">You can use variables like {name}, {event}, {date}, {location}, {ticket_number}</small>
+                        
+                        <div class="card">
+                            <div class="card-header bg-light">
+                                <h6 class="card-title mb-0">Message Preview</h6>
+                            </div>
+                            <div class="card-body">
+                                <pre class="mb-0" id="invitationMessagePreview" style="white-space: pre-wrap; font-family: inherit; font-size: 0.875rem; line-height: 1.5;"></pre>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">

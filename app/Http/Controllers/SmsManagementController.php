@@ -193,21 +193,44 @@ class SmsManagementController extends Controller
             'ticket_id' => 'required|exists:tickets,id'
         ]);
 
-        $attendee = $event->attendees()->findOrFail($request->attendee_id);
-        $ticket = $attendee->tickets()->findOrFail($request->ticket_id);
+        try {
+            $attendee = $event->attendees()->findOrFail($request->attendee_id);
+            $ticket = $attendee->tickets()->findOrFail($request->ticket_id);
 
-        $success = $this->smsService->sendAttendeeInvitation($attendee, $event, $ticket);
+            if (!$attendee->phone) {
+                throw new \Exception('Attendee does not have a valid phone number.');
+            }
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => $success,
-                'message' => $success ? 'Invitation sent successfully' : 'Failed to send invitation'
+            $success = $this->smsService->sendInvitation($ticket);
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => $success,
+                    'message' => $success ? 'Invitation sent successfully' : 'Failed to send invitation'
+                ]);
+            }
+
+            return redirect()->route('sms.management.event', $event)
+                ->with($success ? 'success' : 'error', 
+                    $success ? 'Invitation sent successfully' : 'Failed to send invitation');
+        } catch (\Exception $e) {
+            Log::error('Failed to send invitation SMS', [
+                'error' => $e->getMessage(),
+                'attendee_id' => $request->attendee_id,
+                'ticket_id' => $request->ticket_id,
+                'event_id' => $event->id
             ]);
-        }
 
-        return redirect()->route('sms.management.event', $event)
-            ->with($success ? 'success' : 'error', 
-                $success ? 'Invitation sent successfully' : 'Failed to send invitation');
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send invitation: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->route('sms.management.event', $event)
+                ->with('error', 'Failed to send invitation: ' . $e->getMessage());
+        }
     }
 
     /**
