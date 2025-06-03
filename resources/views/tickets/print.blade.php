@@ -116,21 +116,38 @@
         <div class="border-pattern">
             <div class="invitation-content">
                 <div class="invitation-message">
-                    We are delighted to invite you to our special event. Your presence will make this occasion even more memorable.<br>
-                    Please present this ticket at the entrance.
-                </div>
-                <div class="names">{{ strtoupper($ticket->attendee->name) }}</div>
-                <div class="is-invited">is invited to</div>
-                <div class="event-name">{{ strtoupper($ticket->event->name) }}</div>
-                <div class="event-details">
-                    <strong>Location:</strong> {{ $ticket->event->location }}<br>
-                    <strong>Venue:</strong> {{ $ticket->event->venue }}<br>
-                    <strong>Date:</strong> {{ $ticket->event->start_date->format('d-m-Y') }}<br>
-                    <strong>Time:</strong> {{ $ticket->event->start_date->format('H:i') }} - {{ $ticket->event->end_date->format('H:i') }}<br>
-                    <span style="display:inline-block;margin-top:1em;font-size:1.1em;color:#bfa46d;font-weight:bold;letter-spacing:0.08em;">Ticket Type: {{ ucfirst($ticket->type) }}</span>
+                    <h2 style="color: #bfa46d; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
+                    <p style="margin-bottom: 1em;">
+                        Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                        wanayo furaha kubwa kukualika / kuwaalika
+                    </p>
+                    <p style="margin-bottom: 1em;">
+                        Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
+                    </p>
+                    <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #bfa46d; padding: 0.5em;">
+                        {{ strtoupper($ticket->attendee->name) }}
+                    </div>
+                    <div style="text-align: center; margin: 1em 0;">
+                        ..............................................................................................
+                    </div>
+                    <p style="margin-bottom: 1em;">
+                        Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
+                        <strong style="color: #bfa46d; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
+                    </p>
+                    <p style="margin-bottom: 1em;">
+                        Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
+                        Kuanzia saa 12:00 jioni
+                    </p>
+                    <p style="margin-bottom: 1em;">
+                        Katika ukumbi wa GBF Garden Hall,<br>
+                        uliopo Dar es Salaam – Tabata, Barakuda.
+                    </p>
+                    <p style="margin-bottom: 1em;">
+                        Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
+                    </p>
                 </div>
                 <div class="ticket-id">
-                    Ticket ID: {{ $ticket->token }}
+                    Kitambulisho cha Tiketi: {{ $ticket->token }}
                 </div>
                 <div class="qr">
                     @if($ticket->attendee->qr_code)
@@ -140,7 +157,8 @@
                     @endif
                 </div>
                 <div class="footer">
-                    Reception to follow
+                    <p>Tafadhali wasilisha tiketi hii mlangoni</p>
+                    <p>Imetengenezwa tarehe {{ now()->format('d-m-Y H:i:s') }}</p>
                 </div>
             </div>
         </div>
