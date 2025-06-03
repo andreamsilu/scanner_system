@@ -201,7 +201,12 @@
                             </div>`;
                         }
                     },
-                    { data: 'created_at' },
+                    { 
+                        data: 'created_at',
+                        render: function(data) {
+                            return data === 'N/A' ? '<span class="text-muted">N/A</span>' : data;
+                        }
+                    },
                     {
                         data: 'actions',
                         orderable: false,
