@@ -79,72 +79,6 @@
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @forelse($attendees as $attendee)
-                                <tr>
-                                    <td>{{ $attendee->name }}</td>
-                                    <td>{{ $attendee->phone }}</td>
-                                    <td>{{ $attendee->token }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ $attendee->registration_status === 'checked_in' ? 'success' : ($attendee->registration_status === 'cancelled' ? 'danger' : 'info') }}">
-                                            {{ ucfirst($attendee->registration_status) }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        @if($attendee->ticket)
-                                            <span class="badge bg-{{ $attendee->ticket->status === 'valid' ? 'success' : 'danger' }}">
-                                                {{ ucfirst($attendee->ticket->status) }}
-                                            </span>
-                                        @else
-                                            <span class="badge bg-secondary">No Ticket</span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($attendee->ticket)
-                                            <span class="badge bg-primary">{{ ucfirst($attendee->ticket->type) }}</span>
-                                        @else
-                                            -
-                                        @endif
-                                    </td>
-                                    <td>{{ $attendee->created_at->format('d-m-Y H:i') }}</td>
-                                    <td>
-                                        <div class="btn-group">
-                                            <a href="{{ route('events.attendees.show', ['event' => $event, 'attendee' => $attendee]) }}" 
-                                               class="btn btn-sm btn-outline-primary"
-                                               title="View Details">
-                                                <i class="bi bi-eye"></i>
-                                            </a>
-                                            <a href="{{ route('events.attendees.edit', ['event' => $event, 'attendee' => $attendee]) }}" 
-                                               class="btn btn-sm btn-outline-secondary"
-                                               title="Edit Attendee">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <form action="{{ route('events.attendees.destroy', ['event' => $event, 'attendee' => $attendee]) }}" 
-                                                  method="POST" 
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Are you sure you want to delete this attendee? This action cannot be undone.')">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" 
-                                                        class="btn btn-sm btn-outline-danger"
-                                                        title="Delete Attendee">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="text-center py-4">
-                                        <div class="text-muted">
-                                            <i class="bi bi-people fs-1 d-block mb-2"></i>
-                                            <p class="mb-0">No attendees found.</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
                     </table>
                 </div>
             </div>
@@ -205,6 +139,17 @@
         
         #uploadProcessingOverlay .progress-bar {
             transition: width 0.5s ease-in-out;
+        }
+
+        /* Loading indicator */
+        .dataTables_processing {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #dee2e6 !important;
+            border-radius: 0.25rem !important;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+            padding: 1rem !important;
+            text-align: center !important;
+            z-index: 1000 !important;
         }
     </style>
     @endpush
@@ -310,16 +255,81 @@
             }
 
             var table = $('#attendeesTable').DataTable({
-                responsive: true,
                 processing: true,
-                serverSide: false, // Set to false since we're using blade rendering
+                serverSide: true,
+                ajax: {
+                    url: "{{ route('events.attendees.index', $event) }}",
+                    type: 'GET',
+                    data: function(d) {
+                        // Add custom filters
+                        d.event_filter = $('#event_filter').val();
+                        d.status = $('#status').val();
+                    }
+                },
+                columns: [
+                    { data: 'name' },
+                    { data: 'phone' },
+                    { data: 'token' },
+                    { 
+                        data: 'registration_status',
+                        render: function(data) {
+                            return `<span class="badge bg-${data.badge}">${data.status}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'ticket_status',
+                        render: function(data) {
+                            return `<span class="badge bg-${data.badge}">${data.status}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'ticket_type',
+                        render: function(data) {
+                            return data ? `<span class="badge bg-${data.badge}">${data.type}</span>` : '-';
+                        }
+                    },
+                    { data: 'created_at' },
+                    { 
+                        data: 'actions',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data) {
+                            return `
+                                <div class="btn-group">
+                                    <a href="${data.view_url}" 
+                                       class="btn btn-sm btn-outline-primary"
+                                       title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="${data.edit_url}" 
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="Edit Attendee">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form action="${data.delete_url}" 
+                                          method="POST" 
+                                          class="d-inline"
+                                          onsubmit="return confirm('Are you sure you want to delete this attendee? This action cannot be undone.')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" 
+                                                class="btn btn-sm btn-outline-danger"
+                                                title="Delete Attendee">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            `;
+                        }
+                    }
+                ],
                 pageLength: 15,
-                lengthMenu: [[15, 25, 50, 100, -1], [15, 25, 50, 100, "All"]], // Changed default options
+                lengthMenu: [[15, 25, 50, 100, -1], [15, 25, 50, 100, "All"]],
                 order: [[6, 'desc']], // Sort by registration date by default
                 dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>' +
                      '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                pagingType: 'full_numbers', // Added full pagination controls
+                pagingType: 'full_numbers',
                 buttons: [
                     {
                         extend: 'collection',
@@ -366,13 +376,6 @@
                         ]
                     }
                 ],
-                columnDefs: [
-                    { 
-                        orderable: false, 
-                        targets: [7], // Disable sorting on actions column
-                        searchable: false
-                    }
-                ],
                 language: {
                     search: "_INPUT_",
                     searchPlaceholder: "Search attendees...",
@@ -387,7 +390,8 @@
                         next: '<i class="bi bi-chevron-right"></i>',
                         last: '<i class="bi bi-chevron-double-right"></i>',
                         page: '<span class="mx-1">_PAGE_</span>'
-                    }
+                    },
+                    processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div> Loading attendees...'
                 },
                 drawCallback: function() {
                     // Reinitialize any tooltips or other plugins if needed
@@ -397,6 +401,17 @@
 
             // Ensure buttons are properly initialized
             table.buttons().container().addClass('float-start');
+
+            // Handle filter form submission
+            $('form').on('submit', function(e) {
+                e.preventDefault();
+                table.ajax.reload();
+            });
+
+            // Handle filter changes
+            $('#event_filter, #status').on('change', function() {
+                table.ajax.reload();
+            });
         });
 
         // Handle form submission with enhanced loading state

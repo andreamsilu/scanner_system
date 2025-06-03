@@ -15,36 +15,93 @@ use Illuminate\Support\Facades\Validator;
 use App\Models\ScanLog;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Illuminate\Http\JsonResponse;
 
 class AttendeeController extends Controller
 {
     /**
      * Display a listing of the attendees.
      */
-    public function index(Event $event): View
+    public function index(Event $event, Request $request): View|JsonResponse
     {
-        $query = $event->attendees()->with('event');
+        if ($request->ajax()) {
+            $query = $event->attendees()->with(['event', 'ticket']);
 
-        // Apply filters
-        if (request('search')) {
-            $query->where(function($q) {
-                $q->where('name', 'like', '%' . request('search') . '%')
-                  ->orWhere('email', 'like', '%' . request('search') . '%');
+            // Apply filters
+            if ($request->search['value']) {
+                $searchValue = $request->search['value'];
+                $query->where(function($q) use ($searchValue) {
+                    $q->where('name', 'like', '%' . $searchValue . '%')
+                      ->orWhere('email', 'like', '%' . $searchValue . '%')
+                      ->orWhere('phone', 'like', '%' . $searchValue . '%')
+                      ->orWhere('token', 'like', '%' . $searchValue . '%');
+                });
+            }
+
+            if ($request->event_filter) {
+                $query->where('event_id', $request->event_filter);
+            }
+
+            if ($request->status) {
+                $query->where('registration_status', $request->status);
+            }
+
+            // Get total count before pagination
+            $totalRecords = $query->count();
+            $totalFiltered = $totalRecords;
+
+            // Apply ordering
+            $orderColumn = $request->order[0]['column'] ?? 6; // Default to registration date
+            $orderDir = $request->order[0]['dir'] ?? 'desc';
+            $columns = ['name', 'phone', 'token', 'registration_status', 'ticket_status', 'ticket_type', 'created_at'];
+            
+            if (isset($columns[$orderColumn])) {
+                $query->orderBy($columns[$orderColumn], $orderDir);
+            }
+
+            // Apply pagination
+            $start = $request->start ?? 0;
+            $length = $request->length ?? 15;
+            $attendees = $query->skip($start)->take($length)->get();
+
+            // Transform data for DataTables
+            $data = $attendees->map(function ($attendee) {
+                return [
+                    'name' => $attendee->name,
+                    'phone' => $attendee->phone,
+                    'token' => $attendee->token,
+                    'registration_status' => [
+                        'status' => $attendee->registration_status,
+                        'badge' => $attendee->registration_status === 'checked_in' ? 'success' : 
+                                 ($attendee->registration_status === 'cancelled' ? 'danger' : 'info')
+                    ],
+                    'ticket_status' => $attendee->ticket ? [
+                        'status' => $attendee->ticket->status,
+                        'badge' => $attendee->ticket->status === 'valid' ? 'success' : 'danger'
+                    ] : ['status' => 'No Ticket', 'badge' => 'secondary'],
+                    'ticket_type' => $attendee->ticket ? [
+                        'type' => ucfirst($attendee->ticket->type),
+                        'badge' => 'primary'
+                    ] : null,
+                    'created_at' => $attendee->created_at->format('d-m-Y H:i'),
+                    'actions' => [
+                        'view_url' => route('events.attendees.show', ['event' => $attendee->event_id, 'attendee' => $attendee->id]),
+                        'edit_url' => route('events.attendees.edit', ['event' => $attendee->event_id, 'attendee' => $attendee->id]),
+                        'delete_url' => route('events.attendees.destroy', ['event' => $attendee->event_id, 'attendee' => $attendee->id])
+                    ]
+                ];
             });
+
+            return response()->json([
+                'draw' => $request->draw,
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalFiltered,
+                'data' => $data
+            ]);
         }
 
-        if (request('event_filter')) {
-            $query->where('event_id', request('event_filter'));
-        }
-
-        if (request('status')) {
-            $query->where('registration_status', request('status'));
-        }
-
-        $attendees = $query->latest()->paginate(15);
         $events = Event::select('id', 'name')->orderBy('name')->get();
-
-        return view('attendees.index', compact('attendees', 'events', 'event'));
+        return view('attendees.index', compact('events', 'event'));
     }
 
     /**
