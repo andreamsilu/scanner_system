@@ -114,7 +114,8 @@
                                                     data-event-time="{{ optional($ticket->event->date)->format('h:i A') ?? 'N/A' }}"
                                                     data-event-location="{{ $ticket->event->location ?? 'N/A' }}"
                                                     data-ticket-code="{{ $ticket->code }}"
-                                                    data-ticket-url="{{ route('tickets.verify', $ticket->code) }}">
+                                                    data-ticket-token="{{ $ticket->token }}"
+                                                    data-ticket-url="{{ route('tickets.verify', ['token' => $ticket->token]) }}">
                                                 <i class="bi bi-envelope"></i>
                                             </button>
                                         @endif
@@ -370,6 +371,7 @@
             const eventTime = $(this).data('event-time');
             const eventLocation = $(this).data('event-location');
             const ticketCode = $(this).data('ticket-code');
+            const ticketToken = $(this).data('ticket-token');
             const ticketUrl = $(this).data('ticket-url');
             
             // Validate required data
