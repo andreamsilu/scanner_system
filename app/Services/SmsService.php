@@ -154,22 +154,16 @@ class SmsService
     protected function formatInvitationMessage(Event $event, Ticket $ticket): string
     {
         return strtr(
-            "MWALIKO WA SENDOFF\n\n" .
-            "Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,\n" .
-            "wanayo furaha kubwa kukualika / kuwaalika\n\n" .
-            "Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi\n\n" .
-            "{attendee_name}\n\n" .
-            "Kwenye sherehe ya SENDOFF ya binti yao mpendwa\n" .
-            "ALICE PIENZI CHAMBILA\n\n" .
-            "Itakayofanyika siku ya {event_date}\n" .
-            "Kuanzia saa {event_time}\n\n" .
-            "Katika ukumbi wa {event_location}\n\n" .
-            "Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.\n\n" .
-            "Ticket Code: {ticket_code}\n" .
-            "View Ticket: {ticket_url}",
+            "MWALIKO: {attendee_name}\n" .
+            "SENDOFF ya ALICE PIENZI CHAMBILA\n" .
+            "Tarehe: {event_date}\n" .
+            "Saa: {event_time}\n" .
+            "Mahali: {event_location}\n" .
+            "Code: {ticket_code}\n" .
+            "Link: {ticket_url}",
             [
                 '{attendee_name}' => strtoupper($ticket->attendee->name),
-                '{event_date}' => Carbon::parse($event->date)->format('l, d-m-Y'),
+                '{event_date}' => Carbon::parse($event->date)->format('d/m/Y'),
                 '{event_time}' => Carbon::parse($event->date)->format('h:i A'),
                 '{event_location}' => $event->location,
                 '{ticket_code}' => $ticket->code,

@@ -109,7 +109,12 @@
                                                     data-attendee-name="{{ $ticket->attendee->name }}"
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
                                                     data-attendee-id="{{ $ticket->attendee->id }}"
-                                                    data-event-name="{{ $ticket->event->name }}">
+                                                    data-event-name="{{ $ticket->event->name }}"
+                                                    data-event-date="{{ $ticket->event->date->format('l, d-m-Y') }}"
+                                                    data-event-time="{{ $ticket->event->date->format('h:i A') }}"
+                                                    data-event-location="{{ $ticket->event->location }}"
+                                                    data-ticket-code="{{ $ticket->code }}"
+                                                    data-ticket-url="{{ route('tickets.verify', $ticket->code) }}">
                                                 <i class="bi bi-envelope"></i>
                                             </button>
                                         @endif
@@ -361,6 +366,11 @@
             const attendeePhone = $(this).data('attendee-phone');
             const eventName = $(this).data('event-name');
             const attendeeId = $(this).data('attendee-id');
+            const eventDate = $(this).data('event-date');
+            const eventTime = $(this).data('event-time');
+            const eventLocation = $(this).data('event-location');
+            const ticketCode = $(this).data('ticket-code');
+            const ticketUrl = $(this).data('ticket-url');
             
             $('#invitationTicketId').val(ticketId);
             $('#invitationAttendeeId').val(attendeeId);
@@ -368,28 +378,14 @@
             $('#invitationAttendeePhone').text(attendeePhone);
             $('#invitationEventName').text(eventName);
 
-            // Format and display the message preview
-            const messagePreview = `MWALIKO WA SENDOFF
-
-Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,
-wanayo furaha kubwa kukualika / kuwaalika
-
-Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
-
-${attendeeName.toUpperCase()}
-
-Kwenye sherehe ya SENDOFF ya binti yao mpendwa
-ALICE PIENZI CHAMBILA
-
-Itakayofanyika siku ya ${new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'numeric', year: 'numeric' })}
-Kuanzia saa ${new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: 'numeric', hour12: true })}
-
-Katika ukumbi wa ${eventName}
-
-Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
-
-Ticket Code: ${ticketId}
-View Ticket: ${window.location.origin}/tickets/verify/${ticketId}`;
+            // Format and display the message preview with actual event data
+            const messagePreview = `MWALIKO: ${attendeeName.toUpperCase()}
+SENDOFF ya ALICE PIENZI CHAMBILA
+Tarehe: ${eventDate}
+Saa: ${eventTime}
+Mahali: ${eventLocation}
+Code: ${ticketCode}
+Link: ${ticketUrl}`;
 
             $('#invitationMessagePreview').text(messagePreview);
         });
