@@ -226,13 +226,28 @@
 
 <script>
 $(document).ready(function() {
+    // Add CSRF token to all AJAX requests
+    $.ajaxSetup({
+        headers: {
+            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+        }
+    });
+
     // Initialize DataTable
     const table = $('#tickets-table').DataTable({
         processing: true,
         serverSide: true,
         ajax: {
             url: '{{ route("events.tickets.data", $event) }}',
-            type: 'GET'
+            type: 'GET',
+            error: function (xhr, error, thrown) {
+                console.error('DataTables error:', error, thrown);
+                let errorMessage = 'An error occurred while loading the data.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                toastr.error(errorMessage);
+            }
         },
         columns: [
             { 
