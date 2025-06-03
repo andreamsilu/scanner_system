@@ -88,11 +88,11 @@ class TicketController extends Controller
                 return [
                     'attendee' => [
                         'name' => $ticket->attendee ? $ticket->attendee->name : 'Unassigned',
-                        'token' => $ticket->token
+                        'token' => $ticket->token ?? 'N/A'
                     ],
                     'type' => [
-                        'type' => ucfirst($ticket->type),
-                        'badge' => match($ticket->type) {
+                        'type' => ucfirst($ticket->type ?? 'Unknown'),
+                        'badge' => match($ticket->type ?? '') {
                             'vip' => 'warning',
                             'regular' => 'secondary',
                             'single' => 'primary',
@@ -101,14 +101,14 @@ class TicketController extends Controller
                         }
                     ],
                     'status' => [
-                        'status' => $ticket->status,
-                        'badge' => $ticket->is_active ? 'success' : 'danger'
+                        'status' => $ticket->status ?? 'Unknown',
+                        'badge' => ($ticket->is_active ?? false) ? 'success' : 'danger'
                     ],
                     'last_scan' => $ticket->scanLogs->first() ? [
                         'time' => $ticket->scanLogs->first()->created_at->diffForHumans(),
                         'full_time' => $ticket->scanLogs->first()->created_at->format('d-m-Y H:i')
                     ] : null,
-                    'created_at' => $ticket->created_at->format('d-m-Y'),
+                    'created_at' => $ticket->created_at ? $ticket->created_at->format('d-m-Y') : 'N/A',
                     'actions' => [
                         'view_url' => route('events.events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->token]),
                         'print_url' => route('events.events.tickets.print', ['event' => $ticket->event_id, 'ticket' => $ticket->token]),
