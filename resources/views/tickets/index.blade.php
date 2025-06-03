@@ -1,8 +1,9 @@
 <x-app-layout>
     <x-page-header 
-        title="Tickets"
+        title="Tickets for {{ $event->name }}"
         :breadcrumbs="[
             'Events' => route('events.index'),
+            $event->name => route('events.show', $event),
             'Tickets' => null
         ]"
     >
@@ -27,24 +28,14 @@
                     <div class="row mb-3">
                         <div class="col-md-12">
                             <form id="filterForm" class="row g-3">
-                                <div class="col-md-3">
-                                    <select name="event_filter" id="eventFilter" class="form-select">
-                                        <option value="">All Events</option>
-                                        @foreach($events as $event)
-                                            <option value="{{ $event->id }}" {{ $event->id == request()->route('event')->id ? 'selected' : '' }}>
-                                                {{ $event->name }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <select name="status" id="statusFilter" class="form-select">
                                         <option value="">All Statuses</option>
                                         <option value="active">Active</option>
                                         <option value="inactive">Inactive</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <select name="type" id="typeFilter" class="form-select">
                                         <option value="">All Types</option>
                                         <option value="vip">VIP</option>
@@ -53,7 +44,7 @@
                                         <option value="double">Double</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3">
+                                <div class="col-md-4">
                                     <button type="submit" class="btn btn-primary">Apply Filters</button>
                                     <button type="reset" class="btn btn-secondary">Reset</button>
                                 </div>
@@ -66,7 +57,6 @@
                             <thead>
                                 <tr>
                                     <th>Attendee</th>
-                                    <th>Event</th>
                                     <th>Type</th>
                                     <th>Status</th>
                                     <th>Last Scan</th>
@@ -109,7 +99,6 @@
                 ajax: {
                     url: '{{ route("events.events.tickets.index", ["event" => $event->id]) }}',
                     data: function(d) {
-                        d.event_filter = $('#eventFilter').val();
                         d.status = $('#statusFilter').val();
                         d.type = $('#typeFilter').val();
                     }
@@ -122,12 +111,6 @@
                                 <div class="fw-bold">${data.name}</div>
                                 <small class="text-muted">${data.token}</small>
                             </div>`;
-                        }
-                    },
-                    {
-                        data: 'event',
-                        render: function(data) {
-                            return `<a href="${data.url}" class="text-primary">${data.name}</a>`;
                         }
                     },
                     {
@@ -185,7 +168,7 @@
                         }
                     }
                 ],
-                order: [[5, 'desc']], // Sort by created_at by default
+                order: [[4, 'desc']], // Sort by created_at by default
                 pageLength: 15,
                 lengthMenu: [[15, 25, 50, 100, -1], [15, 25, 50, 100, "All"]],
                 language: {
@@ -204,7 +187,7 @@
                         text: '<i class="fas fa-file-excel"></i> Excel',
                         className: 'btn btn-success',
                         exportOptions: {
-                            columns: [0, 1, 2, 3, 4, 5]
+                            columns: [0, 1, 2, 3, 4]
                         }
                     },
                     {
@@ -212,7 +195,7 @@
                         text: '<i class="fas fa-file-pdf"></i> PDF',
                         className: 'btn btn-danger',
                         exportOptions: {
-                            columns: [0, 1, 2, 3, 4, 5]
+                            columns: [0, 1, 2, 3, 4]
                         }
                     },
                     {
@@ -220,7 +203,7 @@
                         text: '<i class="fas fa-print"></i> Print',
                         className: 'btn btn-primary',
                         exportOptions: {
-                            columns: [0, 1, 2, 3, 4, 5]
+                            columns: [0, 1, 2, 3, 4]
                         }
                     }
                 ]
@@ -236,7 +219,7 @@
             });
 
             // Handle filter changes
-            $('#eventFilter, #statusFilter, #typeFilter').on('change', function() {
+            $('#statusFilter, #typeFilter').on('change', function() {
                 table.ajax.reload();
             });
 

@@ -19,10 +19,10 @@ class TicketController extends Controller
     /**
      * Display a listing of the tickets.
      */
-    public function index(Request $request): View|JsonResponse
+    public function index(Request $request, Event $event): View|JsonResponse
     {
         if ($request->ajax()) {
-            $query = Ticket::with(['event', 'attendee', 'scanLogs' => function($query) {
+            $query = $event->tickets()->with(['event', 'attendee', 'scanLogs' => function($query) {
                 $query->latest();
             }]);
 
@@ -38,10 +38,6 @@ class TicketController extends Controller
                             ->orWhere('token', 'like', '%' . $searchValue . '%');
                       });
                 });
-            }
-
-            if ($request->event_filter) {
-                $query->where('event_id', $request->event_filter);
             }
 
             if ($request->status) {
@@ -134,8 +130,10 @@ class TicketController extends Controller
             ]);
         }
 
+        // Get all events for the filter dropdown
         $events = Event::select('id', 'name')->orderBy('name')->get();
-        return view('tickets.index', compact('events'));
+        
+        return view('tickets.index', compact('event', 'events'));
     }
 
     /**
