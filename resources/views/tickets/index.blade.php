@@ -234,7 +234,10 @@
                 order: [[5, 'desc']],
                 dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>' +
-                     '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                     '<"row"<"col-sm-12 col-md-5"i>>',
+                paging: false,
+                info: false,
+                searching: true,
                 buttons: [
                     {
                         extend: 'collection',
