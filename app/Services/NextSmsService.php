@@ -132,9 +132,9 @@ class NextSmsService extends BaseSmsService
 
     
     /**
-     * Get the remaining balance/credits
+     * Get the remaining SMS credits/units
      *
-     * @return array Balance information
+     * @return array Balance information containing remaining SMS credits
      */
     public function getBalance(): array
     {
@@ -148,26 +148,46 @@ class NextSmsService extends BaseSmsService
             ])->get($this->baseUrl . '/balance');
 
             if (!$response->successful()) {
+                Log::error('NextSMS balance check failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'headers' => $response->headers()
+                ]);
                 throw new \Exception('NextSMS API error: ' . $response->body());
             }
 
             $result = $response->json();
             
-            
             $balanceData = [
                 'success' => true,
-                'balance' => $result['balance'] ?? 0,
-                'currency' => $result['currency'] ?? 'TZS',
+                'credits' => (int)($result['balance'] ?? 0), // Number of SMS credits remaining
+                'units' => (int)($result['units'] ?? 0),     // Number of SMS units (if different from credits)
+                'type' => 'sms_credits',                     // Indicates this is SMS credits, not monetary balance
+                'provider' => 'nextsms'
             ];
 
             $this->logActivity('balance_check', $balanceData);
 
             return $balanceData;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('SMS balance check connection error', [
+                'error' => $e->getMessage(),
+                'url' => $this->baseUrl . '/balance'
+            ]);
+            throw new \Exception('Failed to connect to SMS service. Please try again later.');
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            Log::error('SMS balance check request error', [
+                'error' => $e->getMessage(),
+                'response' => $e->response ? [
+                    'status' => $e->response->status(),
+                    'body' => $e->response->body()
+                ] : null
+            ]);
+            throw new \Exception('SMS service request failed. Please try again later.');
         } catch (\Exception $e) {
             $this->logActivity('balance_check_error', [
                 'error' => $e->getMessage(),
             ], 'error');
-
             throw $e;
         }
     }

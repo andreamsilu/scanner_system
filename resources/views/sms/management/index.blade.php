@@ -37,19 +37,23 @@
                 <div class="card-body p-2">
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
-                            <h6 class="card-subtitle mb-0 text-muted small">Provider Balance</h6>
+                            <h6 class="card-subtitle mb-0 text-muted small">SMS Credits</h6>
                             @if(isset($balance))
                                 <h5 class="card-title mb-0">
-                                    {{ number_format($balance['balance'], 2) }} {{ $balance['currency'] }}
+                                    {{ number_format($balance['credits']) }} credits
                                 </h5>
-                                <small class="text-muted small">{{ $provider }}</small>
+                                @if(isset($balance['units']) && $balance['units'] > 0)
+                                    <small class="text-muted small">{{ number_format($balance['units']) }} units</small>
+                                @else
+                                    <small class="text-muted small">{{ ucfirst($provider) }}</small>
+                                @endif
                             @else
                                 <h5 class="card-title mb-0">N/A</h5>
-                                <small class="text-muted small">Unable to fetch balance</small>
+                                <small class="text-muted small">Unable to fetch credits</small>
                             @endif
                         </div>
                         <div class="p-1 rounded-circle bg-success bg-opacity-10 text-success">
-                            <i class="bi bi-wallet2"></i>
+                            <i class="bi bi-chat-dots"></i>
                         </div>
                     </div>
                 </div>
