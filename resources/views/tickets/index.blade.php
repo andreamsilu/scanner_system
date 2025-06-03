@@ -224,8 +224,21 @@
         }
 
         /* Hide DataTables info and pagination */
-        .dataTables_info, .dataTables_paginate {
+        .dataTables_info, 
+        .dataTables_paginate,
+        .dataTables_length,
+        .dataTables_filter,
+        div.dataTables_wrapper div.dataTables_info,
+        div.dataTables_wrapper div.dataTables_paginate,
+        div.dataTables_wrapper div.dataTables_length,
+        div.dataTables_wrapper div.dataTables_filter {
             display: none !important;
+        }
+
+        /* Ensure Laravel pagination is visible */
+        .pagination {
+            display: flex !important;
+            margin-bottom: 0;
         }
     </style>
     @endpush
@@ -361,8 +374,7 @@
                 ],
                 order: [[5, 'desc']],
                 dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
-                     '<"row"<"col-sm-12"tr>>' +
-                     '<"row"<"col-sm-12 col-md-5"i>>',
+                     '<"row"<"col-sm-12"tr>>',
                 paging: false,
                 info: false,
                 searching: true,
