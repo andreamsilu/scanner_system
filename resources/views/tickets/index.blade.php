@@ -24,16 +24,22 @@
             <!-- Search Box -->
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <div class="input-group">
+                    <div class="input-group search-group">
                         <span class="input-group-text bg-light">
                             <i class="bi bi-search"></i>
                         </span>
                         <input type="text" 
                                class="form-control" 
                                id="global-search" 
-                               placeholder="Search tickets by name, email, phone, token, type or event..."
-                               value="{{ request('search') }}">
-                        <button class="btn btn-outline-secondary" type="button" id="clear-search">
+                               placeholder="Type to search tickets..."
+                               value="{{ request('search') }}"
+                               autocomplete="off">
+                        <span class="input-group-text search-status d-none">
+                            <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                <span class="visually-hidden">Searching...</span>
+                            </div>
+                        </span>
+                        <button class="btn btn-outline-secondary" type="button" id="clear-search" title="Clear search">
                             <i class="bi bi-x-lg"></i>
                         </button>
                     </div>
@@ -327,35 +333,37 @@
         }
 
         /* Search box styles */
-        #global-search {
-            border-right: none;
+        .search-group {
+            position: relative;
+            transition: all 0.2s ease;
         }
-        
-        #global-search:focus {
-            box-shadow: none;
-            border-color: #ced4da;
-        }
-        
-        #clear-search {
-            border-left: none;
-        }
-        
-        #clear-search:hover {
-            background-color: #e9ecef;
-        }
-        
-        .input-group-text {
-            border-right: none;
-        }
-        
-        .input-group:focus-within {
+
+        .search-group.searching {
+            border-color: #80bdff;
             box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
         }
-        
-        .input-group:focus-within .input-group-text,
-        .input-group:focus-within .form-control,
-        .input-group:focus-within .btn {
-            border-color: #80bdff;
+
+        .search-status {
+            position: absolute;
+            right: 40px;
+            background: transparent;
+            border: none;
+            padding: 0.375rem 0.5rem;
+        }
+
+        .search-status .spinner-border {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .search-group.searching .bi-search {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
         }
     </style>
     @endpush
@@ -586,19 +594,44 @@
                 }
             });
 
-            // Handle global search
+            // Auto-search functionality
+            const searchInput = $('#global-search');
+            const searchStatus = $('.search-status');
+            const searchGroup = $('.search-group');
             let searchTimeout;
-            $('#global-search').on('keyup', function() {
+
+            function performSearch() {
+                searchStatus.removeClass('d-none');
+                searchGroup.addClass('searching');
+                
+                table.ajax.reload(function() {
+                    searchStatus.addClass('d-none');
+                    searchGroup.removeClass('searching');
+                });
+            }
+
+            // Search as you type
+            searchInput.on('input', function() {
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(function() {
-                    table.ajax.reload();
-                }, 500); // Debounce search for 500ms
+                searchStatus.removeClass('d-none');
+                searchGroup.addClass('searching');
+                
+                searchTimeout = setTimeout(performSearch, 300);
             });
 
             // Clear search
             $('#clear-search').on('click', function() {
-                $('#global-search').val('');
-                table.ajax.reload();
+                searchInput.val('');
+                performSearch();
+            });
+
+            // Handle enter key
+            searchInput.on('keypress', function(e) {
+                if (e.which === 13) {
+                    e.preventDefault();
+                    clearTimeout(searchTimeout);
+                    performSearch();
+                }
             });
 
             // Handle filter form submission
