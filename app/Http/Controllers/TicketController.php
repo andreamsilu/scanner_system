@@ -276,11 +276,32 @@ class TicketController extends Controller
         if ($request->search['value']) {
             $searchValue = $request->search['value'];
             $query->where(function($q) use ($searchValue) {
-                $q->where('ticket_number', 'like', '%' . $searchValue . '%')
-                  ->orWhere('type', 'like', '%' . $searchValue . '%')
+                // Search in tickets table
+                $q->where('tickets.ticket_number', 'like', '%' . $searchValue . '%')
+                  ->orWhere('tickets.type', 'like', '%' . $searchValue . '%')
+                  ->orWhere('tickets.status', 'like', '%' . $searchValue . '%')
+                  ->orWhere('tickets.created_at', 'like', '%' . $searchValue . '%')
+                  
+                  // Search in attendees table
                   ->orWhereHas('attendee', function($q) use ($searchValue) {
-                      $q->where('token', 'like', '%' . $searchValue . '%')
-                        ->orWhere('name', 'like', '%' . $searchValue . '%');
+                      $q->where('attendees.token', 'like', '%' . $searchValue . '%')
+                        ->orWhere('attendees.name', 'like', '%' . $searchValue . '%')
+                        ->orWhere('attendees.email', 'like', '%' . $searchValue . '%')
+                        ->orWhere('attendees.phone', 'like', '%' . $searchValue . '%');
+                  })
+                  
+                  // Search in scan logs
+                  ->orWhereHas('scanLogs', function($q) use ($searchValue) {
+                      $q->where('scan_logs.scanner_id', 'like', '%' . $searchValue . '%')
+                        ->orWhere('scan_logs.status', 'like', '%' . $searchValue . '%')
+                        ->orWhere('scan_logs.notes', 'like', '%' . $searchValue . '%')
+                        ->orWhere('scan_logs.created_at', 'like', '%' . $searchValue . '%');
+                  })
+                  
+                  // Search in scanner information
+                  ->orWhereHas('scanLogs.scanner', function($q) use ($searchValue) {
+                      $q->where('users.name', 'like', '%' . $searchValue . '%')
+                        ->orWhere('users.email', 'like', '%' . $searchValue . '%');
                   });
             });
         }
