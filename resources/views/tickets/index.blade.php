@@ -110,8 +110,8 @@
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
                                                     data-attendee-id="{{ $ticket->attendee->id }}"
                                                     data-event-name="{{ $ticket->event->name ?? 'N/A' }}"
-                                                    data-event-date="{{ optional($ticket->event->date)->format('d/m/Y') ?? 'N/A' }}"
-                                                    data-event-time="{{ optional($ticket->event->date)->format('h:i A') ?? 'N/A' }}"
+                                                    data-event-date="{{ optional($ticket->event->date)->format('d/m/Y') }}"
+                                                    data-event-time="{{ optional($ticket->event->date)->format('h:i A') }}"
                                                     data-event-location="{{ $ticket->event->location ?? 'N/A' }}"
                                                     data-ticket-token="{{ $ticket->token }}">
                                                 <i class="bi bi-envelope"></i>
@@ -227,9 +227,11 @@
             font-size: 0.875rem;
         }
     </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     @endpush
 
     @push('scripts')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
         $(document).ready(function() {
             $('#tickets-table').DataTable({
@@ -321,6 +323,14 @@
 
             // Debug: Log when document is ready
             console.log('Document ready, initializing modal handlers');
+
+            // Configure toastr
+            toastr.options = {
+                "closeButton": true,
+                "progressBar": true,
+                "positionClass": "toast-top-right",
+                "timeOut": "3000"
+            };
 
             // Handle SMS Invitation
             $(document).on('click', '.send-invitation-btn', function(e) {
