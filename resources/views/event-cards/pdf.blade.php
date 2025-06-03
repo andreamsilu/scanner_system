@@ -4,20 +4,23 @@
     <meta charset="utf-8">
     <title>Sendoff Invitation - {{ $card->attendee->name }}</title>
     <style>
+        @page {
+            margin: 0;
+            size: A4;
+        }
         body {
             font-family: Arial, sans-serif;
             margin: 0;
-            padding: 20px;
-            background-color: #f8f9fa;
+            padding: 0;
+            background-color: white;
         }
         .card {
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 40px;
-            max-width: 800px;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
             margin: 0 auto;
-            background-color: white;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            position: relative;
+            box-sizing: border-box;
         }
         .header {
             text-align: center;
@@ -25,66 +28,85 @@
         }
         .header h1 {
             color: #0d6efd;
-            margin-bottom: 20px;
-            font-size: 32px;
+            margin: 0;
+            font-size: 36px;
             font-weight: bold;
         }
         .invitation-content {
             text-align: center;
             margin-bottom: 40px;
+        }
+        .invitation-content p {
+            margin: 0 0 15px 0;
             font-size: 16px;
             line-height: 1.8;
         }
-        .invitation-content p {
-            margin-bottom: 15px;
-        }
         .guest-name {
-            margin: 30px 0;
+            margin: 40px 0;
+        }
+        .guest-name p {
             font-size: 18px;
+            margin-bottom: 10px;
         }
         .underline-text {
-            border-bottom: 1px solid #dee2e6;
+            border-bottom: 2px solid #dee2e6;
             min-height: 30px;
             padding: 5px;
-            margin: 10px 0;
+            margin: 10px auto;
+            max-width: 400px;
+            font-size: 18px;
+        }
+        .event-details {
+            margin-top: 30px;
+        }
+        .event-details strong {
+            color: #0d6efd;
+            font-size: 20px;
         }
         .qr-section {
+            position: absolute;
+            bottom: 20mm;
+            left: 20mm;
+            right: 20mm;
             text-align: center;
-            margin-top: 40px;
-            padding: 30px;
-            border-top: 1px solid #ddd;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
         }
         .qr-code {
             margin: 20px auto;
-            max-width: 200px;
-            padding: 15px;
+            width: 150px;
+            height: 150px;
+            padding: 10px;
             background-color: white;
+            border: 1px solid #dee2e6;
             border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .qr-code img {
             width: 100%;
-            height: auto;
+            height: 100%;
+            object-fit: contain;
         }
         .ticket-info {
-            margin-top: 20px;
+            margin-top: 15px;
             padding: 15px;
             background-color: #f8f9fa;
             border-radius: 8px;
+            display: inline-block;
         }
-        .footer {
-            text-align: center;
-            margin-top: 40px;
-            color: #666;
-            font-size: 12px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
+        .ticket-info p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        .ticket-info small {
+            color: #6c757d;
+            display: block;
+            margin-bottom: 2px;
         }
         .status {
             display: inline-block;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: 4px;
-            font-size: 14px;
+            font-size: 12px;
             font-weight: 500;
         }
         .status.confirmed {
@@ -95,47 +117,84 @@
             background-color: #fff3cd;
             color: #856404;
         }
+        .footer {
+            position: absolute;
+            bottom: 10mm;
+            left: 20mm;
+            right: 20mm;
+            text-align: center;
+            color: #6c757d;
+            font-size: 12px;
+        }
+        @media print {
+            body {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .card {
+                box-shadow: none;
+            }
+            .qr-section {
+                position: fixed;
+                bottom: 20mm;
+            }
+            .footer {
+                position: fixed;
+                bottom: 10mm;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="card">
+        <!-- Header -->
         <div class="header">
             <h1>MWALIKO WA SENDOFF</h1>
         </div>
 
+        <!-- Invitation Content -->
         <div class="invitation-content">
-            <p>
-                Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
-                wanayo furaha kubwa kukualika / kuwaalika
-            </p>
-            <p>
-                Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
-            </p>
+            <div>
+                <p>
+                    Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                    wanayo furaha kubwa kukualika / kuwaalika
+                </p>
+                <p>
+                    Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
+                </p>
+            </div>
+
+            <!-- Guest Name -->
             <div class="guest-name">
                 <p>Jina la Mwalikwa:</p>
                 <div class="underline-text">
                     {{ $card->attendee->name }}
                 </div>
             </div>
-            <p>
-                Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                <strong>ALICE PIENZI CHAMBILA</strong>
-            </p>
-            <p>
-                Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
-                Kuanzia saa 12:00 jioni
-            </p>
-            <p>
-                Katika ukumbi wa GBF Garden Hall,<br>
-                uliopo Dar es Salaam – Tabata, Barakuda.
-            </p>
-            <p>
-                Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
-            </p>
+
+            <!-- Event Details -->
+            <div class="event-details">
+                <p>
+                    Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
+                    <strong>ALICE PIENZI CHAMBILA</strong>
+                </p>
+                <p>
+                    Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
+                    Kuanzia saa 12:00 jioni
+                </p>
+                <p>
+                    Katika ukumbi wa GBF Garden Hall,<br>
+                    uliopo Dar es Salaam – Tabata, Barakuda.
+                </p>
+                <p>
+                    Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
+                </p>
+            </div>
         </div>
 
+        <!-- QR Code Section -->
         <div class="qr-section">
-            <h3>Entry Pass</h3>
+            <h3 style="color: #0d6efd; margin-bottom: 20px;">Entry Pass</h3>
             <div class="qr-code">
                 @php
                     $qrCode = QrCode::size(200)
@@ -145,10 +204,14 @@
                 @endphp
                 <img src="data:image/png;base64,{{ $base64 }}" alt="QR Code">
             </div>
-            <p>Scan this QR code at the venue</p>
+            <p style="color: #6c757d; font-size: 14px; margin: 10px 0;">Scan this QR code at the venue</p>
             <div class="ticket-info">
-                <p><strong>Ticket ID:</strong> {{ $card->attendee->qr_token }}</p>
-                <p><strong>Status:</strong> 
+                <p>
+                    <small>Ticket ID</small>
+                    <span style="font-weight: 500;">{{ $card->attendee->qr_token }}</span>
+                </p>
+                <p>
+                    <small>Status</small>
                     @if($card->attendee->scanned)
                         <span class="status confirmed">Confirmed</span>
                     @else
@@ -158,6 +221,7 @@
             </div>
         </div>
 
+        <!-- Footer -->
         <div class="footer">
             <p>This is an official event invitation. Please present this QR code at the venue.</p>
             <p>Generated on {{ now()->format('F d, Y H:i:s') }}</p>
