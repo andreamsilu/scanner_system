@@ -131,7 +131,7 @@
                     </div>
                     <p style="margin-bottom: 1em; color: #000000;">
                         Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                        <strong style="color: #000000; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
+                        <strong style="color: #bfa46d; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
                         Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
@@ -145,7 +145,7 @@
                         Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
                     </p>
                 </div>
-                <div class="ticket-id" style="color: #000000;">
+                <div class="ticket-id" style="color: #bfa46d; font-weight: bold;">
                     Kitambulisho cha Tiketi: {{ $ticket->token }}
                 </div>
                 <div class="qr">
@@ -156,7 +156,7 @@
                     @endif
                 </div>
                 <div class="footer" style="color: #000000;">
-                    <p>Tafadhali wasilisha tiketi hii mlangoni</p>
+                    <p style="color: #bfa46d; font-weight: bold;">Tafadhali wasilisha tiketi hii mlangoni</p>
                     <p>Kwa maelezo zaidi tafadhali wasiliana na: 0769289824</p>
                 </div>
             </div>
