@@ -21,6 +21,25 @@
 
     <div class="card">
         <div class="card-body">
+            <!-- Search Box -->
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <div class="input-group">
+                        <span class="input-group-text bg-light">
+                            <i class="bi bi-search"></i>
+                        </span>
+                        <input type="text" 
+                               class="form-control" 
+                               id="global-search" 
+                               placeholder="Search tickets by name, email, phone, token, type or event..."
+                               value="{{ request('search') }}">
+                        <button class="btn btn-outline-secondary" type="button" id="clear-search">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <form id="filter-form" class="row g-3 mb-3">
                 <div class="col-md-3">
                     <label for="event_filter" class="form-label">Event</label>
@@ -306,6 +325,38 @@
         .form-select-sm, .form-control-sm {
             font-size: 0.875rem;
         }
+
+        /* Search box styles */
+        #global-search {
+            border-right: none;
+        }
+        
+        #global-search:focus {
+            box-shadow: none;
+            border-color: #ced4da;
+        }
+        
+        #clear-search {
+            border-left: none;
+        }
+        
+        #clear-search:hover {
+            background-color: #e9ecef;
+        }
+        
+        .input-group-text {
+            border-right: none;
+        }
+        
+        .input-group:focus-within {
+            box-shadow: 0 0 0 0.2rem rgba(0,123,255,.25);
+        }
+        
+        .input-group:focus-within .input-group-text,
+        .input-group:focus-within .form-control,
+        .input-group:focus-within .btn {
+            border-color: #80bdff;
+        }
     </style>
     @endpush
 
@@ -319,6 +370,9 @@
                     url: window.location.href,
                     type: 'GET',
                     data: function(d) {
+                        // Add search parameter
+                        d.search = $('#global-search').val();
+                        
                         // Add filter parameters
                         d.event_id = $('#event_filter').val();
                         d.type = $('#type_filter').val();
@@ -326,9 +380,8 @@
                         d.date_from = $('#date_from').val();
                         d.date_to = $('#date_to').val();
                         
-                        // Add pagination and search parameters
+                        // Add pagination and ordering parameters
                         d.page = (d.start / d.length) + 1;
-                        d.search = d.search.value;
                         d.order = d.order[0] ? {
                             column: d.order[0].column,
                             dir: d.order[0].dir
@@ -451,7 +504,7 @@
                      '<"row"<"col-sm-12"tr>>',
                 paging: false,
                 info: false,
-                searching: true,
+                searching: false,
                 lengthMenu: [[15, 25, 50, -1], [15, 25, 50, "All"]],
                 buttons: [
                     {
@@ -533,6 +586,21 @@
                 }
             });
 
+            // Handle global search
+            let searchTimeout;
+            $('#global-search').on('keyup', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function() {
+                    table.ajax.reload();
+                }, 500); // Debounce search for 500ms
+            });
+
+            // Clear search
+            $('#clear-search').on('click', function() {
+                $('#global-search').val('');
+                table.ajax.reload();
+            });
+
             // Handle filter form submission
             $('#filter-form').on('submit', function(e) {
                 e.preventDefault();
@@ -542,6 +610,7 @@
             // Reset filters
             $('.reset-filters').on('click', function() {
                 $('#filter-form')[0].reset();
+                $('#global-search').val('');
                 table.ajax.reload();
             });
         });
