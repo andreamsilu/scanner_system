@@ -248,7 +248,8 @@ $(document).ready(function() {
         serverSide: true,
         responsive: true,
         pageLength: 15,
-        order: [[6, 'desc']], // Sort by created_at by default
+        order: [[6, 'desc']], // Default sort by created_at column in descending order
+        orderCellsTop: true, // Enable ordering on header cells
         ajax: {
             url: "{{ route('events.tickets.data', $event) }}",
             type: 'GET',
@@ -257,6 +258,11 @@ $(document).ready(function() {
                 d.ticket_type = $('#ticketTypeFilter').val();
                 d.status = $('#statusFilter').val();
                 d.date_range = $('#dateRange').val();
+            },
+            error: function(xhr, error, thrown) {
+                console.error('DataTable error:', error);
+                // Show error message to user
+                alert('An error occurred while loading the data. Please try again.');
             }
         },
         columns: [
@@ -264,6 +270,7 @@ $(document).ready(function() {
                 data: null,
                 orderable: false,
                 searchable: false,
+                className: 'select-checkbox',
                 render: function(data, type, row) {
                     return `<input type="checkbox" class="form-check-input ticket-checkbox" value="${row.id}">`;
                 }
@@ -271,14 +278,20 @@ $(document).ready(function() {
             {
                 data: 'ticket_number',
                 name: 'ticket_number',
+                orderable: true,
+                searchable: true,
                 render: function(data, type, row) {
+                    if (type === 'sort') return data; // Return raw data for sorting
                     return `<span class="text-gray-500">${data}</span>`;
                 }
             },
             {
                 data: 'attendee',
                 name: 'attendee',
+                orderable: true,
+                searchable: true,
                 render: function(data, type, row) {
+                    if (type === 'sort') return data ? data.token : ''; // Return token for sorting
                     if (!data) return '<span class="text-muted">Unassigned</span>';
                     return `<span class="text-gray-500">${data.token}</span>`;
                 }
@@ -286,14 +299,20 @@ $(document).ready(function() {
             {
                 data: 'type',
                 name: 'type',
+                orderable: true,
+                searchable: true,
                 render: function(data, type, row) {
+                    if (type === 'sort') return data; // Return raw data for sorting
                     return `<span class="text-gray-500">${data}</span>`;
                 }
             },
             {
                 data: 'status',
                 name: 'status',
+                orderable: true,
+                searchable: true,
                 render: function(data, type, row) {
+                    if (type === 'sort') return data.value; // Return status value for sorting
                     const badgeClass = data.badge === 'success' ? 'bg-success' : 
                                      data.badge === 'info' ? 'bg-info' : 'bg-danger';
                     return `<span class="badge ${badgeClass}">
@@ -306,7 +325,10 @@ $(document).ready(function() {
             {
                 data: 'last_scan',
                 name: 'last_scan',
+                orderable: true,
+                searchable: false,
                 render: function(data, type, row) {
+                    if (type === 'sort') return data ? data.time : ''; // Return timestamp for sorting
                     if (!data) return '<span class="text-muted"><i class="bi bi-clock"></i> Never</span>';
                     return `<span title="${data.time}">
                         <i class="bi bi-clock-history"></i> ${data.diff}
@@ -316,7 +338,10 @@ $(document).ready(function() {
             {
                 data: 'created_at',
                 name: 'created_at',
+                orderable: true,
+                searchable: false,
                 render: function(data, type, row) {
+                    if (type === 'sort') return data; // Return raw timestamp for sorting
                     return `<i class="bi bi-calendar-plus"></i> ${moment(data).format('MMM j, YYYY g:i A')}`;
                 }
             },
@@ -325,6 +350,7 @@ $(document).ready(function() {
                 name: 'actions',
                 orderable: false,
                 searchable: false,
+                className: 'text-end',
                 render: function(data, type, row) {
                     let html = '<div class="btn-group">';
                     
@@ -342,7 +368,7 @@ $(document).ready(function() {
                     
                     if (data.deactivate_url) {
                         html += `<form action="${data.deactivate_url}" method="POST" class="inline-block" 
-                            onsubmit="return confirm(\'Are you sure you want to deactivate this ticket?\');">
+                            onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
                             @csrf
                             @method('PATCH')
                             <button type="submit" class="btn btn-sm btn-warning" title="Deactivate">
@@ -356,18 +382,20 @@ $(document).ready(function() {
                 }
             }
         ],
-        dom: 'Bfrtip',
+        dom: '<"row"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>rtip',
         buttons: [
             {
                 extend: 'collection',
                 text: '<i class="bi bi-download"></i> Export',
+                className: 'btn btn-primary',
                 buttons: [
                     {
                         extend: 'excel',
                         text: '<i class="bi bi-file-earmark-excel"></i> Excel',
                         className: 'btn btn-success',
                         exportOptions: {
-                            columns: [1, 2, 3, 4, 5, 6]
+                            columns: [1, 2, 3, 4, 5, 6],
+                            orthogonal: 'sort' // Use sort data for export
                         }
                     },
                     {
@@ -375,7 +403,8 @@ $(document).ready(function() {
                         text: '<i class="bi bi-file-earmark-pdf"></i> PDF',
                         className: 'btn btn-danger',
                         exportOptions: {
-                            columns: [1, 2, 3, 4, 5, 6]
+                            columns: [1, 2, 3, 4, 5, 6],
+                            orthogonal: 'sort' // Use sort data for export
                         }
                     },
                     {
@@ -383,7 +412,8 @@ $(document).ready(function() {
                         text: '<i class="bi bi-printer"></i> Print',
                         className: 'btn btn-info',
                         exportOptions: {
-                            columns: [1, 2, 3, 4, 5, 6]
+                            columns: [1, 2, 3, 4, 5, 6],
+                            orthogonal: 'sort' // Use sort data for export
                         }
                     }
                 ]
@@ -393,7 +423,21 @@ $(document).ready(function() {
             search: "_INPUT_",
             searchPlaceholder: "Search tickets...",
             emptyTable: "No tickets found for this event.",
-            processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
+            processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>',
+            info: "Showing _START_ to _END_ of _TOTAL_ tickets",
+            infoEmpty: "No tickets available",
+            infoFiltered: "(filtered from _MAX_ total tickets)",
+            lengthMenu: "Show _MENU_ tickets per page",
+            paginate: {
+                first: '<i class="bi bi-chevron-double-left"></i>',
+                previous: '<i class="bi bi-chevron-left"></i>',
+                next: '<i class="bi bi-chevron-right"></i>',
+                last: '<i class="bi bi-chevron-double-right"></i>'
+            }
+        },
+        drawCallback: function(settings) {
+            // Update bulk actions after each draw
+            updateBulkActions();
         }
     });
 

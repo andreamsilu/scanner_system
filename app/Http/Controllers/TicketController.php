@@ -307,21 +307,43 @@ class TicketController extends Controller
         $totalRecords = $query->count();
         $totalFiltered = $totalRecords;
 
+        // Define sortable columns and their relationships
+        $sortableColumns = [
+            'ticket_number' => 'tickets.ticket_number',
+            'attendee' => 'attendees.token',
+            'type' => 'tickets.type',
+            'status' => 'tickets.status',
+            'last_scan' => 'scan_logs.created_at',
+            'created_at' => 'tickets.created_at'
+        ];
+
         // Handle ordering
         $orderColumn = $request->order[0]['column'] ?? 6; // Default to created_at
         $orderDir = $request->order[0]['dir'] ?? 'desc';
-        $columns = ['ticket_number', 'attendee', 'type', 'status', 'last_scan', 'created_at'];
+        $columns = array_keys($sortableColumns);
         
         if (isset($columns[$orderColumn])) {
-            if ($columns[$orderColumn] === 'attendee') {
-                $query->join('attendees', 'tickets.attendee_id', '=', 'attendees.id')
-                      ->orderBy('attendees.token', $orderDir);
-            } elseif ($columns[$orderColumn] === 'last_scan') {
-                $query->leftJoin('scan_logs', 'tickets.id', '=', 'scan_logs.ticket_id')
-                      ->orderBy('scan_logs.created_at', $orderDir);
+            $column = $columns[$orderColumn];
+            $sortColumn = $sortableColumns[$column];
+
+            // Handle special cases for relationships
+            if ($column === 'attendee') {
+                $query->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id')
+                      ->orderBy($sortColumn, $orderDir)
+                      ->select('tickets.*'); // Ensure we select only ticket columns
+            } elseif ($column === 'last_scan') {
+                $query->leftJoin('scan_logs', function($join) {
+                    $join->on('tickets.id', '=', 'scan_logs.ticket_id')
+                         ->whereRaw('scan_logs.id IN (SELECT MAX(id) FROM scan_logs GROUP BY ticket_id)');
+                })
+                ->orderBy($sortColumn, $orderDir)
+                ->select('tickets.*'); // Ensure we select only ticket columns
             } else {
-                $query->orderBy($columns[$orderColumn], $orderDir);
+                $query->orderBy($sortColumn, $orderDir);
             }
+        } else {
+            // Default sorting by created_at desc if no valid column is specified
+            $query->orderBy('tickets.created_at', 'desc');
         }
 
         // Apply pagination
