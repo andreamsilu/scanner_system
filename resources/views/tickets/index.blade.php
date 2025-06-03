@@ -170,7 +170,7 @@
             </div>
 
             <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
-                <div class="text-muted small">
+                <div class="text-muted small pagination-info">
                     Showing {{ $tickets->firstItem() ?? 0 }} to {{ $tickets->lastItem() ?? 0 }} of {{ $tickets->total() }} entries
                 </div>
                 <div>
@@ -221,6 +221,11 @@
         .pagination .page-link {
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
+        }
+
+        /* Hide DataTables info and pagination */
+        .dataTables_info, .dataTables_paginate {
+            display: none !important;
         }
     </style>
     @endpush
