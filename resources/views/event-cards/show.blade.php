@@ -37,7 +37,7 @@
                                         </p>
                                         <div class="guest-name mb-4">
                                             <div class="underline-text mb-3">
-                                                {{ $card->attendee->name ?? '..............................................................................................' }}
+                                                {{ $card->attendee->name }}
                                             </div>
                                         </div>
                                         <p class="mb-3">
