@@ -110,9 +110,9 @@
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
                                                     data-attendee-id="{{ $ticket->attendee->id }}"
                                                     data-event-name="{{ $ticket->event->name ?? 'N/A' }}"
-                                                    data-event-date="{{ optional($ticket->event->date)->format('d/m/Y') }}"
-                                                    data-event-time="{{ optional($ticket->event->date)->format('h:i A') }}"
-                                                    data-event-location="{{ $ticket->event->location ?? 'N/A' }}"
+                                                    data-event-date="{{ optional($ticket->event->start_date)->format('d/m/Y') }}"
+                                                    data-event-time="{{ optional($ticket->event->start_date)->format('h:i A') }}"
+                                                    data-event-location="{{ $ticket->event->venue ?? 'N/A' }}"
                                                     data-ticket-token="{{ $ticket->token }}">
                                                 <i class="bi bi-envelope"></i>
                                             </button>
