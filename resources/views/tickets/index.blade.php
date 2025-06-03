@@ -110,10 +110,11 @@
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
                                                     data-attendee-id="{{ $ticket->attendee->id }}"
                                                     data-event-name="{{ $ticket->event->name ?? 'N/A' }}"
-                                                    data-event-date="{{ optional($ticket->event->start_date)->format('d/m/Y') }}"
-                                                    data-event-time="{{ optional($ticket->event->start_date)->format('h:i A') }}"
-                                                    data-event-location="{{ $ticket->event->venue ?? 'N/A' }}"
-                                                    data-ticket-token="{{ $ticket->token }}">
+                                                    data-event-date="{{ optional($ticket->event->date)->format('d/m/Y') ?? 'N/A' }}"
+                                                    data-event-time="{{ optional($ticket->event->date)->format('h:i A') ?? 'N/A' }}"
+                                                    data-event-location="{{ $ticket->event->location ?? 'N/A' }}"
+                                                    data-ticket-code="{{ $ticket->code }}"
+                                                    data-ticket-url="{{ route('tickets.verify', $ticket->code) }}">
                                                 <i class="bi bi-envelope"></i>
                                             </button>
                                         @endif
@@ -227,11 +228,9 @@
             font-size: 0.875rem;
         }
     </style>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
     @endpush
 
     @push('scripts')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
         $(document).ready(function() {
             $('#tickets-table').DataTable({
@@ -320,117 +319,6 @@
                     info: "Showing _START_ to _END_ of _TOTAL_ tickets"
                 }
             });
-
-            // Debug: Log when document is ready
-            console.log('Document ready, initializing modal handlers');
-
-            // Configure toastr
-            toastr.options = {
-                "closeButton": true,
-                "progressBar": true,
-                "positionClass": "toast-top-right",
-                "timeOut": "3000"
-            };
-
-            // Handle SMS Invitation
-            $(document).on('click', '.send-invitation-btn', function(e) {
-                e.preventDefault();
-                console.log('Send invitation button clicked');
-                
-                const button = $(this);
-                console.log('Button data:', button.data());
-
-                const ticketId = button.data('ticket-id');
-                const attendeeName = button.data('attendee-name');
-                const attendeePhone = button.data('attendee-phone');
-                const eventName = button.data('event-name');
-                const attendeeId = button.data('attendee-id');
-                const eventDate = button.data('event-date');
-                const eventTime = button.data('event-time');
-                const eventLocation = button.data('event-location');
-                const ticketToken = button.data('ticket-token');
-
-                console.log('Extracted data:', {
-                    ticketId,
-                    attendeeName,
-                    attendeePhone,
-                    eventName,
-                    attendeeId,
-                    eventDate,
-                    eventTime,
-                    eventLocation,
-                    ticketToken
-                });
-                
-                // Validate required data
-                if (!attendeeName || !eventName || eventDate === 'N/A' || eventTime === 'N/A') {
-                    console.error('Missing required data:', { attendeeName, eventName, eventDate, eventTime });
-                    toastr.error('Missing required event information. Please check the event details.');
-                    return;
-                }
-                
-                // Set form values
-                $('#invitationTicketId').val(ticketId);
-                $('#invitationAttendeeId').val(attendeeId);
-                
-                // Update display elements
-                $('#invitationAttendeeName').text(attendeeName);
-                $('#invitationAttendeePhone').text(attendeePhone);
-                $('#invitationEventName').text(eventName);
-
-                // Format and display the message preview
-                const messagePreview = `MWALIKO: ${attendeeName.toUpperCase()}
-SENDOFF ya ALICE PIENZI CHAMBILA
-Tarehe: ${eventDate}
-Saa: ${eventTime}
-Mahali: ${eventLocation}
-Token: ${ticketToken}`;
-
-                console.log('Setting message preview:', messagePreview);
-                $('#invitationMessagePreview').text(messagePreview);
-
-                // Debug: Log modal state
-                console.log('Modal elements updated:', {
-                    attendeeName: $('#invitationAttendeeName').text(),
-                    attendeePhone: $('#invitationAttendeePhone').text(),
-                    eventName: $('#invitationEventName').text(),
-                    messagePreview: $('#invitationMessagePreview').text()
-                });
-            });
-
-            // Handle form submission
-            $('#sendInvitationForm').on('submit', function(e) {
-                e.preventDefault();
-                console.log('Form submitted');
-                
-                const form = $(this);
-                const submitBtn = form.find('button[type="submit"]');
-                const originalBtnText = submitBtn.html();
-                
-                submitBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Sending...');
-                
-                $.ajax({
-                    url: form.attr('action'),
-                    method: 'POST',
-                    data: form.serialize(),
-                    success: function(response) {
-                        console.log('SMS sent successfully:', response);
-                        if (response.success) {
-                            toastr.success('Invitation SMS sent successfully');
-                            $('#sendInvitationModal').modal('hide');
-                        } else {
-                            toastr.error(response.message || 'Failed to send invitation SMS');
-                        }
-                    },
-                    error: function(xhr) {
-                        console.error('SMS Error:', xhr.responseJSON);
-                        toastr.error(xhr.responseJSON?.message || 'Failed to send invitation SMS');
-                    },
-                    complete: function() {
-                        submitBtn.prop('disabled', false).html(originalBtnText);
-                    }
-                });
-            });
         });
 
         function printTicket(url) {
@@ -470,6 +358,72 @@ Token: ${ticketToken}`;
                 alert('Failed to copy ticket link. Please try again.');
             });
         }
+
+        // Handle SMS Invitation
+        $('.send-invitation-btn').click(function() {
+            const ticketId = $(this).data('ticket-id');
+            const attendeeName = $(this).data('attendee-name');
+            const attendeePhone = $(this).data('attendee-phone');
+            const eventName = $(this).data('event-name');
+            const attendeeId = $(this).data('attendee-id');
+            const eventDate = $(this).data('event-date');
+            const eventTime = $(this).data('event-time');
+            const eventLocation = $(this).data('event-location');
+            const ticketCode = $(this).data('ticket-code');
+            const ticketUrl = $(this).data('ticket-url');
+            
+            // Validate required data
+            if (!attendeeName || !eventName || eventDate === 'N/A' || eventTime === 'N/A') {
+                toastr.error('Missing required event information. Please check the event details.');
+                return;
+            }
+            
+            $('#invitationTicketId').val(ticketId);
+            $('#invitationAttendeeId').val(attendeeId);
+            $('#invitationAttendeeName').text(attendeeName);
+            $('#invitationAttendeePhone').text(attendeePhone);
+            $('#invitationEventName').text(eventName);
+
+            // Format and display the message preview with actual event data
+            const messagePreview = `MWALIKO: ${attendeeName.toUpperCase()}
+SENDOFF ya ALICE PIENZI CHAMBILA
+Tarehe: ${eventDate}
+Saa: ${eventTime}
+Mahali: ${eventLocation}
+Code: ${ticketCode}
+Link: ${ticketUrl}`;
+
+            $('#invitationMessagePreview').text(messagePreview);
+        });
+
+        $('#sendInvitationForm').submit(function(e) {
+            e.preventDefault();
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalBtnText = submitBtn.html();
+            
+            submitBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Sending...');
+            
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                success: function(response) {
+                    if (response.success) {
+                        toastr.success('Invitation SMS sent successfully');
+                        $('#sendInvitationModal').modal('hide');
+                    } else {
+                        toastr.error(response.message || 'Failed to send invitation SMS');
+                    }
+                },
+                error: function(xhr) {
+                    toastr.error(xhr.responseJSON?.message || 'Failed to send invitation SMS');
+                },
+                complete: function() {
+                    submitBtn.prop('disabled', false).html(originalBtnText);
+                }
+            });
+        });
     </script>
     @endpush
 
@@ -481,7 +435,7 @@ Token: ${ticketToken}`;
                     <h5 class="modal-title" id="sendInvitationModalLabel">Send Invitation SMS</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => request()->route('event')]) }}" method="POST">
+                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => $ticket->event->id]) }}" method="POST">
                     @csrf
                     <input type="hidden" name="ticket_id" id="invitationTicketId">
                     <input type="hidden" name="attendee_id" id="invitationAttendeeId">
@@ -490,15 +444,15 @@ Token: ${ticketToken}`;
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label fw-medium">Attendee</label>
-                                    <p class="mb-0" id="invitationAttendeeName">-</p>
+                                    <p class="mb-0" id="invitationAttendeeName"></p>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-medium">Phone Number</label>
-                                    <p class="mb-0" id="invitationAttendeePhone">-</p>
+                                    <p class="mb-0" id="invitationAttendeePhone"></p>
                                 </div>
                                 <div class="mb-3">
                                     <label class="form-label fw-medium">Event</label>
-                                    <p class="mb-0" id="invitationEventName">-</p>
+                                    <p class="mb-0" id="invitationEventName"></p>
                                 </div>
                             </div>
                             <div class="col-md-6">
@@ -514,7 +468,7 @@ Token: ${ticketToken}`;
                                 <h6 class="card-title mb-0">Message Preview</h6>
                             </div>
                             <div class="card-body">
-                                <pre class="mb-0" id="invitationMessagePreview" style="white-space: pre-wrap; font-family: inherit; font-size: 0.875rem; line-height: 1.5;">-</pre>
+                                <pre class="mb-0" id="invitationMessagePreview" style="white-space: pre-wrap; font-family: inherit; font-size: 0.875rem; line-height: 1.5;"></pre>
                             </div>
                         </div>
                     </div>

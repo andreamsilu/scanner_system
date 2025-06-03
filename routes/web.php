@@ -191,7 +191,6 @@ Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.man
     Route::get('/logs', [App\Http\Controllers\SmsManagementController::class, 'logs'])->name('logs');
     Route::get('/refresh-balance', [App\Http\Controllers\SmsManagementController::class, 'refreshBalance'])->name('refresh-balance');
     Route::post('/test', [App\Http\Controllers\SmsManagementController::class, 'sendTest'])->name('test');
-    Route::get('/events/{event}', [App\Http\Controllers\SmsManagementController::class, 'showEvent'])->name('event');
     Route::post('/events/{event}/send-attendee-invitation', [App\Http\Controllers\SmsManagementController::class, 'sendAttendeeInvitation'])->name('send-attendee-invitation');
 });
 

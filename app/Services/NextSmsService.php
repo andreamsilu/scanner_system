@@ -49,13 +49,10 @@ class NextSmsService extends BaseSmsService
             // Format the API key for authorization
             $apiKey = base64_encode($this->config['api_key']);
 
-            // Generate a unique reference for the message
-            $reference = 'ref_' . uniqid() . '_' . time();
-
             $response = Http::timeout(30) // Increase timeout to 30 seconds
                 ->retry(3, 100) // Retry 3 times with 100ms delay between attempts
                 ->withHeaders([
-                    'Authorization' => 'Basic ' . $apiKey,
+                    'Authorization' => 'Basic ' . $apiKey, // Changed to Basic auth with base64 encoded API key
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json'
                 ])
@@ -64,76 +61,76 @@ class NextSmsService extends BaseSmsService
                     'connect_timeout' => 10, // Connection timeout in seconds
                 ])
                 ->post($this->baseUrl . '/text/single', [
-                    'from' => $this->config['sender_id'],
-                    'to' => $this->formatPhoneNumber($to),
-                    'text' => $message,
-                    'reference' => $reference
+                    'recipient' => $this->formatPhoneNumber($to),
+                    'sender_id' => $this->config['sender_id'],
+                    'message' => $message,
+                    'type' => 'text'
                 ]);
 
             // Log the response for debugging
             Log::info('SMS API response', [
                 'status' => $response->status(),
                 'body' => $response->body(),
-                'headers' => $response->headers(),
-                'reference' => $reference
+                'headers' => $response->headers()
             ]);
 
-            if ($response->successful()) {
-                $responseData = $response->json();
-                return [
-                    'success' => true,
-                    'message_id' => $responseData['message_id'] ?? $reference,
-                    'reference' => $reference,
-                    'status' => 'sent',
-                    'provider_response' => $responseData
-                ];
+            if (!$response->successful()) {
+                $errorMessage = 'NextSMS API error: ' . $response->body();
+                Log::error('SMS API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'headers' => $response->headers(),
+                    'to' => $to,
+                    'message' => $message,
+                    'auth_header' => 'Basic ' . substr($apiKey, 0, 10) . '...' // Log partial auth header for debugging
+                ]);
+                throw new \Exception($errorMessage);
             }
 
-            throw new \Exception('SMS API request failed: ' . $response->body());
+            $result = $response->json();
+            
+            $responseData = [
+                'success' => true,
+                'message_id' => $result['message_id'] ?? null,
+                'to' => $to,
+                'status' => $result['status'] ?? 'sent',
+                'cost' => $result['cost'] ?? null,
+                'units' => $result['units'] ?? null
+            ];
+
+            $this->logActivity('send', $responseData);
+
+            return $responseData;
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('SMS connection error', [
+                'error' => $e->getMessage(),
+                'to' => $to,
+                'message' => $message,
+                'url' => $this->baseUrl . '/text/single'
+            ]);
+            throw new \Exception('Failed to connect to SMS service. Please try again later.');
+        } catch (\Illuminate\Http\Client\RequestException $e) {
+            Log::error('SMS request error', [
+                'error' => $e->getMessage(),
+                'to' => $to,
+                'message' => $message,
+                'response' => $e->response ? [
+                    'status' => $e->response->status(),
+                    'body' => $e->response->body()
+                ] : null
+            ]);
+            throw new \Exception('SMS service request failed. Please try again later.');
         } catch (\Exception $e) {
             Log::error('SMS sending failed', [
                 'error' => $e->getMessage(),
                 'to' => $to,
                 'message' => $message
             ]);
-
-            return [
-                'success' => false,
-                'error' => $e->getMessage(),
-                'status' => 'failed'
-            ];
+            throw $e;
         }
     }
 
-    /**
-     * Format phone number to match NextSMS requirements
-     * 
-     * @param string $phone
-     * @return string
-     */
-    protected function formatPhoneNumber(string $phone): string
-    {
-        // Remove any non-numeric characters
-        $phone = preg_replace('/[^0-9]/', '', $phone);
-        
-        // If number starts with 0, replace with 255
-        if (substr($phone, 0, 1) === '0') {
-            $phone = '255' . substr($phone, 1);
-        }
-        
-        // If number starts with +, remove it
-        if (substr($phone, 0, 1) === '+') {
-            $phone = substr($phone, 1);
-        }
-        
-        // Ensure number starts with 255
-        if (substr($phone, 0, 3) !== '255') {
-            $phone = '255' . $phone;
-        }
-        
-        return $phone;
-    }
-
+    
     /**
      * Get the remaining SMS credits/units
      *

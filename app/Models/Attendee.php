@@ -10,7 +10,6 @@ use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Attendee extends Model
 {
@@ -101,19 +100,11 @@ class Attendee extends Model
     }
 
     /**
-     * Get the tickets for this attendee.
+     * Get the ticket associated with the attendee.
      */
-    public function tickets(): HasMany
+    public function ticket(): HasOne
     {
-        return $this->hasMany(Ticket::class);
-    }
-
-    /**
-     * Get the active ticket for this attendee.
-     */
-    public function ticket()
-    {
-        return $this->tickets()->where('status', 'active')->first();
+        return $this->hasOne(Ticket::class);
     }
 
     /**
@@ -121,7 +112,7 @@ class Attendee extends Model
      */
     public function scopeActive($query)
     {
-        return $query->whereHas('tickets', function ($query) {
+        return $query->whereHas('ticket', function ($query) {
             $query->where('status', 'active');
         });
     }
@@ -131,7 +122,7 @@ class Attendee extends Model
      */
     public function hasActiveTicket(): bool
     {
-        return $this->tickets()->where('status', 'active')->exists();
+        return $this->ticket && $this->ticket->status === 'active';
     }
 
     /**

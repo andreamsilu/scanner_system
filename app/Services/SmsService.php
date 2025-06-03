@@ -96,22 +96,15 @@ class SmsService
     public function sendInvitation(Ticket $ticket): array
     {
         $event = $ticket->event;
-        $attendee = $ticket->attendee;
-
-        if (!$attendee || !$attendee->phone) {
-            throw new \Exception('Attendee does not have a valid phone number.');
-        }
-
         $message = $this->formatInvitationMessage($event, $ticket);
 
         return $this->send(
-            $attendee->phone,
+            $ticket->phone,
             $message,
             'invitation',
             [
                 'ticket_id' => $ticket->id,
                 'event_id' => $event->id,
-                'attendee_id' => $attendee->id
             ]
         );
     }
@@ -166,13 +159,15 @@ class SmsService
             "Tarehe: {event_date}\n" .
             "Saa: {event_time}\n" .
             "Mahali: {event_location}\n" .
-            "Token: {ticket_token}",
+            "Code: {ticket_code}\n" .
+            "Link: {ticket_url}",
             [
                 '{attendee_name}' => strtoupper($ticket->attendee->name),
                 '{event_date}' => Carbon::parse($event->date)->format('d/m/Y'),
                 '{event_time}' => Carbon::parse($event->date)->format('h:i A'),
                 '{event_location}' => $event->location,
-                '{ticket_token}' => $ticket->token,
+                '{ticket_code}' => $ticket->code,
+                '{ticket_url}' => route('tickets.show', $ticket->code),
             ]
         );
     }

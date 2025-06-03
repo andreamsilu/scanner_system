@@ -264,36 +264,57 @@
                         // Add custom filters
                         d.event_filter = $('#event_filter').val();
                         d.status = $('#status').val();
+                    },
+                    error: function(xhr, error, thrown) {
+                        console.error('DataTables error:', error, thrown);
+                        toastr.error('Error loading attendees data. Please try again.');
                     }
                 },
                 columns: [
-                    { data: 'name' },
-                    { data: 'phone' },
-                    { data: 'token' },
+                    { 
+                        data: 'name',
+                        name: 'name'
+                    },
+                    { 
+                        data: 'phone',
+                        name: 'phone'
+                    },
+                    { 
+                        data: 'token',
+                        name: 'token'
+                    },
                     { 
                         data: 'registration_status',
+                        name: 'registration_status',
                         render: function(data) {
-                            return `<span class="badge bg-${data.badge}">${data.status}</span>`;
+                            return data ? `<span class="badge bg-${data.badge}">${data.status}</span>` : '-';
                         }
                     },
                     { 
                         data: 'ticket_status',
+                        name: 'ticket_status',
                         render: function(data) {
-                            return `<span class="badge bg-${data.badge}">${data.status}</span>`;
+                            return data ? `<span class="badge bg-${data.badge}">${data.status}</span>` : '-';
                         }
                     },
                     { 
                         data: 'ticket_type',
+                        name: 'ticket_type',
                         render: function(data) {
                             return data ? `<span class="badge bg-${data.badge}">${data.type}</span>` : '-';
                         }
                     },
-                    { data: 'created_at' },
+                    { 
+                        data: 'created_at',
+                        name: 'created_at'
+                    },
                     { 
                         data: 'actions',
+                        name: 'actions',
                         orderable: false,
                         searchable: false,
                         render: function(data) {
+                            if (!data) return '-';
                             return `
                                 <div class="btn-group">
                                     <a href="${data.view_url}" 
