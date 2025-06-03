@@ -158,7 +158,7 @@
                 </div>
                 <div class="footer">
                     <p>Tafadhali wasilisha tiketi hii mlangoni</p>
-                    <p>Imetengenezwa tarehe {{ now()->format('d-m-Y H:i:s') }}</p>
+                    <p>Kwa maelezo zaidi tafadhali wasiliana na: 0769289824</p>
                 </div>
             </div>
         </div>
