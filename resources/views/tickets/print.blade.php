@@ -128,7 +128,6 @@
                         {{ strtoupper($ticket->attendee->name) }}
                     </div>
                     <div style="text-align: center; margin: 1em 0;">
-                        ..............................................................................................
                     </div>
                     <p style="margin-bottom: 1em;">
                         Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
