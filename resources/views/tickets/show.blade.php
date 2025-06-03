@@ -117,36 +117,35 @@
             <div class="invitation-content">
                 <div class="invitation-message">
                     <h2 style="color: #bfa46d; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
-                    <p style="margin-bottom: 1em;">
+                    <p style="margin-bottom: 1em; color: #000000;">
                         Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
                         wanayo furaha kubwa kukualika / kuwaalika
                     </p>
-                    <p style="margin-bottom: 1em;">
+                    <p style="margin-bottom: 1em; color: #000000;">
                         Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
                     </p>
-                    <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #bfa46d; padding: 0.5em;">
+                    <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #bfa46d; padding: 0.5em; color: #000000;">
                         {{ strtoupper($ticket->attendee->name) }}
                     </div>
                     <div style="text-align: center; margin: 1em 0;">
-                        ..............................................................................................
                     </div>
-                    <p style="margin-bottom: 1em;">
+                    <p style="margin-bottom: 1em; color: #000000;">
                         Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                        <strong style="color: #bfa46d; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
+                        <strong style="color: #000000; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
                     </p>
-                    <p style="margin-bottom: 1em;">
+                    <p style="margin-bottom: 1em; color: #000000;">
                         Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
                         Kuanzia saa 12:00 jioni
                     </p>
-                    <p style="margin-bottom: 1em;">
+                    <p style="margin-bottom: 1em; color: #000000;">
                         Katika ukumbi wa GBF Garden Hall,<br>
                         uliopo Dar es Salaam – Tabata, Barakuda.
                     </p>
-                    <p style="margin-bottom: 1em;">
+                    <p style="margin-bottom: 1em; color: #000000;">
                         Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
                     </p>
                 </div>
-                <div class="ticket-id">
+                <div class="ticket-id" style="color: #000000;">
                     Kitambulisho cha Tiketi: {{ $ticket->token }}
                 </div>
                 <div class="qr">
@@ -156,7 +155,7 @@
                         {!! QrCode::size(140)->generate(route('tickets.verify', $ticket->token)) !!}
                     @endif
                 </div>
-                <div class="footer">
+                <div class="footer" style="color: #000000;">
                     <p>Tafadhali wasilisha tiketi hii mlangoni</p>
                     <p>Kwa maelezo zaidi tafadhali wasiliana na: 0769289824</p>
                 </div>
