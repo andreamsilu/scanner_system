@@ -27,7 +27,7 @@ class AttendeeController extends Controller
         if ($request->ajax()) {
             $query = $event->attendees()->with(['event', 'ticket']);
 
-            // Apply filters
+        // Apply filters
             if ($request->search['value']) {
                 $searchValue = $request->search['value'];
                 $query->where(function($q) use ($searchValue) {

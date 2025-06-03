@@ -90,10 +90,6 @@ class TicketController extends Controller
                         'name' => $ticket->attendee ? $ticket->attendee->name : 'Unassigned',
                         'token' => $ticket->token
                     ],
-                    'event' => [
-                        'name' => $ticket->event->name,
-                        'url' => route('events.show', $ticket->event)
-                    ],
                     'type' => [
                         'type' => ucfirst($ticket->type),
                         'badge' => match($ticket->type) {
@@ -114,10 +110,10 @@ class TicketController extends Controller
                     ] : null,
                     'created_at' => $ticket->created_at->format('d-m-Y'),
                     'actions' => [
-                        'view_url' => route('events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->token]),
-                        'print_url' => route('events.tickets.print', ['event' => $ticket->event_id, 'ticket' => $ticket->token]),
-                        'export_url' => route('events.tickets.export', ['event' => $ticket->event_id, 'ticket' => $ticket->token]),
-                        'deactivate_url' => $ticket->is_active ? route('tickets.deactivate', $ticket) : null
+                        'view_url' => route('events.events.tickets.show', ['event' => $ticket->event_id, 'ticket' => $ticket->token]),
+                        'print_url' => route('events.events.tickets.print', ['event' => $ticket->event_id, 'ticket' => $ticket->token]),
+                        'export_url' => route('events.events.tickets.export', ['event' => $ticket->event_id, 'ticket' => $ticket->token]),
+                        'deactivate_url' => $ticket->is_active ? route('events.events.tickets.deactivate', ['event' => $ticket->event_id, 'ticket' => $ticket->token]) : null
                     ]
                 ];
             });
