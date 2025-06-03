@@ -109,7 +109,7 @@ $(document).ready(function() {
         processing: true,
         serverSide: true,
         ajax: {
-            url: '{{ route("tickets.index") }}',
+            url: '{{ route("events.events.tickets.index", ["event" => $event->id]) }}',
             data: function(d) {
                 d.event_filter = $('#eventFilter').val();
                 d.status = $('#statusFilter').val();
