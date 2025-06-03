@@ -96,15 +96,22 @@ class SmsService
     public function sendInvitation(Ticket $ticket): array
     {
         $event = $ticket->event;
+        $attendee = $ticket->attendee;
+
+        if (!$attendee || !$attendee->phone) {
+            throw new \Exception('Attendee does not have a valid phone number.');
+        }
+
         $message = $this->formatInvitationMessage($event, $ticket);
 
         return $this->send(
-            $ticket->phone,
+            $attendee->phone,
             $message,
             'invitation',
             [
                 'ticket_id' => $ticket->id,
                 'event_id' => $event->id,
+                'attendee_id' => $attendee->id
             ]
         );
     }
