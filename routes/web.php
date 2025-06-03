@@ -175,10 +175,6 @@ Route::middleware('auth')->group(function () {
     // Attendee validation route
     Route::get('/attendees/validate/{token}', [App\Http\Controllers\AttendeeController::class, 'validateToken'])
         ->name('attendees.validate');
-
-    // Tickets routes
-    Route::get('/tickets/data', [TicketController::class, 'data'])->name('tickets.data');
-    Route::get('/events/{event}/tickets/data', [TicketController::class, 'eventData'])->name('events.tickets.data');
 });
 
 // Public check-in route (no auth required)

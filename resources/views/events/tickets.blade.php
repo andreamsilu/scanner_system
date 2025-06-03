@@ -84,21 +84,21 @@
 
     <!-- Tickets Table -->
     <div class="card">
-        <div class="card-body p-0">
+        <div class="card-body">
             <div class="table-responsive">
-                <table class="table table-hover table-sm mb-0" id="tickets-table">
-                    <thead class="table-light">
+                <table class="table table-hover" id="tickets-table">
+                    <thead>
                         <tr>
-                            <th class="py-2">
-                                <input type="checkbox" id="selectAll" class="form-check-input">
+                            <th>
+                                <input type="checkbox" class="form-check-input" id="selectAll">
                             </th>
-                            <th class="py-2">Ticket ID</th>
-                            <th class="py-2">Attendee</th>
-                            <th class="py-2">Type</th>
-                            <th class="py-2">Status</th>
-                            <th class="py-2">Last Scan</th>
-                            <th class="py-2">Created</th>
-                            <th class="py-2 text-end">Actions</th>
+                            <th><i class="bi bi-upc-scan"></i> Ticket ID</th>
+                            <th><i class="bi bi-person"></i> Attendee</th>
+                            <th><i class="bi bi-tag"></i> Type</th>
+                            <th><i class="bi bi-toggle-on"></i> Status</th>
+                            <th><i class="bi bi-clock-history"></i> Last Scan</th>
+                            <th><i class="bi bi-calendar-plus"></i> Created At</th>
+                            <th><i class="bi bi-gear"></i> Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -226,182 +226,13 @@
 
 <script>
 $(document).ready(function() {
-    // Add CSRF token to all AJAX requests
-    $.ajaxSetup({
-        headers: {
-            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
-    });
-
     // Initialize DataTable
     const table = $('#tickets-table').DataTable({
+        responsive: true,
         processing: true,
-        serverSide: true,
-        ajax: {
-            url: '{{ route("events.tickets.data", $event) }}',
-            type: 'GET',
-            error: function (xhr, error, thrown) {
-                console.error('DataTables error:', error, thrown);
-                let errorMessage = 'An error occurred while loading the data.';
-                if (xhr.responseJSON && xhr.responseJSON.message) {
-                    errorMessage = xhr.responseJSON.message;
-                }
-                toastr.error(errorMessage);
-            }
-        },
-        columns: [
-            { 
-                data: null,
-                name: 'checkbox',
-                orderable: false,
-                searchable: false,
-                render: function(data, type, row) {
-                    return `<input type="checkbox" class="form-check-input ticket-checkbox" value="${row.id}">`;
-                }
-            },
-            { 
-                data: 'token',
-                name: 'token',
-                render: function(data) {
-                    return `<span class="text-muted">#${data}</span>`;
-                }
-            },
-            { 
-                data: 'attendee',
-                name: 'attendee',
-                render: function(data) {
-                    if (data) {
-                        return `<div class="d-flex flex-column">
-                            <span class="fw-medium">${data.name}</span>
-                            ${data.phone ? `<small class="text-muted">${data.phone}</small>` : ''}
-                        </div>`;
-                    }
-                    return '<span class="text-muted">Unassigned</span>';
-                }
-            },
-            { 
-                data: 'type',
-                name: 'type',
-                render: function(data) {
-                    const badgeClass = {
-                        'vip': 'bg-warning',
-                        'regular': 'bg-secondary',
-                        'single': 'bg-primary',
-                        'double': 'bg-success'
-                    }[data] || 'bg-secondary';
-                    return `<span class="badge ${badgeClass} px-2 py-1">${data.charAt(0).toUpperCase() + data.slice(1)}</span>`;
-                }
-            },
-            { 
-                data: 'status',
-                name: 'status',
-                render: function(data) {
-                    const badgeClass = data === 'active' ? 'bg-success' : 'bg-danger';
-                    const statusText = data === 'active' ? 'Active' : 'Inactive';
-                    return `<span class="badge ${badgeClass} px-2 py-1">${statusText}</span>`;
-                }
-            },
-            { 
-                data: 'last_scan',
-                name: 'last_scan',
-                render: function(data) {
-                    return data ? `<span class="text-muted" title="${data.created_at}">${data.diff_for_humans}</span>` : '<span class="text-muted">Never</span>';
-                }
-            },
-            { 
-                data: 'created_at',
-                name: 'created_at',
-                render: function(data) {
-                    return `<span class="text-muted">${data}</span>`;
-                }
-            },
-            { 
-                data: null,
-                name: 'actions',
-                orderable: false,
-                searchable: false,
-                render: function(data, type, row) {
-                    return `
-                        <div class="btn-group btn-group-sm">
-                            <a href="/events/${row.event.id}/tickets/${row.token}" 
-                               class="btn btn-outline-info" 
-                               title="View Details">
-                                <i class="bi bi-eye"></i>
-                            </a>
-                            <button type="button"
-                                    class="btn btn-outline-primary"
-                                    title="Print Ticket"
-                                    onclick="printTicket('/events/${row.event.id}/tickets/${row.token}/print')">
-                                <i class="bi bi-printer"></i>
-                            </button>
-                            ${row.attendee && row.attendee.phone ? `
-                                <button type="button"
-                                        class="btn btn-outline-success send-invitation-btn"
-                                        title="Send Invitation SMS"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#sendInvitationModal"
-                                        data-ticket-id="${row.id}"
-                                        data-attendee-name="${row.attendee.name}"
-                                        data-attendee-phone="${row.attendee.phone}"
-                                        data-attendee-id="${row.attendee.id}"
-                                        data-event-name="${row.event.name}">
-                                    <i class="bi bi-envelope"></i>
-                                </button>
-                            ` : ''}
-                            <button type="button" 
-                                    class="btn btn-outline-success" 
-                                    title="Share Ticket"
-                                    data-bs-toggle="dropdown" 
-                                    aria-expanded="false">
-                                <i class="bi bi-share"></i>
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('${row.event.name}', '${row.attendee ? row.attendee.name : ''}', '${row.token}', '${row.event.start_date}', '${row.verify_url}')">
-                                        <i class="fab fa-whatsapp me-2"></i> WhatsApp
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="shareViaSMS('${row.event.name}', '${row.attendee ? row.attendee.name : ''}', '${row.token}', '${row.event.start_date}', '${row.verify_url}')">
-                                        <i class="fas fa-sms me-2"></i> SMS
-                                    </a>
-                                </li>
-                                <li>
-                                    <a class="dropdown-item" href="#" onclick="copyTicketLink('${row.verify_url}')">
-                                        <i class="fas fa-link me-2"></i> Copy Link
-                                    </a>
-                                </li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li>
-                                    <a class="dropdown-item" href="/events/${row.event.id}/tickets/${row.token}/export" target="_blank">
-                                        <i class="bi bi-file-pdf me-2"></i> Download PDF
-                                    </a>
-                                </li>
-                            </ul>
-                            ${row.is_active ? `
-                                <form action="/events/${row.event.id}/tickets/${row.token}/deactivate" 
-                                      method="POST" 
-                                      class="d-inline"
-                                      onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
-                                    @csrf
-                                    @method('PATCH')
-                                    <button type="submit" 
-                                            class="btn btn-outline-warning" 
-                                            title="Deactivate">
-                                        <i class="bi bi-x-circle"></i>
-                                    </button>
-                                </form>
-                            ` : ''}
-                        </div>
-                    `;
-                }
-            }
-        ],
+        pageLength: 15,
         order: [[6, 'desc']], // Sort by created_at by default
-        pageLength: 20,
-        dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
-             '<"row"<"col-sm-12"tr>>' +
-             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        dom: 'Bfrtip',
         buttons: [
             {
                 extend: 'collection',
@@ -434,13 +265,34 @@ $(document).ready(function() {
                 ]
             }
         ],
+        columnDefs: [
+            { orderable: false, targets: [0, 7] }, // Disable sorting on checkbox and actions columns
+            { responsivePriority: 1, targets: [1, 2, 7] }, // Ticket ID, Attendee, and Actions are most important
+            { responsivePriority: 2, targets: [3, 4] }, // Type and Status are second priority
+            { responsivePriority: 3, targets: [5, 6] }  // Last Scan and Created At are least priority
+        ],
         language: {
             search: "_INPUT_",
             searchPlaceholder: "Search tickets...",
-            lengthMenu: "_MENU_ per page",
-            info: "Showing _START_ to _END_ of _TOTAL_ tickets",
+            emptyTable: "No tickets found for this event.",
             processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
         }
+    });
+
+    // Initialize DateRangePicker
+    $('#dateRange').daterangepicker({
+        autoUpdateInput: false,
+        locale: {
+            cancelLabel: 'Clear'
+        }
+    });
+
+    $('#dateRange').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+    });
+
+    $('#dateRange').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
     });
 
     // Handle Select All Checkbox
@@ -498,6 +350,17 @@ $(document).ready(function() {
             
             // Add your bulk activate logic here
             console.log('Activating tickets:', selectedIds);
+        }
+    });
+
+    $('#bulkDelete').click(function() {
+        if (confirm('Are you sure you want to delete selected tickets? This action cannot be undone.')) {
+            const selectedIds = $('.ticket-checkbox:checked').map(function() {
+                return $(this).val();
+            }).get();
+            
+            // Add your bulk delete logic here
+            console.log('Deleting tickets:', selectedIds);
         }
     });
 });
