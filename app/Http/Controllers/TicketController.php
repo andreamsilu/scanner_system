@@ -261,4 +261,108 @@ class TicketController extends Controller
         
         return $pdf->download('ticket-' . $ticket->token . '.pdf');
     }
+
+    /**
+     * Get tickets data for DataTable with server-side processing
+     */
+    public function getTicketsData(Request $request, Event $event)
+    {
+        $query = $event->tickets()
+            ->with(['attendee', 'scanLogs' => function($query) {
+                $query->latest();
+            }]);
+
+        // Handle search
+        if ($request->search['value']) {
+            $searchValue = $request->search['value'];
+            $query->where(function($q) use ($searchValue) {
+                $q->where('ticket_number', 'like', '%' . $searchValue . '%')
+                  ->orWhere('type', 'like', '%' . $searchValue . '%')
+                  ->orWhereHas('attendee', function($q) use ($searchValue) {
+                      $q->where('token', 'like', '%' . $searchValue . '%')
+                        ->orWhere('name', 'like', '%' . $searchValue . '%');
+                  });
+            });
+        }
+
+        // Handle filters
+        if ($request->ticket_type) {
+            $query->where('type', $request->ticket_type);
+        }
+
+        if ($request->status) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->date_range) {
+            $dates = explode(' - ', $request->date_range);
+            if (count($dates) === 2) {
+                $startDate = \Carbon\Carbon::parse($dates[0])->startOfDay();
+                $endDate = \Carbon\Carbon::parse($dates[1])->endOfDay();
+                $query->whereBetween('created_at', [$startDate, $endDate]);
+            }
+        }
+
+        // Get total count before pagination
+        $totalRecords = $query->count();
+        $totalFiltered = $totalRecords;
+
+        // Handle ordering
+        $orderColumn = $request->order[0]['column'] ?? 6; // Default to created_at
+        $orderDir = $request->order[0]['dir'] ?? 'desc';
+        $columns = ['ticket_number', 'attendee', 'type', 'status', 'last_scan', 'created_at'];
+        
+        if (isset($columns[$orderColumn])) {
+            if ($columns[$orderColumn] === 'attendee') {
+                $query->join('attendees', 'tickets.attendee_id', '=', 'attendees.id')
+                      ->orderBy('attendees.token', $orderDir);
+            } elseif ($columns[$orderColumn] === 'last_scan') {
+                $query->leftJoin('scan_logs', 'tickets.id', '=', 'scan_logs.ticket_id')
+                      ->orderBy('scan_logs.created_at', $orderDir);
+            } else {
+                $query->orderBy($columns[$orderColumn], $orderDir);
+            }
+        }
+
+        // Apply pagination
+        $start = $request->start ?? 0;
+        $length = $request->length ?? 15;
+        $tickets = $query->skip($start)->take($length)->get();
+
+        // Transform data for DataTables
+        $data = $tickets->map(function ($ticket) use ($event) {
+            return [
+                'id' => $ticket->id,
+                'ticket_number' => $ticket->ticket_number,
+                'attendee' => $ticket->attendee ? [
+                    'token' => $ticket->attendee->token,
+                    'name' => $ticket->attendee->name
+                ] : null,
+                'type' => $ticket->type,
+                'status' => [
+                    'value' => $ticket->status,
+                    'badge' => $ticket->status === 'active' ? 'success' : 
+                             ($ticket->status === 'used' ? 'info' : 'danger')
+                ],
+                'last_scan' => $ticket->scanLogs->first() ? [
+                    'time' => $ticket->scanLogs->first()->created_at->format('Y-m-d H:i:s'),
+                    'diff' => $ticket->scanLogs->first()->created_at->diffForHumans()
+                ] : null,
+                'created_at' => $ticket->created_at->format('Y-m-d H:i:s'),
+                'actions' => [
+                    'view_url' => route('events.tickets.show', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
+                    'print_url' => route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
+                    'deactivate_url' => $ticket->status === 'active' ? 
+                        route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]) : null
+                ]
+            ];
+        });
+
+        return response()->json([
+            'draw' => $request->draw,
+            'recordsTotal' => $totalRecords,
+            'recordsFiltered' => $totalFiltered,
+            'data' => $data
+        ]);
+    }
 } 

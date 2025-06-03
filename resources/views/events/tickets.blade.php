@@ -226,12 +226,136 @@
 
 <script>
 $(document).ready(function() {
-    // Initialize DataTable
+    // Initialize DateRangePicker
+    $('#dateRange').daterangepicker({
+        autoUpdateInput: false,
+        locale: {
+            cancelLabel: 'Clear'
+        }
+    });
+
+    $('#dateRange').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+    });
+
+    $('#dateRange').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+    });
+
+    // Initialize DataTable with server-side processing
     const table = $('#tickets-table').DataTable({
-        responsive: true,
         processing: true,
+        serverSide: true,
+        responsive: true,
         pageLength: 15,
         order: [[6, 'desc']], // Sort by created_at by default
+        ajax: {
+            url: "{{ route('events.tickets.data', $event) }}",
+            type: 'GET',
+            data: function(d) {
+                // Add custom filters to the request
+                d.ticket_type = $('#ticketTypeFilter').val();
+                d.status = $('#statusFilter').val();
+                d.date_range = $('#dateRange').val();
+            }
+        },
+        columns: [
+            {
+                data: null,
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    return `<input type="checkbox" class="form-check-input ticket-checkbox" value="${row.id}">`;
+                }
+            },
+            {
+                data: 'ticket_number',
+                name: 'ticket_number',
+                render: function(data, type, row) {
+                    return `<span class="text-gray-500">${data}</span>`;
+                }
+            },
+            {
+                data: 'attendee',
+                name: 'attendee',
+                render: function(data, type, row) {
+                    if (!data) return '<span class="text-muted">Unassigned</span>';
+                    return `<span class="text-gray-500">${data.token}</span>`;
+                }
+            },
+            {
+                data: 'type',
+                name: 'type',
+                render: function(data, type, row) {
+                    return `<span class="text-gray-500">${data}</span>`;
+                }
+            },
+            {
+                data: 'status',
+                name: 'status',
+                render: function(data, type, row) {
+                    const badgeClass = data.badge === 'success' ? 'bg-success' : 
+                                     data.badge === 'info' ? 'bg-info' : 'bg-danger';
+                    return `<span class="badge ${badgeClass}">
+                        <i class="bi bi-${data.badge === 'success' ? 'check-circle' : 
+                                        data.badge === 'info' ? 'info-circle' : 'x-circle'}"></i> 
+                        ${data.value}
+                    </span>`;
+                }
+            },
+            {
+                data: 'last_scan',
+                name: 'last_scan',
+                render: function(data, type, row) {
+                    if (!data) return '<span class="text-muted"><i class="bi bi-clock"></i> Never</span>';
+                    return `<span title="${data.time}">
+                        <i class="bi bi-clock-history"></i> ${data.diff}
+                    </span>`;
+                }
+            },
+            {
+                data: 'created_at',
+                name: 'created_at',
+                render: function(data, type, row) {
+                    return `<i class="bi bi-calendar-plus"></i> ${moment(data).format('MMM j, YYYY g:i A')}`;
+                }
+            },
+            {
+                data: 'actions',
+                name: 'actions',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    let html = '<div class="btn-group">';
+                    
+                    if (data.view_url) {
+                        html += `<a href="${data.view_url}" class="text-indigo-600 hover:text-indigo-900" title="View Details">
+                            <i class="bi bi-eye"></i>
+                        </a>`;
+                    }
+                    
+                    if (data.print_url) {
+                        html += `<a href="${data.print_url}" class="text-green-600 hover:text-green-900" title="Print Ticket" target="_blank">
+                            <i class="bi bi-printer"></i>
+                        </a>`;
+                    }
+                    
+                    if (data.deactivate_url) {
+                        html += `<form action="${data.deactivate_url}" method="POST" class="inline-block" 
+                            onsubmit="return confirm(\'Are you sure you want to deactivate this ticket?\');">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" class="btn btn-sm btn-warning" title="Deactivate">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </form>`;
+                    }
+                    
+                    html += '</div>';
+                    return html;
+                }
+            }
+        ],
         dom: 'Bfrtip',
         buttons: [
             {
@@ -265,34 +389,12 @@ $(document).ready(function() {
                 ]
             }
         ],
-        columnDefs: [
-            { orderable: false, targets: [0, 7] }, // Disable sorting on checkbox and actions columns
-            { responsivePriority: 1, targets: [1, 2, 7] }, // Ticket ID, Attendee, and Actions are most important
-            { responsivePriority: 2, targets: [3, 4] }, // Type and Status are second priority
-            { responsivePriority: 3, targets: [5, 6] }  // Last Scan and Created At are least priority
-        ],
         language: {
             search: "_INPUT_",
             searchPlaceholder: "Search tickets...",
             emptyTable: "No tickets found for this event.",
             processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
         }
-    });
-
-    // Initialize DateRangePicker
-    $('#dateRange').daterangepicker({
-        autoUpdateInput: false,
-        locale: {
-            cancelLabel: 'Clear'
-        }
-    });
-
-    $('#dateRange').on('apply.daterangepicker', function(ev, picker) {
-        $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-    });
-
-    $('#dateRange').on('cancel.daterangepicker', function(ev, picker) {
-        $(this).val('');
     });
 
     // Handle Select All Checkbox
@@ -302,7 +404,7 @@ $(document).ready(function() {
     });
 
     // Handle Individual Checkboxes
-    $('.ticket-checkbox').change(function() {
+    $(document).on('change', '.ticket-checkbox', function() {
         updateBulkActions();
     });
 
@@ -315,19 +417,7 @@ $(document).ready(function() {
 
     // Apply Filters
     $('#applyFilters').click(function() {
-        const typeFilter = $('#ticketTypeFilter').val();
-        const statusFilter = $('#statusFilter').val();
-        const dateRange = $('#dateRange').val();
-
-        table.column(3).search(typeFilter);
-        table.column(4).search(statusFilter);
-        
-        if (dateRange) {
-            const dates = dateRange.split(' - ');
-            table.draw();
-        }
-
-        table.draw();
+        table.ajax.reload();
     });
 
     // Bulk Actions

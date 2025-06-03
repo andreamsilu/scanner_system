@@ -94,6 +94,7 @@ Route::middleware('auth')->group(function () {
                 // Event tickets management
                 Route::prefix('{event}/tickets')->name('events.tickets.')->group(function () {
                     Route::get('/', [TicketController::class, 'index'])->name('index');
+                    Route::get('/data', [TicketController::class, 'getTicketsData'])->name('data');
                     Route::get('/create/{attendee}', [TicketController::class, 'create'])->name('create');
                     Route::post('/store/{attendee}', [TicketController::class, 'store'])->name('store');
                     Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
