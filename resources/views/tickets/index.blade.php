@@ -518,7 +518,7 @@
                     <h5 class="modal-title" id="sendInvitationModalLabel">Send Invitation SMS</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => $ticket->event->id]) }}" method="POST">
+                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => request()->route('event')]) }}" method="POST">
                     @csrf
                     <input type="hidden" name="ticket_id" id="invitationTicketId">
                     <div class="modal-body">
