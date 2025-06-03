@@ -19,212 +19,208 @@
         </div>
     @endif
 
-    <div class="card">
-        <div class="card-body">
-            <form id="filter-form" class="row g-3 mb-3">
-                <div class="col-md-3">
-                    <label for="event_filter" class="form-label">Event</label>
-                    <select class="form-select form-select-sm" id="event_filter" name="event_id">
-                        <option value="">All Events</option>
-                        @foreach($events as $event)
-                            <option value="{{ $event->id }}" {{ request('event_id') == $event->id ? 'selected' : '' }}>
-                                {{ $event->name }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label for="type_filter" class="form-label">Ticket Type</label>
-                    <select class="form-select form-select-sm" id="type_filter" name="type">
-                        <option value="">All Types</option>
-                        <option value="vip" {{ request('type') == 'vip' ? 'selected' : '' }}>VIP</option>
-                        <option value="regular" {{ request('type') == 'regular' ? 'selected' : '' }}>Regular</option>
-                        <option value="single" {{ request('type') == 'single' ? 'selected' : '' }}>Single</option>
-                        <option value="double" {{ request('type') == 'double' ? 'selected' : '' }}>Double</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label for="status_filter" class="form-label">Status</label>
-                    <select class="form-select form-select-sm" id="status_filter" name="status">
-                        <option value="">All Status</option>
-                        <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
-                        <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label for="date_from" class="form-label">Date From</label>
-                    <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" 
-                           value="{{ request('date_from') }}">
-                </div>
-                <div class="col-md-2">
-                    <label for="date_to" class="form-label">Date To</label>
-                    <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" 
-                           value="{{ request('date_to') }}">
-                </div>
-                <div class="col-md-1 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary btn-sm w-100">
-                        <i class="bi bi-search"></i> Filter
-                    </button>
-                </div>
-            </form>
+    <!-- Filters -->
+    <form id="filter-form" class="row g-3 mb-4">
+        <div class="col-md-3">
+            <label for="event_filter" class="form-label">Event</label>
+            <select class="form-select form-select-sm" id="event_filter" name="event_id">
+                <option value="">All Events</option>
+                @foreach($events as $event)
+                    <option value="{{ $event->id }}" {{ request('event_id') == $event->id ? 'selected' : '' }}>
+                        {{ $event->name }}
+                    </option>
+                @endforeach
+            </select>
         </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover table-sm mb-0" id="tickets-table">
-                    <thead class="table-light">
-                        <tr>
-                            <th class="py-2">Attendee</th>
-                            <th class="py-2">Event</th>
-                            <th class="py-2">Type</th>
-                            <th class="py-2">Status</th>
-                            <th class="py-2">Last Scan</th>
-                            <th class="py-2">Created</th>
-                            <th class="py-2 text-end">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse($tickets as $ticket)
-                            <tr>
-                                <td class="py-2">
-                                    @if($ticket->attendee)
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-medium">{{ $ticket->attendee->name }}</span>
-                                            <small class="text-muted">#{{ $ticket->token }}</small>
-                                        </div>
-                                    @else
-                                        <span class="text-muted">Unassigned</span>
-                                    @endif
-                                </td>
-                                <td class="py-2">
-                                    <a href="{{ route('events.show', $ticket->event) }}" class="text-decoration-none">
-                                        {{ Str::limit($ticket->event->name, 20) }}
-                                    </a>
-                                </td>
-                                <td class="py-2">
-                                    @php
-                                        $ticketType = $ticket->type;
-                                        $badgeClass = match($ticketType) {
-                                            'vip' => 'bg-warning',
-                                            'regular' => 'bg-secondary',
-                                            'single' => 'bg-primary',
-                                            'double' => 'bg-success',
-                                            default => 'bg-secondary'
-                                        };
-                                    @endphp
-                                    <span class="badge {{ $badgeClass }} px-2 py-1">
-                                        {{ ucfirst($ticketType) }}
-                                    </span>
-                                </td>
-                                <td class="py-2">
-                                    @if($ticket->is_active)
-                                        <span class="badge bg-success px-2 py-1">Active</span>
-                                    @else
-                                        <span class="badge bg-danger px-2 py-1">Inactive</span>
-                                    @endif
-                                </td>
-                                <td class="py-2">
-                                    @if($ticket->last_scan)
-                                        <span class="text-muted" title="{{ $ticket->last_scan->created_at->format('d-m-Y H:i') }}">
-                                            {{ $ticket->last_scan->created_at->diffForHumans() }}
-                                        </span>
-                                    @else
-                                        <span class="text-muted">Never</span>
-                                    @endif
-                                </td>
-                                <td class="py-2">
-                                    <span class="text-muted">{{ $ticket->created_at->format('d-m-Y') }}</span>
-                                </td>
-                                <td class="py-2 text-end">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('events.events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" 
-                                           class="btn btn-outline-info" 
-                                           title="View Details">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <button type="button"
-                                                class="btn btn-outline-primary"
-                                                title="Print Ticket"
-                                                onclick="printTicket('{{ route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
-                                            <i class="bi bi-printer"></i>
-                                        </button>
-                                        @if($ticket->attendee && $ticket->attendee->phone)
-                                            <button type="button"
-                                                    class="btn btn-outline-success send-invitation-btn"
-                                                    title="Send Invitation SMS"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#sendInvitationModal"
-                                                    data-ticket-id="{{ $ticket->id }}"
-                                                    data-attendee-name="{{ $ticket->attendee->name }}"
-                                                    data-attendee-phone="{{ $ticket->attendee->phone }}"
-                                                    data-attendee-id="{{ $ticket->attendee->id }}"
-                                                    data-event-name="{{ $ticket->event->name }}">
-                                                <i class="bi bi-envelope"></i>
-                                            </button>
-                                        @endif
-                                        <button type="button" 
-                                                class="btn btn-outline-success" 
-                                                title="Share Ticket"
-                                                data-bs-toggle="dropdown" 
-                                                aria-expanded="false">
-                                            <i class="bi bi-share"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fab fa-whatsapp me-2"></i> WhatsApp
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="shareViaSMS('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fas fa-sms me-2"></i> SMS
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fas fa-link me-2"></i> Copy Link
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item" href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
-                                                    <i class="bi bi-file-pdf me-2"></i> Download PDF
-                                                </a>
-                                            </li>
-                                        </ul>
-                                        @if($ticket->is_active)
-                                            <form action="{{ route('tickets.deactivate', $ticket) }}" 
-                                                  method="POST" 
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" 
-                                                        class="btn btn-outline-warning" 
-                                                        title="Deactivate">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-3">No tickets found.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
-            </div>
+        <div class="col-md-2">
+            <label for="type_filter" class="form-label">Ticket Type</label>
+            <select class="form-select form-select-sm" id="type_filter" name="type">
+                <option value="">All Types</option>
+                <option value="vip" {{ request('type') == 'vip' ? 'selected' : '' }}>VIP</option>
+                <option value="regular" {{ request('type') == 'regular' ? 'selected' : '' }}>Regular</option>
+                <option value="single" {{ request('type') == 'single' ? 'selected' : '' }}>Single</option>
+                <option value="double" {{ request('type') == 'double' ? 'selected' : '' }}>Double</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="status_filter" class="form-label">Status</label>
+            <select class="form-select form-select-sm" id="status_filter" name="status">
+                <option value="">All Status</option>
+                <option value="active" {{ request('status') == 'active' ? 'selected' : '' }}>Active</option>
+                <option value="inactive" {{ request('status') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label for="date_from" class="form-label">Date From</label>
+            <input type="date" class="form-control form-control-sm" id="date_from" name="date_from" 
+                   value="{{ request('date_from') }}">
+        </div>
+        <div class="col-md-2">
+            <label for="date_to" class="form-label">Date To</label>
+            <input type="date" class="form-control form-control-sm" id="date_to" name="date_to" 
+                   value="{{ request('date_to') }}">
+        </div>
+        <div class="col-md-1 d-flex align-items-end">
+            <button type="submit" class="btn btn-primary btn-sm w-100">
+                <i class="bi bi-search"></i> Filter
+            </button>
+        </div>
+    </form>
 
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
-                <div class="text-muted small pagination-info">
-                    Showing {{ $tickets->firstItem() ?? 0 }} to {{ $tickets->lastItem() ?? 0 }} of {{ $tickets->total() }} entries
-                </div>
-                <div>
-                    {{ $tickets->links() }}
-                </div>
-            </div>
+    <div class="table-responsive">
+        <table class="table table-hover table-sm" id="tickets-table">
+            <thead class="table-light">
+                <tr>
+                    <th class="py-2">Attendee</th>
+                    <th class="py-2">Event</th>
+                    <th class="py-2">Type</th>
+                    <th class="py-2">Status</th>
+                    <th class="py-2">Last Scan</th>
+                    <th class="py-2">Created</th>
+                    <th class="py-2 text-end">Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                @forelse($tickets as $ticket)
+                    <tr>
+                        <td class="py-2">
+                            @if($ticket->attendee)
+                                <div class="d-flex flex-column">
+                                    <span class="fw-medium">{{ $ticket->attendee->name }}</span>
+                                    <small class="text-muted">#{{ $ticket->token }}</small>
+                                </div>
+                            @else
+                                <span class="text-muted">Unassigned</span>
+                            @endif
+                        </td>
+                        <td class="py-2">
+                            <a href="{{ route('events.show', $ticket->event) }}" class="text-decoration-none">
+                                {{ Str::limit($ticket->event->name, 20) }}
+                            </a>
+                        </td>
+                        <td class="py-2">
+                            @php
+                                $ticketType = $ticket->type;
+                                $badgeClass = match($ticketType) {
+                                    'vip' => 'bg-warning',
+                                    'regular' => 'bg-secondary',
+                                    'single' => 'bg-primary',
+                                    'double' => 'bg-success',
+                                    default => 'bg-secondary'
+                                };
+                            @endphp
+                            <span class="badge {{ $badgeClass }} px-2 py-1">
+                                {{ ucfirst($ticketType) }}
+                            </span>
+                        </td>
+                        <td class="py-2">
+                            @if($ticket->is_active)
+                                <span class="badge bg-success px-2 py-1">Active</span>
+                            @else
+                                <span class="badge bg-danger px-2 py-1">Inactive</span>
+                            @endif
+                        </td>
+                        <td class="py-2">
+                            @if($ticket->last_scan)
+                                <span class="text-muted" title="{{ $ticket->last_scan->created_at->format('d-m-Y H:i') }}">
+                                    {{ $ticket->last_scan->created_at->diffForHumans() }}
+                                </span>
+                            @else
+                                <span class="text-muted">Never</span>
+                            @endif
+                        </td>
+                        <td class="py-2">
+                            <span class="text-muted">{{ $ticket->created_at->format('d-m-Y') }}</span>
+                        </td>
+                        <td class="py-2 text-end">
+                            <div class="btn-group btn-group-sm">
+                                <a href="{{ route('events.events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" 
+                                   class="btn btn-outline-info" 
+                                   title="View Details">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button type="button"
+                                        class="btn btn-outline-primary"
+                                        title="Print Ticket"
+                                        onclick="printTicket('{{ route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
+                                    <i class="bi bi-printer"></i>
+                                </button>
+                                @if($ticket->attendee && $ticket->attendee->phone)
+                                    <button type="button"
+                                            class="btn btn-outline-success send-invitation-btn"
+                                            title="Send Invitation SMS"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#sendInvitationModal"
+                                            data-ticket-id="{{ $ticket->id }}"
+                                            data-attendee-name="{{ $ticket->attendee->name }}"
+                                            data-attendee-phone="{{ $ticket->attendee->phone }}"
+                                            data-attendee-id="{{ $ticket->attendee->id }}"
+                                            data-event-name="{{ $ticket->event->name }}">
+                                        <i class="bi bi-envelope"></i>
+                                    </button>
+                                @endif
+                                <button type="button" 
+                                        class="btn btn-outline-success" 
+                                        title="Share Ticket"
+                                        data-bs-toggle="dropdown" 
+                                        aria-expanded="false">
+                                    <i class="bi bi-share"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
+                                            <i class="fab fa-whatsapp me-2"></i> WhatsApp
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="shareViaSMS('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
+                                            <i class="fas fa-sms me-2"></i> SMS
+                                        </a>
+                                    </li>
+                                    <li>
+                                        <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
+                                            <i class="fas fa-link me-2"></i> Copy Link
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
+                                            <i class="bi bi-file-pdf me-2"></i> Download PDF
+                                        </a>
+                                    </li>
+                                </ul>
+                                @if($ticket->is_active)
+                                    <form action="{{ route('tickets.deactivate', $ticket) }}" 
+                                          method="POST" 
+                                          class="d-inline"
+                                          onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" 
+                                                class="btn btn-outline-warning" 
+                                                title="Deactivate">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </td>
+                    </tr>
+                @empty
+                    <tr>
+                        <td colspan="7" class="text-center py-3">No tickets found.</td>
+                    </tr>
+                @endforelse
+            </tbody>
+        </table>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted small pagination-info">
+            Showing {{ $tickets->firstItem() ?? 0 }} to {{ $tickets->lastItem() ?? 0 }} of {{ $tickets->total() }} entries
+        </div>
+        <div>
+            {{ $tickets->links() }}
         </div>
     </div>
 
@@ -310,14 +306,17 @@
         /* DataTables search box styles */
         .dataTables_filter {
             margin-bottom: 1rem;
+            float: right;
         }
 
         .dataTables_filter input {
             margin-left: 0.5rem;
-            padding: 0.375rem 0.75rem;
+            padding: 0.5rem 1rem;
             border: 1px solid #ced4da;
             border-radius: 0.25rem;
             transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+            width: 300px;
+            font-size: 0.875rem;
         }
 
         .dataTables_filter input:focus {
@@ -330,6 +329,7 @@
             display: flex;
             align-items: center;
             margin-bottom: 0;
+            font-weight: 500;
         }
 
         .dataTables_filter label::before {
@@ -337,6 +337,20 @@
             font-family: 'bootstrap-icons';
             margin-right: 0.5rem;
             color: #6c757d;
+        }
+
+        /* Table styles */
+        .table {
+            margin-bottom: 0;
+        }
+
+        .table thead th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(0,123,255,.05);
         }
     </style>
     @endpush
@@ -477,14 +491,14 @@
                     }
                 ],
                 order: [[5, 'desc']],
-                dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
+                dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>',
                 paging: false,
                 info: false,
                 searching: true,
                 language: {
                     search: "_INPUT_",
-                    searchPlaceholder: "Search tickets...",
+                    searchPlaceholder: "Search tickets by name, email, phone, token, type or event...",
                     lengthMenu: "_MENU_ per page",
                     info: "Showing _START_ to _END_ of _TOTAL_ tickets"
                 }
