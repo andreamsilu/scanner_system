@@ -113,9 +113,7 @@
                                                     data-event-date="{{ optional($ticket->event->date)->format('d/m/Y') ?? 'N/A' }}"
                                                     data-event-time="{{ optional($ticket->event->date)->format('h:i A') ?? 'N/A' }}"
                                                     data-event-location="{{ $ticket->event->location ?? 'N/A' }}"
-                                                    data-ticket-code="{{ $ticket->code }}"
-                                                    data-ticket-token="{{ $ticket->token }}"
-                                                    data-ticket-url="{{ route('tickets.verify', ['token' => $ticket->token]) }}">
+                                                    data-ticket-token="{{ $ticket->token }}">
                                                 <i class="bi bi-envelope"></i>
                                             </button>
                                         @endif
@@ -361,18 +359,17 @@
         }
 
         // Handle SMS Invitation
-        $('.send-invitation-btn').click(function() {
-            const ticketId = $(this).data('ticket-id');
-            const attendeeName = $(this).data('attendee-name');
-            const attendeePhone = $(this).data('attendee-phone');
-            const eventName = $(this).data('event-name');
-            const attendeeId = $(this).data('attendee-id');
-            const eventDate = $(this).data('event-date');
-            const eventTime = $(this).data('event-time');
-            const eventLocation = $(this).data('event-location');
-            const ticketCode = $(this).data('ticket-code');
-            const ticketToken = $(this).data('ticket-token');
-            const ticketUrl = $(this).data('ticket-url');
+        $('.send-invitation-btn').on('click', function() {
+            const button = $(this);
+            const ticketId = button.data('ticket-id');
+            const attendeeName = button.data('attendee-name');
+            const attendeePhone = button.data('attendee-phone');
+            const eventName = button.data('event-name');
+            const attendeeId = button.data('attendee-id');
+            const eventDate = button.data('event-date');
+            const eventTime = button.data('event-time');
+            const eventLocation = button.data('event-location');
+            const ticketToken = button.data('ticket-token');
             
             // Validate required data
             if (!attendeeName || !eventName || eventDate === 'N/A' || eventTime === 'N/A') {
@@ -380,25 +377,26 @@
                 return;
             }
             
+            // Set form values
             $('#invitationTicketId').val(ticketId);
             $('#invitationAttendeeId').val(attendeeId);
-            $('#invitationAttendeeName').text(attendeeName);
-            $('#invitationAttendeePhone').text(attendeePhone);
-            $('#invitationEventName').text(eventName);
+            $('#invitationAttendeeName').text(attendeeName || 'N/A');
+            $('#invitationAttendeePhone').text(attendeePhone || 'N/A');
+            $('#invitationEventName').text(eventName || 'N/A');
 
-            // Format and display the message preview with actual event data
+            // Format and display the message preview
             const messagePreview = `MWALIKO: ${attendeeName.toUpperCase()}
 SENDOFF ya ALICE PIENZI CHAMBILA
 Tarehe: ${eventDate}
 Saa: ${eventTime}
 Mahali: ${eventLocation}
-Code: ${ticketCode}
-Link: ${ticketUrl}`;
+Token: ${ticketToken}`;
 
             $('#invitationMessagePreview').text(messagePreview);
         });
 
-        $('#sendInvitationForm').submit(function(e) {
+        // Handle form submission
+        $('#sendInvitationForm').on('submit', function(e) {
             e.preventDefault();
             const form = $(this);
             const submitBtn = form.find('button[type="submit"]');
@@ -419,6 +417,7 @@ Link: ${ticketUrl}`;
                     }
                 },
                 error: function(xhr) {
+                    console.error('SMS Error:', xhr.responseJSON);
                     toastr.error(xhr.responseJSON?.message || 'Failed to send invitation SMS');
                 },
                 complete: function() {
@@ -437,7 +436,7 @@ Link: ${ticketUrl}`;
                     <h5 class="modal-title" id="sendInvitationModalLabel">Send Invitation SMS</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => $ticket->event->id]) }}" method="POST">
+                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => request()->route('event')]) }}" method="POST">
                     @csrf
                     <input type="hidden" name="ticket_id" id="invitationTicketId">
                     <input type="hidden" name="attendee_id" id="invitationAttendeeId">

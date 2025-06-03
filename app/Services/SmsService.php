@@ -159,15 +159,13 @@ class SmsService
             "Tarehe: {event_date}\n" .
             "Saa: {event_time}\n" .
             "Mahali: {event_location}\n" .
-            "Code: {ticket_code}\n" .
-            "Link: {ticket_url}",
+            "Token: {ticket_token}",
             [
                 '{attendee_name}' => strtoupper($ticket->attendee->name),
                 '{event_date}' => Carbon::parse($event->date)->format('d/m/Y'),
                 '{event_time}' => Carbon::parse($event->date)->format('h:i A'),
                 '{event_location}' => $event->location,
-                '{ticket_code}' => $ticket->code,
-                '{ticket_url}' => route('tickets.show', $ticket->code),
+                '{ticket_token}' => $ticket->token,
             ]
         );
     }
