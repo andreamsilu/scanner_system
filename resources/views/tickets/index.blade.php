@@ -109,10 +109,10 @@
                                                     data-attendee-name="{{ $ticket->attendee->name }}"
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
                                                     data-attendee-id="{{ $ticket->attendee->id }}"
-                                                    data-event-name="{{ $ticket->event->name }}"
-                                                    data-event-date="{{ $ticket->event->date->format('l, d-m-Y') }}"
-                                                    data-event-time="{{ $ticket->event->date->format('h:i A') }}"
-                                                    data-event-location="{{ $ticket->event->location }}"
+                                                    data-event-name="{{ $ticket->event->name ?? 'N/A' }}"
+                                                    data-event-date="{{ optional($ticket->event->date)->format('d/m/Y') ?? 'N/A' }}"
+                                                    data-event-time="{{ optional($ticket->event->date)->format('h:i A') ?? 'N/A' }}"
+                                                    data-event-location="{{ $ticket->event->location ?? 'N/A' }}"
                                                     data-ticket-code="{{ $ticket->code }}"
                                                     data-ticket-url="{{ route('tickets.verify', $ticket->code) }}">
                                                 <i class="bi bi-envelope"></i>
@@ -371,6 +371,12 @@
             const eventLocation = $(this).data('event-location');
             const ticketCode = $(this).data('ticket-code');
             const ticketUrl = $(this).data('ticket-url');
+            
+            // Validate required data
+            if (!attendeeName || !eventName || eventDate === 'N/A' || eventTime === 'N/A') {
+                toastr.error('Missing required event information. Please check the event details.');
+                return;
+            }
             
             $('#invitationTicketId').val(ticketId);
             $('#invitationAttendeeId').val(attendeeId);
