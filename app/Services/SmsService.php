@@ -42,20 +42,21 @@ class SmsService
 
             // Create SMS log entry
             $log = SmsLog::create([
-                'to' => $to,
+                'recipient' => $to,
                 'message' => $message,
-                'type' => $type,
                 'status' => $result['status'] ?? 'sent',
                 'message_id' => $result['message_id'] ?? null,
                 'metadata' => $metadata,
-                'provider' => $this->smsProvider->getProviderName(),
+                'sender_id' => $this->smsProvider->getSenderId(),
+                'reference' => $result['reference'] ?? null,
+                'provider_status' => $result['provider_status'] ?? null,
+                'provider_message' => $result['provider_message'] ?? null,
             ]);
 
             // Log to Laravel's logging system as well
             Log::channel('sms')->info('SMS sent', [
                 'log_id' => $log->id,
-                'to' => $to,
-                'type' => $type,
+                'recipient' => $to,
                 'message_id' => $result['message_id'] ?? null,
                 'metadata' => $metadata,
                 'provider' => $this->smsProvider->getProviderName(),
@@ -65,20 +66,18 @@ class SmsService
         } catch (\Exception $e) {
             // Create error log entry
             $log = SmsLog::create([
-                'to' => $to,
+                'recipient' => $to,
                 'message' => $message,
-                'type' => $type,
                 'status' => 'failed',
                 'metadata' => $metadata,
-                'provider' => $this->smsProvider->getProviderName(),
+                'sender_id' => $this->smsProvider->getSenderId(),
                 'error' => $e->getMessage(),
             ]);
 
             // Log to Laravel's logging system
             Log::channel('sms')->error('SMS sending failed', [
                 'log_id' => $log->id,
-                'to' => $to,
-                'type' => $type,
+                'recipient' => $to,
                 'error' => $e->getMessage(),
                 'metadata' => $metadata,
                 'provider' => $this->smsProvider->getProviderName(),
@@ -208,5 +207,15 @@ class SmsService
     public function getMessageStatus(string $messageId): array
     {
         return $this->smsProvider->getStatus($messageId);
+    }
+
+    /**
+     * Get the provider's name
+     *
+     * @return string
+     */
+    public function getProviderName(): string
+    {
+        return $this->smsProvider->getProviderName();
     }
 } 

@@ -188,6 +188,7 @@ Route::get('/tickets/{token}/verify', [App\Http\Controllers\TicketController::cl
 Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.management.')->group(function () {
     Route::get('/', [App\Http\Controllers\SmsManagementController::class, 'index'])->name('index');
     Route::get('/logs', [App\Http\Controllers\SmsManagementController::class, 'logs'])->name('logs');
+    Route::get('/refresh-balance', [App\Http\Controllers\SmsManagementController::class, 'refreshBalance'])->name('refresh-balance');
     Route::post('/test', [App\Http\Controllers\SmsManagementController::class, 'sendTest'])->name('test');
     Route::post('/events/{event}/send-attendee-invitation', [App\Http\Controllers\SmsManagementController::class, 'sendAttendeeInvitation'])->name('send-attendee-invitation');
 });

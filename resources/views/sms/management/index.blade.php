@@ -132,44 +132,59 @@
                 <table class="table table-hover">
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>To</th>
-                            <th>Type</th>
-                            <th>Status</th>
-                            <th>Provider</th>
+                            <th>Time</th>
+                            <th>Recipient</th>
                             <th>Message</th>
+                            <th>Status</th>
+                            <th>Details</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse(\App\Models\SmsLog::latest()->take(10)->get() as $log)
+                        @forelse($recentLogs as $log)
                             <tr>
-                                <td>{{ $log->created_at->format('M j, Y g:i A') }}</td>
-                                <td>{{ $log->to }}</td>
+                                <td>{{ $log->created_at->format('M d, Y H:i:s') }}</td>
+                                <td>{{ $log->recipient }}</td>
                                 <td>
-                                    <span class="badge bg-{{ $log->type === 'invitation' ? 'primary' : ($log->type === 'reminder' ? 'warning' : 'info') }}">
-                                        {{ ucfirst($log->type) }}
-                                    </span>
-                                </td>
-                                <td>
-                                    <span class="badge bg-{{ $log->status === 'sent' ? 'success' : ($log->status === 'failed' ? 'danger' : 'secondary') }}">
-                                        {{ ucfirst($log->status) }}
-                                    </span>
-                                </td>
-                                <td>{{ ucfirst($log->provider) }}</td>
-                                <td>
-                                    <span class="text-truncate d-inline-block" style="max-width: 200px;">
+                                    <div class="text-truncate" style="max-width: 200px;" title="{{ $log->message }}">
                                         {{ $log->message }}
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ $log->getStatusBadgeClass() }}">
+                                        {{ $log->getStatusMessage() }}
                                     </span>
+                                    @if($log->provider_status && $log->provider_status !== $log->status)
+                                        <small class="text-muted d-block">
+                                            Provider: {{ ucfirst($log->provider_status) }}
+                                        </small>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($log->delivered_at)
+                                        <small class="text-muted d-block">
+                                            Delivered: {{ $log->delivered_at->format('M d, Y H:i:s') }}
+                                        </small>
+                                    @endif
+                                    @if($log->last_status_check)
+                                        <small class="text-muted d-block">
+                                            Last Check: {{ $log->last_status_check->diffForHumans() }}
+                                        </small>
+                                    @endif
+                                    @if($log->reference)
+                                        <small class="text-muted d-block">
+                                            Ref: {{ $log->reference }}
+                                        </small>
+                                    @endif
+                                    @if($log->error)
+                                        <small class="text-danger d-block">
+                                            {{ $log->error }}
+                                        </small>
+                                    @endif
                                 </td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    <div class="text-muted">
-                                        <i class="bi bi-chat-dots fs-4 d-block mb-2"></i>
-                                        No SMS logs found
-                                    </div>
-                                </td>
+                                <td colspan="5" class="text-center">No SMS logs found</td>
                             </tr>
                         @endforelse
                     </tbody>
@@ -221,6 +236,82 @@
             submitBtn.innerHTML = originalBtnText;
         }
     });
+
+    $(document).ready(function() {
+        // Handle balance refresh
+        $('.refresh-balance').on('click', function(e) {
+            e.preventDefault();
+            const button = $(this);
+            const card = button.closest('.stat-card');
+            
+            // Disable button and show loading state
+            button.prop('disabled', true).html('<i class="bi bi-arrow-clockwise spin"></i>');
+            
+            // Make AJAX request to refresh balance
+            $.get('{{ route("sms.management.refresh-balance") }}', function(response) {
+                if (response.success) {
+                    // Update balance display
+                    const balance = response.balance;
+                    card.find('.card-title').text(
+                        number_format(balance.units) + ' <small class="text-muted">SMS Units</small>'
+                    );
+                    
+                    // Update status badge
+                    const statusBadge = card.find('.badge');
+                    if (balance.status) {
+                        if (statusBadge.length) {
+                            statusBadge
+                                .removeClass('bg-success bg-warning')
+                                .addClass(balance.status === 'active' ? 'bg-success' : 'bg-warning')
+                                .text(balance.status.charAt(0).toUpperCase() + balance.status.slice(1));
+                        } else {
+                            card.find('.d-flex.flex-column').append(`
+                                <span class="badge bg-${balance.status === 'active' ? 'success' : 'warning'} mt-1">
+                                    ${balance.status.charAt(0).toUpperCase() + balance.status.slice(1)}
+                                </span>
+                            `);
+                        }
+                    }
+                    
+                    // Update last updated time
+                    if (balance.last_updated) {
+                        const lastUpdated = card.find('.text-muted.small:last');
+                        if (lastUpdated.length) {
+                            lastUpdated.text('Updated: ' + moment(balance.last_updated).fromNow());
+                        } else {
+                            card.find('.d-flex.flex-column').append(`
+                                <small class="text-muted small mt-1">
+                                    Updated: ${moment(balance.last_updated).fromNow()}
+                                </small>
+                            `);
+                        }
+                    }
+                    
+                    // Show success toast
+                    toastr.success('Balance updated successfully');
+                } else {
+                    toastr.error(response.message || 'Failed to update balance');
+                }
+            }).fail(function() {
+                toastr.error('Failed to update balance. Please try again.');
+            }).always(function() {
+                // Re-enable button and restore icon
+                button.prop('disabled', false).html('<i class="bi bi-arrow-clockwise"></i>');
+            });
+        });
+    });
+
+    // Add CSS for spinning animation
+    document.head.insertAdjacentHTML('beforeend', `
+        <style>
+            .spin {
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                100% { transform: rotate(360deg); }
+            }
+        </style>
+    `);
     </script>
     @endpush
 </x-app-layout> 

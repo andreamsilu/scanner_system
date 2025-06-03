@@ -97,8 +97,8 @@
                                 <td>
                                     <div class="d-flex flex-column">
                                         <span>{{ $log->attendee_phone }}</span>
-                                        @if($log->attendee_phone !== $log->to)
-                                            <small class="text-muted">Original: {{ $log->to }}</small>
+                                        @if($log->attendee_phone !== $log->recipient)
+                                            <small class="text-muted">Original: {{ $log->recipient }}</small>
                                         @endif
                                     </div>
                                 </td>

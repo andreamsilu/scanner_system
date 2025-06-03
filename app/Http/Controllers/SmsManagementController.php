@@ -39,16 +39,26 @@ class SmsManagementController extends Controller
     public function index(): View
     {
         try {
-            // Get provider balance if available
             $balance = $this->smsService->getBalance();
-            $provider = config('sms.default');
-        } catch (\Exception $e) {
-            Log::error('Failed to fetch SMS provider balance: ' . $e->getMessage());
-            $balance = null;
-            $provider = null;
-        }
+            $provider = $this->smsService->getProviderName();
+            
+            // Get recent SMS logs (last 10 entries)
+            $recentLogs = SmsLog::latest()
+                ->take(10)
+                ->get();
 
-        return view('sms.management.index', compact('balance', 'provider'));
+            return view('sms.management.index', compact('balance', 'provider', 'recentLogs'));
+        } catch (\Exception $e) {
+            Log::error('SMS Management Dashboard Error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return view('sms.management.index', [
+                'error' => 'Unable to load SMS management dashboard. Please try again later.',
+                'recentLogs' => collect() // Empty collection as fallback
+            ]);
+        }
     }
 
     /**
@@ -343,7 +353,7 @@ class SmsManagementController extends Controller
                 $query->where('status', $status);
             })
             ->when($request->search, function($query, $search) {
-                $query->where('to', 'like', "%{$search}%")
+                $query->where('recipient', 'like', "%{$search}%")
                     ->orWhere('message', 'like', "%{$search}%");
             })
             ->with(['metadata'])
@@ -390,7 +400,7 @@ class SmsManagementController extends Controller
             foreach ($logs as $log) {
                 fputcsv($file, [
                     $log->type,
-                    $log->to,
+                    $log->recipient,
                     $log->message,
                     $log->status,
                     $log->created_at
@@ -486,7 +496,7 @@ class SmsManagementController extends Controller
 
         if ($search = request('search')) {
             $query->where(function($q) use ($search) {
-                $q->where('to', 'like', "%{$search}%")
+                $q->where('recipient', 'like', "%{$search}%")
                   ->orWhere('message', 'like', "%{$search}%")
                   ->orWhereJsonContains('metadata->attendee_name', $search);
             });
@@ -501,10 +511,34 @@ class SmsManagementController extends Controller
         $logs->getCollection()->transform(function ($log) {
             $metadata = $log->metadata ?? [];
             $log->attendee_name = $metadata['attendee_name'] ?? null;
-            $log->attendee_phone = $metadata['attendee_phone'] ?? $log->to;
+            $log->attendee_phone = $metadata['attendee_phone'] ?? $log->recipient;
             return $log;
         });
 
         return view('sms.management.logs', compact('logs'));
+    }
+
+    /**
+     * Refresh the SMS provider balance
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function refreshBalance(): JsonResponse
+    {
+        try {
+            $balance = $this->smsService->getBalance();
+            
+            return response()->json([
+                'success' => true,
+                'balance' => $balance
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to refresh SMS provider balance: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to refresh balance: ' . $e->getMessage()
+            ], 500);
+        }
     }
 } 
