@@ -84,22 +84,44 @@
                         <div class="card-body p-4">
                             <div class="text-center">
                                 <h6 class="text-primary mb-4">Entry Pass</h6>
+                                <!-- Ticket Content -->
+                                <div class="ticket-content bg-white p-3 rounded-3 mb-4 text-start" style="font-size: 0.9rem; line-height: 1.6;">
+                                    <h5 class="text-primary text-center mb-3 fw-bold">MWALIKO WA SENDOFF</h5>
+                                    <p class="mb-2">
+                                        Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                                        wanayo furaha kubwa kukualika / kuwaalika
+                                    </p>
+                                    <p class="mb-2">
+                                        Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
+                                    </p>
+                                    <div class="text-center mb-2">
+                                        ..............................................................................................
+                                    </div>
+                                    <p class="mb-2">
+                                        Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
+                                        <strong>ALICE PIENZI CHAMBILA</strong>
+                                    </p>
+                                    <p class="mb-2">
+                                        Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
+                                        Kuanzia saa 12:00 jioni
+                                    </p>
+                                    <p class="mb-2">
+                                        Katika ukumbi wa GBF Garden Hall,<br>
+                                        uliopo Dar es Salaam – Tabata, Barakuda.
+                                    </p>
+                                    <p class="mb-0">
+                                        Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
+                                    </p>
+                                </div>
+                                <!-- QR Code -->
                                 <div class="qr-container bg-white p-3 rounded-3 mb-4">
                                     {!! QrCode::size(200)->format('svg')->generate(route('event-cards.verify', $card->attendee->qr_token)) !!}
                                 </div>
                                 <p class="text-muted small mb-3">Scan this QR code at the venue</p>
                                 <div class="ticket-info bg-light p-3 rounded-3">
-                                    <p class="mb-2">
+                                    <p class="mb-0">
                                         <small class="text-muted d-block mb-1">Ticket ID</small>
                                         <span class="fw-medium">{{ $card->attendee->qr_token }}</span>
-                                    </p>
-                                    <p class="mb-0">
-                                        <small class="text-muted d-block mb-1">Status</small>
-                                        @if($card->attendee->scanned)
-                                            <span class="badge bg-success px-3 py-2">Confirmed</span>
-                                        @else
-                                            <span class="badge bg-warning px-3 py-2">Pending</span>
-                                        @endif
                                     </p>
                                 </div>
                             </div>

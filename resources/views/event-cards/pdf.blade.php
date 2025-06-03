@@ -195,6 +195,36 @@
         <!-- QR Code Section -->
         <div class="qr-section">
             <h3 style="color: #0d6efd; margin-bottom: 20px;">Entry Pass</h3>
+            <!-- Ticket Content -->
+            <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: left; font-size: 12px; line-height: 1.6;">
+                <h5 style="color: #0d6efd; text-align: center; margin-bottom: 15px; font-weight: bold;">MWALIKO WA SENDOFF</h5>
+                <p style="margin-bottom: 8px;">
+                    Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                    wanayo furaha kubwa kukualika / kuwaalika
+                </p>
+                <p style="margin-bottom: 8px;">
+                    Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
+                </p>
+                <div style="text-align: center; margin-bottom: 8px;">
+                    ..............................................................................................
+                </div>
+                <p style="margin-bottom: 8px;">
+                    Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
+                    <strong>ALICE PIENZI CHAMBILA</strong>
+                </p>
+                <p style="margin-bottom: 8px;">
+                    Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
+                    Kuanzia saa 12:00 jioni
+                </p>
+                <p style="margin-bottom: 8px;">
+                    Katika ukumbi wa GBF Garden Hall,<br>
+                    uliopo Dar es Salaam – Tabata, Barakuda.
+                </p>
+                <p style="margin-bottom: 0;">
+                    Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
+                </p>
+            </div>
+            <!-- QR Code -->
             <div class="qr-code">
                 @php
                     $qrCode = QrCode::size(200)
@@ -206,17 +236,9 @@
             </div>
             <p style="color: #6c757d; font-size: 14px; margin: 10px 0;">Scan this QR code at the venue</p>
             <div class="ticket-info">
-                <p>
+                <p class="mb-0">
                     <small>Ticket ID</small>
                     <span style="font-weight: 500;">{{ $card->attendee->qr_token }}</span>
-                </p>
-                <p>
-                    <small>Status</small>
-                    @if($card->attendee->scanned)
-                        <span class="status confirmed">Confirmed</span>
-                    @else
-                        <span class="status pending">Pending</span>
-                    @endif
                 </p>
             </div>
         </div>
