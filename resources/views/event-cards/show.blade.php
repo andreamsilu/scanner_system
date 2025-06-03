@@ -8,7 +8,7 @@
                 <div class="card-header bg-white border-0 py-3">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="mb-0 text-primary">
-                            <i class="fas fa-id-card me-2"></i>Event Card Details
+                            <i class="fas fa-id-card me-2"></i>Sendoff Invitation Card
                         </h5>
                         <a href="{{ route('event-cards.index') }}" class="btn btn-outline-secondary">
                             <i class="fas fa-arrow-left me-2"></i>Back to List
@@ -23,78 +23,38 @@
                                 <div class="card-body">
                                     <!-- Header Section -->
                                     <div class="text-center mb-4">
-                                        <h3 class="text-primary mb-2">Sendoff Invitation</h3>
-                                        <p class="text-muted">You are cordially invited to attend</p>
+                                        <h2 class="text-primary mb-3 fw-bold">MWALIKO WA SENDOFF</h2>
                                     </div>
 
-                                    <!-- Guest Information -->
-                                    <div class="row mb-4">
-                                        <div class="col-md-3 text-center">
-                                            <div class="avatar-circle bg-primary text-white mx-auto" style="width: 100px; height: 100px; font-size: 40px;">
-                                                {{ strtoupper(substr($card->attendee->name, 0, 1)) }}
+                                    <!-- Invitation Content -->
+                                    <div class="invitation-content text-center mb-4">
+                                        <p class="mb-3">
+                                            Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                                            wanayo furaha kubwa kukualika / kuwaalika
+                                        </p>
+                                        <p class="mb-3">
+                                            Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
+                                        </p>
+                                        <div class="guest-name mb-4">
+                                            <div class="underline-text mb-3">
+                                                {{ $card->attendee->name ?? '..............................................................................................' }}
                                             </div>
                                         </div>
-                                        <div class="col-md-9">
-                                            <h4 class="mb-2">{{ $card->attendee->name }}</h4>
-                                            <p class="text-muted mb-2">
-                                                <i class="fas fa-briefcase me-2"></i>{{ $card->attendee->position ?? 'No Position' }}
-                                            </p>
-                                            <p class="text-muted mb-2">
-                                                <i class="fas fa-building me-2"></i>{{ $card->attendee->company ?? 'No Company' }}
-                                            </p>
-                                            <div class="d-flex gap-2">
-                                                @if($card->attendee->scanned)
-                                                    <span class="badge bg-success px-3 py-2">
-                                                        <i class="fas fa-check me-1"></i>Confirmed
-                                                    </span>
-                                                @else
-                                                    <span class="badge bg-warning px-3 py-2">
-                                                        <i class="fas fa-clock me-1"></i>Pending
-                                                    </span>
-                                                @endif
-                                                <span class="badge bg-info px-3 py-2">
-                                                    <i class="fas fa-calendar me-1"></i>{{ $card->attendee->registration_date->format('M d, Y') }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    <!-- Contact Information -->
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <div class="contact-info p-3 bg-white rounded mb-3">
-                                                <h6 class="text-primary mb-3">Contact Information</h6>
-                                                <div class="mb-3">
-                                                    <label class="text-muted d-block mb-1">
-                                                        <i class="fas fa-envelope me-2"></i>Email
-                                                    </label>
-                                                    <p class="mb-0">{{ $card->attendee->email }}</p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="text-muted d-block mb-1">
-                                                        <i class="fas fa-phone me-2"></i>Phone
-                                                    </label>
-                                                    <p class="mb-0">{{ $card->attendee->phone ?? 'Not provided' }}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <div class="event-info p-3 bg-white rounded">
-                                                <h6 class="text-primary mb-3">Event Details</h6>
-                                                <div class="mb-3">
-                                                    <label class="text-muted d-block mb-1">
-                                                        <i class="fas fa-map-marker-alt me-2"></i>Venue
-                                                    </label>
-                                                    <p class="mb-0">Main Conference Hall</p>
-                                                </div>
-                                                <div class="mb-3">
-                                                    <label class="text-muted d-block mb-1">
-                                                        <i class="fas fa-clock me-2"></i>Time
-                                                    </label>
-                                                    <p class="mb-0">2:00 PM - 5:00 PM</p>
-                                                </div>
-                                            </div>
-                                        </div>
+                                        <p class="mb-3">
+                                            Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
+                                            <strong>ALICE PIENZI CHAMBILA</strong>
+                                        </p>
+                                        <p class="mb-3">
+                                            Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
+                                            Kuanzia saa 12:00 jioni
+                                        </p>
+                                        <p class="mb-3">
+                                            Katika ukumbi wa GBF Garden Hall,<br>
+                                            uliopo Dar es Salaam – Tabata, Barakuda.
+                                        </p>
+                                        <p class="mb-3">
+                                            Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -173,20 +133,26 @@
         border-radius: 6px;
         font-weight: 500;
     }
-    .avatar-circle {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-    }
-    .contact-info, .event-info, .qr-container, .ticket-info {
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
     .text-primary {
         color: #0d6efd !important;
     }
     .bg-light {
         background-color: #f8f9fa !important;
+    }
+    .invitation-content {
+        font-size: 1.1rem;
+        line-height: 1.8;
+    }
+    .underline-text {
+        border-bottom: 1px solid #dee2e6;
+        min-height: 2rem;
+        padding: 0.5rem;
+    }
+    .contact-info, .venue-info, .qr-container, .ticket-info {
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+    .guest-name {
+        font-size: 1.2rem;
     }
 </style>
 @endpush
