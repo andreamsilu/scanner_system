@@ -230,7 +230,130 @@
         $(document).ready(function() {
             $('#tickets-table').DataTable({
                 processing: true,
-                pageLength: 15,
+                serverSide: true,
+                ajax: {
+                    url: window.location.href,
+                    type: 'GET',
+                    data: function(d) {
+                        d.page = (d.start / d.length) + 1;
+                        d.search = d.search.value;
+                        d.order = d.order[0] ? {
+                            column: d.order[0].column,
+                            dir: d.order[0].dir
+                        } : null;
+                    },
+                    dataSrc: function(json) {
+                        // Update Laravel pagination info
+                        $('.pagination-info').html(
+                            `Showing ${json.pagination.first_item} to ${json.pagination.last_item} of ${json.pagination.total} entries`
+                        );
+                        return json.data;
+                    }
+                },
+                columns: [
+                    { 
+                        data: 'attendee',
+                        render: function(data) {
+                            if (!data) return '<span class="text-muted">Unassigned</span>';
+                            return `<div class="d-flex flex-column">
+                                <span class="fw-medium">${data.name}</span>
+                                <small class="text-muted">#${data.token}</small>
+                            </div>`;
+                        }
+                    },
+                    { 
+                        data: 'event',
+                        render: function(data) {
+                            return `<a href="${data.url}" class="text-decoration-none">${data.name}</a>`;
+                        }
+                    },
+                    { 
+                        data: 'type',
+                        render: function(data) {
+                            return `<span class="badge ${data.badge_class} px-2 py-1">${data.type}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'status',
+                        render: function(data) {
+                            return `<span class="badge ${data.badge_class} px-2 py-1">${data.status}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'last_scan',
+                        render: function(data) {
+                            if (!data) return '<span class="text-muted">Never</span>';
+                            return `<span class="text-muted" title="${data.full_time}">${data.time}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'created_at',
+                        render: function(data) {
+                            return `<span class="text-muted">${data}</span>`;
+                        }
+                    },
+                    { 
+                        data: 'actions',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data) {
+                            let buttons = `
+                                <div class="btn-group btn-group-sm">
+                                    <a href="${data.view_url}" class="btn btn-outline-info" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-primary" title="Print Ticket" 
+                                            onclick="printTicket('${data.print_url}')">
+                                        <i class="bi bi-printer"></i>
+                                    </button>`;
+                            
+                            if (data.has_phone) {
+                                buttons += `
+                                    <button type="button" class="btn btn-outline-success send-invitation-btn"
+                                            title="Send Invitation SMS" data-bs-toggle="modal"
+                                            data-bs-target="#sendInvitationModal">
+                                        <i class="bi bi-envelope"></i>
+                                    </button>`;
+                            }
+                            
+                            buttons += `
+                                <button type="button" class="btn btn-outline-success" title="Share Ticket"
+                                        data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bi bi-share"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end">
+                                    <li><a class="dropdown-item" href="#" onclick="shareViaWhatsApp('${data.event_name}', '${data.attendee_name}', '${data.token}', '${data.event_date}', '${data.ticket_url}')">
+                                        <i class="fab fa-whatsapp me-2"></i> WhatsApp
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="shareViaSMS('${data.event_name}', '${data.attendee_name}', '${data.token}', '${data.event_date}', '${data.ticket_url}')">
+                                        <i class="fas fa-sms me-2"></i> SMS
+                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="copyTicketLink('${data.ticket_url}')">
+                                        <i class="fas fa-link me-2"></i> Copy Link
+                                    </a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="${data.export_url}" target="_blank">
+                                        <i class="bi bi-file-pdf me-2"></i> Download PDF
+                                    </a></li>
+                                </ul>`;
+                            
+                            if (data.is_active) {
+                                buttons += `
+                                    <form action="${data.deactivate_url}" method="POST" class="d-inline"
+                                          onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-outline-warning" title="Deactivate">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>`;
+                            }
+                            
+                            buttons += `</div>`;
+                            return buttons;
+                        }
+                    }
+                ],
                 order: [[5, 'desc']],
                 dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>' +
@@ -238,6 +361,7 @@
                 paging: false,
                 info: false,
                 searching: true,
+                lengthMenu: [[15, 25, 50, -1], [15, 25, 50, "All"]],
                 buttons: [
                     {
                         extend: 'collection',

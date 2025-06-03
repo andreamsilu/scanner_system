@@ -18,11 +18,107 @@ class TicketController extends Controller
     /**
      * Display a listing of the tickets.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $tickets = Ticket::with(['event', 'attendee'])
-            ->latest()
-            ->paginate(20);
+        $query = Ticket::with(['event', 'attendee']);
+
+        // Handle search
+        if ($request->search['value'] ?? false) {
+            $searchValue = $request->search['value'];
+            $query->where(function($q) use ($searchValue) {
+                $q->whereHas('attendee', function($q) use ($searchValue) {
+                    $q->where('name', 'like', '%' . $searchValue . '%')
+                      ->orWhere('email', 'like', '%' . $searchValue . '%')
+                      ->orWhere('phone', 'like', '%' . $searchValue . '%');
+                })
+                ->orWhere('token', 'like', '%' . $searchValue . '%')
+                ->orWhere('type', 'like', '%' . $searchValue . '%');
+            });
+        }
+
+        // Handle ordering
+        if ($request->order[0] ?? false) {
+            $orderColumn = $request->order[0]['column'] ?? 5; // Default to created_at
+            $orderDir = $request->order[0]['dir'] ?? 'desc';
+            $columns = ['attendee', 'event', 'type', 'status', 'last_scan', 'created_at'];
+            
+            if (isset($columns[$orderColumn])) {
+                if ($columns[$orderColumn] === 'attendee') {
+                    $query->join('attendees', 'tickets.attendee_id', '=', 'attendees.id')
+                          ->orderBy('attendees.name', $orderDir);
+                } elseif ($columns[$orderColumn] === 'event') {
+                    $query->join('events', 'tickets.event_id', '=', 'events.id')
+                          ->orderBy('events.name', $orderDir);
+                } else {
+                    $query->orderBy($columns[$orderColumn], $orderDir);
+                }
+            }
+        } else {
+            $query->latest();
+        }
+
+        // Get total count before pagination
+        $totalRecords = $query->count();
+        $totalFiltered = $totalRecords;
+
+        // Apply pagination
+        $tickets = $query->paginate(15);
+
+        if ($request->ajax()) {
+            $data = $tickets->map(function ($ticket) {
+                return [
+                    'attendee' => $ticket->attendee ? [
+                        'name' => $ticket->attendee->name,
+                        'token' => $ticket->token
+                    ] : null,
+                    'event' => [
+                        'name' => $ticket->event->name,
+                        'url' => route('events.show', $ticket->event)
+                    ],
+                    'type' => [
+                        'type' => $ticket->type,
+                        'badge_class' => match($ticket->type) {
+                            'vip' => 'bg-warning',
+                            'regular' => 'bg-secondary',
+                            'single' => 'bg-primary',
+                            'double' => 'bg-success',
+                            default => 'bg-secondary'
+                        }
+                    ],
+                    'status' => [
+                        'status' => $ticket->is_active ? 'Active' : 'Inactive',
+                        'badge_class' => $ticket->is_active ? 'bg-success' : 'bg-danger'
+                    ],
+                    'last_scan' => $ticket->last_scan ? [
+                        'time' => $ticket->last_scan->created_at->diffForHumans(),
+                        'full_time' => $ticket->last_scan->created_at->format('d-m-Y H:i')
+                    ] : null,
+                    'created_at' => $ticket->created_at->format('d-m-Y'),
+                    'actions' => [
+                        'view_url' => route('events.events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]),
+                        'print_url' => route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]),
+                        'has_phone' => $ticket->attendee && $ticket->attendee->phone,
+                        'is_active' => $ticket->is_active,
+                        'deactivate_url' => route('tickets.deactivate', $ticket)
+                    ]
+                ];
+            });
+
+            return response()->json([
+                'draw' => $request->draw,
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalFiltered,
+                'data' => $data,
+                'pagination' => [
+                    'current_page' => $tickets->currentPage(),
+                    'last_page' => $tickets->lastPage(),
+                    'per_page' => $tickets->perPage(),
+                    'total' => $tickets->total(),
+                    'first_item' => $tickets->firstItem(),
+                    'last_item' => $tickets->lastItem()
+                ]
+            ]);
+        }
 
         return view('tickets.index', compact('tickets'));
     }
