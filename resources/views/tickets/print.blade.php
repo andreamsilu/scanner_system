@@ -148,6 +148,9 @@
                 <div class="ticket-id" style="color: #bfa46d; font-weight: bold;">
                     Kitambulisho cha Tiketi: {{ $ticket->token }}
                 </div>
+                <div style="text-align: center; margin: 1em 0; color: #bfa46d; font-weight: bold;">
+                    Aina ya Tiketi: {{ strtoupper($ticket->type) }}
+                </div>
                 <div class="qr">
                     @if($ticket->attendee->qr_code)
                         <img src="{{ $ticket->attendee->qr_code_url }}" alt="QR Code" style="max-width: 140px; height: auto; margin-top: 1em;">
