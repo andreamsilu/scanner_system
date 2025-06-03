@@ -19,6 +19,49 @@
         </div>
     @endif
 
+    <div class="card mb-3">
+        <div class="card-body">
+            <form id="filter-form" class="row g-3">
+                <div class="col-md-3">
+                    <label for="event_filter" class="form-label">Event</label>
+                    <select class="form-select" id="event_filter" name="event_filter">
+                        <option value="">All Events</option>
+                        @foreach($events as $event)
+                            <option value="{{ $event->id }}">{{ $event->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="status_filter" class="form-label">Status</label>
+                    <select class="form-select" id="status_filter" name="status_filter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="type_filter" class="form-label">Ticket Type</label>
+                    <select class="form-select" id="type_filter" name="type_filter">
+                        <option value="">All Types</option>
+                        @foreach($ticketTypes as $type)
+                            <option value="{{ $type }}">{{ ucfirst($type) }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Search by name, email, phone, token...">
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="button" class="btn btn-secondary w-100" id="reset-filters">
+                        <i class="bi bi-x-circle me-1"></i> Reset
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -35,146 +78,17 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($tickets as $ticket)
-                            <tr>
-                                <td class="py-2">
-                                    @if($ticket->attendee)
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-medium">{{ $ticket->attendee->name }}</span>
-                                            <small class="text-muted">#{{ $ticket->token }}</small>
-                                        </div>
-                                    @else
-                                        <span class="text-muted">Unassigned</span>
-                                    @endif
-                                </td>
-                                <td class="py-2">
-                                    <a href="{{ route('events.show', $ticket->event) }}" class="text-decoration-none">
-                                        {{ Str::limit($ticket->event->name, 20) }}
-                                    </a>
-                                </td>
-                                <td class="py-2">
-                                    @php
-                                        $ticketType = $ticket->type;
-                                        $badgeClass = match($ticketType) {
-                                            'vip' => 'bg-warning',
-                                            'regular' => 'bg-secondary',
-                                            'single' => 'bg-primary',
-                                            'double' => 'bg-success',
-                                            default => 'bg-secondary'
-                                        };
-                                    @endphp
-                                    <span class="badge {{ $badgeClass }} px-2 py-1">
-                                        {{ ucfirst($ticketType) }}
-                                    </span>
-                                </td>
-                                <td class="py-2">
-                                    @if($ticket->is_active)
-                                        <span class="badge bg-success px-2 py-1">Active</span>
-                                    @else
-                                        <span class="badge bg-danger px-2 py-1">Inactive</span>
-                                    @endif
-                                </td>
-                                <td class="py-2">
-                                    @if($ticket->last_scan)
-                                        <span class="text-muted" title="{{ $ticket->last_scan->created_at->format('d-m-Y H:i') }}">
-                                            {{ $ticket->last_scan->created_at->diffForHumans() }}
-                                        </span>
-                                    @else
-                                        <span class="text-muted">Never</span>
-                                    @endif
-                                </td>
-                                <td class="py-2">
-                                    <span class="text-muted">{{ $ticket->created_at->format('d-m-Y') }}</span>
-                                </td>
-                                <td class="py-2 text-end">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('events.events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" 
-                                           class="btn btn-outline-info" 
-                                           title="View Details">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <button type="button"
-                                                class="btn btn-outline-primary"
-                                                title="Print Ticket"
-                                                onclick="printTicket('{{ route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
-                                            <i class="bi bi-printer"></i>
-                                        </button>
-                                        @if($ticket->attendee && $ticket->attendee->phone)
-                                            <button type="button"
-                                                    class="btn btn-outline-success send-invitation-btn"
-                                                    title="Send Invitation SMS"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#sendInvitationModal"
-                                                    data-ticket-id="{{ $ticket->id }}"
-                                                    data-attendee-name="{{ $ticket->attendee->name }}"
-                                                    data-attendee-phone="{{ $ticket->attendee->phone }}"
-                                                    data-attendee-id="{{ $ticket->attendee->id }}"
-                                                    data-event-name="{{ $ticket->event->name }}">
-                                                <i class="bi bi-envelope"></i>
-                                            </button>
-                                        @endif
-                                        <button type="button" 
-                                                class="btn btn-outline-success" 
-                                                title="Share Ticket"
-                                                data-bs-toggle="dropdown" 
-                                                aria-expanded="false">
-                                            <i class="bi bi-share"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fab fa-whatsapp me-2"></i> WhatsApp
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="shareViaSMS('{{ $ticket->event->name }}', '{{ $ticket->attendee->name }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fas fa-sms me-2"></i> SMS
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fas fa-link me-2"></i> Copy Link
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item" href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
-                                                    <i class="bi bi-file-pdf me-2"></i> Download PDF
-                                                </a>
-                                            </li>
-                                        </ul>
-                                        @if($ticket->is_active)
-                                            <form action="{{ route('tickets.deactivate', $ticket) }}" 
-                                                  method="POST" 
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" 
-                                                        class="btn btn-outline-warning" 
-                                                        title="Deactivate">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-3">No tickets found.</td>
-                            </tr>
-                        @endforelse
+                        <!-- Data will be loaded via AJAX -->
                     </tbody>
                 </table>
             </div>
 
             <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
                 <div class="text-muted small pagination-info">
-                    Showing {{ $tickets->firstItem() ?? 0 }} to {{ $tickets->lastItem() ?? 0 }} of {{ $tickets->total() }} entries
+                    <!-- Will be updated via AJAX -->
                 </div>
-                <div>
-                    {{ $tickets->links() }}
+                <div class="pagination-container">
+                    <!-- Pagination will be handled by Laravel -->
                 </div>
             </div>
         </div>
@@ -227,11 +141,7 @@
         .dataTables_info, 
         .dataTables_paginate,
         .dataTables_length,
-        .dataTables_filter,
-        div.dataTables_wrapper div.dataTables_info,
-        div.dataTables_wrapper div.dataTables_paginate,
-        div.dataTables_wrapper div.dataTables_length,
-        div.dataTables_wrapper div.dataTables_filter {
+        .dataTables_filter {
             display: none !important;
         }
 
@@ -240,13 +150,25 @@
             display: flex !important;
             margin-bottom: 0;
         }
-    </style>
-    @endpush
 
+        /* Loading indicator */
+        .dataTables_processing {
+            background: rgba(255, 255, 255, 0.9) !important;
+            border: 1px solid #ddd !important;
+            border-radius: 4px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1) !important;
+            padding: 1rem !important;
+            color: #666 !important;
+            font-weight: 500 !important;
+        }
+
+        /* Filter form styles */
+        .form-label {
     @push('scripts')
     <script>
         $(document).ready(function() {
-            $('#tickets-table').DataTable({
+            // Initialize DataTable with server-side processing
+            var table = $('#tickets-table').DataTable({
                 processing: true,
                 serverSide: true,
                 ajax: {
@@ -261,10 +183,37 @@
                         } : null;
                     },
                     dataSrc: function(json) {
-                        // Update Laravel pagination info
+                        // Update pagination info
                         $('.pagination-info').html(
                             `Showing ${json.pagination.first_item} to ${json.pagination.last_item} of ${json.pagination.total} entries`
                         );
+
+                        // Update pagination links
+                        let paginationHtml = '';
+                        if (json.pagination.last_page > 1) {
+                            paginationHtml = '<ul class="pagination">';
+                            
+                            // Previous page
+                            paginationHtml += `<li class="page-item ${json.pagination.current_page === 1 ? 'disabled' : ''}">
+                                <a class="page-link" href="#" data-page="${json.pagination.current_page - 1}">Previous</a>
+                            </li>`;
+
+                            // Page numbers
+                            for (let i = 1; i <= json.pagination.last_page; i++) {
+                                paginationHtml += `<li class="page-item ${json.pagination.current_page === i ? 'active' : ''}">
+                                    <a class="page-link" href="#" data-page="${i}">${i}</a>
+                                </li>`;
+                            }
+
+                            // Next page
+                            paginationHtml += `<li class="page-item ${json.pagination.current_page === json.pagination.last_page ? 'disabled' : ''}">
+                                <a class="page-link" href="#" data-page="${json.pagination.current_page + 1}">Next</a>
+                            </li>`;
+
+                            paginationHtml += '</ul>';
+                        }
+                        $('.pagination-container').html(paginationHtml);
+
                         return json.data;
                     }
                 },
@@ -328,8 +277,13 @@
                             if (data.has_phone) {
                                 buttons += `
                                     <button type="button" class="btn btn-outline-success send-invitation-btn"
-                                            title="Send Invitation SMS" data-bs-toggle="modal"
-                                            data-bs-target="#sendInvitationModal">
+                                            title="Send Invitation SMS"
+                                            data-bs-toggle="modal"
+                                            data-bs-target="#sendInvitationModal"
+                                            data-ticket-id="${data.ticket_id}"
+                                            data-attendee-name="${data.attendee_name}"
+                                            data-attendee-phone="${data.attendee_phone}"
+                                            data-event-name="${data.event_name}">
                                         <i class="bi bi-envelope"></i>
                                     </button>`;
                             }
@@ -452,93 +406,105 @@
                     }
                 ],
                 language: {
+                    processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div> Loading tickets...',
                     search: "_INPUT_",
                     searchPlaceholder: "Search tickets...",
-                    lengthMenu: "_MENU_ per page",
-                    info: "Showing _START_ to _END_ of _TOTAL_ tickets"
+                    emptyTable: "No tickets found.",
+                    zeroRecords: "No matching tickets found."
+                },
+                drawCallback: function() {
+                    // Reinitialize tooltips and other plugins
+                    $('[data-bs-toggle="tooltip"]').tooltip();
                 }
             });
-        });
 
-        function printTicket(url) {
-            const printWindow = window.open(url, '_blank');
-            printWindow.onload = function() {
-                printWindow.print();
-            };
-        }
-
-        function shareViaWhatsApp(eventName, attendeeName, token, eventDate, ticketUrl) {
-            const text = `Ticket for ${eventName}\n\n` +
-                        `Attendee: ${attendeeName}\n` +
-                        `Token: ${token}\n` +
-                        `Event Date: ${eventDate}\n\n` +
-                        `View ticket: ${ticketUrl}`;
-            
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
-            window.open(whatsappUrl, '_blank');
-        }
-
-        function shareViaSMS(eventName, attendeeName, token, eventDate, ticketUrl) {
-            const text = `Ticket for ${eventName}\n\n` +
-                        `Attendee: ${attendeeName}\n` +
-                        `Token: ${token}\n` +
-                        `Event Date: ${eventDate}\n\n` +
-                        `View ticket: ${ticketUrl}`;
-            
-            const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
-            window.location.href = smsUrl;
-        }
-
-        function copyTicketLink(ticketUrl) {
-            navigator.clipboard.writeText(ticketUrl).then(() => {
-                alert('Ticket link copied to clipboard!');
-            }).catch(err => {
-                console.error('Failed to copy ticket link:', err);
-                alert('Failed to copy ticket link. Please try again.');
+            // Handle pagination clicks
+            $(document).on('click', '.pagination .page-link', function(e) {
+                e.preventDefault();
+                const page = $(this).data('page');
+                if (page && !$(this).parent().hasClass('disabled')) {
+                    table.page(page - 1).draw('page');
+                }
             });
-        }
 
-        // Handle SMS Invitation
-        $('.send-invitation-btn').click(function() {
-            const ticketId = $(this).data('ticket-id');
-            const attendeeName = $(this).data('attendee-name');
-            const attendeePhone = $(this).data('attendee-phone');
-            const eventName = $(this).data('event-name');
-            const attendeeId = $(this).data('attendee-id');
-            
-            $('#invitationTicketId').val(ticketId);
-            $('#invitationAttendeeId').val(attendeeId);
-            $('#invitationAttendeeName').text(attendeeName);
-            $('#invitationAttendeePhone').text(attendeePhone);
-            $('#invitationEventName').text(eventName);
-        });
+            function printTicket(url) {
+                const printWindow = window.open(url, '_blank');
+                printWindow.onload = function() {
+                    printWindow.print();
+                };
+            }
 
-        $('#sendInvitationForm').submit(function(e) {
-            e.preventDefault();
-            const form = $(this);
-            const submitBtn = form.find('button[type="submit"]');
-            const originalBtnText = submitBtn.html();
-            
-            submitBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Sending...');
-            
-            $.ajax({
-                url: form.attr('action'),
-                method: 'POST',
-                data: form.serialize(),
-                success: function(response) {
-                    if (response.success) {
-                        toastr.success('Invitation SMS sent successfully');
-                        $('#sendInvitationModal').modal('hide');
-                    } else {
-                        toastr.error(response.message || 'Failed to send invitation SMS');
+            function shareViaWhatsApp(eventName, attendeeName, token, eventDate, ticketUrl) {
+                const text = `Ticket for ${eventName}\n\n` +
+                            `Attendee: ${attendeeName}\n` +
+                            `Token: ${token}\n` +
+                            `Event Date: ${eventDate}\n\n` +
+                            `View ticket: ${ticketUrl}`;
+                
+                const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(text)}`;
+                window.open(whatsappUrl, '_blank');
+            }
+
+            function shareViaSMS(eventName, attendeeName, token, eventDate, ticketUrl) {
+                const text = `Ticket for ${eventName}\n\n` +
+                            `Attendee: ${attendeeName}\n` +
+                            `Token: ${token}\n` +
+                            `Event Date: ${eventDate}\n\n` +
+                            `View ticket: ${ticketUrl}`;
+                
+                const smsUrl = `sms:?body=${encodeURIComponent(text)}`;
+                window.location.href = smsUrl;
+            }
+
+            function copyTicketLink(ticketUrl) {
+                navigator.clipboard.writeText(ticketUrl).then(() => {
+                    alert('Ticket link copied to clipboard!');
+                }).catch(err => {
+                    console.error('Failed to copy ticket link:', err);
+                    alert('Failed to copy ticket link. Please try again.');
+                });
+            }
+
+            // Handle SMS Invitation
+            $('.send-invitation-btn').click(function() {
+                const ticketId = $(this).data('ticket-id');
+                const attendeeName = $(this).data('attendee-name');
+                const attendeePhone = $(this).data('attendee-phone');
+                const eventName = $(this).data('event-name');
+                
+                $('#invitationTicketId').val(ticketId);
+                $('#invitationAttendeeName').text(attendeeName);
+                $('#invitationAttendeePhone').text(attendeePhone);
+                $('#invitationEventName').text(eventName);
+            });
+
+            $('#sendInvitationForm').submit(function(e) {
+                e.preventDefault();
+                const form = $(this);
+                const submitBtn = form.find('button[type="submit"]');
+                const originalBtnText = submitBtn.html();
+                
+                submitBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Sending...');
+                
+                $.ajax({
+                    url: form.attr('action'),
+                    method: 'POST',
+                    data: form.serialize(),
+                    success: function(response) {
+                        if (response.success) {
+                            toastr.success('Invitation SMS sent successfully');
+                            $('#sendInvitationModal').modal('hide');
+                        } else {
+                            toastr.error(response.message || 'Failed to send invitation SMS');
+                        }
+                    },
+                    error: function(xhr) {
+                        toastr.error(xhr.responseJSON?.message || 'Failed to send invitation SMS');
+                    },
+                    complete: function() {
+                        submitBtn.prop('disabled', false).html(originalBtnText);
                     }
-                },
-                error: function(xhr) {
-                    toastr.error(xhr.responseJSON?.message || 'Failed to send invitation SMS');
-                },
-                complete: function() {
-                    submitBtn.prop('disabled', false).html(originalBtnText);
-                }
+                });
             });
         });
     </script>
@@ -555,7 +521,6 @@
                 <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => $ticket->event->id]) }}" method="POST">
                     @csrf
                     <input type="hidden" name="ticket_id" id="invitationTicketId">
-                    <input type="hidden" name="attendee_id" id="invitationAttendeeId">
                     <div class="modal-body">
                         <div class="mb-3">
                             <label class="form-label">Attendee</label>
