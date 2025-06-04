@@ -8,6 +8,7 @@ use App\Models\Ticket;
 use App\Models\SmsLog;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class SmsService
 {
@@ -31,56 +32,76 @@ class SmsService
      *
      * @param string $to Recipient phone number
      * @param string $message Message content
-     * @param string $type Type of message (invitation, notification, reminder)
-     * @param array $metadata Additional metadata to store
-     * @return array
+     * @param string $type Message type (invitation, reminder, notification, etc.)
+     * @param array $metadata Additional metadata to store with the log
+     * @return bool Whether the message was sent successfully
      */
-    public function send(string $to, string $message, string $type = 'notification', array $metadata = []): array
+    public function send(string $to, string $message, string $type, array $metadata = []): bool
     {
         try {
-            $result = $this->smsProvider->send($to, $message);
+            // Prepare the payload
+            $payload = [
+                'from' => config('services.nextsms.sender_id'),
+                'to' => $to,
+                'text' => $message,
+                'reference' => Str::uuid()->toString()
+            ];
 
-            // Create SMS log entry
+            // Log the outgoing payload
+            Log::info('Sending SMS', [
+                'type' => $type,
+                'payload' => $payload,
+                'metadata' => $metadata
+            ]);
+
+            // Send the message
+            $response = $this->smsProvider->send($payload);
+
+            // Log the response
+            Log::info('SMS Response', [
+                'type' => $type,
+                'reference' => $payload['reference'],
+                'response' => $response,
+                'metadata' => $metadata
+            ]);
+
+            // Create log entry
             $log = SmsLog::create([
+                'type' => $type,
                 'recipient' => $to,
                 'message' => $message,
-                'status' => $result['status'] ?? 'sent',
-                'message_id' => $result['message_id'] ?? null,
-                'metadata' => $metadata,
-                'sender_id' => $this->smsProvider->getSenderId(),
-                'reference' => $result['reference'] ?? null,
-                'provider_status' => $result['provider_status'] ?? null,
-                'provider_message' => $result['provider_message'] ?? null,
+                'status' => $response['status'] ?? 'unknown',
+                'provider' => $this->getProviderName(),
+                'provider_reference' => $response['message_id'] ?? null,
+                'metadata' => array_merge($metadata, [
+                    'payload' => $payload,
+                    'response' => $response
+                ])
             ]);
 
-            // Log to Laravel's logging system as well
-            Log::channel('sms')->info('SMS sent', [
-                'log_id' => $log->id,
-                'recipient' => $to,
-                'message_id' => $result['message_id'] ?? null,
-                'metadata' => $metadata,
-                'provider' => $this->smsProvider->getProviderName(),
-            ]);
-
-            return array_merge($result, ['log_id' => $log->id]);
+            return ($response['status'] ?? '') === 'success';
         } catch (\Exception $e) {
+            // Log the error with full context
+            Log::error('SMS Send Error', [
+                'type' => $type,
+                'to' => $to,
+                'message' => $message,
+                'metadata' => $metadata,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             // Create error log entry
-            $log = SmsLog::create([
+            SmsLog::create([
+                'type' => $type,
                 'recipient' => $to,
                 'message' => $message,
                 'status' => 'failed',
-                'metadata' => $metadata,
-                'sender_id' => $this->smsProvider->getSenderId(),
-                'error' => $e->getMessage(),
-            ]);
-
-            // Log to Laravel's logging system
-            Log::channel('sms')->error('SMS sending failed', [
-                'log_id' => $log->id,
-                'recipient' => $to,
-                'error' => $e->getMessage(),
-                'metadata' => $metadata,
-                'provider' => $this->smsProvider->getProviderName(),
+                'provider' => $this->getProviderName(),
+                'metadata' => array_merge($metadata, [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ])
             ]);
 
             throw $e;
@@ -91,29 +112,61 @@ class SmsService
      * Send an invitation SMS
      *
      * @param Ticket $ticket The ticket to send invitation for
-     * @return array
+     * @return bool Whether the message was sent successfully
      */
-    public function sendInvitation(Ticket $ticket): array
+    public function sendInvitation(Ticket $ticket): bool
     {
-        $event = $ticket->event;
         $attendee = $ticket->attendee;
-
+        
         if (!$attendee || !$attendee->phone) {
-            throw new \Exception('Attendee does not have a valid phone number.');
+            Log::warning('Cannot send invitation SMS - Missing attendee or phone number', [
+                'ticket_id' => $ticket->id,
+                'attendee_id' => $attendee?->id,
+                'has_phone' => (bool)$attendee?->phone
+            ]);
+            throw new \Exception('Attendee or phone number not found');
         }
 
-        $message = $this->formatInvitationMessage($event, $ticket);
+        $event = $ticket->event;
+        $eventDate = Carbon::parse($event->date);
+        $dayName = $eventDate->locale('sw')->isoFormat('dddd');
+        $formattedTime = $eventDate->format('g:i');
+        $period = $eventDate->format('A');
+        $token = $ticket->ticket_number;
+        $ticketType = $ticket->type;
+        $attendeeName = $attendee->name;
+
+        // Log the invitation details before sending
+        Log::info('Preparing invitation SMS', [
+            'ticket_id' => $ticket->id,
+            'attendee_id' => $attendee->id,
+            'event_id' => $event->id,
+            'event_name' => $event->name,
+            'event_date' => $eventDate->toDateTimeString(),
+            'location' => $event->location,
+            'venue' => $event->venue,
+            'ticket_number' => $token,
+            'ticket_type' => $ticketType
+        ]);
+
+        $message = "Ndugu {$attendeeName}, unakaribishwa kwenye {$event->name} itakayofanyika {$dayName} {$eventDate->toLocaleDateString('en-GB')} saa {$formattedTime} {$period}. Mahali: {$event->location}. Ukumbi: {$event->venue}. Tiketi: {$token} ({$ticketType}). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824";
 
         return $this->send(
             $attendee->phone,
             $message,
             'invitation',
             [
-                'ticket_id' => $ticket->id,
                 'event_id' => $event->id,
                 'attendee_id' => $attendee->id,
-                'attendee_name' => $attendee->name,
-                'attendee_phone' => $attendee->phone
+                'ticket_id' => $ticket->id,
+                'attendee_name' => $attendeeName,
+                'attendee_phone' => $attendee->phone,
+                'ticket_number' => $token,
+                'ticket_type' => $ticketType,
+                'event_name' => $event->name,
+                'event_date' => $eventDate->toDateTimeString(),
+                'location' => $event->location,
+                'venue' => $event->venue
             ]
         );
     }
