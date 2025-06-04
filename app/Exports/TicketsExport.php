@@ -25,38 +25,18 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
     public function headings(): array
     {
         return [
-            'Ticket ID',
-            'Token',
-            'Ticket Number',
             'Attendee Name',
-            'Phone',
-            'Email',
-            'Event Name',
-            'Event Date',
-            'Location',
-            'Ticket Type',
-            'Status',
-            'Last Used',
-            'Created At'
+            'Token',
+            'Ticket Type'
         ];
     }
 
     public function map($ticket): array
     {
         return [
-            $ticket->id,
-            $ticket->token,
-            $ticket->ticket_number,
             $ticket->attendee_name ?? 'Unassigned',
-            $ticket->attendee_phone ?? 'N/A',
-            $ticket->attendee_email ?? 'N/A',
-            $ticket->event_name,
-            $ticket->event_date ? date('d/m/Y', strtotime($ticket->event_date)) : 'N/A',
-            $ticket->event_location ?? 'N/A',
-            ucfirst($ticket->type),
-            ucfirst($ticket->status),
-            $ticket->used_at ? date('d/m/Y H:i', strtotime($ticket->used_at)) : 'Never',
-            date('d/m/Y H:i', strtotime($ticket->created_at))
+            $ticket->token,
+            ucfirst($ticket->type)
         ];
     }
 
@@ -64,13 +44,13 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
     {
         return [
             1 => ['font' => ['bold' => true]], // Header row
-            'A1:M1' => [
+            'A1:C1' => [
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                     'startColor' => ['rgb' => 'F8F9FA']
                 ]
             ],
-            'A:M' => [
+            'A:C' => [
                 'alignment' => [
                     'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT
                 ]

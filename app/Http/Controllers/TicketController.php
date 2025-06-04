@@ -426,19 +426,13 @@ class TicketController extends Controller
                 ->join('events', 'tickets.event_id', '=', 'events.id')
                 ->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id')
                 ->select([
-                    'tickets.id',
                     'tickets.token',
-                    'tickets.ticket_number',
                     'tickets.type',
-                    'tickets.status',
-                    'tickets.created_at',
-                    'tickets.used_at',
                     'events.name as event_name',
                     'events.start_date as event_date',
                     'events.location as event_location',
                     'attendees.name as attendee_name',
-                    'attendees.phone as attendee_phone',
-                    'attendees.email as attendee_email'
+                    'attendees.phone as attendee_phone'
                 ])
                 ->orderBy('tickets.created_at', 'desc')
                 ->get();

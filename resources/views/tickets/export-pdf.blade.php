@@ -48,12 +48,6 @@
             border-top: 1px solid #ddd;
             padding-top: 10px;
         }
-        .status-active {
-            color: #198754;
-        }
-        .status-inactive {
-            color: #dc3545;
-        }
     </style>
 </head>
 <body>
@@ -65,45 +59,17 @@
     <table>
         <thead>
             <tr>
-                <th>Ticket ID</th>
+                <th>Attendee Name</th>
                 <th>Token</th>
-                <th>Ticket Number</th>
-                <th>Attendee</th>
-                <th>Event</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Last Used</th>
-                <th>Created</th>
+                <th>Ticket Type</th>
             </tr>
         </thead>
         <tbody>
             @foreach($tickets as $ticket)
                 <tr>
-                    <td>{{ $ticket->id }}</td>
+                    <td>{{ $ticket->attendee_name ?? 'Unassigned' }}</td>
                     <td>{{ $ticket->token }}</td>
-                    <td>{{ $ticket->ticket_number }}</td>
-                    <td>
-                        {{ $ticket->attendee_name ?? 'Unassigned' }}
-                        @if($ticket->attendee_phone)
-                            <br><small>{{ $ticket->attendee_phone }}</small>
-                        @endif
-                    </td>
-                    <td>
-                        {{ $ticket->event_name }}
-                        <br>
-                        <small>
-                            {{ $ticket->event_date ? date('d/m/Y', strtotime($ticket->event_date)) : 'N/A' }}
-                            @if($ticket->event_location)
-                                <br>{{ $ticket->event_location }}
-                            @endif
-                        </small>
-                    </td>
                     <td>{{ ucfirst($ticket->type) }}</td>
-                    <td class="status-{{ $ticket->status }}">
-                        {{ ucfirst($ticket->status) }}
-                    </td>
-                    <td>{{ $ticket->used_at ? date('d/m/Y H:i', strtotime($ticket->used_at)) : 'Never' }}</td>
-                    <td>{{ date('d/m/Y H:i', strtotime($ticket->created_at)) }}</td>
                 </tr>
             @endforeach
         </tbody>
