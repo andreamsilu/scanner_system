@@ -424,9 +424,9 @@
             const dayName = dayNames[eventDate.toLocaleDateString('en-US', { weekday: 'long' })];
 
             // Format time with AM/PM in Swahili
-            const time = '{{ $event->start_time }}';
-            const [hours, minutes] = time.split(':');
-            const period = parseInt(hours) >= 12 ? 'jioni' : 'asubuhi';
+            const hours = eventDate.getHours();
+            const minutes = eventDate.getMinutes().toString().padStart(2, '0');
+            const period = hours >= 12 ? 'jioni' : 'asubuhi';
             const formattedTime = `${hours}:${minutes}`;
 
             // Create predefined SMS message with actual values
