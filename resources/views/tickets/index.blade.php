@@ -430,7 +430,7 @@
             const formattedTime = `${hours}:${minutes}`;
 
             // Create predefined SMS message with actual values
-            const smsTemplate = `Ndugu ${attendeeName}, unakaribishwa kwenye {{ $event->name }} itakayofanyika ${dayName} ${eventDate.toLocaleDateString('en-GB')} saa ${formattedTime} ${period} katika {{ $event->location }}. Tiketi: ${token} (${ticketType.toUpperCase()}). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824`;
+            const smsTemplate = `Ndugu ${attendeeName}, unakaribishwa kwenye {{ $event->name }} itakayofanyika ${dayName} ${eventDate.toLocaleDateString('en-GB')} saa ${formattedTime} ${period}. Mahali: {{ $event->location }}. Ukumbi: {{ $event->venue }}. Tiketi: ${token} (${ticketType.toUpperCase()}). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824`;
             
             // Set the predefined message in the hidden input
             $('#predefinedMessage').val(smsTemplate);
