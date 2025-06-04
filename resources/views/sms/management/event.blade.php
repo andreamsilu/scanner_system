@@ -196,29 +196,6 @@
 
         <!-- SMS Templates & Recent Activity -->
         <div class="col-md-4">
-            <!-- Templates -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">Available Templates</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        @foreach($templates as $template)
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ $template->name }}</h6>
-                                    <span class="badge bg-{{ $template->is_active ? 'success' : 'secondary' }}">
-                                        {{ $template->is_active ? 'Active' : 'Inactive' }}
-                                    </span>
-                                </div>
-                                <p class="mb-1 small text-muted">{{ Str::limit($template->content, 60) }}</p>
-                                <small class="text-muted">Type: {{ ucfirst(str_replace('_', ' ', $template->type)) }}</small>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-            </div>
-
             <!-- Recent SMS Activity -->
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white">
