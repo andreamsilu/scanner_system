@@ -7,9 +7,28 @@
         ]"
     >
         <x-slot name="actions">
-            <a href="{{ route('events.index') }}" class="btn btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Events
-            </a>
+            <div class="d-flex gap-2">
+                <div class="dropdown">
+                    <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-download me-2"></i>Export All
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="{{ route('tickets.export', ['format' => 'excel']) }}">
+                                <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ route('tickets.export', ['format' => 'pdf']) }}">
+                                <i class="bi bi-file-earmark-pdf me-2"></i>Export to PDF
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <a href="{{ route('events.index') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Events
+                </a>
+            </div>
         </x-slot>
     </x-page-header>
 
@@ -257,12 +276,19 @@
                                             if (column === 0) {
                                                 return $(data).find('.fw-medium').text();
                                             }
+                                            if (column === 2 || column === 3) {
+                                                return $(data).text().trim();
+                                            }
                                             return data;
                                         }
                                     }
                                 },
-                                title: 'Tickets List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
+                                title: 'Tickets List - {{ now()->format('Y-m-d H:i:s') }}',
+                                messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
+                                customize: function(xlsx) {
+                                    var sheet = xlsx.xl.worksheets['sheet1.xml'];
+                                    $('row:first c', sheet).attr('s', '2'); // Bold headers
+                                }
                             },
                             {
                                 extend: 'pdf',
@@ -275,11 +301,14 @@
                                             if (column === 0) {
                                                 return $(data).find('.fw-medium').text();
                                             }
+                                            if (column === 2 || column === 3) {
+                                                return $(data).text().trim();
+                                            }
                                             return data;
                                         }
                                     }
                                 },
-                                title: 'Tickets List',
+                                title: 'Tickets List - {{ now()->format('Y-m-d H:i:s') }}',
                                 messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
                                 customize: function(doc) {
                                     doc.defaultStyle.fontSize = 9;
@@ -289,25 +318,21 @@
                                     doc.pageMargins = [20, 40, 20, 40];
                                     doc.defaultStyle.alignment = 'left';
                                     doc.styles.tableHeader.alignment = 'left';
+                                    
+                                    // Add footer with page numbers
+                                    doc.footer = function(currentPage, pageCount) {
+                                        return {
+                                            columns: [
+                                                {
+                                                    text: 'Page ' + currentPage.toString() + ' of ' + pageCount,
+                                                    alignment: 'center',
+                                                    fontSize: 8,
+                                                    margin: [0, 10]
+                                                }
+                                            ]
+                                        };
+                                    };
                                 }
-                            },
-                            {
-                                extend: 'print',
-                                text: '<i class="bi bi-printer me-2"></i>Print',
-                                className: 'btn btn-sm btn-info',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5],
-                                    format: {
-                                        body: function(data, row, column, node) {
-                                            if (column === 0) {
-                                                return $(data).find('.fw-medium').text();
-                                            }
-                                            return data;
-                                        }
-                                    }
-                                },
-                                title: 'Tickets List',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString()
                             }
                         ]
                     }

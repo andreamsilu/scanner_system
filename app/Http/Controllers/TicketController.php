@@ -12,6 +12,9 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use App\Exports\TicketsExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class TicketController extends Controller
 {
@@ -407,5 +410,54 @@ class TicketController extends Controller
             'recordsFiltered' => $totalFiltered,
             'data' => $data
         ]);
+    }
+
+    /**
+     * Export tickets in the specified format (Excel or PDF)
+     *
+     * @param string $format
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
+     */
+    public function export($format = 'excel')
+    {
+        try {
+            // Get all tickets with related data
+            $tickets = DB::table('tickets')
+                ->join('events', 'tickets.event_id', '=', 'events.id')
+                ->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id')
+                ->select([
+                    'tickets.id',
+                    'tickets.token',
+                    'tickets.code',
+                    'tickets.type',
+                    'tickets.is_active',
+                    'tickets.created_at',
+                    'tickets.last_scan_at',
+                    'events.name as event_name',
+                    'events.date as event_date',
+                    'events.location as event_location',
+                    'attendees.name as attendee_name',
+                    'attendees.phone as attendee_phone',
+                    'attendees.email as attendee_email'
+                ])
+                ->orderBy('tickets.created_at', 'desc')
+                ->get();
+
+            if ($format === 'excel') {
+                return Excel::download(new TicketsExport($tickets), 'tickets-list-' . now()->format('Y-m-d-His') . '.xlsx');
+            }
+
+            // Generate PDF
+            $pdf = PDF::loadView('tickets.export-pdf', [
+                'tickets' => $tickets,
+                'generatedAt' => now()->format('Y-m-d H:i:s')
+            ]);
+
+            return $pdf->download('tickets-list-' . now()->format('Y-m-d-His') . '.pdf');
+
+        } catch (\Exception $e) {
+            \Log::error('Ticket export failed: ' . $e->getMessage());
+            return back()->with('error', 'Failed to export tickets. Please try again.');
+        }
     }
 } 

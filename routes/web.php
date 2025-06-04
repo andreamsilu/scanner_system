@@ -171,6 +171,9 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::post('/settings/clear-cache', [SettingController::class, 'clearCache'])->name('settings.clear-cache');
         Route::post('/settings/clear-logs', [SettingController::class, 'clearLogs'])->name('settings.clear-logs');
+
+        // Ticket exports
+        Route::get('/tickets/export/{format?}', [TicketController::class, 'export'])->name('tickets.export');
     });
 
     // Attendee validation route
