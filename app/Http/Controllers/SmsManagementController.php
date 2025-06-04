@@ -66,8 +66,6 @@ class SmsManagementController extends Controller
      */
     public function showEvent(Event $event, Request $request)
     {
-        $templates = SmsTemplate::where('is_active', true)->get();
-        
         $attendees = $event->attendees()
             ->with(['tickets' => function($query) use ($event) {
                 $query->where('event_id', $event->id);
@@ -94,7 +92,6 @@ class SmsManagementController extends Controller
 
         return view('sms.management.event', compact(
             'event',
-            'templates',
             'attendees',
             'smsStats',
             'recentLogs'
@@ -108,12 +105,9 @@ class SmsManagementController extends Controller
     {
         $request->validate([
             'attendee_ids' => 'required|array',
-            'attendee_ids.*' => 'exists:attendees,id',
-            'template_id' => 'required|exists:sms_templates,id',
-            'message' => 'required|string|max:160'
+            'attendee_ids.*' => 'exists:attendees,id'
         ]);
 
-        $template = SmsTemplate::findOrFail($request->template_id);
         $attendees = $event->attendees()->whereIn('id', $request->attendee_ids)->get();
         
         $successCount = 0;
@@ -133,39 +127,29 @@ class SmsManagementController extends Controller
                 continue;
             }
 
-            $data = [
-                'user_name' => $attendee->name,
-                'event_name' => $event->name,
-                'date' => $event->date->format('F j, Y g:i A'),
-                'location' => $event->location,
-                'ticket_number' => $ticket->ticket_number,
-                'ticket_type' => $ticket->type,
-                'ticket_price' => $ticket->price
-            ];
-
-            $success = $this->smsService->send(
-                $attendee->phone,
-                $request->message,
-                $template->type,
-                [
-                    'event_id' => $event->id,
-                    'attendee_id' => $attendee->id,
-                    'ticket_id' => $ticket->id
-                ]
-            );
-
-            if ($success) {
-                $successCount++;
-                $results[] = [
-                    'attendee' => $attendee->name,
-                    'status' => 'success'
-                ];
-            } else {
+            try {
+                $success = $this->smsService->sendInvitation($ticket);
+                
+                if ($success) {
+                    $successCount++;
+                    $results[] = [
+                        'attendee' => $attendee->name,
+                        'status' => 'success'
+                    ];
+                } else {
+                    $failedCount++;
+                    $results[] = [
+                        'attendee' => $attendee->name,
+                        'status' => 'failed',
+                        'reason' => 'SMS sending failed'
+                    ];
+                }
+            } catch (\Exception $e) {
                 $failedCount++;
                 $results[] = [
                     'attendee' => $attendee->name,
                     'status' => 'failed',
-                    'reason' => 'SMS sending failed'
+                    'reason' => $e->getMessage()
                 ];
             }
         }
@@ -174,6 +158,8 @@ class SmsManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => "Sent {$successCount} messages successfully, {$failedCount} failed",
+                'success_count' => $successCount,
+                'failure_count' => $failedCount,
                 'results' => $results
             ]);
         }

@@ -259,23 +259,13 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Template</label>
-                        <select name="template_id" class="form-select" required>
-                            <option value="">Select a template...</option>
-                            @foreach($templates as $template)
-                                <option value="{{ $template->id }}">{{ $template->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Custom Message (Optional)</label>
-                        <textarea name="custom_message" class="form-control" rows="3" maxlength="160"></textarea>
-                        <small class="text-muted">Leave empty to use template. Available variables: {user_name}, {event_name}, {date}, {location}, {ticket_number}</small>
-                    </div>
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle me-2"></i>
                         <span id="selectedCount">0</span> attendees selected
+                    </div>
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Only attendees with valid phone numbers will receive SMS.
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -459,12 +449,6 @@ $(document).ready(function() {
                 `);
             }
         });
-    });
-
-    // Character counter for custom message
-    $('textarea[name="custom_message"]').on('input', function() {
-        const remaining = 160 - $(this).val().length;
-        $(this).next('small').text(`Characters remaining: ${remaining}`);
     });
 });
 </script>
