@@ -408,7 +408,7 @@
             sendInvitation(ticketId, attendeeId, attendeeName, attendeePhone, null, ticketCode);
         });
 
-        // Update the sendInvitation function to populate all fields
+        // Update the sendInvitation function to use predefined template
         function sendInvitation(ticketId, attendeeId, attendeeName, phone, ticketType, ticketNumber) {
             $('#invitationTicketId').val(ticketId);
             $('#invitationAttendeeId').val(attendeeId);
@@ -417,12 +417,18 @@
             $('#invitationTicketType').text(ticketType ? ticketType.toUpperCase() : 'N/A');
             $('#invitationTicketNumber').text(ticketNumber || 'N/A');
 
-            // Update sample SMS template
-            $('#sampleAttendeeName').text(attendeeName || 'Mr & Mrs Guest');
-            $('#sampleTicketNumber').text(ticketNumber || 'XXXXXXX');
-            $('#sampleTicketType').text(ticketType ? ticketType.toUpperCase() : 'REGULAR');
-            $('#samplePhone').text(phone || '07XXXXXXXX');
+            // Create predefined SMS message
+            const smsTemplate = `Familia ya ${attendeeName || 'Mr & Mrs Guest'} wanakualika kwenye {{ $event->name }}, {{ $event->start_date->format('d/m/Y') }} saa {{ $event->start_time }}, {{ $event->location }}. Tiketi: ${ticketNumber || 'XXXXXXX'} (${ticketType ? ticketType.toUpperCase() : 'REGULAR'}). Wasiliana: ${phone || '07XXXXXXXX'}. Karibu tusherehekee pamoja!`;
+            
+            // Set the predefined message in the hidden input
+            $('#predefinedMessage').val(smsTemplate);
+            
+            // Display the template in the alert box
+            $('#sampleSmsTemplate').text(smsTemplate);
 
+            // Hide the custom message textarea since we're using predefined template
+            $('#customMessageContainer').hide();
+            
             $('#sendInvitationModal').modal('show');
         }
 
@@ -435,10 +441,16 @@
             submitBtn.prop('disabled', true)
                 .html('<i class="fas fa-spinner fa-spin me-1"></i> Sending...');
 
+            // Get the predefined message
+            const message = $('#predefinedMessage').val();
+
             $.ajax({
                 url: $(this).attr('action'),
                 method: 'POST',
-                data: $(this).serialize(),
+                data: {
+                    ...$(this).serializeArray().reduce((obj, item) => ({ ...obj, [item.name]: item.value }), {}),
+                    message: message // Send the predefined message
+                },
                 success: function(response) {
                     $('#sendInvitationModal').modal('hide');
                     toastr.success('SMS invitation sent successfully!');
@@ -500,20 +512,14 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-medium">Sample SMS Template</label>
+                            <label class="form-label fw-medium">SMS Message</label>
                             <div class="alert alert-info">
-                                <p class="mb-0" id="sampleSmsTemplate">
-                                    Familia ya <span id="sampleAttendeeName">Mr & Mrs Pienzi Chambila</span> wanakualika kwenye {{ $event->name }}, 
-                                    {{ $event->start_date->format('d/m/Y') }} saa {{ $event->start_time }}, 
-                                    {{ $event->location }}. 
-                                    Tiketi: <span id="sampleTicketNumber">9265337</span> (<span id="sampleTicketType">DOUBLE</span>). 
-                                    Wasiliana: <span id="samplePhone">0769289824</span>. 
-                                    Karibu tusherehekee pamoja!
-                                </p>
+                                <p class="mb-0" id="sampleSmsTemplate"></p>
                             </div>
+                            <input type="hidden" id="predefinedMessage" name="message">
                         </div>
 
-                        <div class="mb-3">
+                        <div id="customMessageContainer" class="mb-3" style="display: none;">
                             <label for="customMessage" class="form-label fw-medium">Custom Message (Optional)</label>
                             <textarea class="form-control" id="customMessage" name="custom_message" rows="3" 
                                 placeholder="Enter a custom message or leave blank to use the template above"></textarea>
