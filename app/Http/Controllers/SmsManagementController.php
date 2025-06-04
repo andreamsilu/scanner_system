@@ -12,6 +12,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Http\JsonResponse;
 use Illuminate\View\View;
+use App\Jobs\SendBulkSms;
+use App\Jobs\SendSingleSms;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class SmsManagementController extends Controller
 {
@@ -131,15 +136,36 @@ class SmsManagementController extends Controller
     public function bulkSend(Request $request, Event $event)
     {
         try {
-            Log::info('Starting bulk SMS send', [
-                'event_id' => $event->id,
-                'request_data' => $request->all()
-            ]);
+            // Rate limiting: max 100 SMS per minute per user
+            $executed = RateLimiter::attempt(
+                'bulk-sms:' . auth()->id(),
+                $perMinute = 100,
+                function() {
+                    return true;
+                }
+            );
+
+            if (!$executed) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Too many SMS requests. Please try again in a minute.'
+                ], 429);
+            }
 
             // Validate request
-            $request->validate([
-                'attendee_ids' => 'required|string' // We receive it as JSON string
+            $validator = Validator::make($request->all(), [
+                'attendee_ids' => 'required|string', // We receive it as JSON string
+                'message_type' => ['required', Rule::in(['invitation', 'reminder', 'notification'])],
+                'custom_message' => 'nullable|string|max:160'
             ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
 
             // Parse the JSON string to array
             $attendeeIds = json_decode($request->attendee_ids, true);
@@ -148,37 +174,31 @@ class SmsManagementController extends Controller
                 throw new \Exception('Invalid attendee_ids format');
             }
 
-            Log::info('Processing attendee IDs', ['attendee_ids' => $attendeeIds]);
-
             $results = [];
             $successCount = 0;
             $failureCount = 0;
 
-            foreach ($attendeeIds as $attendeeId) {
-                try {
-                    $attendee = $event->attendees()->findOrFail($attendeeId);
-                    
-                    Log::info('Processing attendee', [
-                        'attendee_id' => $attendeeId,
-                        'attendee_name' => $attendee->name,
-                        'phone' => $attendee->phone
-                    ]);
+            // Get all attendees in one query
+            $attendees = $event->attendees()
+                ->whereIn('id', $attendeeIds)
+                ->with(['tickets' => function($query) use ($event) {
+                    $query->where('event_id', $event->id);
+                }])
+                ->get();
 
-                    if (!$attendee->phone) {
+            foreach ($attendees as $attendee) {
+                try {
+                    if (!$this->isValidPhoneNumber($attendee->phone)) {
                         $results[] = [
                             'success' => false,
                             'recipient' => $attendee->name,
-                            'message' => 'No phone number available'
+                            'message' => 'Invalid phone number format'
                         ];
                         $failureCount++;
                         continue;
                     }
 
-                    // Get the attendee's ticket for this event
-                    $ticket = $attendee->tickets()
-                        ->where('event_id', $event->id)
-                        ->first();
-
+                    $ticket = $attendee->tickets->first();
                     if (!$ticket) {
                         $results[] = [
                             'success' => false,
@@ -189,12 +209,20 @@ class SmsManagementController extends Controller
                         continue;
                     }
 
-                    $result = $this->smsService->sendInvitation($ticket);
-                    
-                    Log::info('SMS send result', [
-                        'attendee_id' => $attendeeId,
-                        'result' => $result
-                    ]);
+                    // Send SMS based on message type
+                    switch ($request->message_type) {
+                        case 'invitation':
+                            $result = $this->smsService->sendInvitation($ticket, $request->custom_message);
+                            break;
+                        case 'reminder':
+                            $result = $this->smsService->sendEventReminder($ticket, $request->custom_message);
+                            break;
+                        case 'notification':
+                            $result = $this->smsService->sendTicketUsageNotification($ticket, $request->custom_message);
+                            break;
+                        default:
+                            throw new \Exception('Invalid message type');
+                    }
 
                     $results[] = [
                         'success' => $result['success'],
@@ -209,24 +237,24 @@ class SmsManagementController extends Controller
                     } else {
                         $failureCount++;
                     }
+
                 } catch (\Exception $e) {
                     Log::error('Failed to send SMS to attendee', [
-                        'attendee_id' => $attendeeId,
+                        'attendee_id' => $attendee->id,
                         'event_id' => $event->id,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
+                        'error' => $e->getMessage()
                     ]);
 
                     $results[] = [
                         'success' => false,
-                        'recipient' => $attendee->name ?? 'Unknown',
+                        'recipient' => $attendee->name,
                         'message' => 'Error: ' . $e->getMessage()
                     ];
                     $failureCount++;
                 }
             }
 
-            $response = [
+            return response()->json([
                 'success' => $successCount > 0,
                 'success_count' => $successCount,
                 'failure_count' => $failureCount,
@@ -234,15 +262,14 @@ class SmsManagementController extends Controller
                 'message' => $successCount > 0 
                     ? "Successfully sent {$successCount} messages" . ($failureCount > 0 ? ", {$failureCount} failed" : "")
                     : "Failed to send any messages"
-            ];
+            ]);
 
-            Log::info('Bulk SMS send completed', $response);
-
-            return response()->json($response);
         } catch (\Exception $e) {
             Log::error('Bulk SMS send failed', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'user_id' => auth()->id(),
+                'event_id' => $event->id
             ]);
 
             return response()->json([
@@ -257,49 +284,164 @@ class SmsManagementController extends Controller
      */
     public function sendAttendeeInvitation(Request $request, Event $event)
     {
-        $request->validate([
-            'attendee_id' => 'required|exists:attendees,id',
-            'ticket_id' => 'required|exists:tickets,id'
-        ]);
-
         try {
+            // Rate limiting: max 10 SMS per minute per user
+            $executed = RateLimiter::attempt(
+                'single-sms:' . auth()->id(),
+                $perMinute = 10,
+                function() {
+                    return true;
+                }
+            );
+
+            if (!$executed) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Too many SMS requests. Please try again in a minute.'
+                ], 429);
+            }
+
+            // Validate request
+            $validator = Validator::make($request->all(), [
+                'attendee_id' => 'required|exists:attendees,id',
+                'ticket_id' => 'required|exists:tickets,id',
+                'custom_message' => 'nullable|string|max:160'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Get attendee and ticket
             $attendee = $event->attendees()->findOrFail($request->attendee_id);
             $ticket = $attendee->tickets()->findOrFail($request->ticket_id);
 
-            if (!$attendee->phone) {
-                throw new \Exception('Attendee does not have a valid phone number.');
-            }
-
-            $success = $this->smsService->sendInvitation($ticket);
-
-            if ($request->wantsJson()) {
+            // Validate phone number
+            if (!$this->isValidPhoneNumber($attendee->phone)) {
                 return response()->json([
-                    'success' => $success,
-                    'message' => $success ? 'Invitation sent successfully' : 'Failed to send invitation'
-                ]);
+                    'success' => false,
+                    'message' => 'Invalid phone number format for ' . $attendee->name
+                ], 422);
             }
 
-            return redirect()->route('sms.management.event', $event)
-                ->with($success ? 'success' : 'error', 
-                    $success ? 'Invitation sent successfully' : 'Failed to send invitation');
+            // Prepare SMS payload
+            $message = $request->custom_message ?? $this->getDefaultInvitationMessage($ticket);
+            $reference = 'EVT-' . $event->id . '-' . $ticket->id . '-' . time();
+            
+            $payload = [
+                'from' => 'SENDOFF',
+                'to' => $attendee->phone,
+                'text' => $message,
+                'reference' => $reference
+            ];
+
+            // Send SMS using the service
+            $result = $this->smsService->send(
+                $payload['to'],
+                $payload['text'],
+                'invitation',
+                [
+                    'event_id' => $event->id,
+                    'ticket_id' => $ticket->id,
+                    'attendee_id' => $attendee->id,
+                    'reference' => $reference
+                ]
+            );
+
+            // Check if we got a valid response with messages array
+            if (!isset($result['messages']) || !is_array($result['messages']) || empty($result['messages'])) {
+                throw new \Exception('Invalid response from SMS service');
+            }
+
+            $smsResult = $result['messages'][0]; // Get first message result
+
+            // Log the SMS attempt
+            Log::info('SMS invitation sent', [
+                'attendee_id' => $attendee->id,
+                'ticket_id' => $ticket->id,
+                'event_id' => $event->id,
+                'message_id' => $smsResult['messageId'] ?? null,
+                'status' => $smsResult['status']['name'] ?? null,
+                'reference' => $reference
+            ]);
+
+            // Return response matching API format
+            return response()->json([
+                'success' => true,
+                'message' => 'SMS sent successfully to ' . $attendee->name,
+                'recipient' => $attendee->name,
+                'phone' => $attendee->phone,
+                'sms_result' => [
+                    'to' => $smsResult['to'],
+                    'status' => $smsResult['status'],
+                    'messageId' => $smsResult['messageId'],
+                    'smsCount' => $smsResult['smsCount'],
+                    'message' => $smsResult['message']
+                ],
+                'reference' => $reference
+            ]);
+
         } catch (\Exception $e) {
             Log::error('Failed to send invitation SMS', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'attendee_id' => $request->attendee_id,
                 'ticket_id' => $request->ticket_id,
-                'event_id' => $event->id
+                'event_id' => $event->id,
+                'user_id' => auth()->id()
             ]);
 
-            if ($request->wantsJson()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to send invitation: ' . $e->getMessage()
-                ], 500);
-            }
-
-            return redirect()->route('sms.management.event', $event)
-                ->with('error', 'Failed to send invitation: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send SMS: ' . $e->getMessage(),
+                'recipient' => $attendee->name ?? null,
+                'phone' => $attendee->phone ?? null
+            ], 500);
         }
+    }
+
+    /**
+     * Get default invitation message for a ticket
+     */
+    private function getDefaultInvitationMessage($ticket): string
+    {
+        return "You have been invited to {$ticket->event->name}. " .
+               "Your ticket code is {$ticket->code}. " .
+               "Event date: " . $ticket->event->start_date->format('M d, Y');
+    }
+
+    /**
+     * Validate phone number format
+     *
+     * @param string|null $phone
+     * @return bool
+     */
+    private function isValidPhoneNumber(?string $phone): bool
+    {
+        if (empty($phone)) {
+            return false;
+        }
+
+        // Remove any spaces, dashes, or parentheses
+        $phone = preg_replace('/[\s\-\(\)]/', '', $phone);
+
+        // Must start with + and country code
+        if (!preg_match('/^\+[1-9]\d{1,14}$/', $phone)) {
+            return false;
+        }
+
+        // Additional country-specific validation can be added here
+        // For Tanzania numbers (starting with +255)
+        if (strpos($phone, '+255') === 0) {
+            // Must be 12 digits after +255
+            return strlen($phone) === 13;
+        }
+
+        return true;
     }
 
     /**
