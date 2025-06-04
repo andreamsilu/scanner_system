@@ -23,6 +23,21 @@
             color: #666;
             margin: 5px 0 0;
         }
+        .filters {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .filters p {
+            margin: 5px 0;
+            font-size: 11px;
+            color: #666;
+        }
+        .filters strong {
+            color: #333;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -55,6 +70,27 @@
         <h1>Tickets List</h1>
         <p>Generated on: {{ $generatedAt }}</p>
     </div>
+
+    @if(isset($filters) && (isset($filters['event']) || isset($filters['type']) || isset($filters['date_from']) || isset($filters['date_to']) || isset($filters['status'])))
+    <div class="filters">
+        <p><strong>Applied Filters:</strong></p>
+        @if(isset($filters['event']) && $filters['event'])
+            <p><strong>Event:</strong> {{ $filters['event'] }}</p>
+        @endif
+        @if(isset($filters['type']) && $filters['type'])
+            <p><strong>Ticket Type:</strong> {{ ucfirst($filters['type']) }}</p>
+        @endif
+        @if(isset($filters['date_from']) && $filters['date_from'])
+            <p><strong>From Date:</strong> {{ date('d/m/Y', strtotime($filters['date_from'])) }}</p>
+        @endif
+        @if(isset($filters['date_to']) && $filters['date_to'])
+            <p><strong>To Date:</strong> {{ date('d/m/Y', strtotime($filters['date_to'])) }}</p>
+        @endif
+        @if(isset($filters['status']) && $filters['status'])
+            <p><strong>Status:</strong> {{ ucfirst($filters['status']) }}</p>
+        @endif
+    </div>
+    @endif
 
     <table>
         <thead>
