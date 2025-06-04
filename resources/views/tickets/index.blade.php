@@ -405,46 +405,46 @@
                 return;
             }
             
-            $('#invitationTicketId').val(ticketId);
-            $('#invitationAttendeeId').val(attendeeId);
-            $('#invitationAttendeeName').text(attendeeName);
-            $('#invitationAttendeePhone').text(attendeePhone);
-            $('#invitationEventName').text(eventName);
-
-            // Format and display the message preview with actual event data
-            const messagePreview = `MWALIKO: ${attendeeName.toUpperCase()}
-SENDOFF ya ALICE PIENZI CHAMBILA
-Tarehe: ${eventDate}
-Saa: ${eventTime}
-Mahali: ${eventLocation}
-Code: ${ticketCode}
-Link: ${ticketUrl}`;
-
-            $('#invitationMessagePreview').text(messagePreview);
+            sendInvitation(ticketId, attendeeId, attendeeName, attendeePhone, null, ticketCode);
         });
 
-        $('#sendInvitationForm').submit(function(e) {
+        // Update the sendInvitation function to populate all fields
+        function sendInvitation(ticketId, attendeeId, attendeeName, phone, ticketType, ticketNumber) {
+            $('#invitationTicketId').val(ticketId);
+            $('#invitationAttendeeId').val(attendeeId);
+            $('#invitationAttendeeName').text(attendeeName || 'Unassigned');
+            $('#invitationAttendeePhone').text(phone || 'N/A');
+            $('#invitationTicketType').text(ticketType ? ticketType.toUpperCase() : 'N/A');
+            $('#invitationTicketNumber').text(ticketNumber || 'N/A');
+
+            // Update sample SMS template
+            $('#sampleAttendeeName').text(attendeeName || 'Mr & Mrs Guest');
+            $('#sampleTicketNumber').text(ticketNumber || 'XXXXXXX');
+            $('#sampleTicketType').text(ticketType ? ticketType.toUpperCase() : 'REGULAR');
+            $('#samplePhone').text(phone || '07XXXXXXXX');
+
+            $('#sendInvitationModal').modal('show');
+        }
+
+        // Handle form submission
+        $('#sendInvitationForm').on('submit', function(e) {
             e.preventDefault();
-            const form = $(this);
-            const submitBtn = form.find('button[type="submit"]');
+            const submitBtn = $('#sendInvitationBtn');
             const originalBtnText = submitBtn.html();
             
-            submitBtn.prop('disabled', true).html('<i class="bi bi-hourglass-split"></i> Sending...');
-            
+            submitBtn.prop('disabled', true)
+                .html('<i class="fas fa-spinner fa-spin me-1"></i> Sending...');
+
             $.ajax({
-                url: form.attr('action'),
+                url: $(this).attr('action'),
                 method: 'POST',
-                data: form.serialize(),
+                data: $(this).serialize(),
                 success: function(response) {
-                    if (response.success) {
-                        toastr.success('Invitation SMS sent successfully');
-                        $('#sendInvitationModal').modal('hide');
-                    } else {
-                        toastr.error(response.message || 'Failed to send invitation SMS');
-                    }
+                    $('#sendInvitationModal').modal('hide');
+                    toastr.success('SMS invitation sent successfully!');
                 },
                 error: function(xhr) {
-                    toastr.error(xhr.responseJSON?.message || 'Failed to send invitation SMS');
+                    toastr.error(xhr.responseJSON?.message || 'Failed to send SMS invitation');
                 },
                 complete: function() {
                     submitBtn.prop('disabled', false).html(originalBtnText);
@@ -478,31 +478,51 @@ Link: ${ticketUrl}`;
                                     <p class="mb-0" id="invitationAttendeePhone"></p>
                                 </div>
                                 <div class="mb-3">
-                                    <label class="form-label fw-medium">Event</label>
-                                    <p class="mb-0" id="invitationEventName"></p>
+                                    <label class="form-label fw-medium">Ticket Type</label>
+                                    <p class="mb-0" id="invitationTicketType"></p>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">Ticket Number</label>
+                                    <p class="mb-0" id="invitationTicketNumber"></p>
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <div class="alert alert-info mb-3">
-                                    <i class="bi bi-info-circle me-2"></i>
-                                    A predefined invitation message will be sent to the attendee.
+                                <div class="mb-3">
+                                    <label class="form-label fw-medium">Event Details</label>
+                                    <p class="mb-0">
+                                        <strong>Name:</strong> {{ $event->name }}<br>
+                                        <strong>Date:</strong> {{ $event->start_date->format('d/m/Y') }}<br>
+                                        <strong>Time:</strong> {{ $event->start_time }}<br>
+                                        <strong>Venue:</strong> {{ $event->location }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
-                        
-                        <div class="card">
-                            <div class="card-header bg-light">
-                                <h6 class="card-title mb-0">Message Preview</h6>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-medium">Sample SMS Template</label>
+                            <div class="alert alert-info">
+                                <p class="mb-0" id="sampleSmsTemplate">
+                                    Familia ya <span id="sampleAttendeeName">Mr & Mrs Pienzi Chambila</span> wanakualika kwenye {{ $event->name }}, 
+                                    {{ $event->start_date->format('d/m/Y') }} saa {{ $event->start_time }}, 
+                                    {{ $event->location }}. 
+                                    Tiketi: <span id="sampleTicketNumber">9265337</span> (<span id="sampleTicketType">DOUBLE</span>). 
+                                    Wasiliana: <span id="samplePhone">0769289824</span>. 
+                                    Karibu tusherehekee pamoja!
+                                </p>
                             </div>
-                            <div class="card-body">
-                                <pre class="mb-0" id="invitationMessagePreview" style="white-space: pre-wrap; font-family: inherit; font-size: 0.875rem; line-height: 1.5;"></pre>
-                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="customMessage" class="form-label fw-medium">Custom Message (Optional)</label>
+                            <textarea class="form-control" id="customMessage" name="custom_message" rows="3" 
+                                placeholder="Enter a custom message or leave blank to use the template above"></textarea>
                         </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-send"></i> Send Invitation
+                        <button type="submit" class="btn btn-primary" id="sendInvitationBtn">
+                            <i class="fas fa-paper-plane me-1"></i> Send SMS
                         </button>
                     </div>
                 </form>
