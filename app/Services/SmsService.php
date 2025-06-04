@@ -153,22 +153,16 @@ class SmsService
      */
     protected function formatInvitationMessage(Event $event, Ticket $ticket): string
     {
-        return strtr(
-            "MWALIKO: {attendee_name}\n" .
-            "SENDOFF ya ALICE PIENZI CHAMBILA\n" .
-            "Tarehe: {event_date}\n" .
-            "Saa: {event_time}\n" .
-            "Mahali: {event_location}\n" .
-            "Code: {ticket_code}\n" .
-            "Link: {ticket_url}",
-            [
-                '{attendee_name}' => strtoupper($ticket->attendee->name),
-                '{event_date}' => Carbon::parse($event->date)->format('d/m/Y'),
-                '{event_time}' => Carbon::parse($event->date)->format('h:i A'),
-                '{event_location}' => $event->location,
-                '{ticket_code}' => $ticket->code,
-                '{ticket_url}' => route('tickets.show', $ticket->code),
-            ]
+        return sprintf(
+            "Familia ya %s wanakualika kwenye %s, %s saa %s, %s. Tiketi: %s (%s). Wasiliana: %s. Karibu tusherehekee pamoja!",
+            $ticket->attendee->name,
+            $event->name,
+            $event->start_date->format('d/m/Y'),
+            $event->start_time,
+            $event->location,
+            $ticket->ticket_number,
+            strtoupper($ticket->type),
+            $ticket->attendee->phone
         );
     }
 
