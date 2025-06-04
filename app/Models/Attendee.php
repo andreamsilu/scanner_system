@@ -10,6 +10,7 @@ use Illuminate\Support\Str;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Attendee extends Model
 {
@@ -105,6 +106,14 @@ class Attendee extends Model
     public function ticket(): HasOne
     {
         return $this->hasOne(Ticket::class);
+    }
+
+    /**
+     * Get all tickets for this attendee.
+     */
+    public function tickets(): HasMany
+    {
+        return $this->hasMany(Ticket::class);
     }
 
     /**
