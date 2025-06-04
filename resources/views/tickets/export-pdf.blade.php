@@ -71,20 +71,11 @@
         <p>Generated on: {{ $generatedAt }}</p>
     </div>
 
-    @if(isset($filters) && (isset($filters['event']) || isset($filters['type']) || isset($filters['date_from']) || isset($filters['date_to']) || isset($filters['status'])))
+    @if(isset($filters) && (isset($filters['type']) || isset($filters['status'])))
     <div class="filters">
         <p><strong>Applied Filters:</strong></p>
-        @if(isset($filters['event']) && $filters['event'])
-            <p><strong>Event:</strong> {{ $filters['event'] }}</p>
-        @endif
         @if(isset($filters['type']) && $filters['type'])
             <p><strong>Ticket Type:</strong> {{ ucfirst($filters['type']) }}</p>
-        @endif
-        @if(isset($filters['date_from']) && $filters['date_from'])
-            <p><strong>From Date:</strong> {{ date('d/m/Y', strtotime($filters['date_from'])) }}</p>
-        @endif
-        @if(isset($filters['date_to']) && $filters['date_to'])
-            <p><strong>To Date:</strong> {{ date('d/m/Y', strtotime($filters['date_to'])) }}</p>
         @endif
         @if(isset($filters['status']) && $filters['status'])
             <p><strong>Status:</strong> {{ ucfirst($filters['status']) }}</p>

@@ -38,9 +38,6 @@ class TicketController extends Controller
                         });
                 });
             })
-            ->when($request->filled('event_id'), function ($query) use ($request) {
-                $query->where('event_id', $request->event_id);
-            })
             ->when($request->filled('type'), function ($query) use ($request) {
                 $query->where('type', $request->type);
             })
@@ -49,9 +46,9 @@ class TicketController extends Controller
             });
 
         $tickets = $query->latest()->paginate(10)->withQueryString();
-        $events = Event::orderBy('name')->get();
+        $ticketStatuses = Ticket::distinct()->pluck('status')->sort()->values(); // Get unique statuses
 
-        return view('tickets.index', compact('tickets', 'events'));
+        return view('tickets.index', compact('tickets', 'ticketStatuses'));
     }
 
     /**
@@ -452,20 +449,8 @@ class TicketController extends Controller
                 ->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id');
 
             // Apply filters
-            if ($request->filled('event_id')) {
-                $query->where('tickets.event_id', $request->event_id);
-            }
-
             if ($request->filled('type')) {
                 $query->where('tickets.type', $request->type);
-            }
-
-            if ($request->filled('date_from')) {
-                $query->where('events.start_date', '>=', $request->date_from);
-            }
-
-            if ($request->filled('date_to')) {
-                $query->where('events.start_date', '<=', $request->date_to);
             }
 
             if ($request->filled('status')) {
@@ -485,14 +470,8 @@ class TicketController extends Controller
                 ->orderBy('tickets.created_at', 'desc')
                 ->get();
 
-            // Generate filename with filters
+            // Generate filename
             $filename = 'tickets-list-' . now()->format('Y-m-d-His');
-            if ($request->filled('event_id')) {
-                $event = Event::find($request->event_id);
-                if ($event) {
-                    $filename .= '-' . Str::slug($event->name);
-                }
-            }
 
             if ($format === 'excel') {
                 return Excel::download(new TicketsExport($tickets), $filename . '.xlsx');
@@ -503,10 +482,7 @@ class TicketController extends Controller
                 'tickets' => $tickets,
                 'generatedAt' => now()->format('Y-m-d H:i:s'),
                 'filters' => [
-                    'event' => $request->filled('event_id') ? Event::find($request->event_id)?->name : null,
                     'type' => $request->type,
-                    'date_from' => $request->date_from,
-                    'date_to' => $request->date_to,
                     'status' => $request->status,
                 ]
             ]);

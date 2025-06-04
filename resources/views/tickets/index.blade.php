@@ -542,22 +542,13 @@ Link: ${ticketUrl}`;
                         <input type="hidden" name="format" id="exportFormat">
                         
                         <div class="mb-3">
-                            <label for="event_id" class="form-label">Event</label>
-                            <select class="form-select" id="event_id" name="event_id">
-                                <option value="">All Events</option>
-                                @foreach($events as $event)
-                                    <option value="{{ $event->id }}">{{ $event->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
                             <label for="type" class="form-label">Ticket Type</label>
                             <select class="form-select" id="type" name="type">
                                 <option value="">All Types</option>
                                 <option value="regular">Regular</option>
                                 <option value="vip">VIP</option>
-                                <option value="early_bird">Early Bird</option>
+                                <option value="single">Single</option>
+                                <option value="double">Double</option>
                             </select>
                         </div>
 
@@ -565,25 +556,10 @@ Link: ${ticketUrl}`;
                             <label for="status" class="form-label">Status</label>
                             <select class="form-select" id="status" name="status">
                                 <option value="">All Statuses</option>
-                                <option value="active">Active</option>
-                                <option value="used">Used</option>
-                                <option value="cancelled">Cancelled</option>
+                                @foreach($ticketStatuses as $status)
+                                    <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                                @endforeach
                             </select>
-                        </div>
-
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="date_from" class="form-label">From Date</label>
-                                    <input type="date" class="form-control" id="date_from" name="date_from">
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="date_to" class="form-label">To Date</label>
-                                    <input type="date" class="form-control" id="date_to" name="date_to">
-                                </div>
-                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
