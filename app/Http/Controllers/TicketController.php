@@ -27,7 +27,9 @@ class TicketController extends Controller
             ->latest()
             ->paginate(20);
 
-        return view('tickets.index', compact('tickets'));
+        // Get the first ticket's event or create a default event object
+        $event = $tickets->first()?->event ?? new \App\Models\Event();
+        return view('tickets.index', compact('tickets', 'event'));
     }
 
     /**
