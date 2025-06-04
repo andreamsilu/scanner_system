@@ -447,6 +447,8 @@ $(document).ready(function() {
             return $(this).val();
         }).get();
 
+        console.log('Selected attendees:', selectedAttendees); // Debug log
+
         if (selectedAttendees.length === 0) {
             showSmsResult(false, 'Please select at least one attendee');
             return;
@@ -461,13 +463,21 @@ $(document).ready(function() {
         const formData = new FormData(this);
         formData.append('attendee_ids', JSON.stringify(selectedAttendees));
 
+        // Log the request data
+        console.log('Sending request to:', form.attr('action'));
+        console.log('Form data:', Object.fromEntries(formData));
+
         $.ajax({
             url: form.attr('action'),
             method: 'POST',
             data: formData,
             processData: false,
             contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
             success: function(response) {
+                console.log('Response received:', response); // Debug log
                 if (response.success) {
                     showSmsResult(true, 
                         `Successfully sent ${response.success_count} messages. ${response.failure_count} failed.`,
@@ -477,13 +487,92 @@ $(document).ready(function() {
                     showSmsResult(false, response.message || 'Error sending messages');
                 }
             },
-            error: function(xhr) {
-                const errorMessage = xhr.responseJSON?.message || 'Error sending messages. Please try again.';
+            error: function(xhr, status, error) {
+                console.error('AJAX Error:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText
+                }); // Debug log
+
+                let errorMessage = 'Error sending messages. Please try again.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage = response.message || errorMessage;
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                }
+
+                showSmsResult(false, errorMessage);
+            },
+            complete: function() {
+                console.log('Request completed'); // Debug log
+                $('#smsLoadingState').hide();
+                submitBtn.prop('disabled', false);
+            }
+        });
+    });
+
+    // Add error handling for single SMS sending
+    $('.send-single-sms').on('click', function() {
+        const attendeeId = $(this).data('attendee-id');
+        const attendeeName = $(this).data('attendee-name');
+        const attendeePhone = $(this).data('attendee-phone');
+        
+        console.log('Sending single SMS to:', { attendeeId, attendeeName, attendeePhone }); // Debug log
+
+        if (!attendeePhone) {
+            showSmsResult(false, 'No phone number available for ' + attendeeName);
+            return;
+        }
+
+        // Show loading state in modal
+        $('#smsStatusContainer').hide();
+        $('#smsLoadingState').show();
+        $('#smsResultsContainer').hide();
+        
+        const formData = new FormData();
+        formData.append('attendee_ids', JSON.stringify([attendeeId]));
+        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+
+        $.ajax({
+            url: $('#sendSmsForm').attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                console.log('Single SMS response:', response); // Debug log
+                if (response.success) {
+                    showSmsResult(true, 
+                        `SMS sent to ${attendeeName}`,
+                        response.results || []
+                    );
+                } else {
+                    showSmsResult(false, response.message || 'Error sending SMS');
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error('Single SMS Error:', {
+                    status: status,
+                    error: error,
+                    response: xhr.responseText
+                }); // Debug log
+
+                let errorMessage = 'Error sending SMS. Please try again.';
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    errorMessage = response.message || errorMessage;
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                }
+
                 showSmsResult(false, errorMessage);
             },
             complete: function() {
                 $('#smsLoadingState').hide();
-                submitBtn.prop('disabled', false);
             }
         });
     });
