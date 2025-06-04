@@ -34,9 +34,9 @@ class SmsService
      * @param string $message Message content
      * @param string $type Message type (invitation, reminder, notification, etc.)
      * @param array $metadata Additional metadata to store with the log
-     * @return bool Whether the message was sent successfully
+     * @return array Response data including success status and log ID
      */
-    public function send(string $to, string $message, string $type, array $metadata = []): bool
+    public function send(string $to, string $message, string $type, array $metadata = []): array
     {
         try {
             // Prepare the payload
@@ -65,46 +65,67 @@ class SmsService
                 'metadata' => $metadata
             ]);
 
-            // Create log entry
+            // Create log entry with updated column names
             $log = SmsLog::create([
-                'type' => $type,
                 'recipient' => $to,
+                'sender_id' => $payload['from'],
                 'message' => $message,
                 'status' => $response['status'] ?? 'unknown',
-                'provider' => $this->getProviderName(),
-                'provider_reference' => $response['message_id'] ?? null,
+                'provider_status' => $response['provider_status'] ?? null,
+                'provider_message' => $response['provider_message'] ?? null,
+                'message_id' => $response['message_id'] ?? null,
+                'reference' => $payload['reference'],
                 'metadata' => array_merge($metadata, [
                     'payload' => $payload,
-                    'response' => $response
+                    'response' => $response,
+                    'type' => $type
                 ])
             ]);
 
-            return ($response['status'] ?? '') === 'success';
+            return [
+                'success' => ($response['status'] ?? '') === 'success',
+                'log_id' => $log->id,
+                'message_id' => $response['message_id'] ?? null,
+                'reference' => $payload['reference']
+            ];
         } catch (\Exception $e) {
-            // Log the error with full context
-            Log::error('SMS Send Error', [
-                'type' => $type,
+            Log::error('SMS sending failed', [
+                'error' => $e->getMessage(),
                 'to' => $to,
                 'message' => $message,
+                'type' => $type,
                 'metadata' => $metadata,
-                'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
 
             // Create error log entry
-            SmsLog::create([
-                'type' => $type,
-                'recipient' => $to,
-                'message' => $message,
-                'status' => 'failed',
-                'provider' => $this->getProviderName(),
-                'metadata' => array_merge($metadata, [
+            try {
+                $log = SmsLog::create([
+                    'recipient' => $to,
+                    'sender_id' => config('services.nextsms.sender_id'),
+                    'message' => $message,
+                    'status' => 'failed',
                     'error' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ])
-            ]);
+                    'reference' => Str::uuid()->toString(),
+                    'metadata' => array_merge($metadata, [
+                        'type' => $type,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ])
+                ]);
 
-            throw $e;
+                return [
+                    'success' => false,
+                    'error' => $e->getMessage(),
+                    'log_id' => $log->id
+                ];
+            } catch (\Exception $logError) {
+                Log::error('Failed to create error log entry', [
+                    'original_error' => $e->getMessage(),
+                    'log_error' => $logError->getMessage()
+                ]);
+                throw $e;
+            }
         }
     }
 
