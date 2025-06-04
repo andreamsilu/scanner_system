@@ -129,7 +129,6 @@
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
                                                     data-attendee-id="{{ $ticket->attendee->id }}"
                                                     data-ticket-type="{{ $ticket->type }}"
-                                                    data-ticket-number="{{ $ticket->ticket_number }}"
                                                     data-token="{{ $ticket->token }}">
                                                 <i class="bi bi-envelope"></i>
                                             </button>
@@ -390,7 +389,7 @@
             const attendeePhone = $(this).data('attendee-phone');
             const attendeeId = $(this).data('attendee-id');
             const ticketType = $(this).data('ticket-type');
-            const ticketNumber = $(this).data('ticket-number');
+            const token = $(this).data('token');
             
             // Validate required data
             if (!attendeeName || !attendeePhone) {
@@ -398,21 +397,40 @@
                 return;
             }
             
-            sendInvitation(ticketId, attendeeId, attendeeName, attendeePhone, ticketType, ticketNumber);
+            sendInvitation(ticketId, attendeeId, attendeeName, attendeePhone, ticketType, token);
         });
 
         // Update the sendInvitation function to use predefined template
-        function sendInvitation(ticketId, attendeeId, attendeeName, phone, ticketType, ticketNumber) {
+        function sendInvitation(ticketId, attendeeId, attendeeName, phone, ticketType, token) {
             // Set form values
             $('#invitationTicketId').val(ticketId);
             $('#invitationAttendeeId').val(attendeeId);
             $('#invitationAttendeeName').text(attendeeName);
             $('#invitationAttendeePhone').text(phone);
             $('#invitationTicketType').text(ticketType ? ticketType.toUpperCase() : 'REGULAR');
-            $('#invitationTicketNumber').text(ticketNumber || 'N/A');
+            $('#invitationTicketNumber').text(token || 'N/A');
+
+            // Format date to include day name in Swahili
+            const eventDate = new Date('{{ $event->start_date }}');
+            const dayNames = {
+                'Monday': 'Jumatatu',
+                'Tuesday': 'Jumanne',
+                'Wednesday': 'Jumatano',
+                'Thursday': 'Alhamisi',
+                'Friday': 'Ijumaa',
+                'Saturday': 'Jumamosi',
+                'Sunday': 'Jumapili'
+            };
+            const dayName = dayNames[eventDate.toLocaleDateString('en-US', { weekday: 'long' })];
+
+            // Format time with AM/PM in Swahili
+            const time = '{{ $event->start_time }}';
+            const [hours, minutes] = time.split(':');
+            const period = parseInt(hours) >= 12 ? 'jioni' : 'asubuhi';
+            const formattedTime = `${hours}:${minutes}`;
 
             // Create predefined SMS message with actual values
-            const smsTemplate = `Familia ya ${attendeeName} wanakualika kwenye {{ $event->name }}, {{ $event->start_date->format('d/m/Y') }} saa {{ $event->start_time }}, {{ $event->location }}. Tiketi: ${ticketNumber} (${ticketType.toUpperCase()}). Wasiliana: ${phone}. Karibu tusherehekee pamoja!`;
+            const smsTemplate = `Ndugu ${attendeeName}, unakaribishwa kwenye {{ $event->name }} itakayofanyika ${dayName} ${eventDate.toLocaleDateString('en-GB')} saa ${formattedTime} ${period} katika {{ $event->location }}. Tiketi: ${token} (${ticketType.toUpperCase()}). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: ${phone}`;
             
             // Set the predefined message in the hidden input
             $('#predefinedMessage').val(smsTemplate);
