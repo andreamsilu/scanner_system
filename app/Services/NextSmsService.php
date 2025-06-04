@@ -38,33 +38,37 @@ class NextSmsService extends BaseSmsService
                 throw new \InvalidArgumentException('Invalid phone number format');
             }
 
+            // Generate a unique reference if not provided
+            $reference = $options['reference'] ?? 'ref_' . uniqid();
+
             // Log the request for debugging
             Log::info('Sending SMS request', [
                 'url' => $this->baseUrl . '/text/single',
                 'to' => $to,
                 'message' => $message,
-                'sender_id' => $this->config['sender_id']
+                'sender_id' => $this->config['sender_id'],
+                'reference' => $reference
             ]);
 
             // Format the API key for authorization
             $apiKey = base64_encode($this->config['api_key']);
 
-            $response = Http::timeout(30) // Increase timeout to 30 seconds
-                ->retry(3, 100) // Retry 3 times with 100ms delay between attempts
+            $response = Http::timeout(30)
+                ->retry(3, 100)
                 ->withHeaders([
-                    'Authorization' => 'Basic ' . $apiKey, // Changed to Basic auth with base64 encoded API key
+                    'Authorization' => 'Basic ' . $apiKey,
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json'
                 ])
                 ->withOptions([
-                    'verify' => true, // Verify SSL certificate
-                    'connect_timeout' => 10, // Connection timeout in seconds
+                    'verify' => true,
+                    'connect_timeout' => 10,
                 ])
                 ->post($this->baseUrl . '/text/single', [
-                    'recipient' => $this->formatPhoneNumber($to),
-                    'sender_id' => $this->config['sender_id'],
-                    'message' => $message,
-                    'type' => 'text'
+                    'from' => $this->config['sender_id'],
+                    'to' => $this->formatPhoneNumber($to),
+                    'text' => $message,
+                    'reference' => $reference
                 ]);
 
             // Log the response for debugging
@@ -82,7 +86,8 @@ class NextSmsService extends BaseSmsService
                     'headers' => $response->headers(),
                     'to' => $to,
                     'message' => $message,
-                    'auth_header' => 'Basic ' . substr($apiKey, 0, 10) . '...' // Log partial auth header for debugging
+                    'reference' => $reference,
+                    'auth_header' => 'Basic ' . substr($apiKey, 0, 10) . '...'
                 ]);
                 throw new \Exception($errorMessage);
             }
@@ -94,6 +99,7 @@ class NextSmsService extends BaseSmsService
                 'message_id' => $result['message_id'] ?? null,
                 'to' => $to,
                 'status' => $result['status'] ?? 'sent',
+                'reference' => $reference,
                 'cost' => $result['cost'] ?? null,
                 'units' => $result['units'] ?? null
             ];
