@@ -175,12 +175,14 @@ class NextSmsService extends BaseSmsService
                 'body' => $result
             ]);
             
+            // Handle the NextSMS specific response format
             $balanceData = [
                 'success' => true,
-                'credits' => (int)($result['balance'] ?? 0),
-                'units' => (int)($result['units'] ?? 0),
+                'credits' => (int)($result['body']['sms_balance'] ?? 0),
+                'units' => (int)($result['body']['sms_balance'] ?? 0), // Using same value as credits since NextSMS only provides one balance
                 'type' => 'sms_credits',
-                'provider' => 'nextsms'
+                'provider' => 'nextsms',
+                'raw_response' => $result // Include raw response for debugging
             ];
 
             $this->logActivity('balance_check', $balanceData);
@@ -195,7 +197,8 @@ class NextSmsService extends BaseSmsService
         } catch (\Exception $e) {
             $this->logActivity('balance_check_error', [
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
+                'raw_response' => $response->body() ?? null
             ], 'error');
             throw $e;
         }
