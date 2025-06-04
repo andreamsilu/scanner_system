@@ -67,11 +67,12 @@
             <tr>
                 <th>Ticket ID</th>
                 <th>Token</th>
+                <th>Ticket Number</th>
                 <th>Attendee</th>
                 <th>Event</th>
                 <th>Type</th>
                 <th>Status</th>
-                <th>Last Scan</th>
+                <th>Last Used</th>
                 <th>Created</th>
             </tr>
         </thead>
@@ -80,6 +81,7 @@
                 <tr>
                     <td>{{ $ticket->id }}</td>
                     <td>{{ $ticket->token }}</td>
+                    <td>{{ $ticket->ticket_number }}</td>
                     <td>
                         {{ $ticket->attendee_name ?? 'Unassigned' }}
                         @if($ticket->attendee_phone)
@@ -97,10 +99,10 @@
                         </small>
                     </td>
                     <td>{{ ucfirst($ticket->type) }}</td>
-                    <td class="status-{{ $ticket->is_active ? 'active' : 'inactive' }}">
-                        {{ $ticket->is_active ? 'Active' : 'Inactive' }}
+                    <td class="status-{{ $ticket->status }}">
+                        {{ ucfirst($ticket->status) }}
                     </td>
-                    <td>{{ $ticket->last_scan_at ? date('d/m/Y H:i', strtotime($ticket->last_scan_at)) : 'Never' }}</td>
+                    <td>{{ $ticket->used_at ? date('d/m/Y H:i', strtotime($ticket->used_at)) : 'Never' }}</td>
                     <td>{{ date('d/m/Y H:i', strtotime($ticket->created_at)) }}</td>
                 </tr>
             @endforeach

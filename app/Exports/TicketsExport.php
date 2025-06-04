@@ -27,7 +27,7 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
         return [
             'Ticket ID',
             'Token',
-            'Code',
+            'Ticket Number',
             'Attendee Name',
             'Phone',
             'Email',
@@ -36,7 +36,7 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
             'Location',
             'Ticket Type',
             'Status',
-            'Last Scan',
+            'Last Used',
             'Created At'
         ];
     }
@@ -46,7 +46,7 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
         return [
             $ticket->id,
             $ticket->token,
-            $ticket->code,
+            $ticket->ticket_number,
             $ticket->attendee_name ?? 'Unassigned',
             $ticket->attendee_phone ?? 'N/A',
             $ticket->attendee_email ?? 'N/A',
@@ -54,8 +54,8 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
             $ticket->event_date ? date('d/m/Y', strtotime($ticket->event_date)) : 'N/A',
             $ticket->event_location ?? 'N/A',
             ucfirst($ticket->type),
-            $ticket->is_active ? 'Active' : 'Inactive',
-            $ticket->last_scan_at ? date('d/m/Y H:i', strtotime($ticket->last_scan_at)) : 'Never',
+            ucfirst($ticket->status),
+            $ticket->used_at ? date('d/m/Y H:i', strtotime($ticket->used_at)) : 'Never',
             date('d/m/Y H:i', strtotime($ticket->created_at))
         ];
     }
