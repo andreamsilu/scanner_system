@@ -41,22 +41,23 @@ class NextSmsService extends BaseSmsService
             // Generate a unique reference if not provided
             $reference = $options['reference'] ?? 'ref_' . uniqid();
 
+            // Format the API credentials for Basic Auth
+            $credentials = base64_encode($this->config['username'] . ':' . $this->config['password']);
+
             // Log the request for debugging
             Log::info('Sending SMS request', [
                 'url' => $this->baseUrl . '/text/single',
                 'to' => $to,
                 'message' => $message,
                 'sender_id' => $this->config['sender_id'],
-                'reference' => $reference
+                'reference' => $reference,
+                'auth_type' => 'Basic Auth'
             ]);
-
-            // Format the API key for authorization
-            $apiKey = base64_encode($this->config['api_key']);
 
             $response = Http::timeout(30)
                 ->retry(3, 100)
                 ->withHeaders([
-                    'Authorization' => 'Basic ' . $apiKey,
+                    'Authorization' => 'Basic ' . $credentials,
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json'
                 ])
@@ -87,7 +88,8 @@ class NextSmsService extends BaseSmsService
                     'to' => $to,
                     'message' => $message,
                     'reference' => $reference,
-                    'auth_header' => 'Basic ' . substr($apiKey, 0, 10) . '...'
+                    'auth_type' => 'Basic Auth',
+                    'username' => $this->config['username']
                 ]);
                 throw new \Exception($errorMessage);
             }
@@ -112,31 +114,23 @@ class NextSmsService extends BaseSmsService
                 'error' => $e->getMessage(),
                 'to' => $to,
                 'message' => $message,
-                'url' => $this->baseUrl . '/text/single'
+                'url' => $this->baseUrl . '/text/single',
+                'auth_type' => 'Basic Auth',
+                'username' => $this->config['username']
             ]);
             throw new \Exception('Failed to connect to SMS service. Please try again later.');
-        } catch (\Illuminate\Http\Client\RequestException $e) {
-            Log::error('SMS request error', [
-                'error' => $e->getMessage(),
-                'to' => $to,
-                'message' => $message,
-                'response' => $e->response ? [
-                    'status' => $e->response->status(),
-                    'body' => $e->response->body()
-                ] : null
-            ]);
-            throw new \Exception('SMS service request failed. Please try again later.');
         } catch (\Exception $e) {
             Log::error('SMS sending failed', [
                 'error' => $e->getMessage(),
                 'to' => $to,
-                'message' => $message
+                'message' => $message,
+                'auth_type' => 'Basic Auth',
+                'username' => $this->config['username']
             ]);
             throw $e;
         }
     }
 
-    
     /**
      * Get the remaining SMS credits/units
      *
@@ -145,30 +139,47 @@ class NextSmsService extends BaseSmsService
     public function getBalance(): array
     {
         try {
-            $apiKey = base64_encode($this->config['api_key']);
+            // Format the API credentials for Basic Auth
+            $credentials = base64_encode($this->config['username'] . ':' . $this->config['password']);
             
             $response = Http::withHeaders([
-                'Authorization' => 'Basic ' . $apiKey,
+                'Authorization' => 'Basic ' . $credentials,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json'
             ])->get($this->baseUrl . '/balance');
+
+            // Log the request for debugging
+            Log::info('SMS Balance Check Request', [
+                'url' => $this->baseUrl . '/balance',
+                'headers' => [
+                    'Authorization' => 'Basic ' . substr($credentials, 0, 10) . '...',
+                    'Content-Type' => 'application/json'
+                ]
+            ]);
 
             if (!$response->successful()) {
                 Log::error('NextSMS balance check failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
-                    'headers' => $response->headers()
+                    'headers' => $response->headers(),
+                    'auth_header' => 'Basic ' . substr($credentials, 0, 10) . '...'
                 ]);
                 throw new \Exception('NextSMS API error: ' . $response->body());
             }
 
             $result = $response->json();
             
+            // Log the successful response
+            Log::info('SMS Balance Check Response', [
+                'status' => $response->status(),
+                'body' => $result
+            ]);
+            
             $balanceData = [
                 'success' => true,
-                'credits' => (int)($result['balance'] ?? 0), // Number of SMS credits remaining
-                'units' => (int)($result['units'] ?? 0),     // Number of SMS units (if different from credits)
-                'type' => 'sms_credits',                     // Indicates this is SMS credits, not monetary balance
+                'credits' => (int)($result['balance'] ?? 0),
+                'units' => (int)($result['units'] ?? 0),
+                'type' => 'sms_credits',
                 'provider' => 'nextsms'
             ];
 
@@ -181,18 +192,10 @@ class NextSmsService extends BaseSmsService
                 'url' => $this->baseUrl . '/balance'
             ]);
             throw new \Exception('Failed to connect to SMS service. Please try again later.');
-        } catch (\Illuminate\Http\Client\RequestException $e) {
-            Log::error('SMS balance check request error', [
-                'error' => $e->getMessage(),
-                'response' => $e->response ? [
-                    'status' => $e->response->status(),
-                    'body' => $e->response->body()
-                ] : null
-            ]);
-            throw new \Exception('SMS service request failed. Please try again later.');
         } catch (\Exception $e) {
             $this->logActivity('balance_check_error', [
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ], 'error');
             throw $e;
         }
@@ -207,19 +210,41 @@ class NextSmsService extends BaseSmsService
     public function getStatus(string $messageId): array
     {
         try {
-            $apiKey = base64_encode($this->config['api_key']);
+            // Format the API credentials for Basic Auth
+            $credentials = base64_encode($this->config['username'] . ':' . $this->config['password']);
             
+            // Log the request for debugging
+            Log::info('Checking SMS status', [
+                'url' => $this->baseUrl . '/messages/' . $messageId,
+                'message_id' => $messageId,
+                'auth_type' => 'Basic Auth'
+            ]);
+
             $response = Http::withHeaders([
-                'Authorization' => 'Basic ' . $apiKey,
+                'Authorization' => 'Basic ' . $credentials,
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json'
             ])->get($this->baseUrl . '/messages/' . $messageId);
 
             if (!$response->successful()) {
+                Log::error('SMS status check failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'message_id' => $messageId,
+                    'auth_type' => 'Basic Auth',
+                    'username' => $this->config['username']
+                ]);
                 throw new \Exception('NextSMS API error: ' . $response->body());
             }
 
             $result = $response->json();
+            
+            // Log the successful response
+            Log::info('SMS status check response', [
+                'status' => $response->status(),
+                'body' => $result,
+                'message_id' => $messageId
+            ]);
             
             $statusData = [
                 'success' => true,
@@ -233,11 +258,12 @@ class NextSmsService extends BaseSmsService
 
             return $statusData;
         } catch (\Exception $e) {
-            $this->logActivity('status_check_error', [
+            Log::error('SMS status check error', [
                 'error' => $e->getMessage(),
                 'message_id' => $messageId,
-            ], 'error');
-
+                'auth_type' => 'Basic Auth',
+                'username' => $this->config['username']
+            ]);
             throw $e;
         }
     }
