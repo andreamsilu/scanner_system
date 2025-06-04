@@ -21,14 +21,13 @@ class TicketController extends Controller
     /**
      * Display a listing of the tickets.
      */
-    public function index()
+    public function index(Event $event)
     {
         $tickets = Ticket::with(['event', 'attendee'])
+            ->where('event_id', $event->id)
             ->latest()
             ->paginate(20);
 
-        // Get the first ticket's event or create a default event object
-        $event = $tickets->first()?->event ?? new \App\Models\Event();
         return view('tickets.index', compact('tickets', 'event'));
     }
 
