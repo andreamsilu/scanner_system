@@ -271,6 +271,7 @@
                                 className: 'btn btn-sm btn-success',
                                 exportOptions: {
                                     columns: [0, 1, 2, 3, 4, 5],
+                                    search: 'none',
                                     format: {
                                         body: function(data, row, column, node) {
                                             if (column === 0) {
@@ -296,6 +297,7 @@
                                 className: 'btn btn-sm btn-danger',
                                 exportOptions: {
                                     columns: [0, 1, 2, 3, 4, 5],
+                                    search: 'none',
                                     format: {
                                         body: function(data, row, column, node) {
                                             if (column === 0) {
@@ -460,7 +462,7 @@ Link: ${ticketUrl}`;
                     <h5 class="modal-title" id="sendInvitationModalLabel">Send Invitation SMS</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => $ticket->event->id]) }}" method="POST">
+                <form id="sendInvitationForm" action="{{ route('sms.management.send-attendee-invitation', ['event' => $event->id]) }}" method="POST">
                     @csrf
                     <input type="hidden" name="ticket_id" id="invitationTicketId">
                     <input type="hidden" name="attendee_id" id="invitationAttendeeId">
