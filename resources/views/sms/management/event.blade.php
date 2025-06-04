@@ -18,7 +18,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-subtitle mb-0 text-muted small">Total SMS Sent</h6>
-                            <h5 class="card-title mb-0">{{ $event->sms_logs_count }}</h5>
+                            <h5 class="card-title mb-0">{{ $event->sms_logs_count ?? 0 }}</h5>
                             <small class="text-muted small">For this event</small>
                         </div>
                         <div class="p-1 rounded-circle bg-info bg-opacity-10 text-info">
@@ -36,8 +36,9 @@
                             <h6 class="card-subtitle mb-0 text-muted small">Success Rate</h6>
                             <h5 class="card-title mb-0">
                                 @php
-                                    $successRate = $event->sms_logs_count > 0 
-                                        ? round(($event->sms_logs->where('status', 'delivered')->count() / $event->sms_logs_count) * 100, 1)
+                                    $smsLogs = $event->sms_logs ?? collect();
+                                    $successRate = $smsLogs->count() > 0 
+                                        ? round(($smsLogs->where('status', 'delivered')->count() / $smsLogs->count()) * 100, 1)
                                         : 0;
                                 @endphp
                                 {{ $successRate }}%
@@ -57,7 +58,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-subtitle mb-0 text-muted small">Total Attendees</h6>
-                            <h5 class="card-title mb-0">{{ $event->attendees_count }}</h5>
+                            <h5 class="card-title mb-0">{{ $event->attendees_count ?? 0 }}</h5>
                             <small class="text-muted small">Registered attendees</small>
                         </div>
                         <div class="p-1 rounded-circle bg-primary bg-opacity-10 text-primary">
@@ -74,8 +75,11 @@
                         <div>
                             <h6 class="card-subtitle mb-0 text-muted small">Last SMS Sent</h6>
                             <h5 class="card-title mb-0">
-                                @if($event->sms_logs->isNotEmpty())
-                                    {{ $event->sms_logs->first()->created_at->format('M d, g:i A') }}
+                                @php
+                                    $smsLogs = $event->sms_logs ?? collect();
+                                @endphp
+                                @if($smsLogs->isNotEmpty())
+                                    {{ $smsLogs->first()->created_at->format('M d, g:i A') }}
                                 @else
                                     Never
                                 @endif
