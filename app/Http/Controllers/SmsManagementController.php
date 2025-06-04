@@ -79,16 +79,39 @@ class SmsManagementController extends Controller
             })
             ->paginate(15);
 
+        // Load SMS statistics
         $smsStats = SmsLog::whereJsonContains('metadata->event_id', $event->id)
             ->select('type', DB::raw('count(*) as count'))
             ->groupBy('type')
             ->get();
 
+        // Load recent SMS logs with attendee information
         $recentLogs = SmsLog::whereJsonContains('metadata->event_id', $event->id)
+            ->select([
+                'id',
+                'type',
+                'recipient',
+                'message',
+                'status',
+                'created_at',
+                'metadata'
+            ])
             ->with(['metadata'])
             ->latest()
             ->take(10)
-            ->get();
+            ->get()
+            ->map(function ($log) {
+                $metadata = $log->metadata ?? [];
+                $log->recipient_name = $metadata['attendee_name'] ?? 'Unknown';
+                $log->content = $log->message;
+                return $log;
+            });
+
+        // Load event statistics
+        $event->loadCount(['attendees', 'sms_logs']);
+        $event->load(['sms_logs' => function($query) {
+            $query->latest()->take(1);
+        }]);
 
         return view('sms.management.event', compact(
             'event',
