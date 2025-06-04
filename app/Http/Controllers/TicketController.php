@@ -413,12 +413,12 @@ class TicketController extends Controller
     }
 
     /**
-     * Export tickets in the specified format (Excel or PDF)
+     * Export all tickets in the specified format (Excel or PDF)
      *
      * @param string $format
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
      */
-    public function export($format = 'excel')
+    public function exportAll($format = 'excel')
     {
         try {
             // Get all tickets with related data

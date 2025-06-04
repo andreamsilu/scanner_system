@@ -173,7 +173,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/settings/clear-logs', [SettingController::class, 'clearLogs'])->name('settings.clear-logs');
 
         // Ticket exports
-        Route::get('/tickets/export/{format?}', [TicketController::class, 'export'])->name('tickets.export');
+        Route::get('/tickets/export/{format?}', [TicketController::class, 'exportAll'])->name('tickets.export');
     });
 
     // Attendee validation route
