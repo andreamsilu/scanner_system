@@ -21,34 +21,13 @@ class TicketController extends Controller
     /**
      * Display a listing of the tickets.
      */
-    public function index(Request $request)
+    public function index()
     {
-        $query = Ticket::with(['event', 'attendee'])
-            ->when($request->filled('search'), function ($query) use ($request) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('token', 'like', "%{$search}%")
-                        ->orWhere('ticket_number', 'like', "%{$search}%")
-                        ->orWhereHas('attendee', function ($q) use ($search) {
-                            $q->where('name', 'like', "%{$search}%")
-                                ->orWhere('phone', 'like', "%{$search}%");
-                        })
-                        ->orWhereHas('event', function ($q) use ($search) {
-                            $q->where('name', 'like', "%{$search}%");
-                        });
-                });
-            })
-            ->when($request->filled('type'), function ($query) use ($request) {
-                $query->where('type', $request->type);
-            })
-            ->when($request->filled('status'), function ($query) use ($request) {
-                $query->where('status', $request->status);
-            });
+        $tickets = Ticket::with(['event', 'attendee'])
+            ->latest()
+            ->paginate(20);
 
-        $tickets = $query->latest()->paginate(10)->withQueryString();
-        $ticketStatuses = Ticket::distinct()->pluck('status')->sort()->values(); // Get unique statuses
-
-        return view('tickets.index', compact('tickets', 'ticketStatuses'));
+        return view('tickets.index', compact('tickets'));
     }
 
     /**
@@ -434,31 +413,19 @@ class TicketController extends Controller
     }
 
     /**
-     * Export all tickets in the specified format (Excel or PDF) with optional filters.
+     * Export all tickets in the specified format (Excel or PDF)
      *
-     * @param string $format The export format (excel or pdf)
-     * @param Request $request The request containing filter parameters
+     * @param string $format
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
      */
-    public function exportAll($format = 'excel', Request $request)
+    public function exportAll($format = 'excel')
     {
         try {
-            // Start building the query
-            $query = Ticket::query()
+            // Get all tickets with related data
+            $tickets = DB::table('tickets')
                 ->join('events', 'tickets.event_id', '=', 'events.id')
-                ->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id');
-
-            // Apply filters
-            if ($request->filled('type')) {
-                $query->where('tickets.type', $request->type);
-            }
-
-            if ($request->filled('status')) {
-                $query->where('tickets.status', $request->status);
-            }
-
-            // Get the filtered tickets
-            $tickets = $query->select([
+                ->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id')
+                ->select([
                     'tickets.token',
                     'tickets.type',
                     'events.name as event_name',
@@ -470,24 +437,17 @@ class TicketController extends Controller
                 ->orderBy('tickets.created_at', 'desc')
                 ->get();
 
-            // Generate filename
-            $filename = 'tickets-list-' . now()->format('Y-m-d-His');
-
             if ($format === 'excel') {
-                return Excel::download(new TicketsExport($tickets), $filename . '.xlsx');
+                return Excel::download(new TicketsExport($tickets), 'tickets-list-' . now()->format('Y-m-d-His') . '.xlsx');
             }
 
             // Generate PDF
             $pdf = PDF::loadView('tickets.export-pdf', [
                 'tickets' => $tickets,
-                'generatedAt' => now()->format('Y-m-d H:i:s'),
-                'filters' => [
-                    'type' => $request->type,
-                    'status' => $request->status,
-                ]
+                'generatedAt' => now()->format('Y-m-d H:i:s')
             ]);
 
-            return $pdf->download($filename . '.pdf');
+            return $pdf->download('tickets-list-' . now()->format('Y-m-d-His') . '.pdf');
 
         } catch (\Exception $e) {
             \Log::error('Ticket export failed: ' . $e->getMessage());

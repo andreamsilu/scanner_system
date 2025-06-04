@@ -9,18 +9,21 @@
         <x-slot name="actions">
             <div class="d-flex gap-2">
                 <div class="dropdown">
-                    <button class="btn btn-secondary dropdown-toggle" type="button" id="exportDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        Export All
+                    <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="bi bi-download me-2"></i>Export All
                     </button>
-                    <div class="dropdown-menu" aria-labelledby="exportDropdown">
-                        <h6 class="dropdown-header">Export Format</h6>
-                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#exportModal" data-format="excel">
-                            <i class="fas fa-file-excel me-2"></i>Export to Excel
-                        </a>
-                        <a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#exportModal" data-format="pdf">
-                            <i class="fas fa-file-pdf me-2"></i>Export to PDF
-                        </a>
-                    </div>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="dropdown-item" href="{{ route('tickets.export', ['format' => 'excel']) }}">
+                                <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item" href="{{ route('tickets.export', ['format' => 'pdf']) }}">
+                                <i class="bi bi-file-earmark-pdf me-2"></i>Export to PDF
+                            </a>
+                        </li>
+                    </ul>
                 </div>
                 <a href="{{ route('events.index') }}" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Events
@@ -446,30 +449,6 @@ Link: ${ticketUrl}`;
                 }
             });
         });
-
-        document.addEventListener('DOMContentLoaded', function() {
-            // Handle export format selection
-            const exportLinks = document.querySelectorAll('[data-format]');
-            const exportForm = document.getElementById('exportForm');
-            const exportFormat = document.getElementById('exportFormat');
-
-            exportLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const format = this.dataset.format;
-                    exportFormat.value = format;
-                });
-            });
-
-            // Handle form submission
-            exportForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const format = exportFormat.value;
-                const formData = new FormData(this);
-                const queryString = new URLSearchParams(formData).toString();
-                window.location.href = `{{ route('tickets.export', ['format' => '']) }}${format}?${queryString}`;
-            });
-        });
     </script>
     @endpush
 
@@ -523,48 +502,6 @@ Link: ${ticketUrl}`;
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-send"></i> Send Invitation
                         </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Export Modal -->
-    <div class="modal fade" id="exportModal" tabindex="-1" aria-labelledby="exportModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <form id="exportForm" method="GET">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exportModalLabel">Export Tickets</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <input type="hidden" name="format" id="exportFormat">
-                        
-                        <div class="mb-3">
-                            <label for="type" class="form-label">Ticket Type</label>
-                            <select class="form-select" id="type" name="type">
-                                <option value="">All Types</option>
-                                <option value="regular">Regular</option>
-                                <option value="vip">VIP</option>
-                                <option value="single">Single</option>
-                                <option value="double">Double</option>
-                            </select>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="status" class="form-label">Status</label>
-                            <select class="form-select" id="status" name="status">
-                                <option value="">All Statuses</option>
-                                @foreach($ticketStatuses as $status)
-                                    <option value="{{ $status }}">{{ ucfirst($status) }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Export</button>
                     </div>
                 </form>
             </div>
