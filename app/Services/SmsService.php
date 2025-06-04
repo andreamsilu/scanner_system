@@ -153,12 +153,32 @@ class SmsService
      */
     protected function formatInvitationMessage(Event $event, Ticket $ticket): string
     {
+        // Format the date to include day name in Swahili
+        $date = Carbon::parse($event->start_date);
+        $dayNames = [
+            'Monday' => 'Jumatatu',
+            'Tuesday' => 'Jumanne',
+            'Wednesday' => 'Jumatano',
+            'Thursday' => 'Alhamisi',
+            'Friday' => 'Ijumaa',
+            'Saturday' => 'Jumamosi',
+            'Sunday' => 'Jumapili'
+        ];
+        $dayName = $dayNames[$date->format('l')];
+
+        // Format the time with AM/PM in Swahili
+        $time = Carbon::parse($event->start_time);
+        $timeStr = $time->format('h:i');
+        $period = $time->format('A') === 'AM' ? 'asubuhi' : 'jioni';
+
         return sprintf(
-            "Ndugu %s, %s. Tarehe: %s. Saa: %s. Mahali: %s. Tiketi: %s (%s). Wasiliana: %s. Karibu tusherehekee pamoja!",
+            "Ndugu %s, unakaribishwa kwenye %s itakayofanyika %s %s saa %s %s katika %s. Tiketi: %s (%s). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: %s",
             $ticket->attendee->name,
             $event->name,
-            $event->start_date->format('d/m/Y'),
-            $event->start_time,
+            $dayName,
+            $date->format('d/m/Y'),
+            $timeStr,
+            $period,
             $event->location,
             $ticket->token,
             strtoupper($ticket->type),
