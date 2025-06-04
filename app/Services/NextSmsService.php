@@ -148,58 +148,43 @@ class NextSmsService extends BaseSmsService
                 'Accept' => 'application/json'
             ])->get($this->baseUrl . '/balance');
 
-            // Log the request for debugging
-            Log::info('SMS Balance Check Request', [
-                'url' => $this->baseUrl . '/balance',
-                'headers' => [
-                    'Authorization' => 'Basic ' . substr($credentials, 0, 10) . '...',
-                    'Content-Type' => 'application/json'
-                ]
-            ]);
-
             if (!$response->successful()) {
                 Log::error('NextSMS balance check failed', [
                     'status' => $response->status(),
                     'body' => $response->body(),
-                    'headers' => $response->headers(),
-                    'auth_header' => 'Basic ' . substr($credentials, 0, 10) . '...'
+                    'headers' => $response->headers()
                 ]);
                 throw new \Exception('NextSMS API error: ' . $response->body());
             }
 
             $result = $response->json();
             
-            // Log the successful response
-            Log::info('SMS Balance Check Response', [
-                'status' => $response->status(),
-                'body' => $result
+            // Log the parsed response
+            Log::info('SMS Balance Response', [
+                'raw_response' => $result
             ]);
             
-            // Handle the NextSMS specific response format
+            // Extract balance directly from root level
+            $balance = (int)($result['sms_balance'] ?? 0);
+            
             $balanceData = [
                 'success' => true,
-                'credits' => (int)($result['body']['sms_balance'] ?? 0),
-                'units' => (int)($result['body']['sms_balance'] ?? 0), // Using same value as credits since NextSMS only provides one balance
+                'credits' => $balance,
+                'units' => $balance,
                 'type' => 'sms_credits',
                 'provider' => 'nextsms',
-                'raw_response' => $result // Include raw response for debugging
+                'raw_response' => $result
             ];
 
             $this->logActivity('balance_check', $balanceData);
 
             return $balanceData;
-        } catch (\Illuminate\Http\Client\ConnectionException $e) {
-            Log::error('SMS balance check connection error', [
-                'error' => $e->getMessage(),
-                'url' => $this->baseUrl . '/balance'
-            ]);
-            throw new \Exception('Failed to connect to SMS service. Please try again later.');
         } catch (\Exception $e) {
-            $this->logActivity('balance_check_error', [
+            Log::error('SMS balance check error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'raw_response' => $response->body() ?? null
-            ], 'error');
+            ]);
             throw $e;
         }
     }
