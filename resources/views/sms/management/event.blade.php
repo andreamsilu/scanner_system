@@ -240,18 +240,56 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <span id="selectedCount">0</span> attendees selected
+                    <!-- Status Messages -->
+                    <div id="smsStatusContainer">
+                        <div class="alert alert-info" id="selectedCountAlert">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span id="selectedCount">0</span> attendees selected
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle me-2"></i>
+                            Only attendees with valid phone numbers will receive SMS.
+                        </div>
                     </div>
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        Only attendees with valid phone numbers will receive SMS.
+
+                    <!-- Loading State -->
+                    <div id="smsLoadingState" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mb-0">Sending SMS messages...</p>
+                    </div>
+
+                    <!-- Results Container -->
+                    <div id="smsResultsContainer" style="display: none;">
+                        <div class="alert" id="smsResultAlert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi me-2" id="smsResultIcon"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1" id="smsResultTitle"></h6>
+                                    <p class="mb-0" id="smsResultMessage"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-sm" id="smsResultsTable">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Recipient</th>
+                                        <th>Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Send SMS</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" id="sendSmsBtn">
+                        <i class="bi bi-send me-1"></i> Send SMS
+                    </button>
                 </div>
             </form>
         </div>
@@ -357,39 +395,105 @@ $(document).ready(function() {
         $('#selectedCount').text(count);
     }
 
-    // Send SMS Form handling
+    function showSmsResult(success, message, results = []) {
+        const container = $('#smsResultsContainer');
+        const alert = $('#smsResultAlert');
+        const icon = $('#smsResultIcon');
+        const title = $('#smsResultTitle');
+        const messageEl = $('#smsResultMessage');
+        const table = $('#smsResultsTable tbody');
+        
+        // Set alert style and icon
+        alert.removeClass('alert-success alert-danger alert-warning')
+            .addClass(success ? 'alert-success' : 'alert-danger');
+        
+        icon.removeClass('bi-check-circle bi-x-circle bi-exclamation-triangle')
+            .addClass(success ? 'bi-check-circle' : 'bi-x-circle');
+        
+        // Set content
+        title.text(success ? 'SMS Sent Successfully' : 'SMS Sending Failed');
+        messageEl.text(message);
+        
+        // Clear and populate results table
+        table.empty();
+        if (results.length > 0) {
+            results.forEach(result => {
+                const statusClass = result.success ? 'success' : 'danger';
+                const statusIcon = result.success ? 'check-circle' : 'x-circle';
+                table.append(`
+                    <tr>
+                        <td>
+                            <span class="badge bg-${statusClass}">
+                                <i class="bi bi-${statusIcon} me-1"></i>
+                                ${result.success ? 'Sent' : 'Failed'}
+                            </span>
+                        </td>
+                        <td>${result.recipient}</td>
+                        <td>${result.message || '-'}</td>
+                    </tr>
+                `);
+            });
+        }
+        
+        // Show results container
+        container.show();
+    }
+
     $('#sendSmsForm').on('submit', function(e) {
         e.preventDefault();
+        const form = $(this);
+        const submitBtn = $('#sendSmsBtn');
         const selectedAttendees = $('.attendee-checkbox:checked').map(function() {
             return $(this).val();
         }).get();
 
         if (selectedAttendees.length === 0) {
-            alert('Please select at least one attendee');
+            showSmsResult(false, 'Please select at least one attendee');
             return;
         }
+
+        // Show loading state
+        $('#smsStatusContainer').hide();
+        $('#smsLoadingState').show();
+        $('#smsResultsContainer').hide();
+        submitBtn.prop('disabled', true);
 
         const formData = new FormData(this);
         formData.append('attendee_ids', JSON.stringify(selectedAttendees));
 
         $.ajax({
-            url: $(this).attr('action'),
+            url: form.attr('action'),
             method: 'POST',
             data: formData,
             processData: false,
             contentType: false,
             success: function(response) {
                 if (response.success) {
-                    alert(`Successfully sent ${response.success_count} messages. ${response.failure_count} failed.`);
-                    location.reload();
+                    showSmsResult(true, 
+                        `Successfully sent ${response.success_count} messages. ${response.failure_count} failed.`,
+                        response.results || []
+                    );
                 } else {
-                    alert('Error sending messages: ' + response.message);
+                    showSmsResult(false, response.message || 'Error sending messages');
                 }
             },
             error: function(xhr) {
-                alert('Error sending messages. Please try again.');
+                const errorMessage = xhr.responseJSON?.message || 'Error sending messages. Please try again.';
+                showSmsResult(false, errorMessage);
+            },
+            complete: function() {
+                $('#smsLoadingState').hide();
+                submitBtn.prop('disabled', false);
             }
         });
+    });
+
+    // Reset modal state when it's hidden
+    $('#sendSmsModal').on('hidden.bs.modal', function() {
+        $('#smsStatusContainer').show();
+        $('#smsLoadingState').hide();
+        $('#smsResultsContainer').hide();
+        $('#sendSmsBtn').prop('disabled', false);
     });
 
     // View SMS History

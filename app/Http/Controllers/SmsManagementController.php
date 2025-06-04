@@ -122,74 +122,78 @@ class SmsManagementController extends Controller
     }
 
     /**
-     * Send SMS to selected attendees
+     * Send SMS to multiple attendees
+     *
+     * @param Request $request
+     * @param Event $event
+     * @return \Illuminate\Http\JsonResponse
      */
-    public function sendBulkSms(Request $request, Event $event)
+    public function bulkSend(Request $request, Event $event)
     {
         $request->validate([
             'attendee_ids' => 'required|array',
             'attendee_ids.*' => 'exists:attendees,id'
         ]);
 
-        $attendees = $event->attendees()->whereIn('id', $request->attendee_ids)->get();
-        
-        $successCount = 0;
-        $failedCount = 0;
+        $attendeeIds = $request->attendee_ids;
         $results = [];
+        $successCount = 0;
+        $failureCount = 0;
 
-        foreach ($attendees as $attendee) {
-            $ticket = $attendee->tickets()->where('event_id', $event->id)->first();
-            
-            if (!$ticket || !$attendee->phone) {
-                $failedCount++;
-                $results[] = [
-                    'attendee' => $attendee->name,
-                    'status' => 'failed',
-                    'reason' => !$attendee->phone ? 'No phone number' : 'No ticket found'
-                ];
-                continue;
-            }
-
+        foreach ($attendeeIds as $attendeeId) {
             try {
-                $success = $this->smsService->sendInvitation($ticket);
+                $attendee = $event->attendees()->findOrFail($attendeeId);
                 
-                if ($success) {
+                if (!$attendee->phone) {
+                    $results[] = [
+                        'success' => false,
+                        'recipient' => $attendee->name,
+                        'message' => 'No phone number available'
+                    ];
+                    $failureCount++;
+                    continue;
+                }
+
+                $result = $this->smsService->sendInvitation($attendee->ticket);
+                
+                $results[] = [
+                    'success' => $result['success'],
+                    'recipient' => $attendee->name,
+                    'message' => $result['success'] ? 'SMS sent successfully' : ($result['error'] ?? 'Failed to send SMS'),
+                    'log_id' => $result['log_id'] ?? null,
+                    'reference' => $result['reference'] ?? null
+                ];
+
+                if ($result['success']) {
                     $successCount++;
-                    $results[] = [
-                        'attendee' => $attendee->name,
-                        'status' => 'success'
-                    ];
                 } else {
-                    $failedCount++;
-                    $results[] = [
-                        'attendee' => $attendee->name,
-                        'status' => 'failed',
-                        'reason' => 'SMS sending failed'
-                    ];
+                    $failureCount++;
                 }
             } catch (\Exception $e) {
-                $failedCount++;
+                Log::error('Failed to send SMS to attendee', [
+                    'attendee_id' => $attendeeId,
+                    'event_id' => $event->id,
+                    'error' => $e->getMessage()
+                ]);
+
                 $results[] = [
-                    'attendee' => $attendee->name,
-                    'status' => 'failed',
-                    'reason' => $e->getMessage()
+                    'success' => false,
+                    'recipient' => $attendee->name ?? 'Unknown',
+                    'message' => 'Error: ' . $e->getMessage()
                 ];
+                $failureCount++;
             }
         }
 
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => "Sent {$successCount} messages successfully, {$failedCount} failed",
-                'success_count' => $successCount,
-                'failure_count' => $failedCount,
-                'results' => $results
-            ]);
-        }
-
-        return redirect()->route('sms.management.event', $event)
-            ->with('success', "Sent {$successCount} messages successfully, {$failedCount} failed")
-            ->with('results', $results);
+        return response()->json([
+            'success' => $successCount > 0,
+            'success_count' => $successCount,
+            'failure_count' => $failureCount,
+            'results' => $results,
+            'message' => $successCount > 0 
+                ? "Successfully sent {$successCount} messages" . ($failureCount > 0 ? ", {$failureCount} failed" : "")
+                : "Failed to send any messages"
+        ]);
     }
 
     /**
