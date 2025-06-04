@@ -128,12 +128,9 @@
                                                     data-attendee-name="{{ $ticket->attendee->name }}"
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
                                                     data-attendee-id="{{ $ticket->attendee->id }}"
-                                                    data-event-name="{{ $ticket->event->name ?? 'N/A' }}"
-                                                    data-event-date="{{ optional($ticket->event->date)->format('d/m/Y') ?? 'N/A' }}"
-                                                    data-event-time="{{ optional($ticket->event->date)->format('h:i A') ?? 'N/A' }}"
-                                                    data-event-location="{{ $ticket->event->location ?? 'N/A' }}"
-                                                    data-ticket-code="{{ $ticket->code }}"
-                                                    data-ticket-url="{{ route('tickets.verify', ['token' => $ticket->token]) }}">
+                                                    data-ticket-type="{{ $ticket->type }}"
+                                                    data-ticket-number="{{ $ticket->ticket_number }}"
+                                                    data-token="{{ $ticket->token }}">
                                                 <i class="bi bi-envelope"></i>
                                             </button>
                                         @endif
@@ -391,34 +388,31 @@
             const ticketId = $(this).data('ticket-id');
             const attendeeName = $(this).data('attendee-name');
             const attendeePhone = $(this).data('attendee-phone');
-            const eventName = $(this).data('event-name');
             const attendeeId = $(this).data('attendee-id');
-            const eventDate = $(this).data('event-date');
-            const eventTime = $(this).data('event-time');
-            const eventLocation = $(this).data('event-location');
-            const ticketCode = $(this).data('ticket-code');
-            const ticketUrl = $(this).data('ticket-url');
+            const ticketType = $(this).data('ticket-type');
+            const ticketNumber = $(this).data('ticket-number');
             
             // Validate required data
-            if (!attendeeName || !eventName || eventDate === 'N/A' || eventTime === 'N/A') {
-                toastr.error('Missing required event information. Please check the event details.');
+            if (!attendeeName || !attendeePhone) {
+                toastr.error('Missing required attendee information.');
                 return;
             }
             
-            sendInvitation(ticketId, attendeeId, attendeeName, attendeePhone, null, ticketCode);
+            sendInvitation(ticketId, attendeeId, attendeeName, attendeePhone, ticketType, ticketNumber);
         });
 
         // Update the sendInvitation function to use predefined template
         function sendInvitation(ticketId, attendeeId, attendeeName, phone, ticketType, ticketNumber) {
+            // Set form values
             $('#invitationTicketId').val(ticketId);
             $('#invitationAttendeeId').val(attendeeId);
-            $('#invitationAttendeeName').text(attendeeName || 'Unassigned');
-            $('#invitationAttendeePhone').text(phone || 'N/A');
-            $('#invitationTicketType').text(ticketType ? ticketType.toUpperCase() : 'N/A');
+            $('#invitationAttendeeName').text(attendeeName);
+            $('#invitationAttendeePhone').text(phone);
+            $('#invitationTicketType').text(ticketType ? ticketType.toUpperCase() : 'REGULAR');
             $('#invitationTicketNumber').text(ticketNumber || 'N/A');
 
-            // Create predefined SMS message
-            const smsTemplate = `Familia ya ${attendeeName || 'Mr & Mrs Guest'} wanakualika kwenye {{ $event->name }}, {{ $event->start_date->format('d/m/Y') }} saa {{ $event->start_time }}, {{ $event->location }}. Tiketi: ${ticketNumber || 'XXXXXXX'} (${ticketType ? ticketType.toUpperCase() : 'REGULAR'}). Wasiliana: ${phone || '07XXXXXXXX'}. Karibu tusherehekee pamoja!`;
+            // Create predefined SMS message with actual values
+            const smsTemplate = `Familia ya ${attendeeName} wanakualika kwenye {{ $event->name }}, {{ $event->start_date->format('d/m/Y') }} saa {{ $event->start_time }}, {{ $event->location }}. Tiketi: ${ticketNumber} (${ticketType.toUpperCase()}). Wasiliana: ${phone}. Karibu tusherehekee pamoja!`;
             
             // Set the predefined message in the hidden input
             $('#predefinedMessage').val(smsTemplate);
