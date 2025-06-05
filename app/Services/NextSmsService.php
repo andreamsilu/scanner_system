@@ -4,7 +4,6 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class NextSmsService extends BaseSmsService
 {
@@ -25,7 +24,7 @@ class NextSmsService extends BaseSmsService
     }
 
     /**
-     * Send an SMS message (Simulated)
+     * Send an SMS message
      *
      * @param string $to The recipient's phone number
      * @param string $message The message content
@@ -42,83 +41,156 @@ class NextSmsService extends BaseSmsService
             // Generate a unique reference if not provided
             $reference = $options['reference'] ?? 'ref_' . uniqid();
 
-            // Log the simulated request
-            Log::info('Simulated NextSMS request', [
+            // Format the API credentials for Basic Auth
+            $credentials = base64_encode($this->config['username'] . ':' . $this->config['password']);
+
+            // Log the request for debugging
+            Log::info('Sending SMS request', [
+                'url' => $this->baseUrl . '/text/single',
                 'to' => $to,
                 'message' => $message,
                 'sender_id' => $this->config['sender_id'],
                 'reference' => $reference,
-                'simulated' => true
+                'auth_type' => 'Basic Auth'
             ]);
 
-            // Simulate API delay
-            sleep(1);
+            $response = Http::timeout(30)
+                ->retry(3, 100)
+                ->withHeaders([
+                    'Authorization' => 'Basic ' . $credentials,
+                    'Content-Type' => 'application/json',
+                    'Accept' => 'application/json'
+                ])
+                ->withOptions([
+                    'verify' => true,
+                    'connect_timeout' => 10,
+                ])
+                ->post($this->baseUrl . '/text/single', [
+                    'from' => $this->config['sender_id'],
+                    'to' => $this->formatPhoneNumber($to),
+                    'text' => $message,
+                    'reference' => $reference
+                ]);
 
-            // Generate mock response
+            // Log the response for debugging
+            Log::info('SMS API response', [
+                'status' => $response->status(),
+                'body' => $response->body(),
+                'headers' => $response->headers()
+            ]);
+
+            if (!$response->successful()) {
+                $errorMessage = 'NextSMS API error: ' . $response->body();
+                Log::error('SMS API error', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'headers' => $response->headers(),
+                    'to' => $to,
+                    'message' => $message,
+                    'reference' => $reference,
+                    'auth_type' => 'Basic Auth',
+                    'username' => $this->config['username']
+                ]);
+                throw new \Exception($errorMessage);
+            }
+
+            $result = $response->json();
+            
             $responseData = [
                 'success' => true,
-                'message_id' => 'MOCK_' . Str::random(10),
+                'message_id' => $result['message_id'] ?? null,
                 'to' => $to,
-                'status' => [
-                    'name' => 'DELIVERED',
-                    'groupName' => 'DELIVERED',
-                    'description' => 'Message delivered successfully (Simulated)'
-                ],
+                'status' => $result['status'] ?? 'sent',
                 'reference' => $reference,
-                'cost' => 1,
-                'units' => 1
+                'cost' => $result['cost'] ?? null,
+                'units' => $result['units'] ?? null
             ];
 
             $this->logActivity('send', $responseData);
 
             return $responseData;
-
-        } catch (\Exception $e) {
-            Log::error('Simulated SMS sending failed', [
+        } catch (\Illuminate\Http\Client\ConnectionException $e) {
+            Log::error('SMS connection error', [
                 'error' => $e->getMessage(),
                 'to' => $to,
                 'message' => $message,
-                'simulated' => true
+                'url' => $this->baseUrl . '/text/single',
+                'auth_type' => 'Basic Auth',
+                'username' => $this->config['username']
+            ]);
+            throw new \Exception('Failed to connect to SMS service. Please try again later.');
+        } catch (\Exception $e) {
+            Log::error('SMS sending failed', [
+                'error' => $e->getMessage(),
+                'to' => $to,
+                'message' => $message,
+                'auth_type' => 'Basic Auth',
+                'username' => $this->config['username']
             ]);
             throw $e;
         }
     }
 
     /**
-     * Get the remaining SMS credits/units (Simulated)
+     * Get the remaining SMS credits/units
      *
      * @return array Balance information containing remaining SMS credits
      */
     public function getBalance(): array
     {
         try {
-            // Simulate API delay
-            sleep(1);
+            // Format the API credentials for Basic Auth
+            $credentials = base64_encode($this->config['username'] . ':' . $this->config['password']);
             
-            // Return mock balance
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ])->get($this->baseUrl . '/balance');
+
+            if (!$response->successful()) {
+                Log::error('NextSMS balance check failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'headers' => $response->headers()
+                ]);
+                throw new \Exception('NextSMS API error: ' . $response->body());
+            }
+
+            $result = $response->json();
+            
+            // Log the parsed response
+            Log::info('SMS Balance Response', [
+                'raw_response' => $result
+            ]);
+            
+            // Extract balance directly from root level
+            $balance = (int)($result['sms_balance'] ?? 0);
+            
             $balanceData = [
                 'success' => true,
-                'credits' => 1000,
-                'units' => 1000,
+                'credits' => $balance,
+                'units' => $balance,
                 'type' => 'sms_credits',
                 'provider' => 'nextsms',
-                'simulated' => true
+                'raw_response' => $result
             ];
 
             $this->logActivity('balance_check', $balanceData);
 
             return $balanceData;
         } catch (\Exception $e) {
-            Log::error('Simulated SMS balance check error', [
+            Log::error('SMS balance check error', [
                 'error' => $e->getMessage(),
-                'simulated' => true
+                'trace' => $e->getTraceAsString(),
+                'raw_response' => $response->body() ?? null
             ]);
             throw $e;
         }
     }
 
     /**
-     * Get the delivery status of a message (Simulated)
+     * Get the delivery status of a message
      *
      * @param string $messageId The message ID to check
      * @return array Delivery status information
@@ -126,30 +198,59 @@ class NextSmsService extends BaseSmsService
     public function getStatus(string $messageId): array
     {
         try {
-            // Simulate API delay
-            sleep(1);
+            // Format the API credentials for Basic Auth
+            $credentials = base64_encode($this->config['username'] . ':' . $this->config['password']);
             
-            // Return mock status
+            // Log the request for debugging
+            Log::info('Checking SMS status', [
+                'url' => $this->baseUrl . '/messages/' . $messageId,
+                'message_id' => $messageId,
+                'auth_type' => 'Basic Auth'
+            ]);
+
+            $response = Http::withHeaders([
+                'Authorization' => 'Basic ' . $credentials,
+                'Content-Type' => 'application/json',
+                'Accept' => 'application/json'
+            ])->get($this->baseUrl . '/messages/' . $messageId);
+
+            if (!$response->successful()) {
+                Log::error('SMS status check failed', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'message_id' => $messageId,
+                    'auth_type' => 'Basic Auth',
+                    'username' => $this->config['username']
+                ]);
+                throw new \Exception('NextSMS API error: ' . $response->body());
+            }
+
+            $result = $response->json();
+            
+            // Log the successful response
+            Log::info('SMS status check response', [
+                'status' => $response->status(),
+                'body' => $result,
+                'message_id' => $messageId
+            ]);
+            
             $statusData = [
                 'success' => true,
                 'message_id' => $messageId,
-                'status' => [
-                    'name' => 'DELIVERED',
-                    'groupName' => 'DELIVERED',
-                    'description' => 'Message delivered successfully (Simulated)'
-                ],
-                'delivered_at' => now()->toIso8601String(),
-                'simulated' => true
+                'status' => $result['status'] ?? 'unknown',
+                'delivered_at' => $result['delivered_at'] ?? null,
+                'error' => $result['error'] ?? null,
             ];
 
             $this->logActivity('status_check', $statusData);
 
             return $statusData;
         } catch (\Exception $e) {
-            Log::error('Simulated SMS status check error', [
+            Log::error('SMS status check error', [
                 'error' => $e->getMessage(),
                 'message_id' => $messageId,
-                'simulated' => true
+                'auth_type' => 'Basic Auth',
+                'username' => $this->config['username']
             ]);
             throw $e;
         }
