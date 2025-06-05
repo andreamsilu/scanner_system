@@ -464,32 +464,59 @@ $(document).ready(function() {
         
         // Set alert style and icon
         alert.removeClass('alert-success alert-danger alert-warning')
-            .addClass(success ? 'alert-success' : 'alert-danger');
+            .addClass(success ? 'alert-success' : 'alert-warning');
         
         icon.removeClass('bi-check-circle bi-x-circle bi-exclamation-triangle')
-            .addClass(success ? 'bi-check-circle' : 'bi-x-circle');
+            .addClass(success ? 'bi-check-circle' : 'bi-exclamation-circle');
         
         // Set content with enhanced messaging
-        title.text(success ? 'Validation Successful' : 'Validation Failed');
-        messageEl.html(success 
-            ? `<strong>✓ ${message}</strong><br><small class="text-muted">All selected attendees have been validated successfully.</small>`
-            : `<strong>✗ ${message}</strong><br><small class="text-muted">Please review the details below and try again.</small>`);
+        title.text(success ? 'Validation Successful' : 'Validation Status');
+        messageEl.html(`
+            <div class="d-flex align-items-center">
+                <strong class="me-2">${success ? '✓' : '!'}</strong>
+                <div>
+                    <strong>${message}</strong>
+                    ${!success ? '<br><small class="text-muted">Please review the details below.</small>' : ''}
+                </div>
+            </div>
+        `);
         
         // Add detailed results if available
         if (details && Array.isArray(details)) {
             details.forEach(detail => {
+                const statusIcon = detail.status === 'success' ? '✓' : '!';
+                const statusClass = detail.statusClass || (detail.status === 'success' ? 'success' : 'warning');
+                const statusText = detail.status === 'success' ? 'Valid' : 
+                    detail.status.replace(/_/g, ' ').toLowerCase();
+                
                 resultsTable.append(`
                     <tr>
                         <td>
-                            <span class="badge bg-${detail.status === 'success' ? 'success' : 'danger'}">
-                                ${detail.status === 'success' ? '✓ Valid' : '✗ Invalid'}
+                            <span class="badge bg-${statusClass}">
+                                ${statusIcon} ${statusText}
                             </span>
                         </td>
                         <td>${detail.recipient}</td>
                         <td>
-                            <small class="text-${detail.status === 'success' ? 'success' : 'danger'}">
-                                ${detail.message}
-                            </small>
+                            <div class="d-flex align-items-center">
+                                <small class="text-${statusClass}">
+                                    ${detail.message}
+                                </small>
+                                ${detail.debug ? `
+                                    <button class="btn btn-link btn-sm ms-2 p-0" 
+                                            type="button" 
+                                            data-bs-toggle="collapse" 
+                                            data-bs-target="#debug-${detail.recipient.replace(/\s+/g, '-')}" 
+                                            aria-expanded="false">
+                                        <i class="bi bi-info-circle"></i>
+                                    </button>
+                                    <div class="collapse mt-1" id="debug-${detail.recipient.replace(/\s+/g, '-')}">
+                                        <small class="text-muted">
+                                            <pre class="mb-0">${JSON.stringify(detail.debug, null, 2)}</pre>
+                                        </small>
+                                    </div>
+                                ` : ''}
+                            </div>
                         </td>
                     </tr>
                 `);
@@ -514,10 +541,10 @@ $(document).ready(function() {
         }).get();
 
         if (selectedAttendees.length === 0) {
-            showValidationResult(false, 'No attendees selected', [{
+            showValidationResult(false, 'Please select at least one attendee to validate.', [{
                 status: 'error',
                 recipient: 'System',
-                message: 'Please select at least one attendee to validate.'
+                message: 'No attendees selected for validation.'
             }]);
             return;
         }
@@ -576,28 +603,27 @@ $(document).ready(function() {
                         'VALIDATION_ERROR': 'danger'
                     }[status] || 'warning';
 
+                    // Use the exact message from the response
                     const message = response.message || 'Token validation failed';
                     const details = selectedAttendees.map(attendee => ({
                         status: status,
                         recipient: attendee.name,
-                        message: message,
+                        message: message, // Use the exact message from response
                         statusClass: statusClass,
                         debug: response.debug_info || null
                     }));
                     showValidationResult(false, message, details);
                     
-                    // Update status in the table with debug info if available
+                    // Update status in the table with the exact message
                     selectedAttendees.forEach(attendee => {
                         const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
                         const statusCell = row.find('td:eq(4)');
                         const statusText = status === 'VALIDATION_ERROR' 
                             ? 'Validation Error' 
                             : status.replace(/_/g, ' ').toLowerCase();
-                        const debugInfo = response.debug_info ? 
-                            `\nDebug: ${JSON.stringify(response.debug_info)}` : '';
                         statusCell.html(`
                             <span class="badge bg-${statusClass}" 
-                                  title="${message}${debugInfo}"
+                                  title="${message}"
                                   data-bs-toggle="tooltip"
                                   data-bs-placement="top">
                                 ${statusText}
