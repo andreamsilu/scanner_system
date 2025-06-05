@@ -330,6 +330,281 @@ class ScannerController extends Controller
     }
 
     /**
+     * Core validation logic shared between QR and manual validation
+     * 
+     * @param string $rawToken
+     * @param string $validationType 'qr' or 'manual'
+     * @return array ['success' => bool, 'data' => array|null, 'error' => array|null]
+     */
+    private function validateAttendeeToken(string $rawToken, string $validationType = 'qr'): array
+    {
+        $user = auth()->user();
+        $eventId = session('selected_event_id');
+
+        // Validate event selection
+        if (!$eventId) {
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => [
+                    'message' => 'Please select an event first before scanning.',
+                    'code' => 'NO_EVENT_SELECTED',
+                    'redirect' => route('scanner.dashboard')
+                ]
+            ];
+        }
+
+        // Get the selected event
+        $event = Event::find($eventId);
+        if (!$event) {
+            session()->forget('selected_event_id');
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => [
+                    'message' => 'Selected event no longer exists. Please select a new event.',
+                    'code' => 'EVENT_NOT_FOUND',
+                    'redirect' => route('scanner.dashboard')
+                ]
+            ];
+        }
+
+        // Extract the actual token from URL if needed
+        $token = $this->extractToken($rawToken);
+
+        // Debug logging for input values
+        Log::info("{$validationType} token validation attempt", [
+            'raw_token' => $rawToken,
+            'extracted_token' => $token,
+            'event_id' => $eventId,
+            'user_id' => $user->id
+        ]);
+
+        // First, validate only the attendee token existence
+        $attendee = Attendee::where(function($query) use ($token) {
+            // Check both token and ticket_number fields
+            $query->where('token', $token)
+                  ->orWhereHas('ticket', function($q) use ($token) {
+                      $q->where('ticket_number', $token);
+                  });
+        })
+        ->where('event_id', $eventId)
+        ->first();
+
+        // Debug logging for attendee lookup
+        Log::info("{$validationType} attendee lookup result", [
+            'raw_token' => $rawToken,
+            'extracted_token' => $token,
+            'event_id' => $eventId,
+            'attendee_found' => (bool)$attendee,
+            'attendee_id' => $attendee ? $attendee->id : null,
+            'attendee_token' => $attendee ? $attendee->token : null,
+            'attendee_ticket' => $attendee && $attendee->ticket ? [
+                'ticket_number' => $attendee->ticket->ticket_number,
+                'status' => $attendee->ticket->status
+            ] : null
+        ]);
+
+        if (!$attendee) {
+            // Log the failed validation attempt
+            Log::warning("Invalid {$validationType} token validation attempt", [
+                'raw_token' => $rawToken,
+                'extracted_token' => $token,
+                'event_id' => $eventId,
+                'user_id' => $user->id,
+                'sql_query' => Attendee::where('token', $token)
+                    ->where('event_id', $eventId)
+                    ->toSql()
+            ]);
+
+            return [
+                'success' => false,
+                'data' => null,
+                'error' => [
+                    'message' => 'Invalid token or token not for this event.',
+                    'code' => 'INVALID_TOKEN',
+                    'debug_info' => [
+                        'raw_token' => $rawToken,
+                        'extracted_token' => $token,
+                        'event_id' => $eventId
+                    ]
+                ]
+            ];
+        }
+
+        // Load the ticket relationship
+        $attendee->load(['ticket', 'event']);
+
+        // Debug logging for ticket status
+        Log::info('Ticket status check', [
+            'attendee_id' => $attendee->id,
+            'has_ticket' => (bool)$attendee->ticket,
+            'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null,
+            'registration_status' => $attendee->registration_status
+        ]);
+
+        // Check if attendee has a ticket
+        if (!$attendee->ticket) {
+            return [
+                'success' => false,
+                'data' => [
+                    'attendee' => [
+                        'name' => $attendee->name,
+                        'email' => $attendee->email
+                    ]
+                ],
+                'error' => [
+                    'message' => 'No ticket found for this attendee.',
+                    'code' => 'NO_TICKET'
+                ]
+            ];
+        }
+
+        // Check current ticket status
+        if ($attendee->ticket->status === 'used') {
+            return [
+                'success' => false,
+                'data' => [
+                    'attendee' => [
+                        'name' => $attendee->name,
+                        'email' => $attendee->email,
+                        'checked_in_at' => $attendee->ticket->used_at
+                    ]
+                ],
+                'error' => [
+                    'message' => 'This ticket has already been used.',
+                    'code' => 'TICKET_USED'
+                ]
+            ];
+        }
+
+        // Check if attendee is already checked in
+        if ($attendee->registration_status === 'checked_in') {
+            return [
+                'success' => false,
+                'data' => [
+                    'attendee' => [
+                        'name' => $attendee->name,
+                        'email' => $attendee->email,
+                        'checked_in_at' => $attendee->checked_in_at
+                    ]
+                ],
+                'error' => [
+                    'message' => 'Attendee is already checked in.',
+                    'code' => 'ALREADY_CHECKED_IN'
+                ]
+            ];
+        }
+
+        return [
+            'success' => true,
+            'data' => [
+                'attendee' => $attendee,
+                'event' => $event,
+                'user' => $user
+            ],
+            'error' => null
+        ];
+    }
+
+    /**
+     * Process successful validation and update statuses
+     * 
+     * @param array $validationData
+     * @param string $validationType
+     * @return array
+     */
+    private function processSuccessfulValidation(array $validationData, string $validationType = 'qr'): array
+    {
+        $attendee = $validationData['attendee'];
+        $user = $validationData['user'];
+        $now = now();
+
+        DB::beginTransaction();
+        try {
+            // Update ticket status
+            $attendee->ticket->update([
+                'status' => 'used',
+                'used_at' => $now
+            ]);
+
+            // Update attendee registration status
+            $attendee->update([
+                'registration_status' => 'checked_in',
+                'checked_in_at' => $now
+            ]);
+
+            // Log the successful validation
+            ScanLog::create([
+                'ticket_id' => $attendee->ticket->id,
+                'scanner_id' => $user->id,
+                'status' => 'success',
+                'notes' => "{$validationType} validation"
+            ]);
+
+            // Log the successful check-in with previous status
+            Log::info("Attendee checked in via {$validationType}", [
+                'attendee_id' => $attendee->id,
+                'ticket_id' => $attendee->ticket->id,
+                'event_id' => $attendee->event_id,
+                'scanner_id' => $user->id,
+                'previous_status' => [
+                    'ticket' => $attendee->ticket->getOriginal('status'),
+                    'registration' => $attendee->getOriginal('registration_status')
+                ]
+            ]);
+
+            DB::commit();
+
+            // Send SMS notification if attendee has a phone number - outside transaction
+            if ($attendee->phone) {
+                try {
+                    $message = "Dear {$attendee->name}, your ticket for {$attendee->event->name} has been used at {$now->format('M d, Y h:i A')}. Thank you for attending!";
+                    
+                    $this->smsService->send(
+                        $attendee->phone,
+                        $message,
+                        'notification',
+                        [
+                            'attendee_id' => $attendee->id,
+                            'ticket_id' => $attendee->ticket->id,
+                            'event_id' => $attendee->event_id,
+                            'attendee_name' => $attendee->name,
+                            'attendee_phone' => $attendee->phone
+                        ]
+                    );
+
+                    Log::info("SMS sent for {$validationType} check-in", [
+                        'attendee_id' => $attendee->id,
+                        'phone' => $attendee->phone,
+                        'event' => $attendee->event->name
+                    ]);
+                } catch (\Exception $e) {
+                    // Log SMS error but don't affect the check-in status
+                    Log::error("Failed to send SMS for {$validationType} check-in", [
+                        'attendee_id' => $attendee->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            return [
+                'success' => true,
+                'message' => 'Check-in successful!',
+                'attendee' => [
+                    'name' => $attendee->name,
+                    'email' => $attendee->email,
+                    'checked_in_at' => $now->format('M d, Y h:i A')
+                ]
+            ];
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+    /**
      * Handle QR code scan validation.
      * 
      * @param Request $request
@@ -339,241 +614,28 @@ class ScannerController extends Controller
     {
         try {
             $rawToken = $request->input('token');
-            $eventId = session('selected_event_id'); // Get event_id from session instead of request
-            $user = auth()->user();
-
-            // Validate event selection
-            if (!$eventId) {
+            
+            // Validate the token
+            $validation = $this->validateAttendeeToken($rawToken, 'qr');
+            
+            if (!$validation['success']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Please select an event first before scanning.',
-                    'code' => 'NO_EVENT_SELECTED',
-                    'redirect' => route('scanner.dashboard')
+                    'message' => $validation['error']['message'],
+                    'code' => $validation['error']['code'],
+                    'attendee' => $validation['data']['attendee'] ?? null,
+                    'debug_info' => $validation['error']['debug_info'] ?? null,
+                    'redirect' => $validation['error']['redirect'] ?? null
                 ], 422);
             }
 
-            // Get the selected event
-            $event = Event::find($eventId);
-            if (!$event) {
-                session()->forget('selected_event_id');
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Selected event no longer exists. Please select a new event.',
-                    'code' => 'EVENT_NOT_FOUND',
-                    'redirect' => route('scanner.dashboard')
-                ], 422);
-            }
-
-            // Extract the actual token from URL if needed
-            $token = $this->extractToken($rawToken);
-
-            // Debug logging for input values
-            Log::info('Token validation attempt', [
-                'raw_token' => $rawToken,
-                'extracted_token' => $token,
-                'event_id' => $eventId,
-                'user_id' => $user->id,
-                'request_data' => $request->all()
-            ]);
-
-            // First, validate only the attendee token existence
-            $attendee = Attendee::where(function($query) use ($token) {
-                // Check both token and ticket_number fields
-                $query->where('token', $token)
-                      ->orWhereHas('ticket', function($q) use ($token) {
-                          $q->where('ticket_number', $token);
-                      });
-            })
-            ->where('event_id', $eventId)
-            ->first();
-
-            // Debug logging for attendee lookup
-            Log::info('Attendee lookup result', [
-                'raw_token' => $rawToken,
-                'extracted_token' => $token,
-                'event_id' => $eventId,
-                'attendee_found' => (bool)$attendee,
-                'attendee_id' => $attendee ? $attendee->id : null,
-                'attendee_token' => $attendee ? $attendee->token : null,
-                'attendee_ticket' => $attendee && $attendee->ticket ? [
-                    'ticket_number' => $attendee->ticket->ticket_number,
-                    'status' => $attendee->ticket->status
-                ] : null
-            ]);
-
-            if (!$attendee) {
-                // Log the failed validation attempt
-                Log::warning('Invalid token validation attempt', [
-                    'raw_token' => $rawToken,
-                    'extracted_token' => $token,
-                    'event_id' => $eventId,
-                    'user_id' => $user->id,
-                    'sql_query' => Attendee::where('token', $token)
-                        ->where('event_id', $eventId)
-                        ->toSql()
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid token or token not for this event.',
-                    'code' => 'INVALID_TOKEN',
-                    'debug_info' => [
-                        'raw_token' => $rawToken,
-                        'extracted_token' => $token,
-                        'event_id' => $eventId
-                    ]
-                ], 422);
-            }
-
-            // Start transaction for ticket validation and status update
-            DB::beginTransaction();
-            try {
-                // Load the ticket relationship
-                $attendee->load(['ticket', 'event']);
-
-                // Debug logging for ticket status
-                Log::info('Ticket status check', [
-                    'attendee_id' => $attendee->id,
-                    'has_ticket' => (bool)$attendee->ticket,
-                    'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null,
-                    'registration_status' => $attendee->registration_status
-                ]);
-
-                // Check if attendee has a ticket
-                if (!$attendee->ticket) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No ticket found for this attendee.',
-                        'code' => 'NO_TICKET',
-                        'attendee' => [
-                            'name' => $attendee->name,
-                            'email' => $attendee->email
-                        ]
-                    ], 422);
-                }
-
-                // Check current ticket status
-                if ($attendee->ticket->status === 'used') {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'This ticket has already been used.',
-                        'code' => 'TICKET_USED',
-                        'attendee' => [
-                            'name' => $attendee->name,
-                            'email' => $attendee->email,
-                            'checked_in_at' => $attendee->ticket->used_at
-                        ]
-                    ], 422);
-                }
-
-                // Check if attendee is already checked in
-                if ($attendee->registration_status === 'checked_in') {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Attendee is already checked in.',
-                        'code' => 'ALREADY_CHECKED_IN',
-                        'attendee' => [
-                            'name' => $attendee->name,
-                            'email' => $attendee->email,
-                            'checked_in_at' => $attendee->checked_in_at
-                        ]
-                    ], 422);
-                }
-
-                $now = now();
-                
-                // Update ticket status
-                $attendee->ticket->update([
-                    'status' => 'used',
-                    'used_at' => $now
-                ]);
-
-                // Update attendee registration status
-                $attendee->update([
-                    'registration_status' => 'checked_in',
-                    'checked_in_at' => $now
-                ]);
-
-                // Log the successful validation
-                ScanLog::create([
-                    'ticket_id' => $attendee->ticket->id,
-                    'scanner_id' => $user->id,
-                    'status' => 'success',
-                    'notes' => 'QR code validation'
-                ]);
-
-                // Log the successful check-in with previous status
-                Log::info('Attendee checked in successfully', [
-                    'attendee_id' => $attendee->id,
-                    'ticket_id' => $attendee->ticket->id,
-                    'event_id' => $attendee->event_id,
-                    'scanner_id' => $user->id,
-                    'previous_status' => [
-                        'ticket' => $attendee->ticket->getOriginal('status'),
-                        'registration' => $attendee->getOriginal('registration_status')
-                    ]
-                ]);
-
-                // Commit the transaction
-                DB::commit();
-
-                // Send SMS notification if attendee has a phone number - outside transaction
-                if ($attendee->phone) {
-                    try {
-                        $message = "Dear {$attendee->name}, your ticket for {$attendee->event->name} has been used at {$now->format('M d, Y h:i A')}. Thank you for attending!";
-                        
-                        $this->smsService->send(
-                            $attendee->phone,
-                            $message,
-                            'notification',
-                            [
-                                'attendee_id' => $attendee->id,
-                                'ticket_id' => $attendee->ticket->id,
-                                'event_id' => $attendee->event_id,
-                                'attendee_name' => $attendee->name,
-                                'attendee_phone' => $attendee->phone
-                            ]
-                        );
-
-                        Log::info('Ticket usage SMS sent successfully', [
-                            'attendee_id' => $attendee->id,
-                            'ticket_id' => $attendee->ticket->id,
-                            'event_id' => $attendee->event_id
-                        ]);
-                    } catch (\Exception $e) {
-                        // Log SMS error but don't affect the check-in status
-                        Log::error('Failed to send ticket usage SMS', [
-                            'attendee_id' => $attendee->id,
-                            'ticket_id' => $attendee->ticket->id,
-                            'event_id' => $attendee->event_id,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Check-in successful!',
-                    'attendee' => [
-                        'name' => $attendee->name,
-                        'email' => $attendee->email,
-                        'checked_in_at' => $now->format('M d, Y h:i A')
-                    ]
-                ]);
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
-            }
+            // Process successful validation
+            $result = $this->processSuccessfulValidation($validation['data'], 'qr');
+            return response()->json($result);
 
         } catch (\Exception $e) {
-            Log::error('Error validating token', [
+            Log::error('Error validating QR token', [
                 'raw_token' => $rawToken ?? null,
-                'event_id' => $eventId ?? null,
-                'user_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
                 'error_type' => get_class($e),
                 'trace' => $e->getTraceAsString()
@@ -600,240 +662,29 @@ class ScannerController extends Controller
                 'token' => 'required|string'
             ]);
 
-            $user = auth()->user();
-            $eventId = session('selected_event_id');
             $rawToken = $request->token;
-
-            // Validate event selection
-            if (!$eventId) {
+            
+            // Validate the token
+            $validation = $this->validateAttendeeToken($rawToken, 'manual');
+            
+            if (!$validation['success']) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Please select an event first before validating tokens.',
-                    'code' => 'NO_EVENT_SELECTED',
-                    'redirect' => route('scanner.dashboard')
+                    'message' => $validation['error']['message'],
+                    'code' => $validation['error']['code'],
+                    'attendee' => $validation['data']['attendee'] ?? null,
+                    'debug_info' => $validation['error']['debug_info'] ?? null,
+                    'redirect' => $validation['error']['redirect'] ?? null
                 ], 422);
             }
 
-            // Get the selected event
-            $event = Event::find($eventId);
-            if (!$event) {
-                session()->forget('selected_event_id');
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Selected event no longer exists. Please select a new event.',
-                    'code' => 'EVENT_NOT_FOUND',
-                    'redirect' => route('scanner.dashboard')
-                ], 422);
-            }
-
-            // Extract the actual token from URL if needed
-            $token = $this->extractToken($rawToken);
-
-            // Debug logging for input values
-            Log::info('Manual token validation attempt', [
-                'raw_token' => $rawToken,
-                'extracted_token' => $token,
-                'event_id' => $eventId,
-                'user_id' => $user->id,
-                'request_data' => $request->all()
-            ]);
-
-            // First, validate only the attendee token existence
-            $attendee = Attendee::where(function($query) use ($token) {
-                // Check both token and ticket_number fields
-                $query->where('token', $token)
-                      ->orWhereHas('ticket', function($q) use ($token) {
-                          $q->where('ticket_number', $token);
-                      });
-            })
-            ->where('event_id', $eventId)
-            ->first();
-
-            // Debug logging for attendee lookup
-            Log::info('Manual attendee lookup result', [
-                'raw_token' => $rawToken,
-                'extracted_token' => $token,
-                'event_id' => $eventId,
-                'attendee_found' => (bool)$attendee,
-                'attendee_id' => $attendee ? $attendee->id : null,
-                'attendee_token' => $attendee ? $attendee->token : null,
-                'attendee_ticket' => $attendee && $attendee->ticket ? [
-                    'ticket_number' => $attendee->ticket->ticket_number,
-                    'status' => $attendee->ticket->status
-                ] : null
-            ]);
-
-            if (!$attendee) {
-                // Log the failed validation attempt
-                Log::warning('Invalid manual token validation attempt', [
-                    'raw_token' => $rawToken,
-                    'extracted_token' => $token,
-                    'event_id' => $eventId,
-                    'user_id' => $user->id,
-                    'sql_query' => Attendee::where('token', $token)
-                        ->where('event_id', $eventId)
-                        ->toSql()
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Invalid token or token not for this event.',
-                    'code' => 'INVALID_TOKEN',
-                    'debug_info' => [
-                        'raw_token' => $rawToken,
-                        'extracted_token' => $token,
-                        'event_id' => $eventId
-                    ]
-                ], 422);
-            }
-
-            // Start transaction for ticket validation and status update
-            DB::beginTransaction();
-            try {
-                // Load the ticket relationship
-                $attendee->load(['ticket', 'event']);
-
-                // Debug logging for ticket status
-                Log::info('Ticket status check', [
-                    'attendee_id' => $attendee->id,
-                    'has_ticket' => (bool)$attendee->ticket,
-                    'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null,
-                    'registration_status' => $attendee->registration_status
-                ]);
-
-                // Check if attendee has a ticket
-                if (!$attendee->ticket) {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'No ticket found for this attendee.',
-                        'code' => 'NO_TICKET',
-                        'attendee' => [
-                            'name' => $attendee->name,
-                            'email' => $attendee->email
-                        ]
-                    ], 422);
-                }
-
-                // Check current ticket status
-                if ($attendee->ticket->status === 'used') {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'This ticket has already been used.',
-                        'code' => 'TICKET_USED',
-                        'attendee' => [
-                            'name' => $attendee->name,
-                            'email' => $attendee->email,
-                            'checked_in_at' => $attendee->ticket->used_at
-                        ]
-                    ], 422);
-                }
-
-                // Check if attendee is already checked in
-                if ($attendee->registration_status === 'checked_in') {
-                    DB::rollBack();
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Attendee is already checked in.',
-                        'code' => 'ALREADY_CHECKED_IN',
-                        'attendee' => [
-                            'name' => $attendee->name,
-                            'email' => $attendee->email,
-                            'checked_in_at' => $attendee->checked_in_at
-                        ]
-                    ], 422);
-                }
-
-                $now = now();
-                
-                // Update ticket status
-                $attendee->ticket->update([
-                    'status' => 'used',
-                    'used_at' => $now
-                ]);
-
-                // Update attendee registration status
-                $attendee->update([
-                    'registration_status' => 'checked_in',
-                    'checked_in_at' => $now
-                ]);
-
-                // Log the successful validation
-                ScanLog::create([
-                    'ticket_id' => $attendee->ticket->id,
-                    'scanner_id' => $user->id,
-                    'status' => 'success',
-                    'notes' => 'Manual token validation'
-                ]);
-
-                // Log the successful check-in with previous status
-                Log::info('Attendee checked in successfully', [
-                    'attendee_id' => $attendee->id,
-                    'ticket_id' => $attendee->ticket->id,
-                    'event_id' => $attendee->event_id,
-                    'scanner_id' => $user->id,
-                    'previous_status' => [
-                        'ticket' => $attendee->ticket->getOriginal('status'),
-                        'registration' => $attendee->getOriginal('registration_status')
-                    ]
-                ]);
-
-                // Commit the transaction
-                DB::commit();
-
-                // Send SMS notification if attendee has a phone number - outside transaction
-                if ($attendee->phone) {
-                    try {
-                        $message = "Dear {$attendee->name}, your ticket for {$attendee->event->name} has been used at {$now->format('M d, Y h:i A')}. Thank you for attending!";
-                        
-                        $this->smsService->send(
-                            $attendee->phone,
-                            $message,
-                            'notification',
-                            [
-                                'attendee_id' => $attendee->id,
-                                'ticket_id' => $attendee->ticket->id,
-                                'event_id' => $attendee->event_id,
-                                'attendee_name' => $attendee->name,
-                                'attendee_phone' => $attendee->phone
-                            ]
-                        );
-
-                        Log::info('SMS sent for manual check-in', [
-                            'attendee_id' => $attendee->id,
-                            'phone' => $attendee->phone,
-                            'event' => $attendee->event->name
-                        ]);
-                    } catch (\Exception $e) {
-                        // Log SMS error but don't affect the check-in status
-                        Log::error('Failed to send SMS for manual check-in', [
-                            'attendee_id' => $attendee->id,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                }
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Check-in successful!',
-                    'attendee' => [
-                        'name' => $attendee->name,
-                        'email' => $attendee->email,
-                        'checked_in_at' => $now->format('M d, Y h:i A')
-                    ]
-                ]);
-
-            } catch (\Exception $e) {
-                DB::rollBack();
-                throw $e;
-            }
+            // Process successful validation
+            $result = $this->processSuccessfulValidation($validation['data'], 'manual');
+            return response()->json($result);
 
         } catch (\Exception $e) {
             Log::error('Error in manual token validation', [
                 'raw_token' => $rawToken ?? null,
-                'event_id' => $eventId ?? null,
-                'user_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
                 'error_type' => get_class($e),
                 'trace' => $e->getTraceAsString()
