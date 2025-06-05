@@ -40,15 +40,37 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const feedbackModal = new bootstrap.Modal(document.getElementById('feedbackModal'));
+// Wait for both DOM and Bootstrap to be ready
+function initializeFeedbackModal() {
+    if (typeof bootstrap === 'undefined') {
+        console.error('Bootstrap is not loaded. Feedback modal will not work.');
+        return;
+    }
+
+    const modalElement = document.getElementById('feedbackModal');
+    if (!modalElement) {
+        console.error('Feedback modal element not found.');
+        return;
+    }
+
+    const feedbackModal = new bootstrap.Modal(modalElement);
     const feedbackTitle = document.getElementById('feedbackTitle');
     const feedbackMessage = document.getElementById('feedbackMessage');
     const modalIcon = document.querySelector('#feedbackModalLabel .bi');
     
     function showFeedback(title, message, type = 'info') {
+        if (!feedbackModal || !feedbackTitle || !feedbackMessage || !modalIcon) {
+            console.error('Feedback modal elements not found.');
+            return;
+        }
+
         // Set modal styling based on type
         const modalContent = document.querySelector('#feedbackModal .modal-content');
+        if (!modalContent) {
+            console.error('Modal content element not found.');
+            return;
+        }
+
         modalContent.className = 'modal-content';
         
         // Set icon and colors based on type
@@ -75,13 +97,18 @@ document.addEventListener('DOMContentLoaded', function() {
         modalIcon.className = `bi ${iconClass} me-2`;
         feedbackTitle.textContent = title;
         feedbackMessage.textContent = message;
-        feedbackModal.show();
         
-        // Auto-hide after 5 seconds for success/error messages
-        if (type === 'success' || type === 'error') {
-            setTimeout(() => {
-                feedbackModal.hide();
-            }, 5000);
+        try {
+            feedbackModal.show();
+            
+            // Auto-hide after 5 seconds for success/error messages
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    feedbackModal.hide();
+                }, 5000);
+            }
+        } catch (error) {
+            console.error('Error showing feedback modal:', error);
         }
     }
     
@@ -121,6 +148,30 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 2000);
         }
     });
+}
+
+// Try to initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // If Bootstrap is already loaded, initialize immediately
+    if (typeof bootstrap !== 'undefined') {
+        initializeFeedbackModal();
+    } else {
+        // Otherwise, wait for Bootstrap to load
+        const checkBootstrap = setInterval(function() {
+            if (typeof bootstrap !== 'undefined') {
+                clearInterval(checkBootstrap);
+                initializeFeedbackModal();
+            }
+        }, 100);
+
+        // Stop checking after 5 seconds
+        setTimeout(function() {
+            clearInterval(checkBootstrap);
+            if (typeof bootstrap === 'undefined') {
+                console.error('Bootstrap failed to load within 5 seconds.');
+            }
+        }, 5000);
+    }
 });
 </script>
  
