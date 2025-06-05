@@ -536,10 +536,10 @@ $(document).ready(function() {
 
         // Simulate token validation (replace with actual validation endpoint)
         $.ajax({
-            url: '/api/validate-token',
+            url: '/scanner/scan/validate',
             method: 'POST',
             data: {
-                attendee_ids: selectedAttendees.map(a => a.id),
+                token: selectedAttendees.map(a => a.id).join(','),
                 _token: $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
@@ -609,10 +609,10 @@ $(document).ready(function() {
 
         // Simulate token validation (replace with actual validation endpoint)
         $.ajax({
-            url: '/api/validate-single-token',
+            url: '/scanner/scan/validate',
             method: 'POST',
             data: {
-                attendee_id: $('#singleSmsAttendeeId').val(),
+                token: $('#singleSmsAttendeeId').val(),
                 _token: $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
