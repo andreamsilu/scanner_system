@@ -168,7 +168,9 @@
                                                         class="btn btn-sm btn-outline-primary send-single-sms"
                                                         data-attendee-id="{{ $attendee->id }}"
                                                         data-attendee-name="{{ $attendee->name }}"
-                                                        data-attendee-phone="{{ $attendee->phone_number }}">
+                                                        data-attendee-phone="{{ $attendee->phone_number }}"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#sendSingleSmsModal">
                                                     <i class="bi bi-send"></i>
                                                 </button>
                                                 <button type="button" 
@@ -321,6 +323,61 @@
                     </table>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Single SMS Modal -->
+<div class="modal fade" id="sendSingleSmsModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form id="sendSingleSmsForm">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title">Send SMS to <span id="singleSmsRecipientName"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Status Messages -->
+                    <div id="singleSmsStatusContainer">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle me-2"></i>
+                            Sending SMS to: <span id="singleSmsRecipientPhone"></span>
+                        </div>
+                    </div>
+
+                    <!-- Loading State -->
+                    <div id="singleSmsLoadingState" class="text-center py-4" style="display: none;">
+                        <div class="spinner-border text-primary mb-3" role="status">
+                            <span class="visually-hidden">Sending...</span>
+                        </div>
+                        <p class="mb-0">Sending SMS...</p>
+                    </div>
+
+                    <!-- Results Container -->
+                    <div id="singleSmsResultsContainer" style="display: none;">
+                        <div class="alert" id="singleSmsResultAlert">
+                            <div class="d-flex align-items-center">
+                                <i class="bi me-2" id="singleSmsResultIcon"></i>
+                                <div>
+                                    <h6 class="alert-heading mb-1" id="singleSmsResultTitle"></h6>
+                                    <p class="mb-0" id="singleSmsResultMessage"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="singleSmsResultDetails" class="mt-3"></div>
+                    </div>
+
+                    <input type="hidden" name="attendee_id" id="singleSmsAttendeeId">
+                    <input type="hidden" name="ticket_id" id="singleSmsTicketId">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary" id="sendSingleSmsBtn">
+                        <i class="bi bi-send me-1"></i> Send SMS
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
@@ -512,77 +569,123 @@ $(document).ready(function() {
         });
     });
 
-    // Add error handling for single SMS sending
+    // Handle single SMS sending
     $('.send-single-sms').on('click', function() {
         const attendeeId = $(this).data('attendee-id');
         const attendeeName = $(this).data('attendee-name');
         const attendeePhone = $(this).data('attendee-phone');
         
-        console.log('Sending single SMS to:', { attendeeId, attendeeName, attendeePhone }); // Debug log
-
-        if (!attendeePhone) {
-            showSmsResult(false, 'No phone number available for ' + attendeeName);
-            return;
-        }
-
-        // Show loading state in modal
-        $('#smsStatusContainer').hide();
-        $('#smsLoadingState').show();
-        $('#smsResultsContainer').hide();
+        // Reset modal state
+        $('#singleSmsStatusContainer').show();
+        $('#singleSmsLoadingState').hide();
+        $('#singleSmsResultsContainer').hide();
+        $('#sendSingleSmsBtn').prop('disabled', false);
         
-        const formData = new FormData();
-        formData.append('attendee_ids', JSON.stringify([attendeeId]));
-        formData.append('_token', $('meta[name="csrf-token"]').attr('content'));
+        // Update modal content
+        $('#singleSmsRecipientName').text(attendeeName);
+        $('#singleSmsRecipientPhone').text(attendeePhone);
+        $('#singleSmsAttendeeId').val(attendeeId);
+        
+        // Get the first ticket ID for this attendee
+        const ticketId = $(this).closest('tr').find('.ticket-id').first().val();
+        $('#singleSmsTicketId').val(ticketId);
+    });
 
+    // Handle single SMS form submission
+    $('#sendSingleSmsForm').on('submit', function(e) {
+        e.preventDefault();
+        const form = $(this);
+        const submitBtn = $('#sendSingleSmsBtn');
+        const originalBtnText = submitBtn.html();
+        
+        // Show loading state
+        $('#singleSmsStatusContainer').hide();
+        $('#singleSmsLoadingState').show();
+        $('#singleSmsResultsContainer').hide();
+        submitBtn.prop('disabled', true)
+            .html('<i class="bi bi-hourglass-split me-1"></i> Sending...');
+
+        const formData = new FormData(this);
+        
         $.ajax({
-            url: $('#sendSmsForm').attr('action'),
+            url: '{{ route("sms.management.send-attendee-invitation", ["event" => $event->id]) }}',
             method: 'POST',
             data: formData,
             processData: false,
             contentType: false,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
             success: function(response) {
-                console.log('Single SMS response:', response); // Debug log
+                const alert = $('#singleSmsResultAlert');
+                const icon = $('#singleSmsResultIcon');
+                const title = $('#singleSmsResultTitle');
+                const message = $('#singleSmsResultMessage');
+                const details = $('#singleSmsResultDetails');
+                
                 if (response.success) {
-                    showSmsResult(true, 
-                        `SMS sent to ${attendeeName}`,
-                        response.results || []
-                    );
+                    // Success state
+                    alert.removeClass('alert-danger').addClass('alert-success');
+                    icon.removeClass('bi-x-circle').addClass('bi-check-circle');
+                    title.text('SMS Sent Successfully');
+                    message.text(response.message);
+                    
+                    // Show SMS result details if available
+                    if (response.sms_result) {
+                        details.html(`
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6 class="card-subtitle mb-2 text-muted">SMS Details</h6>
+                                    <dl class="row mb-0">
+                                        <dt class="col-sm-4">Message ID</dt>
+                                        <dd class="col-sm-8">${response.sms_result.messageId}</dd>
+                                        <dt class="col-sm-4">Status</dt>
+                                        <dd class="col-sm-8">
+                                            <span class="badge bg-${response.sms_result.status.groupName === 'PENDING' ? 'warning' : 'success'}">
+                                                ${response.sms_result.status.name}
+                                            </span>
+                                        </dd>
+                                        <dt class="col-sm-4">Reference</dt>
+                                        <dd class="col-sm-8">${response.reference}</dd>
+                                    </dl>
+                                </div>
+                            </div>
+                        `);
+                    }
                 } else {
-                    showSmsResult(false, response.message || 'Error sending SMS');
+                    // Error state
+                    alert.removeClass('alert-success').addClass('alert-danger');
+                    icon.removeClass('bi-check-circle').addClass('bi-x-circle');
+                    title.text('Failed to Send SMS');
+                    message.text(response.message);
+                    details.empty();
                 }
+                
+                $('#singleSmsResultsContainer').show();
             },
-            error: function(xhr, status, error) {
-                console.error('Single SMS Error:', {
-                    status: status,
-                    error: error,
-                    response: xhr.responseText
-                }); // Debug log
-
-                let errorMessage = 'Error sending SMS. Please try again.';
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    errorMessage = response.message || errorMessage;
-                } catch (e) {
-                    console.error('Error parsing response:', e);
-                }
-
-                showSmsResult(false, errorMessage);
+            error: function(xhr) {
+                const alert = $('#singleSmsResultAlert');
+                const icon = $('#singleSmsResultIcon');
+                const title = $('#singleSmsResultTitle');
+                const message = $('#singleSmsResultMessage');
+                
+                alert.removeClass('alert-success').addClass('alert-danger');
+                icon.removeClass('bi-check-circle').addClass('bi-x-circle');
+                title.text('Error');
+                message.text(xhr.responseJSON?.message || 'Failed to send SMS. Please try again.');
+                $('#singleSmsResultsContainer').show();
             },
             complete: function() {
-                $('#smsLoadingState').hide();
+                $('#singleSmsLoadingState').hide();
+                submitBtn.prop('disabled', false).html(originalBtnText);
             }
         });
     });
 
-    // Reset modal state when it's hidden
-    $('#sendSmsModal').on('hidden.bs.modal', function() {
-        $('#smsStatusContainer').show();
-        $('#smsLoadingState').hide();
-        $('#smsResultsContainer').hide();
-        $('#sendSmsBtn').prop('disabled', false);
+    // Reset modal state when hidden
+    $('#sendSingleSmsModal').on('hidden.bs.modal', function() {
+        $('#singleSmsStatusContainer').show();
+        $('#singleSmsLoadingState').hide();
+        $('#singleSmsResultsContainer').hide();
+        $('#sendSingleSmsBtn').prop('disabled', false)
+            .html('<i class="bi bi-send me-1"></i> Send SMS');
     });
 
     // View SMS History
