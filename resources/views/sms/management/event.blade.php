@@ -588,12 +588,15 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
-                let status = 'invalid';
+                console.log('Validation Error Response:', xhr.responseText);
+                let status = 'INVALID_TOKEN';
                 let statusClass = 'warning';
                 let message = 'Token validation failed';
                 
                 try {
                     const response = JSON.parse(xhr.responseText);
+                    console.log('Parsed Error Response:', response);
+                    
                     if (response.code) {
                         status = response.code;
                         statusClass = {
@@ -602,14 +605,23 @@ $(document).ready(function() {
                             'NO_TICKET': 'warning',
                             'INVALID_TOKEN': 'warning',
                             'NO_EVENT_SELECTED': 'warning',
-                            'EVENT_NOT_FOUND': 'warning'
+                            'EVENT_NOT_FOUND': 'warning',
+                            'VALIDATION_ERROR': 'danger'
                         }[status] || 'warning';
-                        message = response.message || 'Token is not valid';
+                        message = response.message || 'Token validation failed';
+                    } else if (response.error) {
+                        status = 'VALIDATION_ERROR';
+                        message = typeof response.error === 'string' 
+                            ? response.error 
+                            : 'An error occurred during validation';
+                    } else if (response.message) {
+                        message = response.message;
                     }
                 } catch (e) {
                     console.error('Error parsing response:', e);
-                    status = 'INVALID_TOKEN';
-                    message = 'Token is not valid';
+                    console.error('Raw response:', xhr.responseText);
+                    status = 'VALIDATION_ERROR';
+                    message = 'Unable to process validation response';
                 }
 
                 const details = selectedAttendees.map(attendee => ({
@@ -620,12 +632,23 @@ $(document).ready(function() {
                 }));
                 showValidationResult(false, message, details);
                 
-                // Update status in the table
                 selectedAttendees.forEach(attendee => {
                     const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
                     const statusCell = row.find('td:eq(4)');
-                    statusCell.html(`<span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span>`);
+                    const statusText = status === 'VALIDATION_ERROR' 
+                        ? 'Validation Error' 
+                        : status.replace(/_/g, ' ').toLowerCase();
+                    statusCell.html(`
+                        <span class="badge bg-${statusClass}" 
+                              title="${message}"
+                              data-bs-toggle="tooltip"
+                              data-bs-placement="top">
+                            ${statusText}
+                        </span>
+                    `);
                 });
+
+                $('[data-bs-toggle="tooltip"]').tooltip();
             },
             complete: function() {
                 $('#smsLoadingState').hide();
@@ -739,18 +762,21 @@ $(document).ready(function() {
                 $('#singleSmsResultsContainer').fadeIn(300);
             },
             error: function(xhr) {
+                console.log('Single Validation Error Response:', xhr.responseText);
                 const alert = $('#singleSmsResultAlert');
                 const icon = $('#singleSmsResultIcon');
                 const title = $('#singleSmsResultTitle');
                 const message = $('#singleSmsResultMessage');
                 const details = $('#singleSmsResultDetails');
                 
-                let status = 'INVALID_TOKEN';
-                let statusClass = 'warning';
-                let message = 'Token is not valid';
+                let status = 'VALIDATION_ERROR';
+                let statusClass = 'danger';
+                let errorMessage = 'Token validation failed';
                 
                 try {
                     const response = JSON.parse(xhr.responseText);
+                    console.log('Parsed Single Error Response:', response);
+                    
                     if (response.code) {
                         status = response.code;
                         statusClass = {
@@ -759,19 +785,30 @@ $(document).ready(function() {
                             'NO_TICKET': 'warning',
                             'INVALID_TOKEN': 'warning',
                             'NO_EVENT_SELECTED': 'warning',
-                            'EVENT_NOT_FOUND': 'warning'
+                            'EVENT_NOT_FOUND': 'warning',
+                            'VALIDATION_ERROR': 'danger'
                         }[status] || 'warning';
-                        message = response.message || 'Token is not valid';
+                        errorMessage = response.message || 'Token validation failed';
+                    } else if (response.error) {
+                        status = 'VALIDATION_ERROR';
+                        errorMessage = typeof response.error === 'string' 
+                            ? response.error 
+                            : 'An error occurred during validation';
+                    } else if (response.message) {
+                        errorMessage = response.message;
                     }
                 } catch (e) {
-                    console.error('Error parsing response:', e);
+                    console.error('Error parsing single validation response:', e);
+                    console.error('Raw single validation response:', xhr.responseText);
+                    status = 'VALIDATION_ERROR';
+                    errorMessage = 'Unable to process validation response';
                 }
                 
-                alert.removeClass('alert-success alert-danger').addClass(`alert-${statusClass}`);
+                alert.removeClass('alert-success alert-warning').addClass(`alert-${statusClass}`);
                 icon.removeClass('bi-check-circle').addClass('bi-exclamation-circle');
-                title.text('Token Status');
+                title.text('Validation Error');
                 message.html(`
-                    <strong>${message}</strong><br>
+                    <strong>${errorMessage}</strong><br>
                     <small class="text-muted">Please check the validation details below.</small>
                 `);
                 details.html(`
@@ -781,17 +818,36 @@ $(document).ready(function() {
                             <dt class="col-sm-4">Attendee</dt>
                             <dd class="col-sm-8">${attendeeName}</dd>
                             <dt class="col-sm-4">Status</dt>
-                            <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span></dd>
+                            <dd class="col-sm-8">
+                                <span class="badge bg-${statusClass}" 
+                                      title="${errorMessage}"
+                                      data-bs-toggle="tooltip"
+                                      data-bs-placement="top">
+                                    ${status === 'VALIDATION_ERROR' ? 'Validation Error' : status.replace(/_/g, ' ').toLowerCase()}
+                                </span>
+                            </dd>
                             <dt class="col-sm-4">Last Check</dt>
                             <dd class="col-sm-8">${new Date().toLocaleString()}</dd>
+                            <dt class="col-sm-4">Error Details</dt>
+                            <dd class="col-sm-8 text-danger small">${errorMessage}</dd>
                         </dl>
                     </div>
                 `);
                 
-                // Update status in the table
-                const row = $(`.attendee-checkbox[value="${attendeeId}"]`).closest('tr');
-                const statusCell = row.find('td:eq(4)');
-                statusCell.html(`<span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span>`);
+                selectedAttendees.forEach(attendee => {
+                    const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
+                    const statusCell = row.find('td:eq(4)');
+                    statusCell.html(`
+                        <span class="badge bg-${statusClass}" 
+                              title="${errorMessage}"
+                              data-bs-toggle="tooltip"
+                              data-bs-placement="top">
+                            ${status === 'VALIDATION_ERROR' ? 'Validation Error' : status.replace(/_/g, ' ').toLowerCase()}
+                        </span>
+                    `);
+                });
+
+                $('[data-bs-toggle="tooltip"]').tooltip();
                 
                 $('#singleSmsResultsContainer').fadeIn(300);
             },
