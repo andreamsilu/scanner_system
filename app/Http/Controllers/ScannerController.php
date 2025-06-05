@@ -341,7 +341,7 @@ class ScannerController extends Controller
         $user = auth()->user();
         $eventId = session('selected_event_id');
 
-        // Validate event selection - quick check first
+        // Validate event selection
         if (!$eventId) {
             return [
                 'success' => false,
@@ -354,11 +354,8 @@ class ScannerController extends Controller
             ];
         }
 
-        // Get the selected event - use cache if available
-        $event = cache()->remember("event.{$eventId}", 300, function() use ($eventId) {
-            return Event::find($eventId);
-        });
-
+        // Get the selected event
+        $event = Event::find($eventId);
         if (!$event) {
             session()->forget('selected_event_id');
             return [
@@ -375,23 +372,30 @@ class ScannerController extends Controller
         // Extract the actual token from URL if needed
         $token = $this->extractToken($rawToken);
 
-        // Optimize the attendee query by eager loading relationships and using a single query
-        $attendee = Attendee::with(['ticket', 'event'])
-            ->where(function($query) use ($token) {
-                $query->where('token', $token)
-                      ->orWhereHas('ticket', function($q) use ($token) {
-                          $q->where('ticket_number', $token);
-                      });
-            })
-            ->where('event_id', $eventId)
-            ->first();
-
-        // Batch log operations
-        $logData = [
+        // Debug logging for input values
+        Log::info("{$validationType} token validation attempt", [
             'raw_token' => $rawToken,
             'extracted_token' => $token,
             'event_id' => $eventId,
-            'user_id' => $user->id,
+            'user_id' => $user->id
+        ]);
+
+        // First, validate only the attendee token existence
+        $attendee = Attendee::where(function($query) use ($token) {
+            // Check both token and ticket_number fields
+            $query->where('token', $token)
+                  ->orWhereHas('ticket', function($q) use ($token) {
+                      $q->where('ticket_number', $token);
+                  });
+        })
+        ->where('event_id', $eventId)
+        ->first();
+
+        // Debug logging for attendee lookup
+        Log::info("{$validationType} attendee lookup result", [
+            'raw_token' => $rawToken,
+            'extracted_token' => $token,
+            'event_id' => $eventId,
             'attendee_found' => (bool)$attendee,
             'attendee_id' => $attendee ? $attendee->id : null,
             'attendee_token' => $attendee ? $attendee->token : null,
@@ -399,13 +403,20 @@ class ScannerController extends Controller
                 'ticket_number' => $attendee->ticket->ticket_number,
                 'status' => $attendee->ticket->status
             ] : null
-        ];
-
-        // Log in a single operation
-        Log::info("{$validationType} validation attempt", $logData);
+        ]);
 
         if (!$attendee) {
-            Log::warning("Invalid {$validationType} token validation attempt", $logData);
+            // Log the failed validation attempt
+            Log::warning("Invalid {$validationType} token validation attempt", [
+                'raw_token' => $rawToken,
+                'extracted_token' => $token,
+                'event_id' => $eventId,
+                'user_id' => $user->id,
+                'sql_query' => Attendee::where('token', $token)
+                    ->where('event_id', $eventId)
+                    ->toSql()
+            ]);
+
             return [
                 'success' => false,
                 'data' => null,
@@ -421,7 +432,18 @@ class ScannerController extends Controller
             ];
         }
 
-        // Quick validation checks
+        // Load the ticket relationship
+        $attendee->load(['ticket', 'event']);
+
+        // Debug logging for ticket status
+        Log::info('Ticket status check', [
+            'attendee_id' => $attendee->id,
+            'has_ticket' => (bool)$attendee->ticket,
+            'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null,
+            'registration_status' => $attendee->registration_status
+        ]);
+
+        // Check if attendee has a ticket
         if (!$attendee->ticket) {
             return [
                 'success' => false,
@@ -438,6 +460,7 @@ class ScannerController extends Controller
             ];
         }
 
+        // Check current ticket status
         if ($attendee->ticket->status === 'used') {
             return [
                 'success' => false,
@@ -455,6 +478,7 @@ class ScannerController extends Controller
             ];
         }
 
+        // Check if attendee is already checked in
         if ($attendee->registration_status === 'checked_in') {
             return [
                 'success' => false,
@@ -496,40 +520,29 @@ class ScannerController extends Controller
         $user = $validationData['user'];
         $now = now();
 
+        DB::beginTransaction();
         try {
-            // Start transaction
-            DB::beginTransaction();
-
             // Update ticket status
-            $ticketUpdated = $attendee->ticket->update([
+            $attendee->ticket->update([
                 'status' => 'used',
                 'used_at' => $now
             ]);
 
             // Update attendee registration status
-            $attendeeUpdated = $attendee->update([
+            $attendee->update([
                 'registration_status' => 'checked_in',
                 'checked_in_at' => $now
             ]);
 
-            // Create scan log
-            $scanLog = ScanLog::create([
+            // Log the successful validation
+            ScanLog::create([
                 'ticket_id' => $attendee->ticket->id,
                 'scanner_id' => $user->id,
                 'status' => 'success',
                 'notes' => "{$validationType} validation"
             ]);
 
-            // Verify all updates were successful
-            if (!$ticketUpdated || !$attendeeUpdated || !$scanLog) {
-                DB::rollBack();
-                throw new \Exception('Failed to update ticket or attendee status');
-            }
-
-            // Commit the transaction
-            DB::commit();
-
-            // Log the successful check-in
+            // Log the successful check-in with previous status
             Log::info("Attendee checked in via {$validationType}", [
                 'attendee_id' => $attendee->id,
                 'ticket_id' => $attendee->ticket->id,
@@ -540,6 +553,8 @@ class ScannerController extends Controller
                     'registration' => $attendee->getOriginal('registration_status')
                 ]
             ]);
+
+            DB::commit();
 
             // Send SMS notification if attendee has a phone number - outside transaction
             if ($attendee->phone) {
@@ -573,35 +588,18 @@ class ScannerController extends Controller
                 }
             }
 
-            // Verify the updates were actually saved
-            $verifyAttendee = Attendee::with('ticket')
-                ->where('id', $attendee->id)
-                ->first();
-
-            if (!$verifyAttendee || 
-                $verifyAttendee->registration_status !== 'checked_in' || 
-                !$verifyAttendee->ticket || 
-                $verifyAttendee->ticket->status !== 'used') {
-                throw new \Exception('Verification failed: Updates not properly saved');
-            }
-
             return [
                 'success' => true,
                 'message' => 'Check-in successful!',
                 'attendee' => [
-                    'name' => $verifyAttendee->name,
-                    'email' => $verifyAttendee->email,
-                    'checked_in_at' => $verifyAttendee->checked_in_at->format('M d, Y h:i A')
+                    'name' => $attendee->name,
+                    'email' => $attendee->email,
+                    'checked_in_at' => $now->format('M d, Y h:i A')
                 ]
             ];
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error("Failed to process {$validationType} validation", [
-                'attendee_id' => $attendee->id,
-                'error' => $e->getMessage(),
-                'error_type' => get_class($e)
-            ]);
             throw $e;
         }
     }
@@ -680,29 +678,16 @@ class ScannerController extends Controller
                 ], 422);
             }
 
-            try {
-                // Process successful validation
-                $result = $this->processSuccessfulValidation($validation['data'], 'manual');
-                return response()->json($result);
-            } catch (\Exception $e) {
-                Log::error('Failed to process manual validation', [
-                    'raw_token' => $rawToken,
-                    'error' => $e->getMessage(),
-                    'error_type' => get_class($e)
-                ]);
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Failed to process check-in. Please try again.',
-                    'error' => $e->getMessage()
-                ], 500);
-            }
+            // Process successful validation
+            $result = $this->processSuccessfulValidation($validation['data'], 'manual');
+            return response()->json($result);
 
         } catch (\Exception $e) {
             Log::error('Error in manual token validation', [
                 'raw_token' => $rawToken ?? null,
                 'error' => $e->getMessage(),
-                'error_type' => get_class($e)
+                'error_type' => get_class($e),
+                'trace' => $e->getTraceAsString()
             ]);
 
             return response()->json([
