@@ -559,31 +559,18 @@ $(document).ready(function() {
                         statusCell.html('<span class="badge bg-success">Valid Token</span>');
                     });
                 } else {
-                    let status = 'invalid';
-                    let statusClass = 'warning';
-                    let message = 'Token validation failed';
-                    
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.status) {
-                            status = response.status;
-                            statusClass = {
-                                'success': 'success',
-                                'warning': 'warning',
-                                'error': 'warning',
-                                'duplicate': 'warning',
-                                'invalid': 'warning',
-                                'expired': 'warning',
-                                'used': 'warning'
-                            }[status] || 'warning';
-                            message = response.message || 'Token is not valid';
-                        }
-                    } catch (e) {
-                        console.error('Error parsing response:', e);
-                        status = 'invalid';
-                        message = 'Token is not valid';
-                    }
+                    // Handle different validation statuses from scanner
+                    const status = response.code || 'invalid';
+                    const statusClass = {
+                        'TICKET_USED': 'warning',
+                        'ALREADY_CHECKED_IN': 'warning',
+                        'NO_TICKET': 'warning',
+                        'INVALID_TOKEN': 'warning',
+                        'NO_EVENT_SELECTED': 'warning',
+                        'EVENT_NOT_FOUND': 'warning'
+                    }[status] || 'warning';
 
+                    const message = response.message || 'Token validation failed';
                     const details = selectedAttendees.map(attendee => ({
                         status: status,
                         recipient: attendee.name,
@@ -596,7 +583,7 @@ $(document).ready(function() {
                     selectedAttendees.forEach(attendee => {
                         const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
                         const statusCell = row.find('td:eq(4)');
-                        statusCell.html(`<span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`);
+                        statusCell.html(`<span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span>`);
                     });
                 }
             },
@@ -607,22 +594,21 @@ $(document).ready(function() {
                 
                 try {
                     const response = JSON.parse(xhr.responseText);
-                    if (response.status) {
-                        status = response.status;
+                    if (response.code) {
+                        status = response.code;
                         statusClass = {
-                            'success': 'success',
-                            'warning': 'warning',
-                            'error': 'warning',
-                            'duplicate': 'warning',
-                            'invalid': 'warning',
-                            'expired': 'warning',
-                            'used': 'warning'
+                            'TICKET_USED': 'warning',
+                            'ALREADY_CHECKED_IN': 'warning',
+                            'NO_TICKET': 'warning',
+                            'INVALID_TOKEN': 'warning',
+                            'NO_EVENT_SELECTED': 'warning',
+                            'EVENT_NOT_FOUND': 'warning'
                         }[status] || 'warning';
                         message = response.message || 'Token is not valid';
                     }
                 } catch (e) {
                     console.error('Error parsing response:', e);
-                    status = 'invalid';
+                    status = 'INVALID_TOKEN';
                     message = 'Token is not valid';
                 }
 
@@ -638,7 +624,7 @@ $(document).ready(function() {
                 selectedAttendees.forEach(attendee => {
                     const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
                     const statusCell = row.find('td:eq(4)');
-                    statusCell.html(`<span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`);
+                    statusCell.html(`<span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span>`);
                 });
             },
             complete: function() {
@@ -684,7 +670,6 @@ $(document).ready(function() {
                 const details = $('#singleSmsResultDetails');
                 
                 if (response.success) {
-                    const statusClass = 'success';
                     alert.removeClass('alert-danger alert-warning').addClass('alert-success');
                     icon.removeClass('bi-x-circle bi-exclamation-circle').addClass('bi-check-circle');
                     title.text('Token Valid');
@@ -711,43 +696,44 @@ $(document).ready(function() {
                     const statusCell = row.find('td:eq(4)');
                     statusCell.html('<span class="badge bg-success">Valid Token</span>');
                 } else {
-                    let status = 'invalid';
-                    let statusClass = 'warning';
-                    let message = 'Token validation failed';
-                    
-                    try {
-                        const response = JSON.parse(xhr.responseText);
-                        if (response.status) {
-                            status = response.status;
-                            statusClass = {
-                                'success': 'success',
-                                'warning': 'warning',
-                                'error': 'warning',
-                                'duplicate': 'warning',
-                                'invalid': 'warning',
-                                'expired': 'warning',
-                                'used': 'warning'
-                            }[status] || 'warning';
-                            message = response.message || 'Token is not valid';
-                        }
-                    } catch (e) {
-                        console.error('Error parsing response:', e);
-                        status = 'invalid';
-                        message = 'Token is not valid';
-                    }
+                    // Handle different validation statuses from scanner
+                    const status = response.code || 'invalid';
+                    const statusClass = {
+                        'TICKET_USED': 'warning',
+                        'ALREADY_CHECKED_IN': 'warning',
+                        'NO_TICKET': 'warning',
+                        'INVALID_TOKEN': 'warning',
+                        'NO_EVENT_SELECTED': 'warning',
+                        'EVENT_NOT_FOUND': 'warning'
+                    }[status] || 'warning';
 
-                    const details = selectedAttendees.map(attendee => ({
-                        status: status,
-                        recipient: attendee.name,
-                        message: message,
-                        statusClass: statusClass
-                    }));
-                    showValidationResult(false, message, details);
+                    const message = response.message || 'Token validation failed';
+                    
+                    alert.removeClass('alert-success alert-danger').addClass(`alert-${statusClass}`);
+                    icon.removeClass('bi-check-circle').addClass('bi-exclamation-circle');
+                    title.text('Token Status');
+                    message.html(`
+                        <strong>${message}</strong><br>
+                        <small class="text-muted">Please check the validation details below.</small>
+                    `);
+                    details.html(`
+                        <div class="alert alert-light border">
+                            <h6 class="alert-heading mb-2">Validation Details</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Attendee</dt>
+                                <dd class="col-sm-8">${attendeeName}</dd>
+                                <dt class="col-sm-4">Status</dt>
+                                <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span></dd>
+                                <dt class="col-sm-4">Last Check</dt>
+                                <dd class="col-sm-8">${new Date().toLocaleString()}</dd>
+                            </dl>
+                        </div>
+                    `);
                     
                     // Update status in the table
                     const row = $(`.attendee-checkbox[value="${attendeeId}"]`).closest('tr');
                     const statusCell = row.find('td:eq(4)');
-                    statusCell.html(`<span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`);
+                    statusCell.html(`<span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span>`);
                 }
                 
                 $('#singleSmsResultsContainer').fadeIn(300);
@@ -759,29 +745,26 @@ $(document).ready(function() {
                 const message = $('#singleSmsResultMessage');
                 const details = $('#singleSmsResultDetails');
                 
-                let status = 'invalid';
+                let status = 'INVALID_TOKEN';
                 let statusClass = 'warning';
-                let message = 'Token validation failed';
+                let message = 'Token is not valid';
                 
                 try {
                     const response = JSON.parse(xhr.responseText);
-                    if (response.status) {
-                        status = response.status;
+                    if (response.code) {
+                        status = response.code;
                         statusClass = {
-                            'success': 'success',
-                            'warning': 'warning',
-                            'error': 'warning',
-                            'duplicate': 'warning',
-                            'invalid': 'warning',
-                            'expired': 'warning',
-                            'used': 'warning'
+                            'TICKET_USED': 'warning',
+                            'ALREADY_CHECKED_IN': 'warning',
+                            'NO_TICKET': 'warning',
+                            'INVALID_TOKEN': 'warning',
+                            'NO_EVENT_SELECTED': 'warning',
+                            'EVENT_NOT_FOUND': 'warning'
                         }[status] || 'warning';
                         message = response.message || 'Token is not valid';
                     }
                 } catch (e) {
                     console.error('Error parsing response:', e);
-                    status = 'invalid';
-                    message = 'Token is not valid';
                 }
                 
                 alert.removeClass('alert-success alert-danger').addClass(`alert-${statusClass}`);
@@ -798,7 +781,7 @@ $(document).ready(function() {
                             <dt class="col-sm-4">Attendee</dt>
                             <dd class="col-sm-8">${attendeeName}</dd>
                             <dt class="col-sm-4">Status</dt>
-                            <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></dd>
+                            <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span></dd>
                             <dt class="col-sm-4">Last Check</dt>
                             <dd class="col-sm-8">${new Date().toLocaleString()}</dd>
                         </dl>
@@ -808,7 +791,7 @@ $(document).ready(function() {
                 // Update status in the table
                 const row = $(`.attendee-checkbox[value="${attendeeId}"]`).closest('tr');
                 const statusCell = row.find('td:eq(4)');
-                statusCell.html(`<span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`);
+                statusCell.html(`<span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span>`);
                 
                 $('#singleSmsResultsContainer').fadeIn(300);
             },
