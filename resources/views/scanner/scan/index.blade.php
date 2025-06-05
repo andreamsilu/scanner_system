@@ -66,17 +66,16 @@
                             <div class="mt-4">
                                 <form id="manualEntryForm" class="mb-4">
                                     @csrf
-                                    <div class="input-group input-group-lg">
+                                    <div class="input-group">
                                         <input type="text" 
-                                               class="form-control form-control-lg" 
+                                               class="form-control" 
                                                id="manualToken" 
                                                placeholder="Enter ticket token manually"
                                                pattern="[0-9]{7}"
                                                title="Please enter a valid 7-digit token"
-                                               style="font-size: 1.25rem; padding: 1rem;"
                                                required>
-                                        <button type="submit" class="btn btn-primary btn-lg px-4">
-                                            <i class="bi bi-search me-2"></i>Validate
+                                        <button type="submit" class="btn btn-sm btn-primary">
+                                            <i class="bi bi-search me-1"></i>Validate
                                         </button>
                                     </div>
                                     <div id="manualValidationResult" class="mt-3 d-none">
@@ -296,30 +295,6 @@
                 font-size: 0.875rem;
             }
         }
-
-        /* Token Input Styles */
-        .input-group-lg .form-control {
-            height: auto;
-            min-height: 3.5rem;
-        }
-        
-        .input-group-lg .btn {
-            min-height: 3.5rem;
-            font-size: 1.1rem;
-        }
-        
-        @media (max-width: 576px) {
-            .input-group-lg .form-control {
-                min-height: 3rem;
-                font-size: 1.1rem !important;
-            }
-            
-            .input-group-lg .btn {
-                min-height: 3rem;
-                font-size: 1rem;
-                padding: 0.5rem 1rem;
-            }
-        }
     </style>
     @endpush
 
@@ -485,12 +460,26 @@
         }
         });
 
-    function validateToken(token) {
-        // Show processing state
-        if (typeof window.showFeedback === 'function') {
-            window.showFeedback('Processing', 'Validating token...', 'info');
+    // Handle manual entry form
+    document.getElementById('manualEntryForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const token = document.getElementById('manualToken').value.trim();
+        const resultDiv = document.getElementById('manualValidationResult');
+        
+        if (!token) {
+            showManualValidationResult('error', 'Please enter a token', 'No token provided');
+            return;
         }
 
+        if (token.length !== 7 || !/^\d{7}$/.test(token)) {
+            showManualValidationResult('error', 'Invalid token format', 'Token must be exactly 7 digits');
+            return;
+        }
+
+        // Show processing state
+        showManualValidationResult('info', 'Processing...', 'Validating token...');
+        
+        // Send validation request
         fetch('{{ route("scanner.scan.validate") }}', {
             method: 'POST',
             headers: {
@@ -501,71 +490,65 @@
         })
         .then(response => response.json())
         .then(data => {
-            // Play sound based on result
-            const audio = new Audio(data.success ? 
-                '{{ asset("sounds/success.mp3") }}' : 
-                '{{ asset("sounds/error.mp3") }}'
-            );
-            audio.play();
-
-            if (typeof window.showFeedback === 'function') {
-                if (data.success) {
-                    window.showFeedback(
-                        'Check-in Successful!',
-                        `${data.attendee.name} has been checked in successfully.`,
-                        'success'
-                    );
-                } else {
-                    const type = data.code === 'TICKET_USED' ? 'warning' : 'error';
-                    window.showFeedback(
-                        'Check-in Failed',
-                        data.message,
-                        type
-                    );
-                }
-            }
-
-            // If successful, refresh the page after a short delay to update recent scans
             if (data.success) {
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+                showManualValidationResult('success', 'Check-in Successful!', `${data.attendee.name} has been checked in.`);
+                // Play success sound if available
+                if (typeof playSound === 'function') {
+                    playSound('success');
+                }
+            } else {
+                const status = data.code === 'TICKET_USED' ? 'warning' : 'error';
+                showManualValidationResult(status, 'Check-in Failed', data.message);
+                // Play error sound if available
+                if (typeof playSound === 'function') {
+                    playSound('error');
+                }
             }
         })
         .catch(error => {
-            console.error('Error processing scan:', error);
-            if (typeof window.showFeedback === 'function') {
-                window.showFeedback(
-                    'Error',
-                    'An error occurred while processing the scan. Please try again.',
-                    'error'
-                );
+            console.error('Validation failed:', error);
+            showManualValidationResult('error', 'Validation Failed', 'An error occurred while validating the token. Please try again.');
+            // Play error sound if available
+            if (typeof playSound === 'function') {
+                playSound('error');
             }
+        })
+        .finally(() => {
+            // Clear the form
+            this.reset();
+            // Hide the result after 3 seconds
+            setTimeout(() => {
+                resultDiv.classList.add('d-none');
+            }, 3000);
         });
-    }
-
-    // Handle manual entry form
-    document.getElementById('manualEntryForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const token = document.getElementById('manualToken').value.trim();
-        
-        if (!token) {
-            if (typeof window.showFeedback === 'function') {
-                window.showFeedback('Error', 'Please enter a token', 'error');
-            }
-            return;
-        }
-
-        if (token.length !== 7 || !/^\d{7}$/.test(token)) {
-            if (typeof window.showFeedback === 'function') {
-                window.showFeedback('Error', 'Token must be exactly 7 digits', 'error');
-            }
-            return;
-        }
-
-        validateToken(token);
-        this.reset();
     });
+
+    function showManualValidationResult(type, heading, message) {
+        const resultDiv = document.getElementById('manualValidationResult');
+        const icon = resultDiv.querySelector('.bi');
+        const headingEl = resultDiv.querySelector('.alert-heading');
+        const messageEl = resultDiv.querySelector('p');
+
+        // Remove all existing classes
+        resultDiv.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-info');
+        icon.classList.remove('bi-check-circle-fill', 'bi-x-circle-fill', 'bi-exclamation-triangle-fill', 'bi-info-circle-fill');
+
+        // Add appropriate classes based on type
+        resultDiv.classList.add('alert-' + type);
+        icon.classList.add(
+            type === 'success' ? 'bi-check-circle-fill' :
+            type === 'error' ? 'bi-x-circle-fill' :
+            type === 'warning' ? 'bi-exclamation-triangle-fill' :
+            'bi-info-circle-fill'
+        );
+
+        // Update content
+        headingEl.textContent = heading;
+        messageEl.textContent = message;
+
+        // Show the result
+        resultDiv.classList.remove('d-none');
+    }
     </script>
     @endpush
 </x-app-layout> 

@@ -116,25 +116,24 @@
 
                             <form action="{{ route('scanner.validate-token') }}" method="POST" class="mb-4">
                                 @csrf
-                                <div class="mb-4">
-                                    <label for="token" class="form-label h5">Attendee Token</label>
+                                <div class="mb-3">
+                                    <label for="token" class="form-label">Attendee Token</label>
                                     <div class="input-group input-group-lg">
                                         <input type="text" 
-                                               class="form-control form-control-lg @error('token') is-invalid @enderror" 
+                                               class="form-control @error('token') is-invalid @enderror" 
                                                id="token" 
                                                name="token" 
                                                placeholder="Enter attendee token"
                                                required
                                                pattern="[A-Za-z0-9]+"
                                                title="Please enter a valid token"
-                                               style="font-size: 1.25rem; padding: 1rem;"
                                                autofocus>
-                                        <button type="submit" class="btn btn-primary btn-lg px-4">
+                                        <button type="submit" class="btn btn-primary">
                                             <i class="bi bi-search me-2"></i>Validate
                                         </button>
                                     </div>
                                     @error('token')
-                                        <div class="invalid-feedback d-block mt-2">
+                                        <div class="invalid-feedback d-block">
                                             {{ $message }}
                                         </div>
                                     @enderror
@@ -216,8 +215,6 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const tokenInput = document.getElementById('token');
-        const validateForm = document.querySelector('form[action="{{ route("scanner.validate-token") }}"]');
-
         if (tokenInput) {
             // Auto-uppercase input
             tokenInput.addEventListener('input', function(e) {
@@ -232,73 +229,6 @@
                 tokenInput.value = '';
                 tokenInput.focus();
             @endif
-        }
-
-        if (validateForm) {
-            validateForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                const token = tokenInput.value.trim();
-
-                if (!token) {
-                    if (typeof window.showFeedback === 'function') {
-                        window.showFeedback('Error', 'Please enter a token', 'error');
-                    }
-                    return;
-                }
-
-                // Show processing state
-                if (typeof window.showFeedback === 'function') {
-                    window.showFeedback('Processing', 'Validating token...', 'info');
-                }
-
-                // Submit form via AJAX
-                fetch(this.action, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                    },
-                    body: JSON.stringify({ token: token })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        if (typeof window.showFeedback === 'function') {
-                            window.showFeedback(
-                                'Validation Successful!',
-                                `${data.attendee.name} has been validated successfully.`,
-                                'success'
-                            );
-                        }
-                        // Clear form and focus input
-                        tokenInput.value = '';
-                        tokenInput.focus();
-                        // Refresh page after delay to update recent validations
-                        setTimeout(() => {
-                            window.location.reload();
-                        }, 2000);
-                    } else {
-                        const type = data.code === 'TICKET_USED' ? 'warning' : 'error';
-                        if (typeof window.showFeedback === 'function') {
-                            window.showFeedback(
-                                'Validation Failed',
-                                data.message,
-                                type
-                            );
-                        }
-                    }
-                })
-                .catch(error => {
-                    console.error('Validation failed:', error);
-                    if (typeof window.showFeedback === 'function') {
-                        window.showFeedback(
-                            'Error',
-                            'An error occurred while validating the token. Please try again.',
-                            'error'
-                        );
-                    }
-                });
-            });
         }
     });
     </script>
