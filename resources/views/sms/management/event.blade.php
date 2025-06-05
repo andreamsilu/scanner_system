@@ -451,12 +451,16 @@ $(document).ready(function() {
         $('#selectedCount').text(count);
     }
 
-    function showValidationResult(success, message) {
+    function showValidationResult(success, message, details = null) {
         const container = $('#smsResultsContainer');
         const alert = $('#smsResultAlert');
         const icon = $('#smsResultIcon');
         const title = $('#smsResultTitle');
         const messageEl = $('#smsResultMessage');
+        const resultsTable = $('#smsResultsTable tbody');
+        
+        // Clear previous results
+        resultsTable.empty();
         
         // Set alert style and icon
         alert.removeClass('alert-success alert-danger alert-warning')
@@ -465,58 +469,116 @@ $(document).ready(function() {
         icon.removeClass('bi-check-circle bi-x-circle bi-exclamation-triangle')
             .addClass(success ? 'bi-check-circle' : 'bi-x-circle');
         
-        // Set content
-        title.text(success ? 'Token Validated Successfully' : 'Token Validation Failed');
-        messageEl.text(message);
+        // Set content with enhanced messaging
+        title.text(success ? 'Validation Successful' : 'Validation Failed');
+        messageEl.html(success 
+            ? `<strong>✓ ${message}</strong><br><small class="text-muted">All selected attendees have been validated successfully.</small>`
+            : `<strong>✗ ${message}</strong><br><small class="text-muted">Please review the details below and try again.</small>`);
         
-        // Show results container
-        container.show();
+        // Add detailed results if available
+        if (details && Array.isArray(details)) {
+            details.forEach(detail => {
+                resultsTable.append(`
+                    <tr>
+                        <td>
+                            <span class="badge bg-${detail.status === 'success' ? 'success' : 'danger'}">
+                                ${detail.status === 'success' ? '✓ Valid' : '✗ Invalid'}
+                            </span>
+                        </td>
+                        <td>${detail.recipient}</td>
+                        <td>
+                            <small class="text-${detail.status === 'success' ? 'success' : 'danger'}">
+                                ${detail.message}
+                            </small>
+                        </td>
+                    </tr>
+                `);
+            });
+        }
+        
+        // Show results container with animation
+        container.hide().fadeIn(300);
     }
 
-    // Handle bulk validation
+    // Handle bulk validation with enhanced feedback
     $('#sendSmsForm').on('submit', function(e) {
         e.preventDefault();
         const form = $(this);
         const submitBtn = $('#sendSmsBtn');
         const selectedAttendees = $('.attendee-checkbox:checked').map(function() {
-            return $(this).val();
+            return {
+                id: $(this).val(),
+                name: $(this).closest('tr').find('td:eq(1)').text(),
+                phone: $(this).data('phone')
+            };
         }).get();
 
         if (selectedAttendees.length === 0) {
-            showValidationResult(false, 'Please select at least one attendee');
+            showValidationResult(false, 'No attendees selected', [{
+                status: 'error',
+                recipient: 'System',
+                message: 'Please select at least one attendee to proceed with validation.'
+            }]);
             return;
         }
 
-        // Show loading state
+        // Show loading state with enhanced feedback
         $('#smsStatusContainer').hide();
-        $('#smsLoadingState').show();
+        $('#smsLoadingState').show().html(`
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Validating...</span>
+            </div>
+            <p class="mb-0">Validating ${selectedAttendees.length} attendee${selectedAttendees.length > 1 ? 's' : ''}...</p>
+            <small class="text-muted">This may take a few moments</small>
+        `);
         $('#smsResultsContainer').hide();
         submitBtn.prop('disabled', true);
 
         // Simulate token validation (replace with actual validation endpoint)
         $.ajax({
-            url: '/api/validate-token', // Replace with your actual validation endpoint
+            url: '/api/validate-token',
             method: 'POST',
             data: {
-                attendee_ids: selectedAttendees,
+                attendee_ids: selectedAttendees.map(a => a.id),
                 _token: $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
                 if (response.success) {
-                    showValidationResult(true, 'Token validated successfully for all selected attendees');
+                    const details = selectedAttendees.map(attendee => ({
+                        status: 'success',
+                        recipient: `${attendee.name} (${attendee.phone})`,
+                        message: 'Token validated successfully'
+                    }));
+                    showValidationResult(true, 'All attendees validated successfully', details);
                 } else {
-                    showValidationResult(false, response.message || 'Token validation failed');
+                    const details = response.details || [{
+                        status: 'error',
+                        recipient: 'System',
+                        message: response.message || 'Token validation failed'
+                    }];
+                    showValidationResult(false, response.message || 'Validation failed', details);
                 }
             },
             error: function(xhr) {
                 let errorMessage = 'Token validation failed. Please try again.';
+                let details = [];
                 try {
                     const response = JSON.parse(xhr.responseText);
                     errorMessage = response.message || errorMessage;
+                    details = response.details || [{
+                        status: 'error',
+                        recipient: 'System',
+                        message: errorMessage
+                    }];
                 } catch (e) {
                     console.error('Error parsing response:', e);
+                    details = [{
+                        status: 'error',
+                        recipient: 'System',
+                        message: 'An unexpected error occurred during validation.'
+                    }];
                 }
-                showValidationResult(false, errorMessage);
+                showValidationResult(false, errorMessage, details);
             },
             complete: function() {
                 $('#smsLoadingState').hide();
@@ -525,41 +587,29 @@ $(document).ready(function() {
         });
     });
 
-    // Handle single attendee validation
-    $('.send-single-sms').on('click', function() {
-        const attendeeId = $(this).data('attendee-id');
-        const attendeeName = $(this).data('attendee-name');
-        const attendeePhone = $(this).data('attendee-phone');
-        
-        // Reset modal state
-        $('#singleSmsStatusContainer').show();
-        $('#singleSmsLoadingState').hide();
-        $('#singleSmsResultsContainer').hide();
-        $('#sendSingleSmsBtn').prop('disabled', false);
-        
-        // Update modal content
-        $('#singleSmsRecipientName').text(attendeeName);
-        $('#singleSmsRecipientPhone').text(attendeePhone);
-        $('#singleSmsAttendeeId').val(attendeeId);
-    });
-
-    // Handle single validation form submission
+    // Handle single validation with enhanced feedback
     $('#sendSingleSmsForm').on('submit', function(e) {
         e.preventDefault();
         const form = $(this);
         const submitBtn = $('#sendSingleSmsBtn');
-        const originalBtnText = submitBtn.html();
+        const attendeeName = $('#singleSmsRecipientName').text();
+        const attendeePhone = $('#singleSmsRecipientPhone').text();
         
-        // Show loading state
+        // Show loading state with enhanced feedback
         $('#singleSmsStatusContainer').hide();
-        $('#singleSmsLoadingState').show();
+        $('#singleSmsLoadingState').show().html(`
+            <div class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Validating...</span>
+            </div>
+            <p class="mb-0">Validating attendee token...</p>
+            <small class="text-muted">Please wait while we validate the token</small>
+        `);
         $('#singleSmsResultsContainer').hide();
-        submitBtn.prop('disabled', true)
-            .html('<i class="bi bi-hourglass-split me-1"></i> Validating...');
+        submitBtn.prop('disabled', true);
 
         // Simulate token validation (replace with actual validation endpoint)
         $.ajax({
-            url: '/api/validate-single-token', // Replace with your actual validation endpoint
+            url: '/api/validate-single-token',
             method: 'POST',
             data: {
                 attendee_id: $('#singleSmsAttendeeId').val(),
@@ -570,47 +620,94 @@ $(document).ready(function() {
                 const icon = $('#singleSmsResultIcon');
                 const title = $('#singleSmsResultTitle');
                 const message = $('#singleSmsResultMessage');
+                const details = $('#singleSmsResultDetails');
                 
                 if (response.success) {
                     alert.removeClass('alert-danger').addClass('alert-success');
                     icon.removeClass('bi-x-circle').addClass('bi-check-circle');
-                    title.text('Token Validated Successfully');
-                    message.text('Token validation completed successfully');
+                    title.text('Validation Successful');
+                    message.html(`
+                        <strong>✓ Token validated successfully</strong><br>
+                        <small class="text-muted">The attendee's token has been validated and is ready for SMS sending.</small>
+                    `);
+                    details.html(`
+                        <div class="alert alert-light border">
+                            <h6 class="alert-heading mb-2">Validation Details</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Attendee</dt>
+                                <dd class="col-sm-8">${attendeeName}</dd>
+                                <dt class="col-sm-4">Phone Number</dt>
+                                <dd class="col-sm-8">${attendeePhone}</dd>
+                                <dt class="col-sm-4">Status</dt>
+                                <dd class="col-sm-8"><span class="badge bg-success">Valid</span></dd>
+                                <dt class="col-sm-4">Validated At</dt>
+                                <dd class="col-sm-8">${new Date().toLocaleString()}</dd>
+                            </dl>
+                        </div>
+                    `);
                 } else {
                     alert.removeClass('alert-success').addClass('alert-danger');
                     icon.removeClass('bi-check-circle').addClass('bi-x-circle');
-                    title.text('Token Validation Failed');
-                    message.text(response.message || 'Token validation failed');
+                    title.text('Validation Failed');
+                    message.html(`
+                        <strong>✗ ${response.message || 'Token validation failed'}</strong><br>
+                        <small class="text-muted">Please review the details and try again.</small>
+                    `);
+                    details.html(`
+                        <div class="alert alert-light border">
+                            <h6 class="alert-heading mb-2">Error Details</h6>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4">Attendee</dt>
+                                <dd class="col-sm-8">${attendeeName}</dd>
+                                <dt class="col-sm-4">Phone Number</dt>
+                                <dd class="col-sm-8">${attendeePhone}</dd>
+                                <dt class="col-sm-4">Status</dt>
+                                <dd class="col-sm-8"><span class="badge bg-danger">Invalid</span></dd>
+                                <dt class="col-sm-4">Error</dt>
+                                <dd class="col-sm-8">${response.message || 'Unknown error occurred'}</dd>
+                            </dl>
+                        </div>
+                    `);
                 }
                 
-                $('#singleSmsResultsContainer').show();
+                $('#singleSmsResultsContainer').fadeIn(300);
             },
             error: function(xhr) {
                 const alert = $('#singleSmsResultAlert');
                 const icon = $('#singleSmsResultIcon');
                 const title = $('#singleSmsResultTitle');
                 const message = $('#singleSmsResultMessage');
+                const details = $('#singleSmsResultDetails');
                 
                 alert.removeClass('alert-success').addClass('alert-danger');
                 icon.removeClass('bi-check-circle').addClass('bi-x-circle');
-                title.text('Error');
-                message.text(xhr.responseJSON?.message || 'Token validation failed. Please try again.');
-                $('#singleSmsResultsContainer').show();
+                title.text('Validation Error');
+                message.html(`
+                    <strong>✗ ${xhr.responseJSON?.message || 'Token validation failed'}</strong><br>
+                    <small class="text-muted">An unexpected error occurred. Please try again.</small>
+                `);
+                details.html(`
+                    <div class="alert alert-light border">
+                        <h6 class="alert-heading mb-2">Error Details</h6>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Attendee</dt>
+                            <dd class="col-sm-8">${attendeeName}</dd>
+                            <dt class="col-sm-4">Phone Number</dt>
+                            <dd class="col-sm-8">${attendeePhone}</dd>
+                            <dt class="col-sm-4">Status</dt>
+                            <dd class="col-sm-8"><span class="badge bg-danger">Error</span></dd>
+                            <dt class="col-sm-4">Error Time</dt>
+                            <dd class="col-sm-8">${new Date().toLocaleString()}</dd>
+                        </dl>
+                    </div>
+                `);
+                $('#singleSmsResultsContainer').fadeIn(300);
             },
             complete: function() {
                 $('#singleSmsLoadingState').hide();
-                submitBtn.prop('disabled', false).html(originalBtnText);
+                submitBtn.prop('disabled', false);
             }
         });
-    });
-
-    // Reset modal state when hidden
-    $('#sendSingleSmsModal').on('hidden.bs.modal', function() {
-        $('#singleSmsStatusContainer').show();
-        $('#singleSmsLoadingState').hide();
-        $('#singleSmsResultsContainer').hide();
-        $('#sendSingleSmsBtn').prop('disabled', false)
-            .html('<i class="bi bi-send me-1"></i> Validate Token');
     });
 
     // View SMS History
