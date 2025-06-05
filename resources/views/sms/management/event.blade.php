@@ -574,7 +574,9 @@ $(document).ready(function() {
                 event_id: '{{ $event->id }}'
             },
             success: function(response) {
-                console.log('Validation Response:', response);
+                // Log the complete response for debugging
+                console.log('Complete Validation Response:', JSON.stringify(response, null, 2));
+                
                 if (response.success) {
                     const details = selectedAttendees.map(attendee => ({
                         status: 'success',
@@ -591,6 +593,14 @@ $(document).ready(function() {
                         statusCell.html('<span class="badge bg-success">Valid Token</span>');
                     });
                 } else {
+                    // Log the error response details
+                    console.log('Error Response Details:', {
+                        code: response.code,
+                        message: response.message,
+                        debug_info: response.debug_info,
+                        attendee: response.attendee
+                    });
+
                     // Handle different validation statuses from scanner
                     const status = response.code || 'invalid';
                     const statusClass = {
@@ -603,48 +613,84 @@ $(document).ready(function() {
                         'VALIDATION_ERROR': 'danger'
                     }[status] || 'warning';
 
-                    // Use the exact message from the response
-                    const message = response.message || 'Token validation failed';
-                    const details = selectedAttendees.map(attendee => ({
-                        status: status,
-                        recipient: attendee.name,
-                        message: message, // Use the exact message from response
-                        statusClass: statusClass,
-                        debug: response.debug_info || null
-                    }));
-                    showValidationResult(false, message, details);
+                    // Ensure we get the full message
+                    const fullMessage = response.message || 'Token validation failed';
+                    console.log('Full Message:', fullMessage);
+
+                    // Create detailed status information
+                    const details = selectedAttendees.map(attendee => {
+                        // Include attendee information from response if available
+                        const attendeeInfo = response.attendee ? 
+                            `\nAttendee: ${response.attendee.name || 'Unknown'}` : '';
+                        const eventInfo = response.attendee?.event ? 
+                            `\nEvent: ${response.attendee.event.name || 'Unknown'}` : '';
+                        const usedAtInfo = response.attendee?.checked_in_at ? 
+                            `\nChecked in at: ${response.attendee.checked_in_at}` : '';
+
+                        return {
+                            status: status,
+                            recipient: attendee.name,
+                            message: `${fullMessage}${attendeeInfo}${eventInfo}${usedAtInfo}`,
+                            statusClass: statusClass,
+                            debug: response.debug_info || null
+                        };
+                    });
+
+                    // Show the full validation result
+                    showValidationResult(false, fullMessage, details);
                     
-                    // Update status in the table with the exact message
+                    // Update status in the table with complete information
                     selectedAttendees.forEach(attendee => {
                         const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
                         const statusCell = row.find('td:eq(4)');
                         const statusText = status === 'VALIDATION_ERROR' 
                             ? 'Validation Error' 
                             : status.replace(/_/g, ' ').toLowerCase();
+                        
+                        // Create a detailed tooltip with all available information
+                        const tooltipContent = [
+                            fullMessage,
+                            response.attendee?.name ? `Attendee: ${response.attendee.name}` : null,
+                            response.attendee?.event?.name ? `Event: ${response.attendee.event.name}` : null,
+                            response.attendee?.checked_in_at ? `Checked in at: ${response.attendee.checked_in_at}` : null,
+                            response.debug_info ? `Debug: ${JSON.stringify(response.debug_info)}` : null
+                        ].filter(Boolean).join('\n');
+
                         statusCell.html(`
                             <span class="badge bg-${statusClass}" 
-                                  title="${message}"
+                                  title="${tooltipContent}"
                                   data-bs-toggle="tooltip"
-                                  data-bs-placement="top">
+                                  data-bs-placement="top"
+                                  data-bs-html="true">
                                 ${statusText}
                             </span>
                         `);
                     });
 
-                    // Initialize tooltips
-                    $('[data-bs-toggle="tooltip"]').tooltip();
+                    // Initialize tooltips with HTML support
+                    $('[data-bs-toggle="tooltip"]').tooltip({
+                        html: true,
+                        template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner" style="white-space: pre-line; text-align: left;"></div></div>'
+                    });
                 }
             },
             error: function(xhr) {
-                console.log('Validation Error Response:', xhr.responseText);
+                // Log the complete error response
+                console.log('Complete Error Response:', {
+                    status: xhr.status,
+                    statusText: xhr.statusText,
+                    responseText: xhr.responseText
+                });
+
                 let status = 'VALIDATION_ERROR';
                 let statusClass = 'danger';
                 let message = 'Token validation failed';
                 let debugInfo = null;
+                let attendeeInfo = null;
                 
                 try {
                     const response = JSON.parse(xhr.responseText);
-                    console.log('Parsed Error Response:', response);
+                    console.log('Parsed Error Response:', JSON.stringify(response, null, 2));
                     
                     if (response.code) {
                         status = response.code;
@@ -659,6 +705,7 @@ $(document).ready(function() {
                         }[status] || 'warning';
                         message = response.message || 'Token validation failed';
                         debugInfo = response.debug_info;
+                        attendeeInfo = response.attendee;
                     } else if (response.error) {
                         status = 'VALIDATION_ERROR';
                         message = typeof response.error === 'string' 
@@ -674,36 +721,59 @@ $(document).ready(function() {
                     message = 'Unable to process validation response';
                 }
 
-                const details = selectedAttendees.map(attendee => ({
-                    status: status,
-                    recipient: attendee.name,
-                    message: message,
-                    statusClass: statusClass,
-                    debug: debugInfo
-                }));
+                // Create detailed status information
+                const details = selectedAttendees.map(attendee => {
+                    const attendeeDetails = attendeeInfo ? 
+                        `\nAttendee: ${attendeeInfo.name || 'Unknown'}` : '';
+                    const eventDetails = attendeeInfo?.event ? 
+                        `\nEvent: ${attendeeInfo.event.name || 'Unknown'}` : '';
+                    const usedAtDetails = attendeeInfo?.checked_in_at ? 
+                        `\nChecked in at: ${attendeeInfo.checked_in_at}` : '';
+
+                    return {
+                        status: status,
+                        recipient: attendee.name,
+                        message: `${message}${attendeeDetails}${eventDetails}${usedAtDetails}`,
+                        statusClass: statusClass,
+                        debug: debugInfo
+                    };
+                });
+
                 showValidationResult(false, message, details);
                 
-                // Update status in the table with debug info if available
+                // Update status in the table with complete information
                 selectedAttendees.forEach(attendee => {
                     const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
                     const statusCell = row.find('td:eq(4)');
                     const statusText = status === 'VALIDATION_ERROR' 
                         ? 'Validation Error' 
                         : status.replace(/_/g, ' ').toLowerCase();
-                    const debugInfoText = debugInfo ? 
-                        `\nDebug: ${JSON.stringify(debugInfo)}` : '';
+                    
+                    // Create a detailed tooltip with all available information
+                    const tooltipContent = [
+                        message,
+                        attendeeInfo?.name ? `Attendee: ${attendeeInfo.name}` : null,
+                        attendeeInfo?.event?.name ? `Event: ${attendeeInfo.event.name}` : null,
+                        attendeeInfo?.checked_in_at ? `Checked in at: ${attendeeInfo.checked_in_at}` : null,
+                        debugInfo ? `Debug: ${JSON.stringify(debugInfo)}` : null
+                    ].filter(Boolean).join('\n');
+
                     statusCell.html(`
                         <span class="badge bg-${statusClass}" 
-                              title="${message}${debugInfoText}"
+                              title="${tooltipContent}"
                               data-bs-toggle="tooltip"
-                              data-bs-placement="top">
+                              data-bs-placement="top"
+                              data-bs-html="true">
                             ${statusText}
                         </span>
                     `);
                 });
 
-                // Initialize tooltips
-                $('[data-bs-toggle="tooltip"]').tooltip();
+                // Initialize tooltips with HTML support
+                $('[data-bs-toggle="tooltip"]').tooltip({
+                    html: true,
+                    template: '<div class="tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner" style="white-space: pre-line; text-align: left;"></div></div>'
+                });
             },
             complete: function() {
                 $('#smsLoadingState').hide();
