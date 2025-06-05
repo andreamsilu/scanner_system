@@ -517,7 +517,7 @@ $(document).ready(function() {
             showValidationResult(false, 'No attendees selected', [{
                 status: 'error',
                 recipient: 'System',
-                message: 'Please select at least one attendee to proceed with validation.'
+                message: 'Please select at least one attendee to validate.'
             }]);
             return;
         }
@@ -529,12 +529,12 @@ $(document).ready(function() {
                 <span class="visually-hidden">Validating...</span>
             </div>
             <p class="mb-0">Validating ${selectedAttendees.length} attendee${selectedAttendees.length > 1 ? 's' : ''}...</p>
-            <small class="text-muted">This may take a few moments</small>
+            <small class="text-muted">Checking token status</small>
         `);
         $('#smsResultsContainer').hide();
         submitBtn.prop('disabled', true);
 
-        // Simulate token validation (replace with actual validation endpoint)
+        // Validate tokens
         $.ajax({
             url: '/scanner/scan/validate',
             method: 'POST',
@@ -543,32 +543,47 @@ $(document).ready(function() {
                 _token: $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
-                // Handle scanner validation response format
                 if (response.success) {
                     const details = selectedAttendees.map(attendee => ({
                         status: 'success',
-                        recipient: `${attendee.name} (${attendee.phone})`,
-                        message: 'Token validated successfully'
+                        recipient: `${attendee.name}`,
+                        message: 'Token is valid and active',
+                        statusClass: 'success'
                     }));
-                    showValidationResult(true, 'All attendees validated successfully', details);
+                    showValidationResult(true, 'All tokens validated successfully', details);
+                    
+                    // Update status in the table
+                    selectedAttendees.forEach(attendee => {
+                        const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
+                        const statusCell = row.find('td:eq(4)');
+                        statusCell.html('<span class="badge bg-success">Valid Token</span>');
+                    });
                 } else {
-                    // Handle different error statuses from scanner
                     const status = response.status || 'error';
                     const statusClass = {
                         'success': 'success',
                         'warning': 'warning',
                         'error': 'danger',
                         'duplicate': 'warning',
-                        'invalid': 'danger'
+                        'invalid': 'danger',
+                        'expired': 'warning',
+                        'used': 'warning'
                     }[status] || 'danger';
 
-                    const details = [{
+                    const details = selectedAttendees.map(attendee => ({
                         status: status,
-                        recipient: 'System',
-                        message: response.message || 'Validation failed',
+                        recipient: attendee.name,
+                        message: response.message || 'Token validation failed',
                         statusClass: statusClass
-                    }];
-                    showValidationResult(false, response.message || 'Validation failed', details);
+                    }));
+                    showValidationResult(false, response.message || 'Token validation failed', details);
+                    
+                    // Update status in the table
+                    selectedAttendees.forEach(attendee => {
+                        const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
+                        const statusCell = row.find('td:eq(4)');
+                        statusCell.html(`<span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`);
+                    });
                 }
             },
             error: function(xhr) {
@@ -582,26 +597,35 @@ $(document).ready(function() {
                         'warning': 'warning',
                         'error': 'danger',
                         'duplicate': 'warning',
-                        'invalid': 'danger'
+                        'invalid': 'danger',
+                        'expired': 'warning',
+                        'used': 'warning'
                     }[status] || 'danger';
 
                     errorMessage = response.message || errorMessage;
-                    details = [{
+                    details = selectedAttendees.map(attendee => ({
                         status: status,
-                        recipient: 'System',
+                        recipient: attendee.name,
                         message: errorMessage,
                         statusClass: statusClass
-                    }];
+                    }));
                 } catch (e) {
                     console.error('Error parsing response:', e);
-                    details = [{
+                    details = selectedAttendees.map(attendee => ({
                         status: 'error',
-                        recipient: 'System',
+                        recipient: attendee.name,
                         message: 'An unexpected error occurred during validation.',
                         statusClass: 'danger'
-                    }];
+                    }));
                 }
                 showValidationResult(false, errorMessage, details);
+                
+                // Update status in the table
+                selectedAttendees.forEach(attendee => {
+                    const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
+                    const statusCell = row.find('td:eq(4)');
+                    statusCell.html('<span class="badge bg-danger">Error</span>');
+                });
             },
             complete: function() {
                 $('#smsLoadingState').hide();
@@ -616,7 +640,7 @@ $(document).ready(function() {
         const form = $(this);
         const submitBtn = $('#sendSingleSmsBtn');
         const attendeeName = $('#singleSmsRecipientName').text();
-        const attendeePhone = $('#singleSmsRecipientPhone').text();
+        const attendeeId = $('#singleSmsAttendeeId').val();
         
         // Show loading state with enhanced feedback
         $('#singleSmsStatusContainer').hide();
@@ -624,18 +648,18 @@ $(document).ready(function() {
             <div class="spinner-border text-primary mb-3" role="status">
                 <span class="visually-hidden">Validating...</span>
             </div>
-            <p class="mb-0">Validating attendee token...</p>
-            <small class="text-muted">Please wait while we validate the token</small>
+            <p class="mb-0">Validating token...</p>
+            <small class="text-muted">Checking token status</small>
         `);
         $('#singleSmsResultsContainer').hide();
         submitBtn.prop('disabled', true);
 
-        // Simulate token validation (replace with actual validation endpoint)
+        // Validate token
         $.ajax({
             url: '/scanner/scan/validate',
             method: 'POST',
             data: {
-                token: $('#singleSmsAttendeeId').val(),
+                token: attendeeId,
                 _token: $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
@@ -645,14 +669,14 @@ $(document).ready(function() {
                 const message = $('#singleSmsResultMessage');
                 const details = $('#singleSmsResultDetails');
                 
-                // Handle scanner validation response format
                 if (response.success) {
+                    const statusClass = 'success';
                     alert.removeClass('alert-danger alert-warning').addClass('alert-success');
                     icon.removeClass('bi-x-circle bi-exclamation-triangle').addClass('bi-check-circle');
-                    title.text('Validation Successful');
+                    title.text('Token Valid');
                     message.html(`
-                        <strong>✓ Token validated successfully</strong><br>
-                        <small class="text-muted">The attendee's token has been validated and is ready for SMS sending.</small>
+                        <strong>✓ Token is valid and active</strong><br>
+                        <small class="text-muted">The token has been validated successfully.</small>
                     `);
                     details.html(`
                         <div class="alert alert-light border">
@@ -660,8 +684,6 @@ $(document).ready(function() {
                             <dl class="row mb-0">
                                 <dt class="col-sm-4">Attendee</dt>
                                 <dd class="col-sm-8">${attendeeName}</dd>
-                                <dt class="col-sm-4">Phone Number</dt>
-                                <dd class="col-sm-8">${attendeePhone}</dd>
                                 <dt class="col-sm-4">Status</dt>
                                 <dd class="col-sm-8"><span class="badge bg-success">Valid</span></dd>
                                 <dt class="col-sm-4">Validated At</dt>
@@ -669,39 +691,48 @@ $(document).ready(function() {
                             </dl>
                         </div>
                     `);
+                    
+                    // Update status in the table
+                    const row = $(`.attendee-checkbox[value="${attendeeId}"]`).closest('tr');
+                    const statusCell = row.find('td:eq(4)');
+                    statusCell.html('<span class="badge bg-success">Valid Token</span>');
                 } else {
-                    // Handle different error statuses from scanner
                     const status = response.status || 'error';
                     const statusClass = {
                         'success': 'success',
                         'warning': 'warning',
                         'error': 'danger',
                         'duplicate': 'warning',
-                        'invalid': 'danger'
+                        'invalid': 'danger',
+                        'expired': 'warning',
+                        'used': 'warning'
                     }[status] || 'danger';
 
                     alert.removeClass('alert-success alert-warning').addClass(`alert-${statusClass}`);
                     icon.removeClass('bi-check-circle bi-exclamation-triangle').addClass('bi-x-circle');
-                    title.text('Validation Failed');
+                    title.text('Token Invalid');
                     message.html(`
                         <strong>✗ ${response.message || 'Token validation failed'}</strong><br>
-                        <small class="text-muted">Please review the details and try again.</small>
+                        <small class="text-muted">Please review the details below.</small>
                     `);
                     details.html(`
                         <div class="alert alert-light border">
-                            <h6 class="alert-heading mb-2">Error Details</h6>
+                            <h6 class="alert-heading mb-2">Validation Details</h6>
                             <dl class="row mb-0">
                                 <dt class="col-sm-4">Attendee</dt>
                                 <dd class="col-sm-8">${attendeeName}</dd>
-                                <dt class="col-sm-4">Phone Number</dt>
-                                <dd class="col-sm-8">${attendeePhone}</dd>
                                 <dt class="col-sm-4">Status</dt>
-                                <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status}</span></dd>
+                                <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></dd>
                                 <dt class="col-sm-4">Error</dt>
                                 <dd class="col-sm-8">${response.message || 'Unknown error occurred'}</dd>
                             </dl>
                         </div>
                     `);
+                    
+                    // Update status in the table
+                    const row = $(`.attendee-checkbox[value="${attendeeId}"]`).closest('tr');
+                    const statusCell = row.find('td:eq(4)');
+                    statusCell.html(`<span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`);
                 }
                 
                 $('#singleSmsResultsContainer').fadeIn(300);
@@ -725,7 +756,9 @@ $(document).ready(function() {
                         'warning': 'warning',
                         'error': 'danger',
                         'duplicate': 'warning',
-                        'invalid': 'danger'
+                        'invalid': 'danger',
+                        'expired': 'warning',
+                        'used': 'warning'
                     }[status] || 'danger';
                     errorMessage = response.message || errorMessage;
                 } catch (e) {
@@ -745,15 +778,19 @@ $(document).ready(function() {
                         <dl class="row mb-0">
                             <dt class="col-sm-4">Attendee</dt>
                             <dd class="col-sm-8">${attendeeName}</dd>
-                            <dt class="col-sm-4">Phone Number</dt>
-                            <dd class="col-sm-8">${attendeePhone}</dd>
                             <dt class="col-sm-4">Status</dt>
-                            <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status}</span></dd>
+                            <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></dd>
                             <dt class="col-sm-4">Error Time</dt>
                             <dd class="col-sm-8">${new Date().toLocaleString()}</dd>
                         </dl>
                     </div>
                 `);
+                
+                // Update status in the table
+                const row = $(`.attendee-checkbox[value="${attendeeId}"]`).closest('tr');
+                const statusCell = row.find('td:eq(4)');
+                statusCell.html(`<span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`);
+                
                 $('#singleSmsResultsContainer').fadeIn(300);
             },
             complete: function() {
