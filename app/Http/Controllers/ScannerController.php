@@ -361,21 +361,36 @@ class ScannerController extends Controller
                 ], 403);
             }
 
+            // First, validate only the attendee token existence
+            $attendee = Attendee::where('token', $request->token)
+                ->where('event_id', $eventId)
+                ->first();
+
+            if (!$attendee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid token or token not for this event.',
+                    'code' => 'INVALID_TOKEN'
+                ], 422);
+            }
+
             // Start transaction for ticket validation and status update
             DB::beginTransaction();
             try {
-                // Find the attendee with their ticket
-                $attendee = Attendee::whereHas('ticket', function($query) use ($request, $eventId) {
-                    $query->where('ticket_number', $request->token)
-                          ->where('event_id', $eventId);
-                })->with(['ticket', 'event'])->first();
+                // Load the ticket relationship
+                $attendee->load(['ticket', 'event']);
 
-                if (!$attendee || !$attendee->ticket) {
+                // Check if attendee has a ticket
+                if (!$attendee->ticket) {
                     DB::rollBack();
                     return response()->json([
                         'success' => false,
-                        'message' => 'No valid ticket found for this token.',
-                        'code' => 'NO_TICKET'
+                        'message' => 'No ticket found for this attendee.',
+                        'code' => 'NO_TICKET',
+                        'attendee' => [
+                            'name' => $attendee->name,
+                            'email' => $attendee->email
+                        ]
                     ], 422);
                 }
 
@@ -431,7 +446,7 @@ class ScannerController extends Controller
                     'notes' => 'Manual token validation'
                 ]);
 
-                // Log the successful check-in
+                // Log the successful check-in with previous status
                 Log::info('Attendee checked in via manual validation', [
                     'attendee_id' => $attendee->id,
                     'ticket_id' => $attendee->ticket->id,
@@ -524,25 +539,36 @@ class ScannerController extends Controller
             $eventId = $request->input('event_id');
             $user = auth()->user();
 
+            // First, validate only the attendee token existence
+            $attendee = Attendee::where('token', $token)
+                ->where('event_id', $eventId)
+                ->first();
+
+            if (!$attendee) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid token or token not for this event.',
+                    'code' => 'INVALID_TOKEN'
+                ], 422);
+            }
+
             // Start transaction for ticket validation and status update
             DB::beginTransaction();
             try {
-                // Find the attendee with their ticket
-                $attendee = Attendee::whereHas('ticket', function($query) use ($token, $eventId) {
-                    $query->where('ticket_number', $token)
-                          ->where('event_id', $eventId);
-                })->with(['ticket', 'event'])->first();
+                // Load the ticket relationship
+                $attendee->load(['ticket', 'event']);
 
-                if (!$attendee || !$attendee->ticket) {
+                // Check if attendee has a ticket
+                if (!$attendee->ticket) {
                     DB::rollBack();
                     return response()->json([
                         'success' => false,
-                        'message' => 'No valid ticket found for this token.',
+                        'message' => 'No ticket found for this attendee.',
                         'code' => 'NO_TICKET',
-                        'attendee' => $attendee ? [
+                        'attendee' => [
                             'name' => $attendee->name,
                             'email' => $attendee->email
-                        ] : null
+                        ]
                     ], 422);
                 }
 
