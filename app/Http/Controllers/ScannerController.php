@@ -327,50 +327,59 @@ class ScannerController extends Controller
 
             $user = auth()->user();
             $eventId = session('selected_event_id');
-            
-            // Check if event is selected
-            if (!$eventId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Please select an event first before validating tokens.',
-                    'code' => 'NO_EVENT_SELECTED',
-                    'redirect' => route('scanner.dashboard')
-                ], 422);
-            }
+            $token = $request->token;
 
-            // Get the selected event
-            $event = Event::find($eventId);
-            if (!$event) {
-                session()->forget('selected_event_id');
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Selected event no longer exists. Please select a new event.',
-                    'code' => 'EVENT_NOT_FOUND',
-                    'redirect' => route('scanner.dashboard')
-                ], 422);
-            }
-
-            // Verify scanner is authorized for this event
-            if (!$user->hasRole('admin') && !$user->events()->where('events.id', $eventId)->exists()) {
-                session()->forget('selected_event_id');
-                return response()->json([
-                    'success' => false,
-                    'message' => 'You are not authorized to validate tokens for this event.',
-                    'code' => 'UNAUTHORIZED_EVENT',
-                    'redirect' => route('scanner.dashboard')
-                ], 403);
-            }
+            // Debug logging for input values
+            Log::info('Manual token validation attempt', [
+                'token' => $token,
+                'event_id' => $eventId,
+                'user_id' => $user->id,
+                'request_data' => $request->all()
+            ]);
 
             // First, validate only the attendee token existence
-            $attendee = Attendee::where('token', $request->token)
-                ->where('event_id', $eventId)
-                ->first();
+            $attendee = Attendee::where(function($query) use ($token) {
+                // Check both token and ticket_number fields
+                $query->where('token', $token)
+                      ->orWhereHas('ticket', function($q) use ($token) {
+                          $q->where('ticket_number', $token);
+                      });
+            })
+            ->where('event_id', $eventId)
+            ->first();
+
+            // Debug logging for attendee lookup
+            Log::info('Manual attendee lookup result', [
+                'token' => $token,
+                'event_id' => $eventId,
+                'attendee_found' => (bool)$attendee,
+                'attendee_id' => $attendee ? $attendee->id : null,
+                'attendee_token' => $attendee ? $attendee->token : null,
+                'attendee_ticket' => $attendee && $attendee->ticket ? [
+                    'ticket_number' => $attendee->ticket->ticket_number,
+                    'status' => $attendee->ticket->status
+                ] : null
+            ]);
 
             if (!$attendee) {
+                // Log the failed validation attempt
+                Log::warning('Invalid manual token validation attempt', [
+                    'token' => $token,
+                    'event_id' => $eventId,
+                    'user_id' => $user->id,
+                    'sql_query' => Attendee::where('token', $token)
+                        ->where('event_id', $eventId)
+                        ->toSql()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid token or token not for this event.',
-                    'code' => 'INVALID_TOKEN'
+                    'code' => 'INVALID_TOKEN',
+                    'debug_info' => [
+                        'token' => $token,
+                        'event_id' => $eventId
+                    ]
                 ], 422);
             }
 
@@ -379,6 +388,14 @@ class ScannerController extends Controller
             try {
                 // Load the ticket relationship
                 $attendee->load(['ticket', 'event']);
+
+                // Debug logging for ticket status
+                Log::info('Ticket status check', [
+                    'attendee_id' => $attendee->id,
+                    'has_ticket' => (bool)$attendee->ticket,
+                    'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null,
+                    'registration_status' => $attendee->registration_status
+                ]);
 
                 // Check if attendee has a ticket
                 if (!$attendee->ticket) {
@@ -464,7 +481,7 @@ class ScannerController extends Controller
                 // Send SMS notification if attendee has a phone number - outside transaction
                 if ($attendee->phone) {
                     try {
-                        $message = "Dear {$attendee->name}, your ticket for {$event->name} has been used at {$now->format('M d, Y h:i A')}. Thank you for attending!";
+                        $message = "Dear {$attendee->name}, your ticket for {$attendee->event->name} has been used at {$now->format('M d, Y h:i A')}. Thank you for attending!";
                         
                         $this->smsService->send(
                             $attendee->phone,
@@ -482,7 +499,7 @@ class ScannerController extends Controller
                         Log::info('SMS sent for manual check-in', [
                             'attendee_id' => $attendee->id,
                             'phone' => $attendee->phone,
-                            'event' => $event->name
+                            'event' => $attendee->event->name
                         ]);
                     } catch (\Exception $e) {
                         // Log SMS error but don't affect the check-in status
@@ -510,7 +527,7 @@ class ScannerController extends Controller
 
         } catch (\Exception $e) {
             Log::error('Error in manual token validation', [
-                'token' => $request->token ?? null,
+                'token' => $token ?? null,
                 'event_id' => $eventId ?? null,
                 'user_id' => $user->id ?? null,
                 'error' => $e->getMessage(),
@@ -539,16 +556,57 @@ class ScannerController extends Controller
             $eventId = $request->input('event_id');
             $user = auth()->user();
 
+            // Debug logging for input values
+            Log::info('Token validation attempt', [
+                'token' => $token,
+                'event_id' => $eventId,
+                'user_id' => $user->id,
+                'request_data' => $request->all()
+            ]);
+
             // First, validate only the attendee token existence
-            $attendee = Attendee::where('token', $token)
-                ->where('event_id', $eventId)
-                ->first();
+            $attendee = Attendee::where(function($query) use ($token) {
+                // Check both token and ticket_number fields
+                $query->where('token', $token)
+                      ->orWhereHas('ticket', function($q) use ($token) {
+                          $q->where('ticket_number', $token);
+                      });
+            })
+            ->where('event_id', $eventId)
+            ->first();
+
+            // Debug logging for attendee lookup
+            Log::info('Attendee lookup result', [
+                'token' => $token,
+                'event_id' => $eventId,
+                'attendee_found' => (bool)$attendee,
+                'attendee_id' => $attendee ? $attendee->id : null,
+                'attendee_token' => $attendee ? $attendee->token : null,
+                'attendee_ticket' => $attendee && $attendee->ticket ? [
+                    'ticket_number' => $attendee->ticket->ticket_number,
+                    'status' => $attendee->ticket->status
+                ] : null
+            ]);
 
             if (!$attendee) {
+                // Log the failed validation attempt
+                Log::warning('Invalid token validation attempt', [
+                    'token' => $token,
+                    'event_id' => $eventId,
+                    'user_id' => $user->id,
+                    'sql_query' => Attendee::where('token', $token)
+                        ->where('event_id', $eventId)
+                        ->toSql()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid token or token not for this event.',
-                    'code' => 'INVALID_TOKEN'
+                    'code' => 'INVALID_TOKEN',
+                    'debug_info' => [
+                        'token' => $token,
+                        'event_id' => $eventId
+                    ]
                 ], 422);
             }
 
@@ -557,6 +615,14 @@ class ScannerController extends Controller
             try {
                 // Load the ticket relationship
                 $attendee->load(['ticket', 'event']);
+
+                // Debug logging for ticket status
+                Log::info('Ticket status check', [
+                    'attendee_id' => $attendee->id,
+                    'has_ticket' => (bool)$attendee->ticket,
+                    'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null,
+                    'registration_status' => $attendee->registration_status
+                ]);
 
                 // Check if attendee has a ticket
                 if (!$attendee->ticket) {
