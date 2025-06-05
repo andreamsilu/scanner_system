@@ -543,6 +543,7 @@ $(document).ready(function() {
                 _token: $('meta[name="csrf-token"]').attr('content')
             },
             success: function(response) {
+                // Handle scanner validation response format
                 if (response.success) {
                     const details = selectedAttendees.map(attendee => ({
                         status: 'success',
@@ -551,10 +552,21 @@ $(document).ready(function() {
                     }));
                     showValidationResult(true, 'All attendees validated successfully', details);
                 } else {
-                    const details = response.details || [{
-                        status: 'error',
+                    // Handle different error statuses from scanner
+                    const status = response.status || 'error';
+                    const statusClass = {
+                        'success': 'success',
+                        'warning': 'warning',
+                        'error': 'danger',
+                        'duplicate': 'warning',
+                        'invalid': 'danger'
+                    }[status] || 'danger';
+
+                    const details = [{
+                        status: status,
                         recipient: 'System',
-                        message: response.message || 'Token validation failed'
+                        message: response.message || 'Validation failed',
+                        statusClass: statusClass
                     }];
                     showValidationResult(false, response.message || 'Validation failed', details);
                 }
@@ -564,18 +576,29 @@ $(document).ready(function() {
                 let details = [];
                 try {
                     const response = JSON.parse(xhr.responseText);
+                    const status = response.status || 'error';
+                    const statusClass = {
+                        'success': 'success',
+                        'warning': 'warning',
+                        'error': 'danger',
+                        'duplicate': 'warning',
+                        'invalid': 'danger'
+                    }[status] || 'danger';
+
                     errorMessage = response.message || errorMessage;
-                    details = response.details || [{
-                        status: 'error',
+                    details = [{
+                        status: status,
                         recipient: 'System',
-                        message: errorMessage
+                        message: errorMessage,
+                        statusClass: statusClass
                     }];
                 } catch (e) {
                     console.error('Error parsing response:', e);
                     details = [{
                         status: 'error',
                         recipient: 'System',
-                        message: 'An unexpected error occurred during validation.'
+                        message: 'An unexpected error occurred during validation.',
+                        statusClass: 'danger'
                     }];
                 }
                 showValidationResult(false, errorMessage, details);
@@ -622,9 +645,10 @@ $(document).ready(function() {
                 const message = $('#singleSmsResultMessage');
                 const details = $('#singleSmsResultDetails');
                 
+                // Handle scanner validation response format
                 if (response.success) {
-                    alert.removeClass('alert-danger').addClass('alert-success');
-                    icon.removeClass('bi-x-circle').addClass('bi-check-circle');
+                    alert.removeClass('alert-danger alert-warning').addClass('alert-success');
+                    icon.removeClass('bi-x-circle bi-exclamation-triangle').addClass('bi-check-circle');
                     title.text('Validation Successful');
                     message.html(`
                         <strong>✓ Token validated successfully</strong><br>
@@ -646,8 +670,18 @@ $(document).ready(function() {
                         </div>
                     `);
                 } else {
-                    alert.removeClass('alert-success').addClass('alert-danger');
-                    icon.removeClass('bi-check-circle').addClass('bi-x-circle');
+                    // Handle different error statuses from scanner
+                    const status = response.status || 'error';
+                    const statusClass = {
+                        'success': 'success',
+                        'warning': 'warning',
+                        'error': 'danger',
+                        'duplicate': 'warning',
+                        'invalid': 'danger'
+                    }[status] || 'danger';
+
+                    alert.removeClass('alert-success alert-warning').addClass(`alert-${statusClass}`);
+                    icon.removeClass('bi-check-circle bi-exclamation-triangle').addClass('bi-x-circle');
                     title.text('Validation Failed');
                     message.html(`
                         <strong>✗ ${response.message || 'Token validation failed'}</strong><br>
@@ -662,7 +696,7 @@ $(document).ready(function() {
                                 <dt class="col-sm-4">Phone Number</dt>
                                 <dd class="col-sm-8">${attendeePhone}</dd>
                                 <dt class="col-sm-4">Status</dt>
-                                <dd class="col-sm-8"><span class="badge bg-danger">Invalid</span></dd>
+                                <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status}</span></dd>
                                 <dt class="col-sm-4">Error</dt>
                                 <dd class="col-sm-8">${response.message || 'Unknown error occurred'}</dd>
                             </dl>
@@ -679,11 +713,30 @@ $(document).ready(function() {
                 const message = $('#singleSmsResultMessage');
                 const details = $('#singleSmsResultDetails');
                 
-                alert.removeClass('alert-success').addClass('alert-danger');
-                icon.removeClass('bi-check-circle').addClass('bi-x-circle');
+                let status = 'error';
+                let statusClass = 'danger';
+                let errorMessage = 'Token validation failed. Please try again.';
+                
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    status = response.status || 'error';
+                    statusClass = {
+                        'success': 'success',
+                        'warning': 'warning',
+                        'error': 'danger',
+                        'duplicate': 'warning',
+                        'invalid': 'danger'
+                    }[status] || 'danger';
+                    errorMessage = response.message || errorMessage;
+                } catch (e) {
+                    console.error('Error parsing response:', e);
+                }
+                
+                alert.removeClass('alert-success alert-warning').addClass(`alert-${statusClass}`);
+                icon.removeClass('bi-check-circle bi-exclamation-triangle').addClass('bi-x-circle');
                 title.text('Validation Error');
                 message.html(`
-                    <strong>✗ ${xhr.responseJSON?.message || 'Token validation failed'}</strong><br>
+                    <strong>✗ ${errorMessage}</strong><br>
                     <small class="text-muted">An unexpected error occurred. Please try again.</small>
                 `);
                 details.html(`
@@ -695,7 +748,7 @@ $(document).ready(function() {
                             <dt class="col-sm-4">Phone Number</dt>
                             <dd class="col-sm-8">${attendeePhone}</dd>
                             <dt class="col-sm-4">Status</dt>
-                            <dd class="col-sm-8"><span class="badge bg-danger">Error</span></dd>
+                            <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status}</span></dd>
                             <dt class="col-sm-4">Error Time</dt>
                             <dd class="col-sm-8">${new Date().toLocaleString()}</dd>
                         </dl>
