@@ -538,11 +538,16 @@ $(document).ready(function() {
         $.ajax({
             url: '/scanner/scan/validate',
             method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            },
             data: {
                 token: selectedAttendees.map(a => a.id).join(','),
-                _token: $('meta[name="csrf-token"]').attr('content')
+                event_id: '{{ $event->id }}'
             },
             success: function(response) {
+                console.log('Validation Response:', response);
                 if (response.success) {
                     const details = selectedAttendees.map(attendee => ({
                         status: 'success',
@@ -567,7 +572,8 @@ $(document).ready(function() {
                         'NO_TICKET': 'warning',
                         'INVALID_TOKEN': 'warning',
                         'NO_EVENT_SELECTED': 'warning',
-                        'EVENT_NOT_FOUND': 'warning'
+                        'EVENT_NOT_FOUND': 'warning',
+                        'VALIDATION_ERROR': 'danger'
                     }[status] || 'warning';
 
                     const message = response.message || 'Token validation failed';
@@ -575,23 +581,40 @@ $(document).ready(function() {
                         status: status,
                         recipient: attendee.name,
                         message: message,
-                        statusClass: statusClass
+                        statusClass: statusClass,
+                        debug: response.debug_info || null
                     }));
                     showValidationResult(false, message, details);
                     
-                    // Update status in the table
+                    // Update status in the table with debug info if available
                     selectedAttendees.forEach(attendee => {
                         const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
                         const statusCell = row.find('td:eq(4)');
-                        statusCell.html(`<span class="badge bg-${statusClass}">${status.replace(/_/g, ' ').toLowerCase()}</span>`);
+                        const statusText = status === 'VALIDATION_ERROR' 
+                            ? 'Validation Error' 
+                            : status.replace(/_/g, ' ').toLowerCase();
+                        const debugInfo = response.debug_info ? 
+                            `\nDebug: ${JSON.stringify(response.debug_info)}` : '';
+                        statusCell.html(`
+                            <span class="badge bg-${statusClass}" 
+                                  title="${message}${debugInfo}"
+                                  data-bs-toggle="tooltip"
+                                  data-bs-placement="top">
+                                ${statusText}
+                            </span>
+                        `);
                     });
+
+                    // Initialize tooltips
+                    $('[data-bs-toggle="tooltip"]').tooltip();
                 }
             },
             error: function(xhr) {
                 console.log('Validation Error Response:', xhr.responseText);
-                let status = 'INVALID_TOKEN';
-                let statusClass = 'warning';
+                let status = 'VALIDATION_ERROR';
+                let statusClass = 'danger';
                 let message = 'Token validation failed';
+                let debugInfo = null;
                 
                 try {
                     const response = JSON.parse(xhr.responseText);
@@ -609,6 +632,7 @@ $(document).ready(function() {
                             'VALIDATION_ERROR': 'danger'
                         }[status] || 'warning';
                         message = response.message || 'Token validation failed';
+                        debugInfo = response.debug_info;
                     } else if (response.error) {
                         status = 'VALIDATION_ERROR';
                         message = typeof response.error === 'string' 
@@ -628,19 +652,23 @@ $(document).ready(function() {
                     status: status,
                     recipient: attendee.name,
                     message: message,
-                    statusClass: statusClass
+                    statusClass: statusClass,
+                    debug: debugInfo
                 }));
                 showValidationResult(false, message, details);
                 
+                // Update status in the table with debug info if available
                 selectedAttendees.forEach(attendee => {
                     const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
                     const statusCell = row.find('td:eq(4)');
                     const statusText = status === 'VALIDATION_ERROR' 
                         ? 'Validation Error' 
                         : status.replace(/_/g, ' ').toLowerCase();
+                    const debugInfoText = debugInfo ? 
+                        `\nDebug: ${JSON.stringify(debugInfo)}` : '';
                     statusCell.html(`
                         <span class="badge bg-${statusClass}" 
-                              title="${message}"
+                              title="${message}${debugInfoText}"
                               data-bs-toggle="tooltip"
                               data-bs-placement="top">
                             ${statusText}
@@ -648,6 +676,7 @@ $(document).ready(function() {
                     `);
                 });
 
+                // Initialize tooltips
                 $('[data-bs-toggle="tooltip"]').tooltip();
             },
             complete: function() {
@@ -681,9 +710,13 @@ $(document).ready(function() {
         $.ajax({
             url: '/scanner/scan/validate',
             method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                'Accept': 'application/json'
+            },
             data: {
                 token: attendeeId,
-                _token: $('meta[name="csrf-token"]').attr('content')
+                event_id: '{{ $event->id }}'
             },
             success: function(response) {
                 const alert = $('#singleSmsResultAlert');
