@@ -28,7 +28,7 @@ class SmsService
     }
 
     /**
-     * Send an SMS message
+     * Send an SMS message (Simulated)
      *
      * @param string $to Recipient phone number
      * @param string $message Message content
@@ -39,57 +39,53 @@ class SmsService
     public function send(string $to, string $message, string $type, array $metadata = []): array
     {
         try {
-            // Prepare the payload
-            $payload = [
-                'from' => config('services.nextsms.sender_id'),
+            // Simulate API delay
+            sleep(1);
+
+            // Generate a mock message ID
+            $messageId = 'MOCK_' . Str::random(10);
+            $reference = Str::uuid()->toString();
+
+            // Log the simulated request
+            Log::info('Simulated SMS Request', [
+                'type' => $type,
                 'to' => $to,
-                'text' => $message,
-                'reference' => Str::uuid()->toString()
-            ];
-
-            // Log the outgoing payload
-            Log::info('Sending SMS', [
-                'type' => $type,
-                'payload' => $payload,
-                'metadata' => $metadata
+                'message' => $message,
+                'metadata' => $metadata,
+                'message_id' => $messageId,
+                'reference' => $reference
             ]);
 
-            // Send the message
-            $response = $this->smsProvider->send($payload);
-
-            // Log the response
-            Log::info('SMS Response', [
-                'type' => $type,
-                'reference' => $payload['reference'],
-                'response' => $response,
-                'metadata' => $metadata
-            ]);
-
-            // Create log entry with updated column names
+            // Create log entry with simulated success
             $log = SmsLog::create([
                 'recipient' => $to,
-                'sender_id' => $payload['from'],
+                'sender_id' => config('services.nextsms.sender_id'),
                 'message' => $message,
-                'status' => $response['status'] ?? 'unknown',
-                'provider_status' => $response['provider_status'] ?? null,
-                'provider_message' => $response['provider_message'] ?? null,
-                'message_id' => $response['message_id'] ?? null,
-                'reference' => $payload['reference'],
+                'status' => 'delivered', // Simulate successful delivery
+                'provider_status' => 'DELIVERED',
+                'provider_message' => 'Message delivered successfully (Simulated)',
+                'message_id' => $messageId,
+                'reference' => $reference,
                 'metadata' => array_merge($metadata, [
-                    'payload' => $payload,
-                    'response' => $response,
-                    'type' => $type
+                    'type' => $type,
+                    'simulated' => true,
+                    'timestamp' => now()->toIso8601String()
                 ])
             ]);
 
+            // Return simulated success response
             return [
-                'success' => ($response['status'] ?? '') === 'success',
+                'success' => true,
                 'log_id' => $log->id,
-                'message_id' => $response['message_id'] ?? null,
-                'reference' => $payload['reference']
+                'message_id' => $messageId,
+                'reference' => $reference,
+                'status' => 'delivered',
+                'provider_status' => 'DELIVERED',
+                'provider_message' => 'Message delivered successfully (Simulated)'
             ];
+
         } catch (\Exception $e) {
-            Log::error('SMS sending failed', [
+            Log::error('Simulated SMS sending failed', [
                 'error' => $e->getMessage(),
                 'to' => $to,
                 'message' => $message,
@@ -110,6 +106,7 @@ class SmsService
                     'metadata' => array_merge($metadata, [
                         'type' => $type,
                         'error' => $e->getMessage(),
+                        'simulated' => true,
                         'trace' => $e->getTraceAsString()
                     ])
                 ]);
