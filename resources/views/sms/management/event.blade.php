@@ -559,24 +559,38 @@ $(document).ready(function() {
                         statusCell.html('<span class="badge bg-success">Valid Token</span>');
                     });
                 } else {
-                    const status = response.status || 'error';
-                    const statusClass = {
-                        'success': 'success',
-                        'warning': 'warning',
-                        'error': 'danger',
-                        'duplicate': 'warning',
-                        'invalid': 'danger',
-                        'expired': 'warning',
-                        'used': 'warning'
-                    }[status] || 'danger';
+                    let status = 'invalid';
+                    let statusClass = 'warning';
+                    let message = 'Token validation failed';
+                    
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.status) {
+                            status = response.status;
+                            statusClass = {
+                                'success': 'success',
+                                'warning': 'warning',
+                                'error': 'warning',
+                                'duplicate': 'warning',
+                                'invalid': 'warning',
+                                'expired': 'warning',
+                                'used': 'warning'
+                            }[status] || 'warning';
+                            message = response.message || 'Token is not valid';
+                        }
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                        status = 'invalid';
+                        message = 'Token is not valid';
+                    }
 
                     const details = selectedAttendees.map(attendee => ({
                         status: status,
                         recipient: attendee.name,
-                        message: response.message || 'Token validation failed',
+                        message: message,
                         statusClass: statusClass
                     }));
-                    showValidationResult(false, response.message || 'Token validation failed', details);
+                    showValidationResult(false, message, details);
                     
                     // Update status in the table
                     selectedAttendees.forEach(attendee => {
@@ -587,44 +601,44 @@ $(document).ready(function() {
                 }
             },
             error: function(xhr) {
-                let errorMessage = 'Token validation failed. Please try again.';
-                let details = [];
+                let status = 'invalid';
+                let statusClass = 'warning';
+                let message = 'Token validation failed';
+                
                 try {
                     const response = JSON.parse(xhr.responseText);
-                    const status = response.status || 'error';
-                    const statusClass = {
-                        'success': 'success',
-                        'warning': 'warning',
-                        'error': 'danger',
-                        'duplicate': 'warning',
-                        'invalid': 'danger',
-                        'expired': 'warning',
-                        'used': 'warning'
-                    }[status] || 'danger';
-
-                    errorMessage = response.message || errorMessage;
-                    details = selectedAttendees.map(attendee => ({
-                        status: status,
-                        recipient: attendee.name,
-                        message: errorMessage,
-                        statusClass: statusClass
-                    }));
+                    if (response.status) {
+                        status = response.status;
+                        statusClass = {
+                            'success': 'success',
+                            'warning': 'warning',
+                            'error': 'warning',
+                            'duplicate': 'warning',
+                            'invalid': 'warning',
+                            'expired': 'warning',
+                            'used': 'warning'
+                        }[status] || 'warning';
+                        message = response.message || 'Token is not valid';
+                    }
                 } catch (e) {
                     console.error('Error parsing response:', e);
-                    details = selectedAttendees.map(attendee => ({
-                        status: 'error',
-                        recipient: attendee.name,
-                        message: 'An unexpected error occurred during validation.',
-                        statusClass: 'danger'
-                    }));
+                    status = 'invalid';
+                    message = 'Token is not valid';
                 }
-                showValidationResult(false, errorMessage, details);
+
+                const details = selectedAttendees.map(attendee => ({
+                    status: status,
+                    recipient: attendee.name,
+                    message: message,
+                    statusClass: statusClass
+                }));
+                showValidationResult(false, message, details);
                 
                 // Update status in the table
                 selectedAttendees.forEach(attendee => {
                     const row = $(`.attendee-checkbox[value="${attendee.id}"]`).closest('tr');
                     const statusCell = row.find('td:eq(4)');
-                    statusCell.html('<span class="badge bg-danger">Error</span>');
+                    statusCell.html(`<span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`);
                 });
             },
             complete: function() {
@@ -672,7 +686,7 @@ $(document).ready(function() {
                 if (response.success) {
                     const statusClass = 'success';
                     alert.removeClass('alert-danger alert-warning').addClass('alert-success');
-                    icon.removeClass('bi-x-circle bi-exclamation-triangle').addClass('bi-check-circle');
+                    icon.removeClass('bi-x-circle bi-exclamation-circle').addClass('bi-check-circle');
                     title.text('Token Valid');
                     message.html(`
                         <strong>✓ Token is valid and active</strong><br>
@@ -697,37 +711,38 @@ $(document).ready(function() {
                     const statusCell = row.find('td:eq(4)');
                     statusCell.html('<span class="badge bg-success">Valid Token</span>');
                 } else {
-                    const status = response.status || 'error';
-                    const statusClass = {
-                        'success': 'success',
-                        'warning': 'warning',
-                        'error': 'danger',
-                        'duplicate': 'warning',
-                        'invalid': 'danger',
-                        'expired': 'warning',
-                        'used': 'warning'
-                    }[status] || 'danger';
+                    let status = 'invalid';
+                    let statusClass = 'warning';
+                    let message = 'Token validation failed';
+                    
+                    try {
+                        const response = JSON.parse(xhr.responseText);
+                        if (response.status) {
+                            status = response.status;
+                            statusClass = {
+                                'success': 'success',
+                                'warning': 'warning',
+                                'error': 'warning',
+                                'duplicate': 'warning',
+                                'invalid': 'warning',
+                                'expired': 'warning',
+                                'used': 'warning'
+                            }[status] || 'warning';
+                            message = response.message || 'Token is not valid';
+                        }
+                    } catch (e) {
+                        console.error('Error parsing response:', e);
+                        status = 'invalid';
+                        message = 'Token is not valid';
+                    }
 
-                    alert.removeClass('alert-success alert-warning').addClass(`alert-${statusClass}`);
-                    icon.removeClass('bi-check-circle bi-exclamation-triangle').addClass('bi-x-circle');
-                    title.text('Token Invalid');
-                    message.html(`
-                        <strong>✗ ${response.message || 'Token validation failed'}</strong><br>
-                        <small class="text-muted">Please review the details below.</small>
-                    `);
-                    details.html(`
-                        <div class="alert alert-light border">
-                            <h6 class="alert-heading mb-2">Validation Details</h6>
-                            <dl class="row mb-0">
-                                <dt class="col-sm-4">Attendee</dt>
-                                <dd class="col-sm-8">${attendeeName}</dd>
-                                <dt class="col-sm-4">Status</dt>
-                                <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></dd>
-                                <dt class="col-sm-4">Error</dt>
-                                <dd class="col-sm-8">${response.message || 'Unknown error occurred'}</dd>
-                            </dl>
-                        </div>
-                    `);
+                    const details = selectedAttendees.map(attendee => ({
+                        status: status,
+                        recipient: attendee.name,
+                        message: message,
+                        statusClass: statusClass
+                    }));
+                    showValidationResult(false, message, details);
                     
                     // Update status in the table
                     const row = $(`.attendee-checkbox[value="${attendeeId}"]`).closest('tr');
@@ -744,43 +759,47 @@ $(document).ready(function() {
                 const message = $('#singleSmsResultMessage');
                 const details = $('#singleSmsResultDetails');
                 
-                let status = 'error';
-                let statusClass = 'danger';
-                let errorMessage = 'Token validation failed. Please try again.';
+                let status = 'invalid';
+                let statusClass = 'warning';
+                let message = 'Token validation failed';
                 
                 try {
                     const response = JSON.parse(xhr.responseText);
-                    status = response.status || 'error';
-                    statusClass = {
-                        'success': 'success',
-                        'warning': 'warning',
-                        'error': 'danger',
-                        'duplicate': 'warning',
-                        'invalid': 'danger',
-                        'expired': 'warning',
-                        'used': 'warning'
-                    }[status] || 'danger';
-                    errorMessage = response.message || errorMessage;
+                    if (response.status) {
+                        status = response.status;
+                        statusClass = {
+                            'success': 'success',
+                            'warning': 'warning',
+                            'error': 'warning',
+                            'duplicate': 'warning',
+                            'invalid': 'warning',
+                            'expired': 'warning',
+                            'used': 'warning'
+                        }[status] || 'warning';
+                        message = response.message || 'Token is not valid';
+                    }
                 } catch (e) {
                     console.error('Error parsing response:', e);
+                    status = 'invalid';
+                    message = 'Token is not valid';
                 }
                 
-                alert.removeClass('alert-success alert-warning').addClass(`alert-${statusClass}`);
-                icon.removeClass('bi-check-circle bi-exclamation-triangle').addClass('bi-x-circle');
-                title.text('Validation Error');
+                alert.removeClass('alert-success alert-danger').addClass(`alert-${statusClass}`);
+                icon.removeClass('bi-check-circle').addClass('bi-exclamation-circle');
+                title.text('Token Status');
                 message.html(`
-                    <strong>✗ ${errorMessage}</strong><br>
-                    <small class="text-muted">An unexpected error occurred. Please try again.</small>
+                    <strong>${message}</strong><br>
+                    <small class="text-muted">Please check the validation details below.</small>
                 `);
                 details.html(`
                     <div class="alert alert-light border">
-                        <h6 class="alert-heading mb-2">Error Details</h6>
+                        <h6 class="alert-heading mb-2">Validation Details</h6>
                         <dl class="row mb-0">
                             <dt class="col-sm-4">Attendee</dt>
                             <dd class="col-sm-8">${attendeeName}</dd>
                             <dt class="col-sm-4">Status</dt>
                             <dd class="col-sm-8"><span class="badge bg-${statusClass}">${status.charAt(0).toUpperCase() + status.slice(1)}</span></dd>
-                            <dt class="col-sm-4">Error Time</dt>
+                            <dt class="col-sm-4">Last Check</dt>
                             <dd class="col-sm-8">${new Date().toLocaleString()}</dd>
                         </dl>
                     </div>
