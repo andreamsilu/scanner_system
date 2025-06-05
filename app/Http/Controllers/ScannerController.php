@@ -496,81 +496,112 @@ class ScannerController extends Controller
         $user = $validationData['user'];
         $now = now();
 
-        // Prepare all updates in advance
-        $ticketUpdate = [
-            'status' => 'used',
-            'used_at' => $now
-        ];
-
-        $attendeeUpdate = [
-            'registration_status' => 'checked_in',
-            'checked_in_at' => $now
-        ];
-
-        $scanLogData = [
-            'ticket_id' => $attendee->ticket->id,
-            'scanner_id' => $user->id,
-            'status' => 'success',
-            'notes' => "{$validationType} validation"
-        ];
-
-        DB::beginTransaction();
         try {
-            // Execute updates in parallel using DB::transaction
-            DB::transaction(function() use ($attendee, $ticketUpdate, $attendeeUpdate, $scanLogData) {
-                $attendee->ticket->update($ticketUpdate);
-                $attendee->update($attendeeUpdate);
-                ScanLog::create($scanLogData);
-            });
+            // Start transaction
+            DB::beginTransaction();
 
-            // Prepare response data
-            $responseData = [
+            // Update ticket status
+            $ticketUpdated = $attendee->ticket->update([
+                'status' => 'used',
+                'used_at' => $now
+            ]);
+
+            // Update attendee registration status
+            $attendeeUpdated = $attendee->update([
+                'registration_status' => 'checked_in',
+                'checked_in_at' => $now
+            ]);
+
+            // Create scan log
+            $scanLog = ScanLog::create([
+                'ticket_id' => $attendee->ticket->id,
+                'scanner_id' => $user->id,
+                'status' => 'success',
+                'notes' => "{$validationType} validation"
+            ]);
+
+            // Verify all updates were successful
+            if (!$ticketUpdated || !$attendeeUpdated || !$scanLog) {
+                DB::rollBack();
+                throw new \Exception('Failed to update ticket or attendee status');
+            }
+
+            // Commit the transaction
+            DB::commit();
+
+            // Log the successful check-in
+            Log::info("Attendee checked in via {$validationType}", [
+                'attendee_id' => $attendee->id,
+                'ticket_id' => $attendee->ticket->id,
+                'event_id' => $attendee->event_id,
+                'scanner_id' => $user->id,
+                'previous_status' => [
+                    'ticket' => $attendee->ticket->getOriginal('status'),
+                    'registration' => $attendee->getOriginal('registration_status')
+                ]
+            ]);
+
+            // Send SMS notification if attendee has a phone number - outside transaction
+            if ($attendee->phone) {
+                try {
+                    $message = "Dear {$attendee->name}, your ticket for {$attendee->event->name} has been used at {$now->format('M d, Y h:i A')}. Thank you for attending!";
+                    
+                    $this->smsService->send(
+                        $attendee->phone,
+                        $message,
+                        'notification',
+                        [
+                            'attendee_id' => $attendee->id,
+                            'ticket_id' => $attendee->ticket->id,
+                            'event_id' => $attendee->event_id,
+                            'attendee_name' => $attendee->name,
+                            'attendee_phone' => $attendee->phone
+                        ]
+                    );
+
+                    Log::info("SMS sent for {$validationType} check-in", [
+                        'attendee_id' => $attendee->id,
+                        'phone' => $attendee->phone,
+                        'event' => $attendee->event->name
+                    ]);
+                } catch (\Exception $e) {
+                    // Log SMS error but don't affect the check-in status
+                    Log::error("Failed to send SMS for {$validationType} check-in", [
+                        'attendee_id' => $attendee->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Verify the updates were actually saved
+            $verifyAttendee = Attendee::with('ticket')
+                ->where('id', $attendee->id)
+                ->first();
+
+            if (!$verifyAttendee || 
+                $verifyAttendee->registration_status !== 'checked_in' || 
+                !$verifyAttendee->ticket || 
+                $verifyAttendee->ticket->status !== 'used') {
+                throw new \Exception('Verification failed: Updates not properly saved');
+            }
+
+            return [
                 'success' => true,
                 'message' => 'Check-in successful!',
                 'attendee' => [
-                    'name' => $attendee->name,
-                    'email' => $attendee->email,
-                    'checked_in_at' => $now->format('M d, Y h:i A')
+                    'name' => $verifyAttendee->name,
+                    'email' => $verifyAttendee->email,
+                    'checked_in_at' => $verifyAttendee->checked_in_at->format('M d, Y h:i A')
                 ]
             ];
 
-            // Send SMS notification asynchronously if needed
-            if ($attendee->phone) {
-                dispatch(function() use ($attendee, $now, $validationType) {
-                    try {
-                        $message = "Dear {$attendee->name}, your ticket for {$attendee->event->name} has been used at {$now->format('M d, Y h:i A')}. Thank you for attending!";
-                        
-                        $this->smsService->send(
-                            $attendee->phone,
-                            $message,
-                            'notification',
-                            [
-                                'attendee_id' => $attendee->id,
-                                'ticket_id' => $attendee->ticket->id,
-                                'event_id' => $attendee->event_id,
-                                'attendee_name' => $attendee->name,
-                                'attendee_phone' => $attendee->phone
-                            ]
-                        );
-
-                        Log::info("SMS sent for {$validationType} check-in", [
-                            'attendee_id' => $attendee->id,
-                            'phone' => $attendee->phone,
-                            'event' => $attendee->event->name
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error("Failed to send SMS for {$validationType} check-in", [
-                            'attendee_id' => $attendee->id,
-                            'error' => $e->getMessage()
-                        ]);
-                    }
-                })->afterResponse();
-            }
-
-            return $responseData;
-
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error("Failed to process {$validationType} validation", [
+                'attendee_id' => $attendee->id,
+                'error' => $e->getMessage(),
+                'error_type' => get_class($e)
+            ]);
             throw $e;
         }
     }
@@ -649,11 +680,23 @@ class ScannerController extends Controller
                 ], 422);
             }
 
-            // Process successful validation
-            $result = $this->processSuccessfulValidation($validation['data'], 'manual');
-            
-            // Return response immediately
-            return response()->json($result);
+            try {
+                // Process successful validation
+                $result = $this->processSuccessfulValidation($validation['data'], 'manual');
+                return response()->json($result);
+            } catch (\Exception $e) {
+                Log::error('Failed to process manual validation', [
+                    'raw_token' => $rawToken,
+                    'error' => $e->getMessage(),
+                    'error_type' => get_class($e)
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to process check-in. Please try again.',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
 
         } catch (\Exception $e) {
             Log::error('Error in manual token validation', [
