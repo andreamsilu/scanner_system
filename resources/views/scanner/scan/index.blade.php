@@ -139,6 +139,44 @@
         </div>
     </div>
 
+    <!-- Scan Result Modal -->
+    <div class="modal fade" id="scanResultModal" tabindex="-1" aria-labelledby="scanResultModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="scanResultModalLabel">Scan Result</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <div id="modalIcon" class="display-1 mb-3">
+                            <!-- Icon will be set dynamically -->
+                        </div>
+                        <h4 id="modalTitle" class="mb-2"></h4>
+                        <p id="modalMessage" class="text-muted mb-0"></p>
+                    </div>
+                    <div id="modalDetails" class="d-none">
+                        <hr>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Attendee:</dt>
+                            <dd class="col-sm-8" id="modalAttendeeName"></dd>
+                            
+                            <dt class="col-sm-4">Email:</dt>
+                            <dd class="col-sm-8" id="modalAttendeeEmail"></dd>
+                            
+                            <dt class="col-sm-4">Check-in Time:</dt>
+                            <dd class="col-sm-8" id="modalCheckInTime"></dd>
+                        </dl>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary d-none" id="modalActionButton">Continue Scanning</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @push('meta')
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -394,47 +432,110 @@
         }, 5000);
                 }
 
-    async function onScanSuccess(decodedText, decodedResult) {
-        if (!isScanning) return;
+    function showScanResultModal(response) {
+        const modal = new bootstrap.Modal(document.getElementById('scanResultModal'));
+        const modalIcon = document.getElementById('modalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalDetails = document.getElementById('modalDetails');
+        const modalAttendeeName = document.getElementById('modalAttendeeName');
+        const modalAttendeeEmail = document.getElementById('modalAttendeeEmail');
+        const modalCheckInTime = document.getElementById('modalCheckInTime');
+        const modalActionButton = document.getElementById('modalActionButton');
 
-        try {
-            const response = await fetch('{{ route("scanner.scan.validate") }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ token: decodedText })
-            });
+        // Reset modal state
+        modalDetails.classList.add('d-none');
+        modalActionButton.classList.add('d-none');
 
-            const data = await response.json();
+        if (response.success) {
+            // Success case
+            modalIcon.innerHTML = '<i class="bi bi-check-circle-fill text-success"></i>';
+            modalTitle.textContent = 'Check-in Successful!';
+            modalMessage.textContent = 'The attendee has been successfully checked in.';
             
-            // Play sound based on result
-            const audio = new Audio(data.success ? 
-                '{{ asset("sounds/success.mp3") }}' : 
-                '{{ asset("sounds/error.mp3") }}'
-            );
-            audio.play();
+            // Show attendee details
+            modalDetails.classList.remove('d-none');
+            modalAttendeeName.textContent = response.attendee.name;
+            modalAttendeeEmail.textContent = response.attendee.email;
+            modalCheckInTime.textContent = response.attendee.checked_in_at;
 
-            showMessage(data.message, data.success ? 'success' : 'danger');
-                
-            // If successful, refresh the page after a short delay to update recent scans
-            if (data.success) {
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
+            // Show continue button
+            modalActionButton.classList.remove('d-none');
+            modalActionButton.textContent = 'Continue Scanning';
+            modalActionButton.onclick = () => {
+                modal.hide();
+                // Restart scanner if needed
+                if (html5QrcodeScanner) {
+                    html5QrcodeScanner.resume();
+                }
+            };
+        } else {
+            // Error case
+            modalIcon.innerHTML = '<i class="bi bi-x-circle-fill text-danger"></i>';
+            modalTitle.textContent = 'Check-in Failed';
+            modalMessage.textContent = response.message;
+
+            if (response.code === 'NO_EVENT_SELECTED' || response.code === 'EVENT_NOT_FOUND') {
+                // Show redirect button for event selection errors
+                modalActionButton.classList.remove('d-none');
+                modalActionButton.textContent = 'Select Event';
+                modalActionButton.onclick = () => {
+                    window.location.href = response.redirect;
+                };
             }
-        } catch (error) {
-            console.error('Error processing scan:', error);
-            showMessage('An error occurred while processing the scan. Please try again.', 'danger');
-        }
+
+            // Show attendee details if available
+            if (response.attendee) {
+                modalDetails.classList.remove('d-none');
+                modalAttendeeName.textContent = response.attendee.name;
+                modalAttendeeEmail.textContent = response.attendee.email;
+                if (response.attendee.checked_in_at) {
+                    modalCheckInTime.textContent = response.attendee.checked_in_at;
+                }
+            }
         }
 
-        function onScanFailure(error) {
+        modal.show();
+    }
+
+    function onScanSuccess(decodedText, decodedResult) {
+        // Stop scanner temporarily
+        if (html5QrcodeScanner) {
+            html5QrcodeScanner.pause();
+        }
+
+        // Play success sound
+        playBeepSound();
+
+        // Send the token to the server
+        fetch('{{ route("scanner.validate") }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                token: decodedText
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            showScanResultModal(data);
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showScanResultModal({
+                success: false,
+                message: 'An error occurred while validating the ticket.',
+                code: 'VALIDATION_ERROR'
+            });
+        });
+    }
+
+    function onScanFailure(error) {
         // Handle scan failure silently
         console.warn(`QR code scan failed: ${error}`);
-        }
+    }
 
     // Check scanner status on page load
     document.addEventListener('DOMContentLoaded', async function() {
@@ -463,92 +564,33 @@
     // Handle manual entry form
     document.getElementById('manualEntryForm').addEventListener('submit', function(e) {
         e.preventDefault();
-        const token = document.getElementById('manualToken').value.trim();
-        const resultDiv = document.getElementById('manualValidationResult');
+        const token = document.getElementById('manualToken').value;
         
-        if (!token) {
-            showManualValidationResult('error', 'Please enter a token', 'No token provided');
-            return;
-        }
-
-        if (token.length !== 7 || !/^\d{7}$/.test(token)) {
-            showManualValidationResult('error', 'Invalid token format', 'Token must be exactly 7 digits');
-            return;
-        }
-
-        // Show processing state
-        showManualValidationResult('info', 'Processing...', 'Validating token...');
-        
-        // Send validation request
-        fetch('{{ route("scanner.scan.validate") }}', {
+        fetch('{{ route("scanner.validate.manual") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': '{{ csrf_token() }}'
             },
-            body: JSON.stringify({ token: token })
+            body: JSON.stringify({
+                token: token
+            })
         })
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                showManualValidationResult('success', 'Check-in Successful!', `${data.attendee.name} has been checked in.`);
-                // Play success sound if available
-                if (typeof playSound === 'function') {
-                    playSound('success');
-                }
-            } else {
-                const status = data.code === 'TICKET_USED' ? 'warning' : 'error';
-                showManualValidationResult(status, 'Check-in Failed', data.message);
-                // Play error sound if available
-                if (typeof playSound === 'function') {
-                    playSound('error');
-                }
-            }
+            showScanResultModal(data);
+            // Clear the input field
+            document.getElementById('manualToken').value = '';
         })
         .catch(error => {
-            console.error('Validation failed:', error);
-            showManualValidationResult('error', 'Validation Failed', 'An error occurred while validating the token. Please try again.');
-            // Play error sound if available
-            if (typeof playSound === 'function') {
-                playSound('error');
-            }
-        })
-        .finally(() => {
-            // Clear the form
-            this.reset();
-            // Hide the result after 3 seconds
-            setTimeout(() => {
-                resultDiv.classList.add('d-none');
-            }, 3000);
+            console.error('Error:', error);
+            showScanResultModal({
+                success: false,
+                message: 'An error occurred while validating the ticket.',
+                code: 'VALIDATION_ERROR'
+            });
         });
     });
-
-    function showManualValidationResult(type, heading, message) {
-        const resultDiv = document.getElementById('manualValidationResult');
-        const icon = resultDiv.querySelector('.bi');
-        const headingEl = resultDiv.querySelector('.alert-heading');
-        const messageEl = resultDiv.querySelector('p');
-
-        // Remove all existing classes
-        resultDiv.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-info');
-        icon.classList.remove('bi-check-circle-fill', 'bi-x-circle-fill', 'bi-exclamation-triangle-fill', 'bi-info-circle-fill');
-
-        // Add appropriate classes based on type
-        resultDiv.classList.add('alert-' + type);
-        icon.classList.add(
-            type === 'success' ? 'bi-check-circle-fill' :
-            type === 'error' ? 'bi-x-circle-fill' :
-            type === 'warning' ? 'bi-exclamation-triangle-fill' :
-            'bi-info-circle-fill'
-        );
-
-        // Update content
-        headingEl.textContent = heading;
-        messageEl.textContent = message;
-
-        // Show the result
-        resultDiv.classList.remove('d-none');
-    }
     </script>
     @endpush
 </x-app-layout> 
