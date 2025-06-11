@@ -246,4 +246,90 @@ class Attendee extends Model
             'checked_in_at' => null
         ]);
     }
+
+    /**
+     * Assign a ticket to this attendee
+     * 
+     * @param \App\Models\Ticket $ticket
+     * @throws \Exception
+     */
+    public function assignTicket(Ticket $ticket): void
+    {
+        if ($ticket->event_id !== $this->event_id) {
+            throw new \Exception('Ticket does not belong to the same event as the attendee');
+        }
+
+        if ($ticket->attendee_id) {
+            throw new \Exception('Ticket is already assigned to another attendee');
+        }
+
+        $ticket->update(['attendee_id' => $this->id]);
+    }
+
+    /**
+     * Check if the attendee has a ticket
+     * 
+     * @return bool
+     */
+    public function hasTicket(): bool
+    {
+        return $this->ticket()->exists();
+    }
+
+    /**
+     * Check if the attendee has checked in
+     * 
+     * @return bool
+     */
+    public function hasCheckedIn(): bool
+    {
+        return $this->checked_in_at !== null;
+    }
+
+    /**
+     * Mark the attendee as checked in
+     * 
+     * @return bool
+     */
+    public function checkIn(): bool
+    {
+        return $this->update(['checked_in_at' => now()]);
+    }
+
+    /**
+     * Get the QR code for this attendee
+     * 
+     * @return string|null
+     */
+    public function getQrCode(): ?string
+    {
+        if (!$this->qr_code) {
+            $this->generateQrCode();
+        }
+        return $this->qr_code;
+    }
+
+    /**
+     * Generate a QR code for this attendee
+     * 
+     * @return string
+     */
+    public function generateQrCode(): string
+    {
+        $data = [
+            'token' => $this->token,
+            'event_id' => $this->event_id
+        ];
+
+        $qrCode = QrCode::format('png')
+            ->size(300)
+            ->generate(json_encode($data));
+
+        $filename = "qr_codes/{$this->event_id}/{$this->token}.png";
+        Storage::put($filename, $qrCode);
+
+        $this->update(['qr_code' => $filename]);
+
+        return $filename;
+    }
 } 

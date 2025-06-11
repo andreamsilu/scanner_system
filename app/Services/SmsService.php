@@ -111,13 +111,13 @@ class SmsService
             'attendee_id' => $attendee->id,
             'ticket_id' => $ticket->id,
             'attendee_name' => $attendee->name,
-            'attendee_phone' => $attendee->phone,
+                'attendee_phone' => $attendee->phone,
             'ticket_number' => $ticket->ticket_number,
             'ticket_type' => $ticket->type->name,
-            'event_name' => $event->name,
-            'event_date' => $eventDate->toDateTimeString(),
-            'location' => $event->location,
-            'venue' => $event->venue
+                'event_name' => $event->name,
+                'event_date' => $eventDate->toDateTimeString(),
+                'location' => $event->location,
+                'venue' => $event->venue
         ];
 
         return $this->send($attendee->phone, $message, 'invitation', $metadata);
@@ -145,7 +145,7 @@ class SmsService
         $metadata = [
             'event_id' => $event->id,
             'attendee_id' => $attendee->id,
-            'ticket_id' => $ticket->id,
+                'ticket_id' => $ticket->id,
             'attendee_name' => $attendee->name,
             'attendee_phone' => $attendee->phone,
             'ticket_number' => $ticket->ticket_number,

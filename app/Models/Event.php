@@ -199,16 +199,33 @@ class Event extends Model
         return $this->hasMany(Ticket::class);
     }
 
+    /**
+     * Get all attendees with their tickets for this event
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
     public function getAttendeesWithTickets()
     {
         return $this->attendees()->with('ticket')->get();
     }
 
+    /**
+     * Get all available (unassigned) tickets for this event
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
     public function getAvailableTickets()
     {
         return $this->tickets()->whereDoesntHave('attendee')->get();
     }
 
+    /**
+     * Assign a ticket to an attendee
+     * 
+     * @param \App\Models\Attendee $attendee
+     * @param \App\Models\Ticket $ticket
+     * @throws \Exception
+     */
     public function assignTicketToAttendee(Attendee $attendee, Ticket $ticket)
     {
         if ($ticket->event_id !== $this->id) {
@@ -260,19 +277,94 @@ class Event extends Model
         return $this->status === self::STATUS_COMPLETED;
     }
 
-    public function getAvailableCapacity()
+    /**
+     * Get the registration progress percentage
+     * 
+     * @return float
+     */
+    public function getRegistrationProgress()
     {
-        return $this->capacity - $this->attendees()->count();
+        return ($this->attendees()->count() / $this->capacity) * 100;
     }
 
+    /**
+     * Check if the event has available capacity
+     * 
+     * @return bool
+     */
     public function hasAvailableCapacity()
     {
         return $this->getAvailableCapacity() > 0;
     }
 
-    public function getRegistrationProgress()
+    /**
+     * Get the available capacity
+     * 
+     * @return int
+     */
+    public function getAvailableCapacity()
     {
-        return ($this->attendees()->count() / $this->capacity) * 100;
+        return $this->capacity - $this->attendees()->count();
+    }
+
+    /**
+     * Get all attendees who have checked in
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getCheckedInAttendees()
+    {
+        return $this->attendees()->whereNotNull('checked_in_at')->get();
+    }
+
+    /**
+     * Get all attendees who haven't checked in yet
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getNotCheckedInAttendees()
+    {
+        return $this->attendees()->whereNull('checked_in_at')->get();
+    }
+
+    /**
+     * Get all valid tickets (not used or cancelled)
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getValidTickets()
+    {
+        return $this->tickets()
+            ->where('status', 'active')
+            ->whereNull('used_at')
+            ->whereNull('cancelled_at')
+            ->get();
+    }
+
+    /**
+     * Get all used tickets
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getUsedTickets()
+    {
+        return $this->tickets()
+            ->where('status', 'used')
+            ->whereNotNull('used_at')
+            ->get();
+    }
+
+    /**
+     * Get all cancelled tickets
+     * 
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getCancelledTickets()
+    {
+        return $this->tickets()
+            ->where('status', 'cancelled')
+            ->whereNotNull('cancelled_at')
+            ->get();
     }
 
     public function isUpcoming(): bool
