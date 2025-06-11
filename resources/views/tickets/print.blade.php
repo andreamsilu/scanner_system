@@ -118,7 +118,7 @@
                 <div class="invitation-message">
                     <h2 style="color: #bfa46d; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
                     <p style="margin-bottom: 1em; color: #000000;">
-                        Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                        Familia ya MR & MRS  NDIMBO wa  Dar es Salaam,<br>
                         wanayo furaha kubwa kukualika / kuwaalika
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
@@ -131,14 +131,14 @@
                     </div>
                     <p style="margin-bottom: 1em; color: #000000;">
                         Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                        <strong style="color: #bfa46d; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
+                        <strong style="color: #bfa46d; font-size: 1.2em;">YASINTA MOSES NDIMBO</strong>
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
-                        Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
+                        Itakayofanyika siku ya Alhamisi, tarehe 12-06-2025<br>
                         Kuanzia saa 12:00 jioni
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
-                        Katika ukumbi wa GBF Garden Hall,<br>
+                        Katika ukumbi wa  Highland Hall,<br>
                         uliopo Dar es Salaam – Tabata, Barakuda.
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
