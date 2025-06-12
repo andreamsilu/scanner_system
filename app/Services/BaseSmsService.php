@@ -134,7 +134,7 @@ abstract class BaseSmsService implements SmsServiceInterface
      * @param string $number The phone number to validate
      * @return bool
      */
-    protected function isValidPhoneNumber(string $number): bool
+    public function isValidPhoneNumber(string $number): bool
     {
         $number = $this->formatPhoneNumber($number);
         return preg_match('/^\+[1-9]\d{1,14}$/', $number) === 1;
