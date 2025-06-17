@@ -110,22 +110,26 @@ Route::middleware('auth')->group(function () {
                 Route::put('/{event}/scanners/{scanner}', [EventController::class, 'updateScanner'])->name('scanners.update');
 
                 // Event attendees management
-                Route::get('/{event}/attendees', [AttendeeController::class, 'index'])->name('attendees.index');
-                Route::get('/{event}/attendees/create', [AttendeeController::class, 'create'])->name('attendees.create');
-                Route::post('/{event}/attendees', [AttendeeController::class, 'store'])->name('attendees.store');
-                Route::get('/{event}/attendees/{attendee}', [AttendeeController::class, 'show'])->name('attendees.show');
-                Route::get('/{event}/attendees/{attendee}/edit', [AttendeeController::class, 'edit'])->name('attendees.edit');
-                Route::put('/{event}/attendees/{attendee}', [AttendeeController::class, 'update'])->name('attendees.update');
-                Route::delete('/{event}/attendees/{attendee}', [AttendeeController::class, 'destroy'])->name('attendees.destroy');
-                Route::post('/{event}/attendees/{attendee}/check-in', [AttendeeController::class, 'checkIn'])->name('attendees.check-in');
-                Route::post('/{event}/attendees/{attendee}/regenerate-qr', [AttendeeController::class, 'regenerateQrCode'])->name('attendees.regenerate-qr');
-                Route::patch('/{event}/attendees/{attendee}/cancel', [AttendeeController::class, 'cancel'])->name('attendees.cancel');
+                Route::prefix('{event}/attendees')->name('events.attendees.')->group(function () {
+                    Route::get('/', [AttendeeController::class, 'index'])->name('index');
+                    Route::get('/create', [AttendeeController::class, 'create'])->name('create');
+                    Route::post('/', [AttendeeController::class, 'store'])->name('store');
+                    Route::get('/{attendee}', [AttendeeController::class, 'show'])->name('show');
+                    Route::get('/{attendee}/edit', [AttendeeController::class, 'edit'])->name('edit');
+                    Route::put('/{attendee}', [AttendeeController::class, 'update'])->name('update');
+                    Route::delete('/{attendee}', [AttendeeController::class, 'destroy'])->name('destroy');
+                    Route::post('/{attendee}/check-in', [AttendeeController::class, 'checkIn'])->name('check-in');
+                    Route::post('/{attendee}/regenerate-qr', [AttendeeController::class, 'regenerateQrCode'])->name('regenerate-qr');
+                    Route::patch('/{attendee}/cancel', [AttendeeController::class, 'cancel'])->name('cancel');
 
-                // Bulk Upload Routes
-                Route::get('/{event}/attendees/bulk-upload', [BulkUploadController::class, 'create'])->name('events.attendees.bulk-upload.create');
-                Route::post('/{event}/attendees/bulk-upload', [BulkUploadController::class, 'store'])->name('events.attendees.bulk-upload.store');
-                Route::get('/{event}/attendees/bulk-upload/{bulkUpload}/status', [BulkUploadController::class, 'status'])->name('events.attendees.bulk-upload.status');
-                Route::get('/{event}/attendees/bulk-upload/{bulkUpload}/status/get', [BulkUploadController::class, 'getStatus'])->name('events.attendees.bulk-upload.status.get');
+                    // Bulk Upload Routes
+                    Route::prefix('bulk-upload')->name('bulk-upload.')->group(function () {
+                        Route::get('/', [BulkUploadController::class, 'create'])->name('create');
+                        Route::post('/', [BulkUploadController::class, 'store'])->name('store');
+                        Route::get('/{bulkUpload}/status', [BulkUploadController::class, 'status'])->name('status');
+                        Route::get('/{bulkUpload}/status/get', [BulkUploadController::class, 'getStatus'])->name('status.get');
+                    });
+                });
             });
             
             // Scanners Management
