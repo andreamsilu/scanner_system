@@ -14,6 +14,7 @@ use Illuminate\Support\Str;
 use Illuminate\View\View;
 use League\Csv\Reader;
 use Illuminate\Support\Facades\Log;
+use Endroid\QrCode\QrCode;
 
 class BulkUploadController extends Controller
 {
@@ -153,8 +154,26 @@ class BulkUploadController extends Controller
 
                     DB::beginTransaction();
 
-                    // Generate unique token
-                    $token = Attendee::generateUniqueToken();
+                    // Generate unique token (7 digits)
+                    do {
+                        $token = str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT);
+                    } while (Attendee::where('token', $token)->exists());
+
+                    // Generate QR code with check-in URL
+                    $checkInUrl = route('scanner.check-in', ['token' => $token], true);
+                    $qrCode = QrCode::format('png')
+                        ->size(300)
+                        ->errorCorrection('H')
+                        ->generate($checkInUrl);
+
+                    // Sanitize name for filename
+                    $sanitizedName = preg_replace('/[^a-zA-Z0-9-]/', '-', strtolower($record['name']));
+                    $sanitizedName = preg_replace('/-+/', '-', $sanitizedName);
+                    $sanitizedName = trim($sanitizedName, '-');
+
+                    // Store QR code image with attendee name in filename
+                    $qrPath = 'qr-codes/' . $sanitizedName . '-' . $token . '.png';
+                    Storage::disk('public')->put($qrPath, $qrCode);
 
                     // Create attendee
                     $attendee = Attendee::create([
@@ -164,15 +183,29 @@ class BulkUploadController extends Controller
                         'email' => $record['email'] ?? null,
                         'position' => $record['position'] ?? null,
                         'token' => $token,
-                        'registration_status' => 'registered',
+                        'qr_code' => $qrPath,
+                        'registration_status' => 'unchecked_in',
+                        'registered_at' => now()
                     ]);
+
+                    // Generate ticket number
+                    $ticketNumber = 'TICKET-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
 
                     // Create ticket
                     $ticket = Ticket::create([
                         'event_id' => $event->id,
                         'attendee_id' => $attendee->id,
+                        'type' => $record['ticket_type'] ?? 'regular',
                         'status' => 'active',
-                        'ticket_number' => Ticket::generateTicketNumber(),
+                        'ticket_number' => $ticketNumber,
+                        'token' => $token
+                    ]);
+
+                    // Log the ticket creation
+                    Log::info('Ticket created for bulk uploaded attendee', [
+                        'attendee_id' => $attendee->id,
+                        'ticket_id' => $ticket->id,
+                        'event_id' => $event->id
                     ]);
 
                     DB::commit();
