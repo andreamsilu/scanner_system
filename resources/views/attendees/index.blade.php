@@ -174,12 +174,13 @@
                                 <li><strong>phone</strong> (required) - Phone number</li>
                                 <li><strong>email</strong> (optional) - Email address</li>
                                 <li><strong>position</strong> (optional) - Job position or title</li>
+                                <li><strong>ticket_type</strong> (required) - Type of ticket (regular, vip, single, or double)</li>
                             </ul>
                             <p class="text-muted small mb-0">The first row should contain the column headers exactly as shown above.</p>
                         </div>
                     </div>
 
-                    <form action="{{ route('events.attendees.bulk-upload.store', $event) }}" method="POST" enctype="multipart/form-data" id="bulkUploadForm">
+                    <form action="{{ route('events.attendees.bulk-upload.store', ['event' => $event]) }}" method="POST" enctype="multipart/form-data" id="bulkUploadForm">
                         @csrf
                         <div class="mb-4">
                             <label for="csv_file" class="form-label">Upload File</label>

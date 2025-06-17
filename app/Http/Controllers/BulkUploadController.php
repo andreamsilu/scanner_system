@@ -170,6 +170,17 @@ class BulkUploadController extends Controller
                 try {
                     DB::beginTransaction();
 
+                    // Validate required fields
+                    if (empty($record['name']) || empty($record['phone']) || empty($record['ticket_type'])) {
+                        throw new \Exception('Missing required fields: name, phone, or ticket_type');
+                    }
+
+                    // Validate ticket type
+                    $validTicketTypes = ['regular', 'vip', 'single', 'double'];
+                    if (!in_array(strtolower($record['ticket_type']), $validTicketTypes)) {
+                        throw new \Exception('Invalid ticket type. Must be one of: ' . implode(', ', $validTicketTypes));
+                    }
+
                     // Create attendee
                     $attendee = Attendee::create([
                         'event_id' => $event->id,
@@ -191,7 +202,7 @@ class BulkUploadController extends Controller
                     $ticket = Ticket::create([
                         'event_id' => $event->id,
                         'attendee_id' => $attendee->id,
-                        'type' => $record['ticket_type'] ?? 'regular',
+                        'type' => strtolower($record['ticket_type']),
                         'status' => 'active',
                         'ticket_number' => $ticketNumber,
                         'qr_code' => $qrCode,
@@ -206,6 +217,7 @@ class BulkUploadController extends Controller
                         'attendee_id' => $attendee->id,
                         'ticket_id' => $ticket->id,
                         'ticket_number' => $ticketNumber,
+                        'ticket_type' => $ticket->type,
                         'timestamp' => now()->toDateTimeString()
                     ]);
 
