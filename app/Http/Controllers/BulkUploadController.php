@@ -60,30 +60,12 @@ class BulkUploadController extends Controller
             $extension = $file->getClientOriginalExtension();
             $mimeType = $file->getMimeType();
 
-            Log::info('Starting bulk upload process', [
-                'event_id' => $event->id,
-                'event_name' => $event->name,
-                'user_id' => auth()->id(),
-                'user_name' => auth()->user()->name,
-                'file_name' => $originalName,
-                'file_size' => $file->getSize(),
-                'file_type' => $mimeType,
-                'timestamp' => now()->toDateTimeString()
-            ]);
-
             // Create bulk upload record
             $bulkUpload = BulkUpload::create([
                 'event_id' => $event->id,
                 'user_id' => auth()->id(),
                 'filename' => $originalName,
                 'status' => 'processing',
-            ]);
-
-            Log::info('Bulk upload record created', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'event_id' => $event->id,
-                'user_id' => auth()->id(),
-                'timestamp' => now()->toDateTimeString()
             ]);
 
             // Store the file in the bulk-uploads directory
@@ -96,30 +78,35 @@ class BulkUploadController extends Controller
                 throw new \Exception('Failed to store the uploaded file.');
             }
 
-            Log::info('File stored successfully', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'file_path' => $path,
-                'storage_path' => Storage::path($path),
-                'timestamp' => now()->toDateTimeString()
-            ]);
-
             // Process the upload in the background
-            dispatch(function() use ($path, $bulkUpload, $event) {
-                Log::info('Starting background processing', [
+            dispatch(function() use ($path, $bulkUpload, $event, $originalName, $mimeType) {
+                Log::info('Starting bulk upload process', [
+                    'event_id' => $event->id,
+                    'event_name' => $event->name,
+                    'user_id' => auth()->id(),
+                    'user_name' => auth()->user()->name,
+                    'file_name' => $originalName,
+                    'file_size' => Storage::size($path),
+                    'file_type' => $mimeType,
+                    'timestamp' => now()->toDateTimeString()
+                ]);
+
+                Log::info('Bulk upload record created', [
+                    'bulk_upload_id' => $bulkUpload->id,
+                    'event_id' => $event->id,
+                    'user_id' => auth()->id(),
+                    'timestamp' => now()->toDateTimeString()
+                ]);
+
+                Log::info('File stored successfully', [
                     'bulk_upload_id' => $bulkUpload->id,
                     'file_path' => $path,
                     'storage_path' => Storage::path($path),
                     'timestamp' => now()->toDateTimeString()
                 ]);
-                
+
                 $this->processUpload($path, $bulkUpload, $event);
             })->afterResponse();
-
-            Log::info('Bulk upload job dispatched', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'event_id' => $event->id,
-                'timestamp' => now()->toDateTimeString()
-            ]);
 
             // Return success response
             if ($request->ajax()) {

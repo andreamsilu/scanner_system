@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use App\Models\Attendee;
 
 class QRCodeService
 {
@@ -55,5 +56,20 @@ class QRCodeService
     public function deleteQRCode(string $path): bool
     {
         return Storage::delete('public/' . $path);
+    }
+
+    /**
+     * Generate a QR code for an attendee
+     *
+     * @param \App\Models\Attendee $attendee The attendee model
+     * @return string The path to the generated QR code
+     */
+    public function generateForAttendee(Attendee $attendee): string
+    {
+        return $this->generateQRCode(
+            $attendee->token,
+            $attendee->name,
+            $attendee->event->name
+        );
     }
 } 
