@@ -9,7 +9,7 @@
     >
         <x-slot name="actions">
             <div class="d-flex gap-2">
-                <a href="{{ route('events.attendees.attendees.create', $event) }}" class="btn btn-primary">
+                <a href="{{ route('events.events.attendees.create', $event) }}" class="btn btn-primary">
                     <i class="bi bi-person-plus me-2"></i>Add Attendee
                 </a>
                 @role('admin')
@@ -25,7 +25,7 @@
         <!-- Filters -->
         <div class="card mb-4">
             <div class="card-body">
-                <form action="{{ route('events.attendees.attendees.index', $event) }}" method="GET" class="row g-3">
+                <form action="{{ route('events.events.attendees.index', $event) }}" method="GET" class="row g-3">
                     <div class="col-md-3">
                         <label for="search" class="form-label">Search</label>
                         <input type="text" class="form-control" id="search" name="search" value="{{ request('search') }}" placeholder="Name or email...">
@@ -54,7 +54,7 @@
                         <button type="submit" class="btn btn-primary me-2">
                             <i class="bi bi-search me-2"></i>Filter
                         </button>
-                        <a href="{{ route('events.attendees.attendees.index', $event) }}" class="btn btn-outline-secondary">
+                        <a href="{{ route('events.events.attendees.index', $event) }}" class="btn btn-outline-secondary">
                             <i class="bi bi-x-circle me-2"></i>Clear
                         </a>
                     </div>
@@ -243,7 +243,7 @@
                 processing: true,
                 serverSide: true,
                 ajax: {
-                    url: "{{ route('events.attendees.attendees.index', $event) }}",
+                    url: "{{ route('events.events.attendees.index', $event) }}",
                     type: 'GET',
                     data: function(d) {
                         // Add custom filters
