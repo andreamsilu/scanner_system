@@ -121,17 +121,18 @@ class BulkUploadController extends Controller
                 'timestamp' => now()->toDateTimeString()
             ]);
 
+            // Return success response
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'File uploaded successfully. Processing will begin in the background.',
-                    'bulk_upload_id' => $bulkUpload->id,
-                    'redirect' => route('events.attendees.bulk-upload.status', ['event' => $event, 'bulkUpload' => $bulkUpload])
+                    'message' => 'File uploaded successfully. Processing will continue in the background.',
+                    'redirect' => route('events.attendees.bulk-upload.status', ['event' => $event->id, 'bulkUpload' => $bulkUpload->id])
                 ]);
             }
 
-            return redirect()->route('events.attendees.bulk-upload.status', ['event' => $event, 'bulkUpload' => $bulkUpload])
-                ->with('success', 'File uploaded successfully. Processing will begin in the background.');
+            return redirect()
+                ->route('events.attendees.bulk-upload.status', ['event' => $event->id, 'bulkUpload' => $bulkUpload->id])
+                ->with('success', 'File uploaded successfully. Processing will continue in the background.');
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('Validation failed', [
