@@ -419,60 +419,70 @@
             });
         });
 
-        // Handle form submission with enhanced loading state
-        document.getElementById('bulkUploadForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const form = this;
-            const formData = new FormData(form);
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('bulkUploadForm');
             const submitButton = form.querySelector('button[type="submit"]');
             const modalBody = form.closest('.modal-body');
-            
-            // Disable submit button
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+            const modal = document.getElementById('bulkUploadModal');
 
-            // First, upload the file
-            fetch(form.action, {
-                method: 'POST',
-                body: formData,
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    // Show upload confirmation
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(form);
+                
+                // Disable submit button and show loading state
+                submitButton.disabled = true;
+                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+
+                // Upload the file
+                fetch(form.action, {
+                    method: 'POST',
+                    body: formData,
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        // Show success message
+                        modalBody.innerHTML = `
+                            <div class="text-center py-4">
+                                <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
+                                <h5 class="mt-3">File Uploaded Successfully</h5>
+                                <p class="text-muted">Your file has been uploaded and is now being processed in the background.</p>
+                                <p class="text-muted">You will be redirected to the status page in a moment...</p>
+                            </div>
+                        `;
+
+                        // Close modal and redirect after a short delay
+                        setTimeout(() => {
+                            const bsModal = bootstrap.Modal.getInstance(modal);
+                            if (bsModal) {
+                                bsModal.hide();
+                            }
+                            window.location.href = data.redirect;
+                        }, 2000);
+                    } else {
+                        throw new Error(data.message || 'Upload failed');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
                     modalBody.innerHTML = `
-                        <div class="text-center py-4">
-                            <i class="bi bi-check-circle text-success" style="font-size: 3rem;"></i>
-                            <h5 class="mt-3">File Uploaded Successfully</h5>
-                            <p class="text-muted">Your file has been uploaded and is now being processed in the background.</p>
-                            <p class="text-muted">You will be redirected to the status page in a moment...</p>
+                        <div class="alert alert-danger">
+                            <i class="bi bi-exclamation-circle me-2"></i>
+                            ${error.message || 'An error occurred during upload. Please try again.'}
                         </div>
                     `;
-
-                    // Close modal and redirect after a short delay
-                    setTimeout(() => {
-                        const modal = bootstrap.Modal.getInstance(document.getElementById('bulkUploadModal'));
-                        modal.hide();
-                        window.location.href = data.redirect;
-                    }, 2000);
-                } else {
-                    throw new Error(data.message || 'Upload failed');
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                modalBody.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-circle me-2"></i>
-                        ${error.message || 'An error occurred during upload. Please try again.'}
-                    </div>
-                `;
-                submitButton.disabled = false;
-                submitButton.innerHTML = '<i class="bi bi-upload me-2"></i>Upload and Process';
+                    submitButton.disabled = false;
+                    submitButton.innerHTML = '<i class="bi bi-upload me-2"></i>Upload and Process';
+                });
             });
         });
     </script>

@@ -38,35 +38,44 @@ class BulkUploadController extends Controller
      */
     public function store(Request $request, Event $event)
     {
-        Log::info('Starting bulk upload process', [
-            'event_id' => $event->id,
-            'event_name' => $event->name,
-            'user_id' => auth()->id(),
-            'user_name' => auth()->user()->name,
-            'file_name' => $request->file('csv_file')->getClientOriginalName(),
-            'file_size' => $request->file('csv_file')->getSize(),
-            'file_type' => $request->file('csv_file')->getMimeType(),
-            'timestamp' => now()->toDateTimeString()
-        ]);
-
-        $request->validate([
-            'csv_file' => [
-                'required',
-                'file',
-                'mimes:xlsx,xls,csv',
-                'max:10240',
-            ],
-        ], [
-            'csv_file.mimes' => 'Only Excel (.xlsx, .xls) and CSV (.csv) files are allowed.',
-            'csv_file.max' => 'The file size must not exceed 10MB.',
-        ]);
-
         try {
+            // Validate file
+            $request->validate([
+                'csv_file' => [
+                    'required',
+                    'file',
+                    'mimes:xlsx,xls,csv',
+                    'max:10240',
+                ],
+            ], [
+                'csv_file.required' => 'Please select a file to upload.',
+                'csv_file.file' => 'The uploaded file is invalid.',
+                'csv_file.mimes' => 'Only Excel (.xlsx, .xls) and CSV (.csv) files are allowed.',
+                'csv_file.max' => 'The file size must not exceed 10MB.',
+            ]);
+
+            // Get file details
+            $file = $request->file('csv_file');
+            $originalName = $file->getClientOriginalName();
+            $extension = $file->getClientOriginalExtension();
+            $mimeType = $file->getMimeType();
+
+            Log::info('Starting bulk upload process', [
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'user_id' => auth()->id(),
+                'user_name' => auth()->user()->name,
+                'file_name' => $originalName,
+                'file_size' => $file->getSize(),
+                'file_type' => $mimeType,
+                'timestamp' => now()->toDateTimeString()
+            ]);
+
             // Create bulk upload record
             $bulkUpload = BulkUpload::create([
                 'event_id' => $event->id,
                 'user_id' => auth()->id(),
-                'filename' => $request->file('csv_file')->getClientOriginalName(),
+                'filename' => $originalName,
                 'status' => 'processing',
             ]);
 
@@ -77,12 +86,20 @@ class BulkUploadController extends Controller
                 'timestamp' => now()->toDateTimeString()
             ]);
 
-            // Store the file
-            $path = $request->file('csv_file')->store('bulk-uploads');
+            // Store the file in the bulk-uploads directory
+            $path = $file->storeAs(
+                'bulk-uploads',
+                $bulkUpload->id . '_' . time() . '.' . $extension
+            );
             
+            if (!$path) {
+                throw new \Exception('Failed to store the uploaded file.');
+            }
+
             Log::info('File stored successfully', [
                 'bulk_upload_id' => $bulkUpload->id,
                 'file_path' => $path,
+                'storage_path' => Storage::path($path),
                 'timestamp' => now()->toDateTimeString()
             ]);
 
@@ -91,6 +108,7 @@ class BulkUploadController extends Controller
                 Log::info('Starting background processing', [
                     'bulk_upload_id' => $bulkUpload->id,
                     'file_path' => $path,
+                    'storage_path' => Storage::path($path),
                     'timestamp' => now()->toDateTimeString()
                 ]);
                 
@@ -115,6 +133,22 @@ class BulkUploadController extends Controller
             return redirect()->route('events.attendees.bulk-upload.status', ['event' => $event, 'bulkUpload' => $bulkUpload])
                 ->with('success', 'File uploaded successfully. Processing will begin in the background.');
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation failed', [
+                'errors' => $e->errors(),
+                'event_id' => $event->id,
+                'user_id' => auth()->id(),
+                'timestamp' => now()->toDateTimeString()
+            ]);
+            
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validation failed: ' . collect($e->errors())->first()[0]
+                ], 422);
+            }
+
+            return back()->withErrors($e->errors());
         } catch (\Exception $e) {
             Log::error('Bulk upload failed', [
                 'error' => $e->getMessage(),
