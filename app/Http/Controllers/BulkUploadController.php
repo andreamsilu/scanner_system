@@ -88,6 +88,12 @@ class BulkUploadController extends Controller
 
             // Process the upload in the background
             dispatch(function() use ($path, $bulkUpload, $event) {
+                Log::info('Starting background processing', [
+                    'bulk_upload_id' => $bulkUpload->id,
+                    'file_path' => $path,
+                    'timestamp' => now()->toDateTimeString()
+                ]);
+                
                 $this->processUpload($path, $bulkUpload, $event);
             })->afterResponse();
 
@@ -100,14 +106,14 @@ class BulkUploadController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Bulk upload started successfully.',
+                    'message' => 'File uploaded successfully. Processing will begin in the background.',
                     'bulk_upload_id' => $bulkUpload->id,
                     'redirect' => route('events.attendees.bulk-upload.status', ['event' => $event, 'bulkUpload' => $bulkUpload])
                 ]);
             }
 
             return redirect()->route('events.attendees.bulk-upload.status', ['event' => $event, 'bulkUpload' => $bulkUpload])
-                ->with('success', 'Bulk upload started. You will be notified when it\'s complete.');
+                ->with('success', 'File uploaded successfully. Processing will begin in the background.');
 
         } catch (\Exception $e) {
             Log::error('Bulk upload failed', [
@@ -121,11 +127,11 @@ class BulkUploadController extends Controller
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to process upload: ' . $e->getMessage()
+                    'message' => 'Failed to upload file: ' . $e->getMessage()
                 ], 422);
             }
 
-            return back()->with('error', 'Failed to process upload: ' . $e->getMessage());
+            return back()->with('error', 'Failed to upload file: ' . $e->getMessage());
         }
     }
 
