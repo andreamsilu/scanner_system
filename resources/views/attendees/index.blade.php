@@ -180,7 +180,7 @@
                         </div>
                     </div>
 
-                    <form action="{{ route('events.attendees.bulk-upload.store', ['event' => $event]) }}" method="POST" enctype="multipart/form-data" id="bulkUploadForm">
+                    <form action="{{ route('events.attendees.bulk-upload.store', $event) }}" method="POST" enctype="multipart/form-data" id="bulkUploadForm">
                         @csrf
                         <div class="mb-4">
                             <label for="csv_file" class="form-label">Upload File</label>
