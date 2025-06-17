@@ -209,7 +209,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" form="bulkUploadForm" class="btn btn-primary">
+                    <button type="submit" form="bulkUploadForm" class="btn btn-primary" id="uploadSubmitBtn">
                         <i class="bi bi-upload me-2"></i>Upload and Process
                     </button>
                 </div>
@@ -421,9 +421,14 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('bulkUploadForm');
-            const submitButton = form.querySelector('button[type="submit"]');
-            const modalBody = form.closest('.modal-body');
+            const submitBtn = document.getElementById('uploadSubmitBtn');
+            const modalBody = document.querySelector('#bulkUploadModal .modal-body');
             const modal = document.getElementById('bulkUploadModal');
+
+            if (!form || !submitBtn || !modalBody || !modal) {
+                console.error('Required elements not found');
+                return;
+            }
 
             form.addEventListener('submit', function(e) {
                 e.preventDefault();
@@ -431,8 +436,8 @@
                 const formData = new FormData(form);
                 
                 // Disable submit button and show loading state
-                submitButton.disabled = true;
-                submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
 
                 // Upload the file
                 fetch(form.action, {
@@ -480,8 +485,8 @@
                             ${error.message || 'An error occurred during upload. Please try again.'}
                         </div>
                     `;
-                    submitButton.disabled = false;
-                    submitButton.innerHTML = '<i class="bi bi-upload me-2"></i>Upload and Process';
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = '<i class="bi bi-upload me-2"></i>Upload and Process';
                 });
             });
         });
