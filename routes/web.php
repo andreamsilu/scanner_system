@@ -122,12 +122,10 @@ Route::middleware('auth')->group(function () {
                 Route::patch('/{event}/attendees/{attendee}/cancel', [AttendeeController::class, 'cancel'])->name('attendees.cancel');
 
                 // Bulk Upload Routes
-                Route::prefix('{event}/attendees/bulk-upload')->name('events.attendees.bulk-upload.')->group(function () {
-                    Route::get('/', [BulkUploadController::class, 'create'])->name('create');
-                    Route::post('/', [BulkUploadController::class, 'store'])->name('store');
-                    Route::get('/{bulkUpload}/status', [BulkUploadController::class, 'status'])->name('status');
-                    Route::get('/{bulkUpload}/status/get', [BulkUploadController::class, 'getStatus'])->name('status.get');
-                });
+                Route::get('/{event}/attendees/bulk-upload', [BulkUploadController::class, 'create'])->name('events.attendees.bulk-upload.create');
+                Route::post('/{event}/attendees/bulk-upload', [BulkUploadController::class, 'store'])->name('events.attendees.bulk-upload.store');
+                Route::get('/{event}/attendees/bulk-upload/{bulkUpload}/status', [BulkUploadController::class, 'status'])->name('events.attendees.bulk-upload.status');
+                Route::get('/{event}/attendees/bulk-upload/{bulkUpload}/status/get', [BulkUploadController::class, 'getStatus'])->name('events.attendees.bulk-upload.status.get');
             });
             
             // Scanners Management
