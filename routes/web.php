@@ -125,9 +125,9 @@ Route::middleware('auth')->group(function () {
                 Route::get('/{event}/attendees/bulk-upload', [BulkUploadController::class, 'create'])->name('attendees.bulk-upload.create');
                 Route::post('/{event}/attendees/bulk-upload', [BulkUploadController::class, 'store'])->name('attendees.bulk-upload.store');
                 Route::get('/{event}/attendees/bulk-upload/{bulkUpload}/status', [BulkUploadController::class, 'status'])
-                    ->name('events.attendees.bulk-upload.status');
+                    ->name('attendees.bulk-upload.status');
                 Route::get('/{event}/attendees/bulk-upload/{bulkUpload}/status/get', [BulkUploadController::class, 'getStatus'])
-                    ->name('events.attendees.bulk-upload.status.get');
+                    ->name('attendees.bulk-upload.status.get');
             });
             
             // Scanners Management

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use App\Models\Attendee;
+use Illuminate\Support\Facades\Log;
 
 class QRCodeService
 {
@@ -19,32 +20,50 @@ class QRCodeService
      */
     public function generateQRCode(string $token, string $name, string $eventName): string
     {
-        // Generate a unique filename
-        $filename = Str::slug($name) . '-' . $token . '.png';
-        $path = 'qr-codes/' . $filename;
+        try {
+            // Generate a unique filename
+            $filename = Str::slug($name) . '-' . $token . '.png';
+            $path = 'qr-codes/' . $filename;
 
-        // Generate QR code with check-in URL
-        $checkInUrl = route('scanner.check-in', ['token' => $token]);
-        
-        // Use Google Charts API to generate QR code
-        $qrCodeUrl = 'https://chart.googleapis.com/chart?' . http_build_query([
-            'cht' => 'qr',
-            'chs' => '300x300',
-            'chl' => $checkInUrl,
-            'choe' => 'UTF-8',
-            'chld' => 'H|1', // Error correction level H (high) and margin 1
-        ]);
+            // Generate QR code with check-in URL using absolute URL
+            $checkInUrl = config('app.url') . '/check-in/' . $token;
+            
+            // Use Google Charts API to generate QR code
+            $qrCodeUrl = 'https://chart.googleapis.com/chart?' . http_build_query([
+                'cht' => 'qr',
+                'chs' => '300x300',
+                'chl' => $checkInUrl,
+                'choe' => 'UTF-8',
+                'chld' => 'H|1', // Error correction level H (high) and margin 1
+            ]);
 
-        // Download the QR code
-        $response = Http::get($qrCodeUrl);
-        
-        if ($response->successful()) {
-            // Store the QR code
-            Storage::put('public/' . $path, $response->body());
-            return $path;
+            // Download the QR code
+            $response = Http::get($qrCodeUrl);
+            
+            if ($response->successful()) {
+                // Store the QR code
+                Storage::put('public/' . $path, $response->body());
+                return $path;
+            }
+
+            Log::error('QR code generation failed', [
+                'token' => $token,
+                'name' => $name,
+                'event' => $eventName,
+                'response_status' => $response->status(),
+                'response_body' => $response->body()
+            ]);
+
+            throw new \RuntimeException('Failed to generate QR code: ' . $response->status());
+        } catch (\Exception $e) {
+            Log::error('QR code generation error', [
+                'error' => $e->getMessage(),
+                'token' => $token,
+                'name' => $name,
+                'event' => $eventName
+            ]);
+            throw $e;
         }
-
-        throw new \RuntimeException('Failed to generate QR code');
     }
 
     /**
