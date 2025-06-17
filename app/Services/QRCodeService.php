@@ -28,17 +28,17 @@ class QRCodeService
             // Generate QR code with check-in URL using absolute URL
             $checkInUrl = config('app.url') . '/check-in/' . $token;
             
-            // Use Google Charts API to generate QR code
-            $qrCodeUrl = 'https://chart.googleapis.com/chart?' . http_build_query([
-                'cht' => 'qr',
-                'chs' => '300x300',
-                'chl' => $checkInUrl,
-                'choe' => 'UTF-8',
-                'chld' => 'H|1', // Error correction level H (high) and margin 1
+            // Use QR Server API to generate QR code
+            $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?' . http_build_query([
+                'size' => '300x300',
+                'data' => $checkInUrl,
+                'format' => 'png',
+                'margin' => 1,
+                'ecc' => 'H' // Error correction level H (high)
             ]);
 
             // Download the QR code
-            $response = Http::get($qrCodeUrl);
+            $response = Http::timeout(30)->get($qrCodeUrl);
             
             if ($response->successful()) {
                 // Store the QR code
@@ -51,7 +51,8 @@ class QRCodeService
                 'name' => $name,
                 'event' => $eventName,
                 'response_status' => $response->status(),
-                'response_body' => $response->body()
+                'response_body' => $response->body(),
+                'qr_code_url' => $qrCodeUrl
             ]);
 
             throw new \RuntimeException('Failed to generate QR code: ' . $response->status());
