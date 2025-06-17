@@ -113,12 +113,12 @@ class BulkUploadController extends Controller
                 return response()->json([
                     'success' => true,
                     'message' => 'File uploaded successfully. Processing will continue in the background.',
-                    'redirect' => route('attendees.bulk-upload.status', ['event' => $event->id, 'bulkUpload' => $bulkUpload->id])
+                    'redirect' => route('events.attendees.bulk-upload.status', ['event' => $event->id, 'bulkUpload' => $bulkUpload->id])
                 ]);
             }
 
             return redirect()
-                ->route('attendees.bulk-upload.status', ['event' => $event->id, 'bulkUpload' => $bulkUpload->id])
+                ->route('events.attendees.bulk-upload.status', ['event' => $event->id, 'bulkUpload' => $bulkUpload->id])
                 ->with('success', 'File uploaded successfully. Processing will continue in the background.');
 
         } catch (\Illuminate\Validation\ValidationException $e) {

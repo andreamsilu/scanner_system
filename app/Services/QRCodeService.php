@@ -28,34 +28,76 @@ class QRCodeService
             // Generate QR code with check-in URL using absolute URL
             $checkInUrl = config('app.url') . '/check-in/' . $token;
             
-            // Use QR Server API to generate QR code
+            // Use GoQR.me API to generate QR code
             $qrCodeUrl = 'https://api.qrserver.com/v1/create-qr-code/?' . http_build_query([
                 'size' => '300x300',
                 'data' => $checkInUrl,
                 'format' => 'png',
                 'margin' => 1,
-                'ecc' => 'H' // Error correction level H (high)
+                'ecc' => 'H', // Error correction level H (high)
+                'qzone' => 1,
+                'color' => '000000',
+                'bgcolor' => 'FFFFFF'
             ]);
 
-            // Download the QR code
-            $response = Http::timeout(30)->get($qrCodeUrl);
-            
-            if ($response->successful()) {
-                // Store the QR code
-                Storage::put('public/' . $path, $response->body());
-                return $path;
+            // Download the QR code with retry logic
+            $maxRetries = 3;
+            $retryCount = 0;
+            $success = false;
+
+            while (!$success && $retryCount < $maxRetries) {
+                try {
+                    $response = Http::timeout(30)
+                        ->withHeaders([
+                            'Accept' => 'image/png',
+                            'User-Agent' => 'Laravel QR Code Generator'
+                        ])
+                        ->get($qrCodeUrl);
+
+                    if ($response->successful() && $response->header('Content-Type') === 'image/png') {
+                        // Store the QR code
+                        Storage::put('public/' . $path, $response->body());
+                        $success = true;
+                        return $path;
+                    }
+
+                    Log::warning('QR code generation attempt failed', [
+                        'attempt' => $retryCount + 1,
+                        'status' => $response->status(),
+                        'content_type' => $response->header('Content-Type'),
+                        'token' => $token,
+                        'name' => $name
+                    ]);
+
+                    $retryCount++;
+                    if ($retryCount < $maxRetries) {
+                        sleep(1); // Wait 1 second before retrying
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('QR code generation attempt failed with exception', [
+                        'attempt' => $retryCount + 1,
+                        'error' => $e->getMessage(),
+                        'token' => $token,
+                        'name' => $name
+                    ]);
+                    $retryCount++;
+                    if ($retryCount < $maxRetries) {
+                        sleep(1); // Wait 1 second before retrying
+                    }
+                }
             }
 
-            Log::error('QR code generation failed', [
-                'token' => $token,
-                'name' => $name,
-                'event' => $eventName,
-                'response_status' => $response->status(),
-                'response_body' => $response->body(),
-                'qr_code_url' => $qrCodeUrl
-            ]);
+            if (!$success) {
+                Log::error('QR code generation failed after all retries', [
+                    'token' => $token,
+                    'name' => $name,
+                    'event' => $eventName,
+                    'qr_code_url' => $qrCodeUrl
+                ]);
 
-            throw new \RuntimeException('Failed to generate QR code: ' . $response->status());
+                throw new \RuntimeException('Failed to generate QR code after ' . $maxRetries . ' attempts');
+            }
+
         } catch (\Exception $e) {
             Log::error('QR code generation error', [
                 'error' => $e->getMessage(),
