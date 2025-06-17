@@ -177,19 +177,25 @@ class BulkUploadController extends Controller
                         'email' => $record['email'] ?? null,
                         'phone' => $record['phone'],
                         'position' => $record['position'] ?? null,
-                        'token' => str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT),
+                        'token' => Str::random(32), // Generate a unique token
                         'bulk_upload_id' => $bulkUpload->id,
                     ]);
+
+                    // Generate ticket number
+                    $ticketNumber = Ticket::generateTicketNumber();
 
                     // Generate QR code
                     $qrCode = $this->qrCodeService->generateForAttendee($attendee);
 
-                    // Create ticket
-                    Ticket::create([
+                    // Create ticket with all required fields
+                    $ticket = Ticket::create([
                         'event_id' => $event->id,
                         'attendee_id' => $attendee->id,
-                        'qr_code' => $qrCode,
+                        'type' => $record['ticket_type'] ?? 'regular',
                         'status' => 'active',
+                        'ticket_number' => $ticketNumber,
+                        'qr_code' => $qrCode,
+                        'token' => $attendee->token
                     ]);
 
                     DB::commit();
@@ -198,6 +204,8 @@ class BulkUploadController extends Controller
                         'bulk_upload_id' => $bulkUpload->id,
                         'record_index' => $index + 1,
                         'attendee_id' => $attendee->id,
+                        'ticket_id' => $ticket->id,
+                        'ticket_number' => $ticketNumber,
                         'timestamp' => now()->toDateTimeString()
                     ]);
 
