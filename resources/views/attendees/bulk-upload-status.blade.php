@@ -42,71 +42,55 @@
 
                                             <dt class="col-sm-4 text-muted">Upload Date</dt>
                                             <dd class="col-sm-8">{{ $bulkUpload->created_at->format('M d, Y H:i:s') }}</dd>
-                                        </dl>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div class="col-md-6">
-                                <div class="card bg-light">
-                                    <div class="card-body">
-                                        <h6 class="fw-semibold mb-3">Processing Status</h6>
-                                        <dl class="row mb-0">
                                             <dt class="col-sm-4 text-muted">Status</dt>
                                             <dd class="col-sm-8">
-                                                <span class="badge bg-{{ $bulkUpload->status === 'completed' ? 'success' : ($bulkUpload->status === 'failed' ? 'danger' : ($bulkUpload->status === 'processing' ? 'warning' : 'secondary')) }}">
+                                                <span class="badge bg-{{ $bulkUpload->status === 'completed' ? 'success' : 'danger' }}">
                                                     {{ ucfirst($bulkUpload->status) }}
                                                 </span>
                                             </dd>
-
-                                            <dt class="col-sm-4 text-muted">Total Records</dt>
-                                            <dd class="col-sm-8">{{ $bulkUpload->total_records }}</dd>
-
-                                            <dt class="col-sm-4 text-muted">Processed</dt>
-                                            <dd class="col-sm-8">{{ $bulkUpload->processed_records }}</dd>
-
-                                            <dt class="col-sm-4 text-muted">Failed</dt>
-                                            <dd class="col-sm-8">{{ $bulkUpload->failed_records }}</dd>
                                         </dl>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        @if($bulkUpload->error_message)
+                        @if($bulkUpload->error_log)
                             <div class="alert alert-danger mt-4">
-                                <h6 class="alert-heading mb-2">Errors</h6>
-                                <pre class="mb-0 text-danger">{{ $bulkUpload->error_message }}</pre>
-                            </div>
-                        @endif
-
-                        @if($bulkUpload->status === 'completed' && $bulkUpload->attendees->isNotEmpty())
-                            <div class="mt-4">
-                                <h6 class="fw-semibold mb-3">Uploaded Attendees</h6>
+                                <h6 class="alert-heading mb-2">Errors Found</h6>
                                 <div class="table-responsive">
-                                    <table class="table table-hover align-middle">
-                                        <thead class="table-light">
+                                    <table class="table table-sm mb-0">
+                                        <thead>
                                             <tr>
-                                                <th>Name</th>
-                                                <th>Email</th>
-                                                <th>Phone</th>
-                                                <th>Position</th>
-                                                <th>Token</th>
+                                                <th>Row</th>
+                                                <th>Error</th>
+                                                <th>Data</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            @foreach($bulkUpload->attendees as $attendee)
+                                            @foreach(json_decode($bulkUpload->error_log, true) as $error)
                                                 <tr>
-                                                    <td>{{ $attendee->name }}</td>
-                                                    <td>{{ $attendee->email }}</td>
-                                                    <td>{{ $attendee->phone ?? '-' }}</td>
-                                                    <td>{{ $attendee->position ?? '-' }}</td>
-                                                    <td><code>{{ $attendee->token }}</code></td>
+                                                    <td>{{ $error['row'] }}</td>
+                                                    <td>{{ $error['error'] }}</td>
+                                                    <td>
+                                                        <small class="text-muted">
+                                                            @foreach($error['data'] as $key => $value)
+                                                                <strong>{{ $key }}:</strong> {{ $value }}<br>
+                                                            @endforeach
+                                                        </small>
+                                                    </td>
                                                 </tr>
                                             @endforeach
                                         </tbody>
                                     </table>
                                 </div>
+                            </div>
+                        @endif
+
+                        @if($bulkUpload->status === 'completed')
+                            <div class="alert alert-success mt-4">
+                                <i class="bi bi-check-circle me-2"></i>
+                                All attendees were successfully uploaded.
                             </div>
                         @endif
                     </div>

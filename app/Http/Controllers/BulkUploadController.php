@@ -145,28 +145,10 @@ class BulkUploadController extends Controller
             $extension = pathinfo($path, PATHINFO_EXTENSION);
             $records = $this->getRecordsFromFile($path, $extension);
             $totalRecords = count($records);
-            
-            Log::info('File records loaded', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'total_records' => $totalRecords,
-                'file_type' => $extension,
-                'timestamp' => now()->toDateTimeString()
-            ]);
-
-            $processed = 0;
-            $failed = 0;
             $errors = [];
 
             foreach ($records as $index => $record) {
                 try {
-                    Log::info('Processing record', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'record_index' => $index + 1,
-                        'total_records' => $totalRecords,
-                        'record_data' => $record,
-                        'timestamp' => now()->toDateTimeString()
-                    ]);
-
                     // Validate required fields
                     if (empty($record['name']) || empty($record['phone'])) {
                         throw new \Exception('Name and phone are required fields');
@@ -175,11 +157,6 @@ class BulkUploadController extends Controller
                     // Set default email if none provided
                     if (empty($record['email'])) {
                         $record['email'] = 'admin@gmail.com';
-                        Log::info('Default email set for record', [
-                            'bulk_upload_id' => $bulkUpload->id,
-                            'record_index' => $index + 1,
-                            'email' => $record['email']
-                        ]);
                     }
 
                     // Validate email format
@@ -203,12 +180,6 @@ class BulkUploadController extends Controller
                         $token = str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT);
                     } while (Attendee::where('token', $token)->exists());
 
-                    Log::info('Token generated for record', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'record_index' => $index + 1,
-                        'token' => $token
-                    ]);
-
                     // Generate QR code
                     $checkInUrl = route('scanner.check-in', ['token' => $token], true);
                     $qrCode = QrCode::format('png')
@@ -223,12 +194,6 @@ class BulkUploadController extends Controller
                     $qrPath = 'qr-codes/' . $sanitizedName . '-' . $token . '.png';
                     Storage::disk('public')->put($qrPath, $qrCode);
 
-                    Log::info('QR code generated and stored', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'record_index' => $index + 1,
-                        'qr_path' => $qrPath
-                    ]);
-
                     // Create attendee
                     $attendee = Attendee::create([
                         'event_id' => $event->id,
@@ -242,13 +207,6 @@ class BulkUploadController extends Controller
                         'registered_at' => now()
                     ]);
 
-                    Log::info('Attendee created', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'record_index' => $index + 1,
-                        'attendee_id' => $attendee->id,
-                        'name' => $attendee->name
-                    ]);
-
                     // Create ticket
                     $ticketNumber = 'TICKET-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
                     $ticket = Ticket::create([
@@ -260,26 +218,10 @@ class BulkUploadController extends Controller
                         'token' => $token
                     ]);
 
-                    Log::info('Ticket created', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'record_index' => $index + 1,
-                        'ticket_id' => $ticket->id,
-                        'ticket_number' => $ticketNumber
-                    ]);
-
                     DB::commit();
-                    $processed++;
-
-                    Log::info('Record processed successfully', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'record_index' => $index + 1,
-                        'attendee_id' => $attendee->id,
-                        'ticket_id' => $ticket->id
-                    ]);
 
                 } catch (\Exception $e) {
                     DB::rollBack();
-                    $failed++;
                     $errors[] = [
                         'row' => $index + 2,
                         'error' => $e->getMessage(),
@@ -294,49 +236,17 @@ class BulkUploadController extends Controller
                         'timestamp' => now()->toDateTimeString()
                     ]);
                 }
-
-                // Update progress
-                $progress = ($processed + $failed) / $totalRecords * 100;
-                $bulkUpload->update([
-                    'progress' => $progress,
-                    'processed_records' => $processed,
-                    'failed_records' => $failed,
-                    'error_log' => json_encode($errors),
-                    'status' => ($processed + $failed) === $totalRecords ? 'completed' : 'processing'
-                ]);
-
-                Log::info('Progress updated', [
-                    'bulk_upload_id' => $bulkUpload->id,
-                    'progress' => $progress,
-                    'processed' => $processed,
-                    'failed' => $failed,
-                    'timestamp' => now()->toDateTimeString()
-                ]);
             }
 
-            // Final status update
+            // Update final status
             $bulkUpload->update([
-                'status' => $failed === $totalRecords ? 'failed' : 'completed',
+                'status' => empty($errors) ? 'completed' : 'failed',
+                'error_log' => json_encode($errors),
                 'completed_at' => now()
-            ]);
-
-            Log::info('Bulk upload completed', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'total_records' => $totalRecords,
-                'processed' => $processed,
-                'failed' => $failed,
-                'final_status' => $bulkUpload->status,
-                'timestamp' => now()->toDateTimeString()
             ]);
 
             // Clean up the uploaded file
             Storage::delete($path);
-            
-            Log::info('Temporary file cleaned up', [
-                'bulk_upload_id' => $bulkUpload->id,
-                'file_path' => $path,
-                'timestamp' => now()->toDateTimeString()
-            ]);
 
         } catch (\Exception $e) {
             Log::error('Bulk upload processing failed', [
