@@ -92,7 +92,7 @@ Route::middleware('auth')->group(function () {
                 Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
                 
                 // Event tickets management
-                Route::prefix('{event}/tickets')->name('events.tickets.')->group(function () {
+                Route::prefix('{event}/tickets')->name('tickets.')->group(function () {
                     Route::get('/', [TicketController::class, 'index'])->name('index');
                     Route::get('/data', [TicketController::class, 'getTicketsData'])->name('data');
                     Route::get('/create/{attendee}', [TicketController::class, 'create'])->name('create');
@@ -110,7 +110,7 @@ Route::middleware('auth')->group(function () {
                 Route::put('/{event}/scanners/{scanner}', [EventController::class, 'updateScanner'])->name('scanners.update');
 
                 // Event attendees management
-                Route::prefix('{event}/attendees')->name('events.attendees.')->group(function () {
+                Route::prefix('{event}/attendees')->name('attendees.')->group(function () {
                     Route::get('/', [AttendeeController::class, 'index'])->name('index');
                     Route::get('/create', [AttendeeController::class, 'create'])->name('create');
                     Route::post('/', [AttendeeController::class, 'store'])->name('store');
