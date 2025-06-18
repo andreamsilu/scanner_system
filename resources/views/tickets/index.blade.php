@@ -107,7 +107,7 @@
                                 </td>
                                 <td class="py-2 text-end">
                                     <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('events.events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" 
+                                        <a href="{{ route('events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" 
                                            class="btn btn-outline-info" 
                                            title="View Details">
                                             <i class="bi bi-eye"></i>
@@ -115,7 +115,7 @@
                                         <button type="button"
                                                 class="btn btn-outline-primary"
                                                 title="Print Ticket"
-                                                onclick="printTicket('{{ route('events.events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
+                                                onclick="printTicket('{{ route('events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
                                             <i class="bi bi-printer"></i>
                                         </button>
                                         @if($ticket->attendee && $ticket->attendee->phone)
@@ -158,7 +158,7 @@
                                             </li>
                                             <li><hr class="dropdown-divider"></li>
                                             <li>
-                                                <a class="dropdown-item" href="{{ route('events.events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
+                                                <a class="dropdown-item" href="{{ route('events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
                                                     <i class="bi bi-file-pdf me-2"></i> Download PDF
                                                 </a>
                                             </li>
