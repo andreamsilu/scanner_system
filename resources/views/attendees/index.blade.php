@@ -9,11 +9,14 @@
     >
         <x-slot name="actions">
             <div class="d-flex gap-2">
+                <a href="{{ route('events.attendees.template') }}" class="btn btn-success">
+                    <i class="bi bi-file-excel me-2"></i>Download Template
+                </a>
                 <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
                     <i class="bi bi-person-plus me-2"></i>Add Attendee
                 </a>
                 @role('admin')
-                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
+                <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
                     <i class="bi bi-upload me-2"></i>Bulk Upload
                 </button>
                 @endrole
