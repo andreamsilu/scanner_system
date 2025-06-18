@@ -268,17 +268,27 @@ class BulkUploadController extends Controller
     /**
      * Show upload status
      */
-    public function status(BulkUpload $bulkUpload): View
+    public function status(Event $event, BulkUpload $bulkUpload): View
     {
+        // Ensure the bulk upload belongs to the event
+        if ($bulkUpload->event_id !== $event->id) {
+            abort(404);
+        }
+
         $bulkUpload->load(['event', 'user', 'attendees']);
-        return view('attendees.bulk-upload-status', compact('bulkUpload'));
+        return view('attendees.bulk-upload-status', compact('bulkUpload', 'event'));
     }
 
     /**
      * Get current upload status
      */
-    public function getStatus(BulkUpload $bulkUpload)
+    public function getStatus(Event $event, BulkUpload $bulkUpload)
     {
+        // Ensure the bulk upload belongs to the event
+        if ($bulkUpload->event_id !== $event->id) {
+            abort(404);
+        }
+
         return response()->json([
             'status' => $bulkUpload->status,
             'message' => $this->getStatusMessage($bulkUpload),

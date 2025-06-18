@@ -128,7 +128,7 @@ Route::middleware('auth')->group(function () {
                         Route::post('/', [BulkUploadController::class, 'store'])->name('store');
                         Route::get('/{bulkUpload}/status', [BulkUploadController::class, 'status'])->name('status');
                         Route::get('/{bulkUpload}/status/get', [BulkUploadController::class, 'getStatus'])->name('status.get');
-                    });
+                    })->where('bulkUpload', '[0-9]+');
                 });
             });
             
