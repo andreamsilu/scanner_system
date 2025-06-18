@@ -181,6 +181,15 @@ class BulkUploadController extends Controller
                         throw new \Exception('Invalid ticket type. Must be one of: ' . implode(', ', $validTicketTypes));
                     }
 
+                    // Check for duplicate phone number
+                    $existingAttendee = $event->attendees()
+                        ->where('phone', $record['phone'])
+                        ->first();
+
+                    if ($existingAttendee) {
+                        throw new \Exception('Duplicate phone number: ' . $record['phone'] . ' (Attendee: ' . $existingAttendee->name . ')');
+                    }
+
                     // Create attendee
                     $attendee = Attendee::create([
                         'event_id' => $event->id,
