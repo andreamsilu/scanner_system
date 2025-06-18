@@ -4,10 +4,16 @@
         :breadcrumbs="['Events' => route('events.index'), $event->name => route('events.show', $event), 'Attendees' => null]"
     >
         <x-slot name="actions">
+            <a href="{{ route('events.attendees.template') }}" class="btn btn-success me-2">
+                <i class="bi bi-file-excel me-2"></i>Download Template
+            </a>
             <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
                 <i class="bi bi-person-plus me-2"></i>Add Attendee
             </a>
-            <a href="{{ route('events.attendees.export', $event) }}" class="btn btn-info">
+            <a href="{{ route('events.attendees.bulk-upload', $event) }}" class="btn btn-info me-2">
+                <i class="bi bi-upload me-2"></i>Bulk Upload
+            </a>
+            <a href="{{ route('events.attendees.export', $event) }}" class="btn btn-warning">
                 <i class="bi bi-file-excel me-2"></i>Export Attendees
             </a>
         </x-slot>
