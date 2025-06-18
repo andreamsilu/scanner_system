@@ -4,10 +4,13 @@
         :breadcrumbs="['Events' => route('events.index'), $event->name => route('events.show', $event), 'Attendees' => null]"
     >
         <x-slot name="actions">
-            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">
+            <a href="{{ route('events.attendees.template') }}" class="btn btn-success me-2">
+                <i class="bi bi-file-excel me-2"></i>Download Template
+            </a>
+            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
                 <i class="bi bi-person-plus me-2"></i>Add Attendee
             </a>
-            <a href="{{ route('events.attendees.export', $event) }}" class="btn btn-success">
+            <a href="{{ route('events.attendees.export', $event) }}" class="btn btn-info">
                 <i class="bi bi-file-excel me-2"></i>Export Attendees
             </a>
         </x-slot>
@@ -116,15 +119,23 @@
                                     </div>
 
                                     <!-- Delete Modal -->
-                                    <div class="modal fade" id="deleteAttendeeModal{{ $attendee->id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal fade" id="deleteAttendeeModal{{ $attendee->id }}" tabindex="-1">
                                         <div class="modal-dialog">
                                             <div class="modal-content">
                                                 <div class="modal-header">
                                                     <h5 class="modal-title">Delete Attendee</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <div class="modal-body">
                                                     <p>Are you sure you want to delete this attendee? This action cannot be undone.</p>
+                                                    <dl class="row mb-0">
+                                                        <dt class="col-sm-3">Name:</dt>
+                                                        <dd class="col-sm-9">{{ $attendee->name }}</dd>
+                                                        <dt class="col-sm-3">Email:</dt>
+                                                        <dd class="col-sm-9">{{ $attendee->email }}</dd>
+                                                        <dt class="col-sm-3">Phone:</dt>
+                                                        <dd class="col-sm-9">{{ $attendee->phone }}</dd>
+                                                    </dl>
                                                 </div>
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
@@ -143,8 +154,8 @@
                             <tr>
                                 <td colspan="7" class="text-center py-4">
                                     <div class="text-muted">
-                                        <i class="bi bi-people fs-1 d-block mb-2"></i>
-                                        No attendees found for this event.
+                                        <i class="bi bi-people fa-3x mb-3"></i>
+                                        <p class="mb-0">No attendees found</p>
                                     </div>
                                 </td>
                             </tr>
