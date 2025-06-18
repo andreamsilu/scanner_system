@@ -188,7 +188,6 @@ class BulkUploadController extends Controller
                         'email' => $record['email'] ?? null,
                         'phone' => $record['phone'],
                         'position' => $record['position'] ?? null,
-                        'token' => Str::random(32), // Generate a unique token
                         'bulk_upload_id' => $bulkUpload->id,
                     ]);
 
