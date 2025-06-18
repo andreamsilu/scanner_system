@@ -332,7 +332,7 @@
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ route('events.events.tickets.index', $event) }}" class="btn btn-outline-success w-100">
+                            <a href="{{ route('events.tickets.index', $event) }}" class="btn btn-outline-success w-100">
                                 <i class="bi bi-ticket-perforated me-2"></i>Manage Tickets
                             </a>
                         </div>
