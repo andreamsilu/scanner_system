@@ -41,11 +41,11 @@ class BulkUploadController extends Controller
     public function downloadTemplate()
     {
         $headers = [
-            'name',
-            'email',
-            'phone',
-            'position',
-            'ticket_type'
+            'name (required)',
+            'email (optional)',
+            'phone (required)',
+            'position (optional)',
+            'ticket_type (required)'
         ];
 
         $data = [
@@ -62,6 +62,13 @@ class BulkUploadController extends Controller
                 '0987654321',
                 'Director',
                 'vip'
+            ],
+            [
+                'Bob Wilson',
+                '', // Empty email to show it's optional
+                '5551234567',
+                '', // Empty position to show it's optional
+                'single'
             ]
         ];
 
