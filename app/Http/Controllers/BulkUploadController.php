@@ -7,6 +7,8 @@ use App\Models\Event;
 use App\Models\Attendee;
 use App\Models\Ticket;
 use App\Services\QRCodeService;
+use App\Services\SmsService;
+use App\Jobs\SendSingleSms;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -17,14 +19,18 @@ use Illuminate\Support\Facades\Log;
 use Endroid\QrCode\QrCode;
 use Maatwebsite\Excel\Excel;
 use App\Exports\AttendeeTemplateExport;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Facades\Validator;
 
 class BulkUploadController extends Controller
 {
     protected $qrCodeService;
+    protected $smsService;
 
-    public function __construct(QRCodeService $qrCodeService)
+    public function __construct(QRCodeService $qrCodeService, SmsService $smsService)
     {
         $this->qrCodeService = $qrCodeService;
+        $this->smsService = $smsService;
     }
 
     /**
@@ -266,6 +272,54 @@ class BulkUploadController extends Controller
                         'token' => $attendee->token
                     ]);
 
+                    // Send SMS invitation if attendee has a phone number
+                    if ($attendee->phone) {
+                        try {
+                            // Dispatch SMS job to avoid blocking the response
+                            SendSingleSms::dispatch(
+                                $attendee->phone,
+                                $this->formatInvitationMessage($event, $ticket),
+                                'invitation',
+                                [
+                                    'event_id' => $event->id,
+                                    'attendee_id' => $attendee->id,
+                                    'ticket_id' => $ticket->id,
+                                    'attendee_name' => $attendee->name,
+                                    'attendee_phone' => $attendee->phone,
+                                    'ticket_number' => $ticket->ticket_number,
+                                    'ticket_type' => $ticket->type,
+                                    'event_name' => $event->name,
+                                    'event_date' => $event->date ? \Carbon\Carbon::parse($event->date)->toDateTimeString() : null,
+                                    'location' => $event->location,
+                                    'venue' => $event->venue,
+                                    'bulk_upload_id' => $bulkUpload->id
+                                ]
+                            );
+
+                            Log::info('Invitation SMS job dispatched for bulk upload', [
+                                'bulk_upload_id' => $bulkUpload->id,
+                                'attendee_id' => $attendee->id,
+                                'ticket_id' => $ticket->id,
+                                'phone' => $attendee->phone
+                            ]);
+                        } catch (\Exception $smsException) {
+                            Log::error('Failed to dispatch invitation SMS for bulk upload', [
+                                'bulk_upload_id' => $bulkUpload->id,
+                                'attendee_id' => $attendee->id,
+                                'ticket_id' => $ticket->id,
+                                'phone' => $attendee->phone,
+                                'error' => $smsException->getMessage()
+                            ]);
+                            // Don't fail the bulk upload if SMS fails
+                        }
+                    } else {
+                        Log::info('No phone number available for SMS invitation during bulk upload', [
+                            'bulk_upload_id' => $bulkUpload->id,
+                            'attendee_id' => $attendee->id,
+                            'ticket_id' => $ticket->id
+                        ]);
+                    }
+
                     DB::commit();
 
                     Log::info('Record processed successfully', [
@@ -408,5 +462,38 @@ class BulkUploadController extends Controller
         }
 
         return $records;
+    }
+
+    /**
+     * Format an invitation message for SMS
+     *
+     * @param Event $event The event
+     * @param Ticket $ticket The ticket
+     * @return string Formatted message
+     */
+    protected function formatInvitationMessage(Event $event, Ticket $ticket): string
+    {
+        $attendee = $ticket->attendee;
+        $eventDate = $event->date ? \Carbon\Carbon::parse($event->date) : null;
+        
+        if ($eventDate) {
+            $dayName = $eventDate->locale('sw')->isoFormat('dddd');
+            $formattedTime = $eventDate->format('g:i');
+            $period = $eventDate->format('A');
+            $dateString = $dayName . ' ' . $eventDate->toLocaleDateString('en-GB') . ' saa ' . $formattedTime . ' ' . $period;
+        } else {
+            $dateString = 'tarehe itakayotangazwa';
+        }
+
+        return sprintf(
+            "Ndugu %s, unakaribishwa kwenye %s itakayofanyika %s. Mahali: %s. Ukumbi: %s. Tiketi: %s (%s). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824",
+            $attendee->name,
+            $event->name,
+            $dateString,
+            $event->location,
+            $event->venue,
+            $ticket->ticket_number,
+            ucfirst($ticket->type)
+        );
     }
 } 

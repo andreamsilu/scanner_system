@@ -213,12 +213,15 @@ Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.man
 // Temporary SMS Test Route
 Route::get('/test-sms-send', function() {
     try {
-        $smsService = app(App\Services\NextSmsService::class);
-        $phone = '+255754289824'; // Format the number with country code
-        $message = 'Test message from Scannable Event System at ' . now()->format('Y-m-d H:i:s');
+        $phone = '+255123456789'; // Test phone number
+        $message = 'Test SMS from Scannable Event System - ' . now()->format('Y-m-d H:i:s');
         
-        $result = $smsService->send($phone, $message);
-        
+        $smsService = app(App\Services\SmsService::class);
+        $result = $smsService->send($phone, $message, 'test', [
+            'test' => true,
+            'timestamp' => now()->toIso8601String()
+        ]);
+
         return response()->json([
             'success' => true,
             'message' => 'Test SMS sent',
@@ -228,6 +231,37 @@ Route::get('/test-sms-send', function() {
         return response()->json([
             'success' => false,
             'message' => 'Failed to send SMS',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+});
+
+// Test SMS Job Route
+Route::get('/test-sms-job', function() {
+    try {
+        $phone = '+255123456789'; // Test phone number
+        $message = 'Test SMS Job from Scannable Event System - ' . now()->format('Y-m-d H:i:s');
+        
+        App\Jobs\SendSingleSms::dispatch(
+            $phone,
+            $message,
+            'test',
+            [
+                'test' => true,
+                'timestamp' => now()->toIso8601String()
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'SMS job dispatched successfully',
+            'phone' => $phone,
+            'message_content' => $message
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Failed to dispatch SMS job',
             'error' => $e->getMessage()
         ], 500);
     }

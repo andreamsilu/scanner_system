@@ -16,6 +16,11 @@ use App\Models\Attendee;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use App\Services\SmsService;
+use App\Jobs\SendSingleSms;
+use App\Models\Ticket;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 class ScannerController extends Controller
 {
@@ -559,31 +564,40 @@ class ScannerController extends Controller
             // Send SMS notification if attendee has a phone number - outside transaction
             if ($attendee->phone) {
                 try {
-                    $message = "Dear {$attendee->name}, your ticket for {$attendee->event->name} has been used at {$now->format('M d, Y h:i A')}. Thank you for attending!";
-                    
-                    $this->smsService->send(
+                    // Dispatch SMS job to avoid blocking the response
+                    SendSingleSms::dispatch(
                         $attendee->phone,
-                        $message,
-                        'notification',
+                        $this->formatTicketUsageMessage($attendee->event, $attendee->ticket, 'Main Gate'),
+                        'ticket_used',
                         [
+                            'event_id' => $attendee->event_id,
                             'attendee_id' => $attendee->id,
                             'ticket_id' => $attendee->ticket->id,
-                            'event_id' => $attendee->event_id,
                             'attendee_name' => $attendee->name,
-                            'attendee_phone' => $attendee->phone
+                            'attendee_phone' => $attendee->phone,
+                            'ticket_number' => $attendee->ticket->ticket_number,
+                            'ticket_type' => $attendee->ticket->type,
+                            'event_name' => $attendee->event->name,
+                            'entry_point' => 'Main Gate',
+                            'scanned_at' => $now->toDateTimeString(),
+                            'scanner_id' => $user->id,
+                            'validation_type' => $validationType
                         ]
                     );
 
-                    Log::info("SMS sent for {$validationType} check-in", [
+                    Log::info("SMS job dispatched for {$validationType} check-in", [
                         'attendee_id' => $attendee->id,
                         'phone' => $attendee->phone,
-                        'event' => $attendee->event->name
+                        'event' => $attendee->event->name,
+                        'ticket_id' => $attendee->ticket->id
                     ]);
                 } catch (\Exception $e) {
                     // Log SMS error but don't affect the check-in status
-                    Log::error("Failed to send SMS for {$validationType} check-in", [
+                    Log::error("Failed to dispatch SMS job for {$validationType} check-in", [
                         'attendee_id' => $attendee->id,
-                        'error' => $e->getMessage()
+                        'phone' => $attendee->phone,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
                     ]);
                 }
             }
@@ -1221,5 +1235,28 @@ class ScannerController extends Controller
                 'end_date' => $event->end_date->format('M d, Y')
             ]
         ]);
+    }
+
+    /**
+     * Format a ticket usage notification message
+     *
+     * @param Event $event The event
+     * @param Ticket $ticket The ticket
+     * @param string $entryPoint The entry point
+     * @return string Formatted message
+     */
+    protected function formatTicketUsageMessage(Event $event, Ticket $ticket, string $entryPoint): string
+    {
+        $attendee = $ticket->attendee;
+        $scannedTime = now()->format('g:i A');
+
+        return sprintf(
+            "Ndugu %s, tiketi yako ya %s imethibitishwa na kuingia kupitia %s saa %s. Asante kwa kuhudhuria %s. Karibu tena!",
+            $attendee->name,
+            $event->name,
+            $entryPoint,
+            $scannedTime,
+            $event->name
+        );
     }
 } 

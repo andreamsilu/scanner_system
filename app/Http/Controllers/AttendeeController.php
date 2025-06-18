@@ -16,9 +16,31 @@ use App\Models\ScanLog;
 use Illuminate\Support\Facades\Storage;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Http\JsonResponse;
+use App\Services\SmsService;
+use App\Jobs\SendSingleSms;
+use Illuminate\Validation\Rule;
+use App\Exports\AttendeeTemplateExport;
+use App\Exports\UsersExport;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Str;
 
 class AttendeeController extends Controller
 {
+    /**
+     * The SMS service instance
+     *
+     * @var SmsService
+     */
+    protected SmsService $smsService;
+
+    /**
+     * Create a new controller instance
+     */
+    public function __construct(SmsService $smsService)
+    {
+        $this->smsService = $smsService;
+    }
+
     /**
      * Display a listing of the attendees.
      */
@@ -214,6 +236,50 @@ class AttendeeController extends Controller
                     'ticket_id' => $ticket->id,
                     'event_id' => $event->id
                 ]);
+
+                // Send invitation SMS if attendee has a phone number
+                if ($attendee->phone) {
+                    try {
+                        // Dispatch SMS job to avoid blocking the response
+                        SendSingleSms::dispatch(
+                            $attendee->phone,
+                            $this->formatInvitationMessage($event, $ticket),
+                            'invitation',
+                            [
+                                'event_id' => $event->id,
+                                'attendee_id' => $attendee->id,
+                                'ticket_id' => $ticket->id,
+                                'attendee_name' => $attendee->name,
+                                'attendee_phone' => $attendee->phone,
+                                'ticket_number' => $ticket->ticket_number,
+                                'ticket_type' => $ticket->type,
+                                'event_name' => $event->name,
+                                'event_date' => $event->date ? \Carbon\Carbon::parse($event->date)->toDateTimeString() : null,
+                                'location' => $event->location,
+                                'venue' => $event->venue
+                            ]
+                        );
+
+                        Log::info('Invitation SMS job dispatched for attendee registration', [
+                            'attendee_id' => $attendee->id,
+                            'ticket_id' => $ticket->id,
+                            'phone' => $attendee->phone
+                        ]);
+                    } catch (\Exception $smsException) {
+                        Log::error('Failed to dispatch invitation SMS for attendee registration', [
+                            'attendee_id' => $attendee->id,
+                            'ticket_id' => $ticket->id,
+                            'phone' => $attendee->phone,
+                            'error' => $smsException->getMessage()
+                        ]);
+                        // Don't fail the attendee registration if SMS fails
+                    }
+                } else {
+                    Log::info('No phone number available for SMS invitation during attendee registration', [
+                        'attendee_id' => $attendee->id,
+                        'ticket_id' => $ticket->id
+                    ]);
+                }
             }
 
             DB::commit();
@@ -624,16 +690,13 @@ class AttendeeController extends Controller
         try {
             DB::beginTransaction();
 
-            if ($attendee->registration_status === 'checked_in') {
-                throw new \Exception('Cannot cancel a checked-in attendee.');
-            }
-
+            // Update registration status to cancelled
             $attendee->update([
                 'registration_status' => 'cancelled',
                 'cancelled_at' => now()
             ]);
 
-            // If there's an associated ticket, update its status
+            // If attendee has a ticket, cancel it too
             if ($attendee->ticket) {
                 $attendee->ticket->update([
                     'status' => 'cancelled',
@@ -645,7 +708,7 @@ class AttendeeController extends Controller
 
             return redirect()
                 ->route('events.attendees.index', $event)
-                ->with('success', 'Registration cancelled successfully.');
+                ->with('success', 'Attendee registration cancelled successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Attendee cancellation failed', [
@@ -654,7 +717,40 @@ class AttendeeController extends Controller
                 'event_id' => $event->id
             ]);
 
-            return back()->with('error', $e->getMessage());
+            return back()->with('error', 'Failed to cancel attendee registration. Please try again.');
         }
+    }
+
+    /**
+     * Format an invitation message for SMS
+     *
+     * @param Event $event The event
+     * @param Ticket $ticket The ticket
+     * @return string Formatted message
+     */
+    protected function formatInvitationMessage(Event $event, Ticket $ticket): string
+    {
+        $attendee = $ticket->attendee;
+        $eventDate = $event->date ? \Carbon\Carbon::parse($event->date) : null;
+        
+        if ($eventDate) {
+            $dayName = $eventDate->locale('sw')->isoFormat('dddd');
+            $formattedTime = $eventDate->format('g:i');
+            $period = $eventDate->format('A');
+            $dateString = $dayName . ' ' . $eventDate->toLocaleDateString('en-GB') . ' saa ' . $formattedTime . ' ' . $period;
+        } else {
+            $dateString = 'tarehe itakayotangazwa';
+        }
+
+        return sprintf(
+            "Ndugu %s, unakaribishwa kwenye %s itakayofanyika %s. Mahali: %s. Ukumbi: %s. Tiketi: %s (%s). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824",
+            $attendee->name,
+            $event->name,
+            $dateString,
+            $event->location,
+            $event->venue,
+            $ticket->ticket_number,
+            ucfirst($ticket->type)
+        );
     }
 } 

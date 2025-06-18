@@ -7,6 +7,8 @@ use App\Models\ScanLog;
 use App\Models\Ticket;
 use App\Models\Event;
 use App\Models\Scan;
+use App\Services\SmsService;
+use App\Jobs\SendSingleSms;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -15,6 +17,21 @@ use Illuminate\Support\Facades\Auth;
 
 class ScanController extends Controller
 {
+    /**
+     * The SMS service instance
+     *
+     * @var SmsService
+     */
+    protected SmsService $smsService;
+
+    /**
+     * Create a new controller instance
+     */
+    public function __construct(SmsService $smsService)
+    {
+        $this->smsService = $smsService;
+    }
+
     /**
      * Handle QR code scan and check-in
      */
@@ -126,6 +143,47 @@ class ScanController extends Controller
             ]);
 
             DB::commit();
+
+            // Send SMS notification if attendee has a phone number - outside transaction
+            if ($attendee->phone) {
+                try {
+                    // Dispatch SMS job to avoid blocking the response
+                    SendSingleSms::dispatch(
+                        $attendee->phone,
+                        $this->formatTicketUsageMessage($attendee->event, $attendee->ticket, 'QR Scan'),
+                        'ticket_used',
+                        [
+                            'event_id' => $attendee->event_id,
+                            'attendee_id' => $attendee->id,
+                            'ticket_id' => $attendee->ticket->id,
+                            'attendee_name' => $attendee->name,
+                            'attendee_phone' => $attendee->phone,
+                            'ticket_number' => $attendee->ticket->ticket_number,
+                            'ticket_type' => $attendee->ticket->type,
+                            'event_name' => $attendee->event->name,
+                            'entry_point' => 'QR Scan',
+                            'scanned_at' => now()->toDateTimeString(),
+                            'scanner_id' => auth()->id(),
+                            'validation_type' => 'qr_scan'
+                        ]
+                    );
+
+                    Log::info("SMS job dispatched for QR scan check-in", [
+                        'attendee_id' => $attendee->id,
+                        'phone' => $attendee->phone,
+                        'event' => $attendee->event->name,
+                        'ticket_id' => $attendee->ticket->id
+                    ]);
+                } catch (\Exception $e) {
+                    // Log SMS error but don't affect the check-in status
+                    Log::error("Failed to dispatch SMS job for QR scan check-in", [
+                        'attendee_id' => $attendee->id,
+                        'phone' => $attendee->phone,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
+            }
 
             // Log the successful check-in
             Log::info('Attendee checked in via QR code', [
@@ -282,7 +340,7 @@ class ScanController extends Controller
      * Validate an attendee token manually
      *
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     * @return \Illuminate\Http\JsonResponse
      */
     public function validateToken(Request $request)
     {
@@ -322,53 +380,96 @@ class ScanController extends Controller
         }
 
         // Update ticket status
-        if ($attendee->ticket) {
-            $now = now();
-            $attendee->ticket->update([
-                'status' => 'used',
-                'checked_in_at' => $now,
-                'checked_in_by' => $scanner->id
-            ]);
+        $attendee->ticket->update([
+            'status' => 'used',
+            'used_at' => now()
+        ]);
 
-            // Update attendee registration status
-            $attendee->update([
-                'registration_status' => 'checked_in',
-                'checked_in_at' => $now
-            ]);
+        // Create scan log
+        ScanLog::create([
+            'ticket_id' => $attendee->ticket->id,
+            'scanner_id' => $scanner->id,
+            'status' => 'success',
+            'notes' => 'Manual token validation'
+        ]);
 
-            // Log the successful scan
-            ScanLog::create([
-                'scanner_id' => $scanner->id,
-                'ticket_id' => $attendee->ticket->id,
-                'status' => 'success',
-                'notes' => 'Manual token validation'
-            ]);
+        // Send SMS notification if attendee has a phone number
+        if ($attendee->phone) {
+            try {
+                // Dispatch SMS job to avoid blocking the response
+                SendSingleSms::dispatch(
+                    $attendee->phone,
+                    $this->formatTicketUsageMessage($attendee->event, $attendee->ticket, 'Manual Entry'),
+                    'ticket_used',
+                    [
+                        'event_id' => $attendee->event_id,
+                        'attendee_id' => $attendee->id,
+                        'ticket_id' => $attendee->ticket->id,
+                        'attendee_name' => $attendee->name,
+                        'attendee_phone' => $attendee->phone,
+                        'ticket_number' => $attendee->ticket->ticket_number,
+                        'ticket_type' => $attendee->ticket->type,
+                        'event_name' => $attendee->event->name,
+                        'entry_point' => 'Manual Entry',
+                        'scanned_at' => now()->toDateTimeString(),
+                        'scanner_id' => $scanner->id,
+                        'validation_type' => 'manual'
+                    ]
+                );
 
-            // Log the successful check-in
-            Log::info('Attendee checked in via manual validation', [
-                'attendee_id' => $attendee->id,
-                'ticket_id' => $attendee->ticket->id,
-                'event_id' => $attendee->event_id,
-                'scanner_id' => $scanner->id
-            ]);
-
-            if ($request->expectsJson()) {
-                return response()->json([
-                    'status' => 'success',
-                    'message' => 'Check-in successful',
-                    'attendee' => $attendee->name,
-                    'event' => $attendee->ticket->event->name
+                Log::info("SMS job dispatched for manual token validation", [
+                    'attendee_id' => $attendee->id,
+                    'phone' => $attendee->phone,
+                    'event' => $attendee->event->name,
+                    'ticket_id' => $attendee->ticket->id
+                ]);
+            } catch (\Exception $e) {
+                // Log SMS error but don't affect the check-in status
+                Log::error("Failed to dispatch SMS job for manual token validation", [
+                    'attendee_id' => $attendee->id,
+                    'phone' => $attendee->phone,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
                 ]);
             }
-            return back()->with('success', 'Successfully checked in ' . $attendee->name);
         }
 
         if ($request->expectsJson()) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'No valid ticket found for this token'
-            ], 404);
+                'status' => 'success',
+                'message' => 'Check-in successful',
+                'attendee' => [
+                    'name' => $attendee->name,
+                    'email' => $attendee->email,
+                    'event' => $attendee->ticket->event->name,
+                    'checked_in_at' => now()
+                ]
+            ]);
         }
-        return back()->with('error', 'No valid ticket found for this token');
+
+        return back()->with('success', 'Check-in successful for ' . $attendee->name);
+    }
+
+    /**
+     * Format a ticket usage notification message
+     *
+     * @param Event $event The event
+     * @param Ticket $ticket The ticket
+     * @param string $entryPoint The entry point
+     * @return string Formatted message
+     */
+    protected function formatTicketUsageMessage(Event $event, Ticket $ticket, string $entryPoint): string
+    {
+        $attendee = $ticket->attendee;
+        $scannedTime = now()->format('g:i A');
+
+        return sprintf(
+            "Ndugu %s, tiketi yako ya %s imethibitishwa na kuingia kupitia %s saa %s. Asante kwa kuhudhuria %s. Karibu tena!",
+            $attendee->name,
+            $event->name,
+            $entryPoint,
+            $scannedTime,
+            $event->name
+        );
     }
 } 

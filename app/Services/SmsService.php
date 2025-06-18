@@ -248,4 +248,150 @@ class SmsService
     {
         return $this->smsProvider->getProviderName();
     }
+
+    /**
+     * Send a ticket usage notification SMS
+     *
+     * @param Ticket $ticket The ticket that was used
+     * @param string $entryPoint The entry point where the ticket was scanned
+     * @return array Response data including success status
+     * @throws \Exception When required data is missing
+     */
+    public function sendTicketUsageNotification(Ticket $ticket, string $entryPoint = 'Main Gate'): array
+    {
+        $attendee = $ticket->attendee;
+        
+        if (!$attendee || !$attendee->phone) {
+            throw new \Exception('Attendee or phone number not found');
+        }
+
+        $event = $ticket->event;
+        $message = $this->formatTicketUsageMessage($event, $ticket, $entryPoint);
+
+        $metadata = [
+            'event_id' => $event->id,
+            'attendee_id' => $attendee->id,
+            'ticket_id' => $ticket->id,
+            'attendee_name' => $attendee->name,
+            'attendee_phone' => $attendee->phone,
+            'ticket_number' => $ticket->ticket_number,
+            'ticket_type' => $ticket->type,
+            'event_name' => $event->name,
+            'entry_point' => $entryPoint,
+            'scanned_at' => now()->toDateTimeString()
+        ];
+
+        return $this->send($attendee->phone, $message, 'ticket_used', $metadata);
+    }
+
+    /**
+     * Send an event reminder SMS
+     *
+     * @param Ticket $ticket The ticket to send reminder for
+     * @return array Response data including success status
+     * @throws \Exception When required data is missing
+     */
+    public function sendEventReminder(Ticket $ticket): array
+    {
+        return $this->sendReminder($ticket);
+    }
+
+    /**
+     * Send an attendee invitation SMS
+     *
+     * @param Event $event The event
+     * @param array $attendeeData The attendee data
+     * @return array Response data including success status
+     * @throws \Exception When required data is missing
+     */
+    public function sendAttendeeInvitation(Event $event, array $attendeeData): array
+    {
+        if (empty($attendeeData['phone'])) {
+            throw new \Exception('Phone number is required');
+        }
+
+        $message = $this->formatAttendeeInvitationMessage($event, $attendeeData);
+
+        $metadata = [
+            'event_id' => $event->id,
+            'attendee_id' => $attendeeData['attendee_id'] ?? null,
+            'ticket_id' => $attendeeData['ticket_id'] ?? null,
+            'attendee_name' => $attendeeData['user_name'] ?? 'Guest',
+            'attendee_phone' => $attendeeData['phone'],
+            'ticket_type' => $attendeeData['ticket_type'] ?? 'regular',
+            'event_name' => $event->name,
+            'event_date' => $event->date ? Carbon::parse($event->date)->toDateTimeString() : null,
+            'location' => $event->location,
+            'venue' => $event->venue
+        ];
+
+        return $this->send($attendeeData['phone'], $message, 'attendee_invitation', $metadata);
+    }
+
+    /**
+     * Format a ticket usage notification message
+     *
+     * @param Event $event The event
+     * @param Ticket $ticket The ticket
+     * @param string $entryPoint The entry point
+     * @return string Formatted message
+     */
+    protected function formatTicketUsageMessage(Event $event, Ticket $ticket, string $entryPoint): string
+    {
+        $attendee = $ticket->attendee;
+        $scannedTime = now()->format('g:i A');
+
+        return sprintf(
+            "Ndugu %s, tiketi yako ya %s imethibitishwa na kuingia kupitia %s saa %s. Asante kwa kuhudhuria %s. Karibu tena!",
+            $attendee->name,
+            $event->name,
+            $entryPoint,
+            $scannedTime,
+            $event->name
+        );
+    }
+
+    /**
+     * Format an attendee invitation message
+     *
+     * @param Event $event The event
+     * @param array $attendeeData The attendee data
+     * @return string Formatted message
+     */
+    protected function formatAttendeeInvitationMessage(Event $event, array $attendeeData): string
+    {
+        $attendeeName = $attendeeData['user_name'] ?? 'Guest';
+        $ticketType = $attendeeData['ticket_type'] ?? 'regular';
+        $eventDate = $event->date ? Carbon::parse($event->date) : null;
+        
+        if ($eventDate) {
+            $dayName = $eventDate->locale('sw')->isoFormat('dddd');
+            $formattedTime = $eventDate->format('g:i');
+            $period = $eventDate->format('A');
+            $dateString = $dayName . ' ' . $eventDate->toLocaleDateString('en-GB') . ' saa ' . $formattedTime . ' ' . $period;
+        } else {
+            $dateString = 'tarehe itakayotangazwa';
+        }
+
+        return sprintf(
+            "Ndugu %s, unakaribishwa kwenye %s itakayofanyika %s. Mahali: %s. Ukumbi: %s. Aina ya tiketi: %s. Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824",
+            $attendeeName,
+            $event->name,
+            $dateString,
+            $event->location,
+            $event->venue,
+            ucfirst($ticketType)
+        );
+    }
+
+    /**
+     * Get message status from provider
+     *
+     * @param string $messageId The message ID to check
+     * @return array Status information
+     */
+    public function getMessageStatus(string $messageId): array
+    {
+        return $this->getStatus($messageId);
+    }
 } 
