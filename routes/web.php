@@ -182,8 +182,10 @@ Route::middleware('auth')->group(function () {
         Route::post('/events/{event}/attendees/bulk-upload', [BulkUploadController::class, 'store'])->name('events.attendees.bulk-upload.store');
         Route::get('/events/{event}/attendees/bulk-upload/{bulkUpload}/status', [BulkUploadController::class, 'status'])->name('events.attendees.bulk-upload.status');
         Route::get('/events/{event}/attendees/bulk-upload/{bulkUpload}/status.json', [BulkUploadController::class, 'getStatus'])->name('events.attendees.bulk-upload.status.json');
-        Route::get('/events/attendees/template', [BulkUploadController::class, 'downloadTemplate'])->name('events.attendees.template');
     });
+
+    // Template download route (accessible to all authenticated users)
+    Route::get('/events/attendees/template', [BulkUploadController::class, 'downloadTemplate'])->name('events.attendees.template');
 
     // Attendee validation route
     Route::get('/attendees/validate/{token}', [App\Http\Controllers\AttendeeController::class, 'validateToken'])

@@ -30,6 +30,16 @@
                 <a href="{{ route('events.attendees.bulk-upload', $event) }}" class="btn btn-primary">
                     <i class="bi bi-upload me-2"></i>Bulk Upload
                 </a>
+                <!-- Test button to verify button display -->
+                <a href="#" class="btn btn-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Test Button
+                </a>
+            </div>
+            <!-- Debug info -->
+            <div class="mt-3">
+                <small class="text-muted">
+                    Route exists: {{ route_exists('events.attendees.template') ? 'Yes' : 'No' }}
+                </small>
             </div>
         </div>
     </div>
