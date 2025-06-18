@@ -4,9 +4,6 @@
         :breadcrumbs="['Events' => route('events.index'), $event->name => route('events.show', $event), 'Attendees' => null]"
     >
         <x-slot name="actions">
-            <a href="{{ route('events.attendees.template') }}" class="btn btn-success me-2">
-                <i class="bi bi-file-excel me-2"></i>Download Template
-            </a>
             <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">
                 <i class="bi bi-person-plus me-2"></i>Add Attendee
             </a>
@@ -22,6 +19,20 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
+
+    <!-- Bulk Actions -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="d-flex gap-3">
+                <a href="{{ route('events.attendees.template') }}" class="btn btn-success">
+                    <i class="bi bi-file-excel me-2"></i>Download Template
+                </a>
+                <a href="{{ route('events.attendees.bulk-upload', $event) }}" class="btn btn-primary">
+                    <i class="bi bi-upload me-2"></i>Bulk Upload
+                </a>
+            </div>
+        </div>
+    </div>
 
     <!-- Filters -->
     <div class="card mb-4">
