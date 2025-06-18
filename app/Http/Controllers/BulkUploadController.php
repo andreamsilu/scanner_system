@@ -15,6 +15,8 @@ use Illuminate\View\View;
 use League\Csv\Reader;
 use Illuminate\Support\Facades\Log;
 use Endroid\QrCode\QrCode;
+use Maatwebsite\Excel\Excel;
+use App\Exports\AttendeeTemplateExport;
 
 class BulkUploadController extends Controller
 {
@@ -31,6 +33,43 @@ class BulkUploadController extends Controller
     public function create(Event $event): View
     {
         return view('attendees.bulk-upload', compact('event'));
+    }
+
+    /**
+     * Download the attendee template
+     */
+    public function downloadTemplate()
+    {
+        $headers = [
+            'name',
+            'email',
+            'phone',
+            'position',
+            'ticket_type'
+        ];
+
+        $data = [
+            [
+                'John Doe',
+                'john@example.com',
+                '1234567890',
+                'Manager',
+                'regular'
+            ],
+            [
+                'Jane Smith',
+                'jane@example.com',
+                '0987654321',
+                'Director',
+                'vip'
+            ]
+        ];
+
+        $template = new Excel();
+        return $template->download(
+            new AttendeeTemplateExport($headers, $data),
+            'attendee_template.xlsx'
+        );
     }
 
     /**
