@@ -65,8 +65,7 @@ class BulkUploadController extends Controller
             ]
         ];
 
-        $template = new Excel();
-        return $template->download(
+        return \Maatwebsite\Excel\Facades\Excel::download(
             new AttendeeTemplateExport($headers, $data),
             'attendee_template.xlsx'
         );
