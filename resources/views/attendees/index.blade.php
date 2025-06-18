@@ -9,7 +9,7 @@
     >
         <x-slot name="actions">
             <div class="d-flex gap-2">
-                <a href="{{ route('events.attendees.template') }}" class="btn btn-success">
+                <a href="{{ route('events.attendees.template', $event) }}" class="btn btn-success">
                     <i class="bi bi-file-excel me-2"></i>Download Template
                 </a>
                 <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary">

@@ -38,8 +38,12 @@ class BulkUploadController extends Controller
     /**
      * Download the attendee template
      */
-    public function downloadTemplate()
+    public function downloadTemplate(Event $event = null)
     {
+        $eventName = $event ? $event->name : 'Event';
+        $safeEventName = preg_replace('/[^a-zA-Z0-9\s-]/', '', $eventName);
+        $safeEventName = str_replace(' ', '_', $safeEventName);
+        
         $headers = [
             'name (required)',
             'email (optional)',
@@ -73,8 +77,8 @@ class BulkUploadController extends Controller
         ];
 
         return \Maatwebsite\Excel\Facades\Excel::download(
-            new AttendeeTemplateExport($headers, $data),
-            'attendee_template.xlsx'
+            new AttendeeTemplateExport($headers, $data, $eventName),
+            'attendee_template_' . $safeEventName . '.xlsx'
         );
     }
 

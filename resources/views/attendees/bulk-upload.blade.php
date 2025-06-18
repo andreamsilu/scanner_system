@@ -3,7 +3,7 @@
         <div class="d-flex justify-content-between align-items-center">
             <h2 class="mb-0">Bulk Upload Attendees</h2>
             <div>
-                <a href="{{ route('events.attendees.template') }}" class="btn btn-success me-2">
+                <a href="{{ route('events.attendees.template', $event) }}" class="btn btn-success me-2">
                     <i class="bi bi-file-excel me-2"></i>Download Template
                 </a>
                 <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-primary me-2">

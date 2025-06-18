@@ -185,7 +185,7 @@ Route::middleware('auth')->group(function () {
     });
 
     // Template download route (accessible to all authenticated users)
-    Route::get('/events/attendees/template', [BulkUploadController::class, 'downloadTemplate'])->name('events.attendees.template');
+    Route::get('/events/attendees/template/{event?}', [BulkUploadController::class, 'downloadTemplate'])->name('events.attendees.template');
 
     // Attendee validation route
     Route::get('/attendees/validate/{token}', [App\Http\Controllers\AttendeeController::class, 'validateToken'])
