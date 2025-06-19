@@ -563,43 +563,102 @@ class ScannerController extends Controller
 
             // Send SMS notification if attendee has a phone number - outside transaction
             if ($attendee->phone) {
-                try {
-                    // Dispatch SMS job to avoid blocking the response
-                    SendSingleSms::dispatch(
-                        $attendee->phone,
-                        $this->formatTicketUsageMessage($attendee->event, $attendee->ticket, 'Main Gate'),
-                        'ticket_used',
-                        [
-                            'event_id' => $attendee->event_id,
-                            'attendee_id' => $attendee->id,
-                            'ticket_id' => $attendee->ticket->id,
-                            'attendee_name' => $attendee->name,
-                            'attendee_phone' => $attendee->phone,
-                            'ticket_number' => $attendee->ticket->ticket_number,
-                            'ticket_type' => $attendee->ticket->type,
-                            'event_name' => $attendee->event->name,
-                            'entry_point' => 'Main Gate',
-                            'scanned_at' => $now->toDateTimeString(),
-                            'scanner_id' => $user->id,
-                            'validation_type' => $validationType
-                        ]
-                    );
+                // Log SMS attempt initiation
+                Log::info("SMS notification initiated for {$validationType} check-in", [
+                    'attendee_id' => $attendee->id,
+                    'phone' => $attendee->phone,
+                    'event' => $attendee->event->name,
+                    'ticket_id' => $attendee->ticket->id,
+                    'ticket_type' => $attendee->ticket->type,
+                    'entry_point' => 'Main Gate',
+                    'scanner_id' => $user->id,
+                    'validation_type' => $validationType,
+                    'timestamp' => now()->toIso8601String()
+                ]);
 
-                    Log::info("SMS job dispatched for {$validationType} check-in", [
+                try {
+                    // Log message formatting
+                    $message = $this->formatTicketUsageMessage($attendee->event, $attendee->ticket, 'Main Gate');
+                    Log::info("SMS message formatted for {$validationType} check-in", [
+                        'attendee_id' => $attendee->id,
+                        'phone' => $attendee->phone,
+                        'message_length' => strlen($message),
+                        'message_preview' => substr($message, 0, 100) . '...',
+                        'timestamp' => now()->toIso8601String()
+                    ]);
+
+                    // Prepare metadata
+                    $metadata = [
+                        'event_id' => $attendee->event_id,
+                        'attendee_id' => $attendee->id,
+                        'ticket_id' => $attendee->ticket->id,
+                        'attendee_name' => $attendee->name,
+                        'attendee_phone' => $attendee->phone,
+                        'ticket_number' => $attendee->ticket->ticket_number,
+                        'ticket_type' => $attendee->ticket->type,
+                        'event_name' => $attendee->event->name,
+                        'entry_point' => 'Main Gate',
+                        'scanned_at' => $now->toDateTimeString(),
+                        'scanner_id' => $user->id,
+                        'validation_type' => $validationType
+                    ];
+
+                    // Log job dispatch attempt
+                    Log::info("Attempting to dispatch SMS job for {$validationType} check-in", [
                         'attendee_id' => $attendee->id,
                         'phone' => $attendee->phone,
                         'event' => $attendee->event->name,
-                        'ticket_id' => $attendee->ticket->id
+                        'ticket_id' => $attendee->ticket->id,
+                        'job_class' => 'SendSingleSms',
+                        'message_type' => 'ticket_used',
+                        'metadata_keys' => array_keys($metadata),
+                        'timestamp' => now()->toIso8601String()
                     ]);
+
+                    // Dispatch SMS job to avoid blocking the response
+                    SendSingleSms::dispatch(
+                        $attendee->phone,
+                        $message,
+                        'ticket_used',
+                        $metadata
+                    );
+
+                    // Log successful job dispatch
+                    Log::info("SMS job successfully dispatched for {$validationType} check-in", [
+                        'attendee_id' => $attendee->id,
+                        'phone' => $attendee->phone,
+                        'event' => $attendee->event->name,
+                        'ticket_id' => $attendee->ticket->id,
+                        'job_status' => 'queued',
+                        'queue_connection' => config('queue.default'),
+                        'timestamp' => now()->toIso8601String()
+                    ]);
+                
                 } catch (\Exception $e) {
-                    // Log SMS error but don't affect the check-in status
+                    // Log SMS dispatch error
                     Log::error("Failed to dispatch SMS job for {$validationType} check-in", [
                         'attendee_id' => $attendee->id,
                         'phone' => $attendee->phone,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
+                        'event' => $attendee->event->name,
+                        'ticket_id' => $attendee->ticket->id,
+                        'error_message' => $e->getMessage(),
+                        'error_code' => $e->getCode(),
+                        'error_file' => $e->getFile(),
+                        'error_line' => $e->getLine(),
+                        'trace' => $e->getTraceAsString(),
+                        'timestamp' => now()->toIso8601String()
                     ]);
                 }
+            } else {
+                // Log when SMS is skipped due to missing phone
+                Log::info("SMS notification skipped for {$validationType} check-in - no phone number", [
+                    'attendee_id' => $attendee->id,
+                    'attendee_name' => $attendee->name,
+                    'event' => $attendee->event->name,
+                    'ticket_id' => $attendee->ticket->id,
+                    'phone_available' => false,
+                    'timestamp' => now()->toIso8601String()
+                ]);
             }
 
             return [

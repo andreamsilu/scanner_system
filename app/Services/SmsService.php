@@ -8,6 +8,7 @@ use App\Models\Ticket;
 use App\Traits\HasSmsLogging;
 use Carbon\Carbon;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class SmsService
 {
@@ -39,8 +40,22 @@ class SmsService
      */
     public function send(string $to, string $message, string $type, array $metadata = []): array
     {
+        $reference = Str::uuid()->toString();
+        $startTime = microtime(true);
+        
         try {
-            $reference = Str::uuid()->toString();
+            // Log SMS send attempt initiation
+            Log::info('SMS service send attempt initiated', [
+                'recipient' => $to,
+                'type' => $type,
+                'message_length' => strlen($message),
+                'reference' => $reference,
+                'metadata_count' => count($metadata),
+                'provider' => $this->smsProvider->getProviderName(),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            // Prepare payload
             $payload = [
                 'from' => $this->smsProvider->getSenderId(),
                 'to' => $to,
@@ -48,6 +63,17 @@ class SmsService
                 'reference' => $reference
             ];
 
+            // Log payload preparation
+            Log::info('SMS payload prepared', [
+                'recipient' => $to,
+                'sender_id' => $payload['from'],
+                'reference' => $reference,
+                'message_preview' => substr($message, 0, 50) . '...',
+                'payload_keys' => array_keys($payload),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            // Log SMS activity attempt
             $this->logSmsActivity('send_attempt', [
                 'recipient' => $to,
                 'message' => $message,
@@ -56,20 +82,61 @@ class SmsService
                 'metadata' => $metadata
             ]);
 
+            // Log provider call attempt
+            Log::info('Attempting to call SMS provider', [
+                'recipient' => $to,
+                'provider' => $this->smsProvider->getProviderName(),
+                'provider_class' => get_class($this->smsProvider),
+                'reference' => $reference,
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            // Call SMS provider
             $response = $this->smsProvider->send($to, $message, [
                 'reference' => $reference,
                 'type' => $type
             ]);
 
+            // Log provider response
+            Log::info('SMS provider response received', [
+                'recipient' => $to,
+                'provider' => $this->smsProvider->getProviderName(),
+                'success' => $response['success'] ?? false,
+                'message_id' => $response['message_id'] ?? null,
+                'status' => $response['status'] ?? null,
+                'reference' => $reference,
+                'response_keys' => array_keys($response),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            // Prepare log data
             $logData = array_merge($response, [
                 'type' => $type,
                 'metadata' => array_merge($metadata, [
                     'payload' => $payload,
-                    'response' => $response
+                    'response' => $response,
+                    'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2)
                 ])
             ]);
 
+            // Log SMS activity success
             $this->logSmsActivity('send_success', $logData);
+
+            // Log final success
+            Log::info('SMS service send completed successfully', [
+                'recipient' => $to,
+                'type' => $type,
+                'success' => $response['success'] ?? false,
+                'message_id' => $response['message_id'] ?? null,
+                'reference' => $reference,
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                'attendee_id' => $metadata['attendee_id'] ?? null,
+                'ticket_id' => $metadata['ticket_id'] ?? null,
+                'event_id' => $metadata['event_id'] ?? null,
+                'validation_type' => $metadata['validation_type'] ?? null,
+                'entry_point' => $metadata['entry_point'] ?? null,
+                'timestamp' => now()->toIso8601String()
+            ]);
 
             return [
                 'success' => $response['success'] ?? false,
@@ -78,6 +145,25 @@ class SmsService
                 'reference' => $reference
             ];
         } catch (\Exception $e) {
+            // Log error details
+            Log::error('SMS service send failed with exception', [
+                'recipient' => $to,
+                'type' => $type,
+                'reference' => $reference,
+                'exception_class' => get_class($e),
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                'attendee_id' => $metadata['attendee_id'] ?? null,
+                'ticket_id' => $metadata['ticket_id'] ?? null,
+                'event_id' => $metadata['event_id'] ?? null,
+                'validation_type' => $metadata['validation_type'] ?? null,
+                'entry_point' => $metadata['entry_point'] ?? null,
+                'timestamp' => now()->toIso8601String()
+            ]);
+
             return $this->handleSmsError($e, [
                 'recipient' => $to,
                 'message' => $message,
