@@ -17,7 +17,6 @@ This document summarizes the automatic SMS sending functionality implemented for
 - **SmsService** - Main service orchestrating SMS operations
 - **SendSingleSms** - Job for sending individual SMS messages
 - **SendBulkSms** - Job for sending multiple SMS messages
-
 #### Key Features
 - ✅ **Queue-based processing** - SMS sent asynchronously via Laravel jobs
 - ✅ **Retry mechanism** - Failed SMS automatically retried up to 3 times

@@ -321,6 +321,8 @@ class AttendeeController extends Controller
      */
     public function edit(Event $event, Attendee $attendee): View
     {
+        // Load the attendee with its ticket relationship
+        $attendee->load('ticket');
         $events = Event::select('id', 'name')->orderBy('name')->get();
         return view('attendees.edit', compact('event', 'attendee', 'events'));
     }
@@ -334,7 +336,10 @@ class AttendeeController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
             'phone' => 'required|string|max:20',
-            'position' => 'nullable|string|max:255'
+            'position' => 'nullable|string|max:255',
+            'notes' => 'nullable|string',
+            'requires_ticket' => 'boolean',
+            'ticket_type' => 'required_if:requires_ticket,1|in:single,double,regular,vip'
         ]);
 
         try {
@@ -358,6 +363,30 @@ class AttendeeController extends Controller
             }
 
             $attendee->update($validated);
+
+            // Handle ticket creation/update
+            if ($request->has('requires_ticket') && $request->requires_ticket == '1') {
+                // Create or update ticket
+                if ($attendee->ticket) {
+                    // Update existing ticket
+                    $attendee->ticket->update([
+                        'type' => $validated['ticket_type'],
+                        'status' => 'active'
+                    ]);
+                } else {
+                    // Create new ticket
+                    $attendee->ticket()->create([
+                        'event_id' => $event->id,
+                        'type' => $validated['ticket_type'],
+                        'status' => 'active'
+                    ]);
+                }
+            } else {
+                // Remove ticket if exists and checkbox is unchecked
+                if ($attendee->ticket) {
+                    $attendee->ticket->delete();
+                }
+            }
 
             DB::commit();
 

@@ -82,6 +82,20 @@
 
                                 <div class="col-md-6">
                                     <div class="form-group">
+                                        <label for="position" class="form-label">Position</label>
+                                        <input type="text" 
+                                               class="form-control @error('position') is-invalid @enderror" 
+                                               id="position" 
+                                               name="position" 
+                                               value="{{ old('position', $attendee->position) }}">
+                                        @error('position')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="form-group">
                                         <label for="event_id" class="form-label">Event</label>
                                         <select class="form-select @error('event_id') is-invalid @enderror" 
                                                 id="event_id" 
@@ -151,6 +165,22 @@
                                     </div>
                                 </div>
 
+                                <div class="col-12 ticket-type-group" style="display: {{ old('requires_ticket', $attendee->ticket ? '1' : '') ? 'block' : 'none' }};">
+                                    <div class="form-group">
+                                        <label for="ticket_type" class="form-label">Ticket Type</label>
+                                        <select class="form-select @error('ticket_type') is-invalid @enderror" id="ticket_type" name="ticket_type">
+                                            <option value="">Select ticket type</option>
+                                            <option value="single" {{ old('ticket_type', $attendee->ticket?->type) == 'single' ? 'selected' : '' }}>Single</option>
+                                            <option value="double" {{ old('ticket_type', $attendee->ticket?->type) == 'double' ? 'selected' : '' }}>Double</option>
+                                            <option value="regular" {{ old('ticket_type', $attendee->ticket?->type) == 'regular' ? 'selected' : '' }}>Regular</option>
+                                            <option value="vip" {{ old('ticket_type', $attendee->ticket?->type) == 'vip' ? 'selected' : '' }}>VIP</option>
+                                        </select>
+                                        @error('ticket_type')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
                                 <div class="col-12">
                                     <button type="submit" class="btn btn-primary">
                                         <i class="bi bi-save me-2"></i>Update Attendee
@@ -204,6 +234,15 @@
 
                 if (!isValid) {
                     e.preventDefault();
+                }
+            });
+
+            // Show/hide ticket type dropdown
+            $('#requires_ticket').on('change', function() {
+                if ($(this).is(':checked')) {
+                    $('.ticket-type-group').slideDown();
+                } else {
+                    $('.ticket-type-group').slideUp();
                 }
             });
         });
