@@ -135,10 +135,24 @@ class SmsManagementController extends Controller
      */
     public function bulkSend(Request $request, Event $event)
     {
+        $startTime = microtime(true);
+        $userId = auth()->id();
+        
         try {
+            // Log bulk SMS request initiation
+            Log::info('Bulk SMS request initiated', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'message_type' => $request->message_type,
+                'has_custom_message' => !empty($request->custom_message),
+                'request_data' => $request->only(['attendee_ids', 'message_type', 'custom_message']),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
             // Rate limiting: max 100 SMS per minute per user
             $executed = RateLimiter::attempt(
-                'bulk-sms:' . auth()->id(),
+                'bulk-sms:' . $userId,
                 $perMinute = 100,
                 function() {
                     return true;
@@ -146,11 +160,28 @@ class SmsManagementController extends Controller
             );
 
             if (!$executed) {
+                // Log rate limit exceeded
+                Log::warning('Bulk SMS rate limit exceeded', [
+                    'user_id' => $userId,
+                    'event_id' => $event->id,
+                    'rate_limit_key' => 'bulk-sms:' . $userId,
+                    'rate_limit_per_minute' => $perMinute,
+                    'timestamp' => now()->toIso8601String()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Too many SMS requests. Please try again in a minute.'
                 ], 429);
             }
+
+            // Log rate limit check passed
+            Log::info('Bulk SMS rate limit check passed', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'rate_limit_key' => 'bulk-sms:' . $userId,
+                'timestamp' => now()->toIso8601String()
+            ]);
 
             // Validate request
             $validator = Validator::make($request->all(), [
@@ -160,6 +191,14 @@ class SmsManagementController extends Controller
             ]);
 
             if ($validator->fails()) {
+                // Log validation failure
+                Log::warning('Bulk SMS validation failed', [
+                    'user_id' => $userId,
+                    'event_id' => $event->id,
+                    'validation_errors' => $validator->errors()->toArray(),
+                    'timestamp' => now()->toIso8601String()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
@@ -167,12 +206,38 @@ class SmsManagementController extends Controller
                 ], 422);
             }
 
+            // Log validation success
+            Log::info('Bulk SMS validation passed', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'message_type' => $request->message_type,
+                'timestamp' => now()->toIso8601String()
+            ]);
+
             // Parse the JSON string to array
             $attendeeIds = json_decode($request->attendee_ids, true);
             
             if (!is_array($attendeeIds)) {
+                // Log invalid attendee IDs format
+                Log::error('Bulk SMS invalid attendee_ids format', [
+                    'user_id' => $userId,
+                    'event_id' => $event->id,
+                    'attendee_ids_raw' => $request->attendee_ids,
+                    'parsed_result' => $attendeeIds,
+                    'timestamp' => now()->toIso8601String()
+                ]);
+
                 throw new \Exception('Invalid attendee_ids format');
             }
+
+            // Log attendee IDs parsing success
+            Log::info('Bulk SMS attendee IDs parsed successfully', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'attendee_count' => count($attendeeIds),
+                'attendee_ids' => $attendeeIds,
+                'timestamp' => now()->toIso8601String()
+            ]);
 
             $results = [];
             $successCount = 0;
@@ -181,18 +246,49 @@ class SmsManagementController extends Controller
             // Get all attendees in one query
             $attendees = $event->attendees()
                 ->whereIn('id', $attendeeIds)
-                ->with(['tickets' => function($query) use ($event) {
-                    $query->where('event_id', $event->id);
+                ->with(['tickets' => function($query) {
+                    $query->where('status', 'active');
                 }])
                 ->get();
 
+            // Log attendees retrieval
+            Log::info('Bulk SMS attendees retrieved', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'requested_count' => count($attendeeIds),
+                'found_count' => $attendees->count(),
+                'attendees_with_phones' => $attendees->whereNotNull('phone')->count(),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
             foreach ($attendees as $attendee) {
                 try {
-                    if (!$this->isValidPhoneNumber($attendee->phone)) {
+                    // Log individual attendee processing start
+                    Log::info('Bulk SMS processing individual attendee', [
+                        'user_id' => $userId,
+                        'event_id' => $event->id,
+                        'attendee_id' => $attendee->id,
+                        'attendee_name' => $attendee->name,
+                        'attendee_phone' => $attendee->phone,
+                        'has_phone' => !empty($attendee->phone),
+                        'ticket_count' => $attendee->tickets->count(),
+                        'timestamp' => now()->toIso8601String()
+                    ]);
+
+                    if (!$attendee->phone) {
+                        // Log skipped attendee (no phone)
+                        Log::info('Bulk SMS attendee skipped - no phone number', [
+                            'user_id' => $userId,
+                            'event_id' => $event->id,
+                            'attendee_id' => $attendee->id,
+                            'attendee_name' => $attendee->name,
+                            'timestamp' => now()->toIso8601String()
+                        ]);
+
                         $results[] = [
                             'success' => false,
                             'recipient' => $attendee->name,
-                            'message' => 'Invalid phone number format'
+                            'message' => 'No phone number available'
                         ];
                         $failureCount++;
                         continue;
@@ -200,16 +296,37 @@ class SmsManagementController extends Controller
 
                     $ticket = $attendee->tickets->first();
                     if (!$ticket) {
+                        // Log skipped attendee (no ticket)
+                        Log::info('Bulk SMS attendee skipped - no active ticket', [
+                            'user_id' => $userId,
+                            'event_id' => $event->id,
+                            'attendee_id' => $attendee->id,
+                            'attendee_name' => $attendee->name,
+                            'timestamp' => now()->toIso8601String()
+                        ]);
+
                         $results[] = [
                             'success' => false,
                             'recipient' => $attendee->name,
-                            'message' => 'No valid ticket found for this event'
+                            'message' => 'No active ticket found'
                         ];
                         $failureCount++;
                         continue;
                     }
 
-                    // Send SMS based on message type
+                    // Log SMS sending attempt for individual attendee
+                    Log::info('Bulk SMS sending SMS to individual attendee', [
+                        'user_id' => $userId,
+                        'event_id' => $event->id,
+                        'attendee_id' => $attendee->id,
+                        'attendee_name' => $attendee->name,
+                        'attendee_phone' => $attendee->phone,
+                        'ticket_id' => $ticket->id,
+                        'ticket_type' => $ticket->type,
+                        'message_type' => $request->message_type,
+                        'timestamp' => now()->toIso8601String()
+                    ]);
+
                     switch ($request->message_type) {
                         case 'invitation':
                             $result = $this->smsService->sendInvitation($ticket, $request->custom_message);
@@ -223,6 +340,19 @@ class SmsManagementController extends Controller
                         default:
                             throw new \Exception('Invalid message type');
                     }
+
+                    // Log individual SMS result
+                    Log::info('Bulk SMS individual SMS result', [
+                        'user_id' => $userId,
+                        'event_id' => $event->id,
+                        'attendee_id' => $attendee->id,
+                        'attendee_name' => $attendee->name,
+                        'success' => $result['success'],
+                        'message_id' => $result['message_id'] ?? null,
+                        'log_id' => $result['log_id'] ?? null,
+                        'error' => $result['error'] ?? null,
+                        'timestamp' => now()->toIso8601String()
+                    ]);
 
                     $results[] = [
                         'success' => $result['success'],
@@ -239,10 +369,16 @@ class SmsManagementController extends Controller
                     }
 
                 } catch (\Exception $e) {
-                    Log::error('Failed to send SMS to attendee', [
-                        'attendee_id' => $attendee->id,
+                    // Log individual attendee processing error
+                    Log::error('Bulk SMS failed to send SMS to individual attendee', [
+                        'user_id' => $userId,
                         'event_id' => $event->id,
-                        'error' => $e->getMessage()
+                        'attendee_id' => $attendee->id,
+                        'attendee_name' => $attendee->name,
+                        'exception_class' => get_class($e),
+                        'error_message' => $e->getMessage(),
+                        'error_code' => $e->getCode(),
+                        'timestamp' => now()->toIso8601String()
                     ]);
 
                     $results[] = [
@@ -253,6 +389,17 @@ class SmsManagementController extends Controller
                     $failureCount++;
                 }
             }
+
+            // Log bulk SMS completion
+            Log::info('Bulk SMS completed', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'total_attendees' => $attendees->count(),
+                'success_count' => $successCount,
+                'failure_count' => $failureCount,
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                'timestamp' => now()->toIso8601String()
+            ]);
 
             return response()->json([
                 'success' => $successCount > 0,
@@ -265,11 +412,18 @@ class SmsManagementController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Bulk SMS send failed', [
-                'error' => $e->getMessage(),
+            // Log bulk SMS error
+            Log::error('Bulk SMS send failed with exception', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'exception_class' => get_class($e),
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
                 'trace' => $e->getTraceAsString(),
-                'user_id' => auth()->id(),
-                'event_id' => $event->id
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                'timestamp' => now()->toIso8601String()
             ]);
 
             return response()->json([
@@ -284,10 +438,24 @@ class SmsManagementController extends Controller
      */
     public function sendAttendeeInvitation(Request $request, Event $event)
     {
+        $startTime = microtime(true);
+        $userId = auth()->id();
+        
         try {
+            // Log invitation request initiation
+            Log::info('Manual invitation SMS request initiated', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'attendee_id' => $request->attendee_id,
+                'ticket_id' => $request->ticket_id,
+                'request_data' => $request->only(['attendee_id', 'ticket_id', 'custom_message']),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
             // Rate limiting: max 10 SMS per minute per user
             $executed = RateLimiter::attempt(
-                'single-sms:' . auth()->id(),
+                'single-sms:' . $userId,
                 $perMinute = 10,
                 function() {
                     return true;
@@ -295,11 +463,30 @@ class SmsManagementController extends Controller
             );
 
             if (!$executed) {
+                // Log rate limit exceeded
+                Log::warning('Manual invitation SMS rate limit exceeded', [
+                    'user_id' => $userId,
+                    'event_id' => $event->id,
+                    'attendee_id' => $request->attendee_id,
+                    'rate_limit_key' => 'single-sms:' . $userId,
+                    'rate_limit_per_minute' => $perMinute,
+                    'timestamp' => now()->toIso8601String()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Too many SMS requests. Please try again in a minute.'
                 ], 429);
             }
+
+            // Log rate limit check passed
+            Log::info('Manual invitation SMS rate limit check passed', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'attendee_id' => $request->attendee_id,
+                'rate_limit_key' => 'single-sms:' . $userId,
+                'timestamp' => now()->toIso8601String()
+            ]);
 
             // Validate request
             $validator = Validator::make($request->all(), [
@@ -309,6 +496,15 @@ class SmsManagementController extends Controller
             ]);
 
             if ($validator->fails()) {
+                // Log validation failure
+                Log::warning('Manual invitation SMS validation failed', [
+                    'user_id' => $userId,
+                    'event_id' => $event->id,
+                    'attendee_id' => $request->attendee_id,
+                    'validation_errors' => $validator->errors()->toArray(),
+                    'timestamp' => now()->toIso8601String()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Validation failed',
@@ -316,21 +512,76 @@ class SmsManagementController extends Controller
                 ], 422);
             }
 
+            // Log validation success
+            Log::info('Manual invitation SMS validation passed', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'attendee_id' => $request->attendee_id,
+                'ticket_id' => $request->ticket_id,
+                'timestamp' => now()->toIso8601String()
+            ]);
+
             // Get attendee and ticket
             $attendee = $event->attendees()->findOrFail($request->attendee_id);
             $ticket = $attendee->tickets()->findOrFail($request->ticket_id);
 
+            // Log attendee and ticket retrieval
+            Log::info('Manual invitation SMS attendee and ticket retrieved', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'attendee_id' => $attendee->id,
+                'attendee_name' => $attendee->name,
+                'attendee_phone' => $attendee->phone,
+                'ticket_id' => $ticket->id,
+                'ticket_type' => $ticket->type,
+                'ticket_number' => $ticket->ticket_number,
+                'timestamp' => now()->toIso8601String()
+            ]);
+
             // Validate phone number
             if (!$this->isValidPhoneNumber($attendee->phone)) {
+                // Log invalid phone number
+                Log::warning('Manual invitation SMS invalid phone number', [
+                    'user_id' => $userId,
+                    'event_id' => $event->id,
+                    'attendee_id' => $attendee->id,
+                    'attendee_name' => $attendee->name,
+                    'attendee_phone' => $attendee->phone,
+                    'phone_validation' => false,
+                    'timestamp' => now()->toIso8601String()
+                ]);
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Invalid phone number format for ' . $attendee->name
                 ], 422);
             }
 
+            // Log phone number validation success
+            Log::info('Manual invitation SMS phone number validation passed', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'attendee_id' => $attendee->id,
+                'attendee_phone' => $attendee->phone,
+                'phone_validation' => true,
+                'timestamp' => now()->toIso8601String()
+            ]);
+
             // Prepare SMS payload
             $message = $request->custom_message ?? $this->getDefaultInvitationMessage($ticket);
             $reference = 'EVT-' . $event->id . '-' . $ticket->id . '-' . time();
+            
+            // Log message preparation
+            Log::info('Manual invitation SMS message prepared', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'attendee_id' => $attendee->id,
+                'message_length' => strlen($message),
+                'message_preview' => substr($message, 0, 100) . '...',
+                'uses_custom_message' => !empty($request->custom_message),
+                'reference' => $reference,
+                'timestamp' => now()->toIso8601String()
+            ]);
             
             $payload = [
                 'from' => 'SENDOFF',
@@ -338,6 +589,18 @@ class SmsManagementController extends Controller
                 'text' => $message,
                 'reference' => $reference
             ];
+
+            // Log SMS service call attempt
+            Log::info('Manual invitation SMS service call initiated', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'attendee_id' => $attendee->id,
+                'recipient' => $attendee->phone,
+                'message_type' => 'invitation',
+                'reference' => $reference,
+                'payload_keys' => array_keys($payload),
+                'timestamp' => now()->toIso8601String()
+            ]);
 
             // Send SMS using the service
             $result = $this->smsService->send(
@@ -348,25 +611,54 @@ class SmsManagementController extends Controller
                     'event_id' => $event->id,
                     'ticket_id' => $ticket->id,
                     'attendee_id' => $attendee->id,
-                    'reference' => $reference
+                    'reference' => $reference,
+                    'user_id' => $userId,
+                    'invitation_type' => 'manual',
+                    'uses_custom_message' => !empty($request->custom_message)
                 ]
             );
 
+            // Log SMS service response
+            Log::info('Manual invitation SMS service response received', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
+                'attendee_id' => $attendee->id,
+                'success' => $result['success'] ?? false,
+                'message_id' => $result['message_id'] ?? null,
+                'log_id' => $result['log_id'] ?? null,
+                'reference' => $reference,
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
             // Check if we got a valid response with messages array
             if (!isset($result['messages']) || !is_array($result['messages']) || empty($result['messages'])) {
+                // Log invalid response
+                Log::error('Manual invitation SMS invalid service response', [
+                    'user_id' => $userId,
+                    'event_id' => $event->id,
+                    'attendee_id' => $attendee->id,
+                    'result' => $result,
+                    'reference' => $reference,
+                    'timestamp' => now()->toIso8601String()
+                ]);
+
                 throw new \Exception('Invalid response from SMS service');
             }
 
             $smsResult = $result['messages'][0]; // Get first message result
 
-            // Log the SMS attempt
-            Log::info('SMS invitation sent', [
+            // Log the successful SMS attempt
+            Log::info('Manual invitation SMS sent successfully', [
+                'user_id' => $userId,
+                'event_id' => $event->id,
                 'attendee_id' => $attendee->id,
                 'ticket_id' => $ticket->id,
-                'event_id' => $event->id,
                 'message_id' => $smsResult['messageId'] ?? null,
                 'status' => $smsResult['status']['name'] ?? null,
-                'reference' => $reference
+                'reference' => $reference,
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                'timestamp' => now()->toIso8601String()
             ]);
 
             // Return response matching API format
@@ -386,13 +678,20 @@ class SmsManagementController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Failed to send invitation SMS', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'attendee_id' => $request->attendee_id,
-                'ticket_id' => $request->ticket_id,
+            // Log comprehensive error details
+            Log::error('Manual invitation SMS failed with exception', [
+                'user_id' => $userId,
                 'event_id' => $event->id,
-                'user_id' => auth()->id()
+                'attendee_id' => $request->attendee_id ?? null,
+                'ticket_id' => $request->ticket_id ?? null,
+                'exception_class' => get_class($e),
+                'error_message' => $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'error_file' => $e->getFile(),
+                'error_line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'execution_time_ms' => round((microtime(true) - $startTime) * 1000, 2),
+                'timestamp' => now()->toIso8601String()
             ]);
 
             return response()->json([
