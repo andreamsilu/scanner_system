@@ -224,7 +224,7 @@ class SendSingleSms implements ShouldQueue
             ]);
 
             // Re-throw the exception to trigger retry or mark as failed
-            throw $e;
+                throw $e;
         }
     }
 

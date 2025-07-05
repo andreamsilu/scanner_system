@@ -589,18 +589,18 @@ class ScannerController extends Controller
 
                     // Prepare metadata
                     $metadata = [
-                        'event_id' => $attendee->event_id,
-                        'attendee_id' => $attendee->id,
-                        'ticket_id' => $attendee->ticket->id,
-                        'attendee_name' => $attendee->name,
-                        'attendee_phone' => $attendee->phone,
-                        'ticket_number' => $attendee->ticket->ticket_number,
-                        'ticket_type' => $attendee->ticket->type,
-                        'event_name' => $attendee->event->name,
-                        'entry_point' => 'Main Gate',
-                        'scanned_at' => $now->toDateTimeString(),
-                        'scanner_id' => $user->id,
-                        'validation_type' => $validationType
+                            'event_id' => $attendee->event_id,
+                            'attendee_id' => $attendee->id,
+                            'ticket_id' => $attendee->ticket->id,
+                            'attendee_name' => $attendee->name,
+                            'attendee_phone' => $attendee->phone,
+                            'ticket_number' => $attendee->ticket->ticket_number,
+                            'ticket_type' => $attendee->ticket->type,
+                            'event_name' => $attendee->event->name,
+                            'entry_point' => 'Main Gate',
+                            'scanned_at' => $now->toDateTimeString(),
+                            'scanner_id' => $user->id,
+                            'validation_type' => $validationType
                     ];
 
                     // Log job dispatch attempt

@@ -40,7 +40,7 @@ class SmsService
      */
     public function send(string $to, string $message, string $type, array $metadata = []): array
     {
-        $reference = Str::uuid()->toString();
+            $reference = Str::uuid()->toString();
         $startTime = microtime(true);
         
         try {
@@ -333,6 +333,16 @@ class SmsService
     public function getProviderName(): string
     {
         return $this->smsProvider->getProviderName();
+    }
+
+    /**
+     * Get the sender ID from configuration
+     *
+     * @return string
+     */
+    public function getSenderId(): string
+    {
+        return config('services.sms.nextsms.sender_id', 'SENDOFF');
     }
 
     /**

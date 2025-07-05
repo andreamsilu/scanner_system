@@ -171,18 +171,18 @@ class ScanController extends Controller
 
                     // Prepare metadata
                     $metadata = [
-                        'event_id' => $attendee->event_id,
-                        'attendee_id' => $attendee->id,
-                        'ticket_id' => $attendee->ticket->id,
-                        'attendee_name' => $attendee->name,
-                        'attendee_phone' => $attendee->phone,
-                        'ticket_number' => $attendee->ticket->ticket_number,
-                        'ticket_type' => $attendee->ticket->type,
-                        'event_name' => $attendee->event->name,
-                        'entry_point' => 'QR Scan',
-                        'scanned_at' => now()->toDateTimeString(),
-                        'scanner_id' => auth()->id(),
-                        'validation_type' => 'qr_scan'
+                            'event_id' => $attendee->event_id,
+                            'attendee_id' => $attendee->id,
+                            'ticket_id' => $attendee->ticket->id,
+                            'attendee_name' => $attendee->name,
+                            'attendee_phone' => $attendee->phone,
+                            'ticket_number' => $attendee->ticket->ticket_number,
+                            'ticket_type' => $attendee->ticket->type,
+                            'event_name' => $attendee->event->name,
+                            'entry_point' => 'QR Scan',
+                            'scanned_at' => now()->toDateTimeString(),
+                            'scanner_id' => auth()->id(),
+                            'validation_type' => 'qr_scan'
                     ];
 
                     // Log job dispatch attempt
@@ -478,18 +478,18 @@ class ScanController extends Controller
 
                 // Prepare metadata
                 $metadata = [
-                    'event_id' => $attendee->event_id,
-                    'attendee_id' => $attendee->id,
-                    'ticket_id' => $attendee->ticket->id,
-                    'attendee_name' => $attendee->name,
-                    'attendee_phone' => $attendee->phone,
-                    'ticket_number' => $attendee->ticket->ticket_number,
-                    'ticket_type' => $attendee->ticket->type,
-                    'event_name' => $attendee->event->name,
-                    'entry_point' => 'Manual Entry',
-                    'scanned_at' => now()->toDateTimeString(),
-                    'scanner_id' => $scanner->id,
-                    'validation_type' => 'manual'
+                        'event_id' => $attendee->event_id,
+                        'attendee_id' => $attendee->id,
+                        'ticket_id' => $attendee->ticket->id,
+                        'attendee_name' => $attendee->name,
+                        'attendee_phone' => $attendee->phone,
+                        'ticket_number' => $attendee->ticket->ticket_number,
+                        'ticket_type' => $attendee->ticket->type,
+                        'event_name' => $attendee->event->name,
+                        'entry_point' => 'Manual Entry',
+                        'scanned_at' => now()->toDateTimeString(),
+                        'scanner_id' => $scanner->id,
+                        'validation_type' => 'manual'
                 ];
 
                 // Log job dispatch attempt
