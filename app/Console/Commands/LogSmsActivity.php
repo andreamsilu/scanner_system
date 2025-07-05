@@ -185,6 +185,27 @@ class LogSmsActivity extends Command
         if (stripos($message, 'provider') !== false) {
             return '🌐';
         }
+        if (stripos($message, 'Phone number formatting') !== false) {
+            return '📞';
+        }
+        if (stripos($message, 'Phone number validation') !== false) {
+            return '🔍';
+        }
+        if (stripos($message, 'Bulk SMS') !== false) {
+            return '📨';
+        }
+        if (stripos($message, 'invitation') !== false) {
+            return '📋';
+        }
+        if (stripos($message, 'reminder') !== false) {
+            return '⏰';
+        }
+        if (stripos($message, 'rate limit') !== false) {
+            return '🚦';
+        }
+        if (stripos($message, 'validation') !== false) {
+            return '✅';
+        }
         if (stripos($message, 'error') !== false) {
             return '⚠️';
         }

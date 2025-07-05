@@ -129,7 +129,16 @@
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
                                                     data-attendee-id="{{ $ticket->attendee->id }}"
                                                     data-ticket-type="{{ $ticket->type }}"
-                                                    data-token="{{ $ticket->token }}">
+                                                    data-token="{{ $ticket->token }}"
+                                                    onclick="prepareInvitation(this)">
+                                                <i class="bi bi-envelope"></i>
+                                                <span class="ms-1 d-none">SMS</span>
+                                            </button>
+                                        @else
+                                            <button type="button"
+                                                    class="btn btn-outline-secondary"
+                                                    title="No phone number available"
+                                                    disabled>
                                                 <i class="bi bi-envelope"></i>
                                             </button>
                                         @endif
@@ -382,23 +391,29 @@
             });
         }
 
-        // Handle SMS Invitation
-        $('.send-invitation-btn').click(function() {
-            const ticketId = $(this).data('ticket-id');
-            const attendeeName = $(this).data('attendee-name');
-            const attendeePhone = $(this).data('attendee-phone');
-            const attendeeId = $(this).data('attendee-id');
-            const ticketType = $(this).data('ticket-type');
-            const token = $(this).data('token');
+        // Enhanced SMS Invitation Handler
+        function prepareInvitation(button) {
+            const ticketId = $(button).data('ticket-id');
+            const attendeeName = $(button).data('attendee-name');
+            const attendeePhone = $(button).data('attendee-phone');
+            const attendeeId = $(button).data('attendee-id');
+            const ticketType = $(button).data('ticket-type');
+            const token = $(button).data('token');
             
             // Validate required data
             if (!attendeeName || !attendeePhone) {
-                toastr.error('Missing required attendee information.');
-                return;
+                toastr.error('Missing required attendee information for SMS invitation.');
+                return false;
             }
             
+            // Show loading state
+            $(button).prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+            
+            // Prepare invitation data
             sendInvitation(ticketId, attendeeId, attendeeName, attendeePhone, ticketType, token);
-        });
+            
+            return false; // Prevent default modal behavior
+        }
 
         // Update the sendInvitation function to use predefined template
         function sendInvitation(ticketId, attendeeId, attendeeName, phone, ticketType, token) {
@@ -444,7 +459,7 @@
             $('#sendInvitationModal').modal('show');
         }
 
-        // Handle form submission
+        // Enhanced form submission handler
         $('#sendInvitationForm').on('submit', function(e) {
             e.preventDefault();
             const submitBtn = $('#sendInvitationBtn');
@@ -465,15 +480,41 @@
                 },
                 success: function(response) {
                     $('#sendInvitationModal').modal('hide');
-                    toastr.success('SMS invitation sent successfully!');
+                    
+                    // Show success message with details
+                    toastr.success(`SMS invitation sent successfully to ${response.recipient}!`, 'Success', {
+                        timeOut: 5000,
+                        extendedTimeOut: 2000
+                    });
+                    
+                    // Reset all send buttons to normal state
+                    $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
+                    
+                    // Log success for debugging
+                    console.log('SMS sent successfully:', response);
                 },
                 error: function(xhr) {
-                    toastr.error(xhr.responseJSON?.message || 'Failed to send SMS invitation');
+                    const errorMessage = xhr.responseJSON?.message || 'Failed to send SMS invitation';
+                    toastr.error(errorMessage, 'Error', {
+                        timeOut: 8000,
+                        extendedTimeOut: 3000
+                    });
+                    
+                    // Reset all send buttons to normal state
+                    $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
+                    
+                    // Log error for debugging
+                    console.error('SMS sending failed:', xhr.responseJSON);
                 },
                 complete: function() {
                     submitBtn.prop('disabled', false).html(originalBtnText);
                 }
             });
+        });
+        
+        // Reset button states when modal is closed
+        $('#sendInvitationModal').on('hidden.bs.modal', function () {
+            $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
         });
     </script>
     @endpush
