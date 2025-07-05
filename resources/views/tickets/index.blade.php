@@ -249,6 +249,43 @@
             padding: 0.25rem 0.5rem;
             font-size: 0.875rem;
         }
+        
+        /* SMS Feedback Styles */
+        .table-success {
+            background-color: rgba(25, 135, 84, 0.1) !important;
+            transition: background-color 0.3s ease;
+        }
+        
+        .table-danger {
+            background-color: rgba(220, 53, 69, 0.1) !important;
+            transition: background-color 0.3s ease;
+        }
+        
+        .badge.bg-success {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        .badge.bg-danger {
+            animation: fadeIn 0.5s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        
+        /* Button state transitions */
+        .send-invitation-btn {
+            transition: all 0.3s ease;
+        }
+        
+        .send-invitation-btn.btn-success {
+            box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.25);
+        }
+        
+        .send-invitation-btn.btn-danger {
+            box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+        }
     </style>
     @endpush
 
@@ -481,6 +518,12 @@
             
             // Show loading overlay
             $('#smsLoadingOverlay').removeClass('d-none');
+            
+            // Set a timeout to hide loading overlay after 30 seconds (safety mechanism)
+            const loadingTimeout = setTimeout(function() {
+                $('#smsLoadingOverlay').addClass('d-none');
+                console.warn('Loading overlay hidden by timeout - SMS request may have timed out');
+            }, 30000);
 
             // Get the predefined message
             const message = $('#predefinedMessage').val();
@@ -501,12 +544,48 @@
                     message: message // Send the predefined message
                 },
                 success: function(response) {
+                    // Hide loading overlay first
+                    $('#smsLoadingOverlay').addClass('d-none');
+                    
                     // Hide the modal
                     $('#sendInvitationModal').modal('hide');
                     
                     // Show success message with details
                     if (response.success) {
-                        toastr.success(`SMS invitation sent successfully to ${response.recipient}!`, 'Success');
+                        // Enhanced success feedback
+                        toastr.success(`✅ SMS invitation sent successfully to ${response.recipient}!`, 'Success', {
+                            timeOut: 8000,
+                            extendedTimeOut: 3000,
+                            closeButton: true,
+                            progressBar: true
+                        });
+                        
+                        // Show detailed success message
+                        const successDetails = `
+                            <div class="mt-2">
+                                <small class="text-muted">
+                                    📱 Phone: ${response.formatted_phone || response.original_phone}<br>
+                                    🆔 Message ID: ${response.sms_result?.messageId || 'N/A'}<br>
+                                    📋 Reference: ${response.reference || 'N/A'}
+                                </small>
+                            </div>
+                        `;
+                        
+                        // Show additional success notification with details
+                        setTimeout(() => {
+                            toastr.info(`📊 SMS Details: ${successDetails}`, 'Message Details', {
+                                timeOut: 10000,
+                                extendedTimeOut: 5000
+                            });
+                        }, 1000);
+                        
+                        // Show summary notification
+                        setTimeout(() => {
+                            toastr.success(`🎉 SMS invitation sent successfully! The attendee should receive the message shortly.`, 'SMS Summary', {
+                                timeOut: 6000,
+                                extendedTimeOut: 3000
+                            });
+                        }, 2000);
                         
                         // Show additional details in console for debugging
                         console.log('SMS sent successfully:', {
@@ -516,15 +595,58 @@
                             reference: response.reference
                         });
                     } else {
-                        toastr.warning('SMS was processed but may not have been delivered successfully.', 'Warning');
+                        toastr.warning('⚠️ SMS was processed but may not have been delivered successfully.', 'Warning', {
+                            timeOut: 10000,
+                            extendedTimeOut: 5000
+                        });
                     }
                     
-                    // Reset all send buttons to normal state
-                    $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
+                    // Update the specific button that was clicked to show success state
+                    const clickedButton = $('.send-invitation-btn').filter(function() {
+                        return $(this).data('attendee-id') === $('#invitationAttendeeId').val();
+                    });
+                    
+                    if (clickedButton.length) {
+                        // Change button to success state
+                        clickedButton
+                            .removeClass('btn-outline-success')
+                            .addClass('btn-success')
+                            .prop('disabled', true)
+                            .html('<i class="bi bi-check-circle"></i><span class="ms-1 d-none">Sent</span>')
+                            .attr('title', 'SMS sent successfully');
+                        
+                        // Add visual feedback to the table row
+                        const tableRow = clickedButton.closest('tr');
+                        tableRow.addClass('table-success');
+                        
+                        // Add a small success indicator
+                        tableRow.find('td:first').append('<span class="badge bg-success ms-2">SMS Sent</span>');
+                        
+                        // Reset button after 5 seconds
+                        setTimeout(() => {
+                            clickedButton
+                                .removeClass('btn-success')
+                                .addClass('btn-outline-success')
+                                .prop('disabled', false)
+                                .html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>')
+                                .attr('title', 'Send Invitation SMS');
+                            
+                            // Remove row highlighting
+                            tableRow.removeClass('table-success');
+                            tableRow.find('.badge.bg-success').remove();
+                        }, 5000);
+                    } else {
+                        // Fallback: reset all send buttons to normal state
+                        $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
+                    }
                 },
                 error: function(xhr) {
+                    // Hide loading overlay first
+                    $('#smsLoadingOverlay').addClass('d-none');
+                    
                     let errorMessage = 'Failed to send SMS invitation';
                     let errorTitle = 'Error';
+                    let errorIcon = '❌';
                     
                     if (xhr.responseJSON) {
                         errorMessage = xhr.responseJSON.message || errorMessage;
@@ -532,18 +654,83 @@
                         // Handle specific error cases
                         if (xhr.status === 422) {
                             errorTitle = 'Validation Error';
+                            errorIcon = '⚠️';
                         } else if (xhr.status === 429) {
                             errorTitle = 'Rate Limit Exceeded';
                             errorMessage = 'Too many SMS requests. Please wait a moment before trying again.';
+                            errorIcon = '⏰';
                         } else if (xhr.status === 500) {
                             errorTitle = 'Server Error';
+                            errorIcon = '🔧';
                         }
                     }
                     
-                    toastr.error(errorMessage, errorTitle);
+                    // Enhanced error feedback
+                    toastr.error(`${errorIcon} ${errorMessage}`, errorTitle, {
+                        timeOut: 12000,
+                        extendedTimeOut: 5000,
+                        closeButton: true,
+                        progressBar: true
+                    });
                     
-                    // Reset all send buttons to normal state
-                    $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
+                    // Show error details
+                    const errorDetails = `
+                        <div class="mt-2">
+                            <small class="text-muted">
+                                📱 Phone: ${$('#invitationAttendeePhone').text()}<br>
+                                👤 Attendee: ${$('#invitationAttendeeName').text()}<br>
+                                🔢 Status Code: ${xhr.status}<br>
+                                ⏰ Time: ${new Date().toLocaleTimeString()}
+                            </small>
+                        </div>
+                    `;
+                    
+                    // Show additional error notification with details
+                    setTimeout(() => {
+                        toastr.warning(`📊 Error Details: ${errorDetails}`, 'Error Information', {
+                            timeOut: 15000,
+                            extendedTimeOut: 8000
+                        });
+                    }, 1000);
+                    
+                    // Update the specific button that was clicked to show error state
+                    const clickedButton = $('.send-invitation-btn').filter(function() {
+                        return $(this).data('attendee-id') === $('#invitationAttendeeId').val();
+                    });
+                    
+                    if (clickedButton.length) {
+                        // Change button to error state temporarily
+                        clickedButton
+                            .removeClass('btn-outline-success')
+                            .addClass('btn-danger')
+                            .prop('disabled', false)
+                            .html('<i class="bi bi-exclamation-triangle"></i><span class="ms-1 d-none">Failed</span>')
+                            .attr('title', 'SMS sending failed - click to retry');
+                        
+                        // Add visual feedback to the table row
+                        const tableRow = clickedButton.closest('tr');
+                        tableRow.addClass('table-danger');
+                        
+                        // Add a small error indicator
+                        tableRow.find('td:first').append('<span class="badge bg-danger ms-2">SMS Failed</span>');
+                        
+                        // Reset button after 3 seconds
+                        setTimeout(() => {
+                            clickedButton
+                                .removeClass('btn-danger')
+                                .addClass('btn-outline-success')
+                                .prop('disabled', false)
+                                .html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>')
+                                .attr('title', 'Send Invitation SMS');
+                            
+                            // Remove row highlighting
+                            tableRow.removeClass('table-danger');
+                            tableRow.find('.badge.bg-danger').remove();
+                        }, 3000);
+                    } else {
+                        // Fallback: reset all send buttons to normal state
+                        $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
+                    }
                     
                     // Log error for debugging
                     console.error('SMS sending failed:', {
@@ -553,6 +740,9 @@
                     });
                 },
                 complete: function() {
+                    // Clear the loading timeout
+                    clearTimeout(loadingTimeout);
+                    
                     // Hide loading overlay
                     $('#smsLoadingOverlay').addClass('d-none');
                     
@@ -564,6 +754,10 @@
         
         // Reset button states when modal is closed
         $('#sendInvitationModal').on('hidden.bs.modal', function () {
+            // Hide loading overlay if it's still visible
+            $('#smsLoadingOverlay').addClass('d-none');
+            
+            // Reset all send buttons to normal state
             $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
         });
     </script>
