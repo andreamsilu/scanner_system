@@ -538,8 +538,10 @@ class SmsManagementController extends Controller
                 'timestamp' => now()->toIso8601String()
             ]);
 
-            // Validate phone number
-            if (!$this->isValidPhoneNumber($attendee->phone)) {
+            // Format and validate phone number
+            $formattedPhone = $this->formatPhoneNumber($attendee->phone);
+            
+            if (!$formattedPhone) {
                 // Log invalid phone number
                 Log::warning('Manual invitation SMS invalid phone number', [
                     'user_id' => $userId,
@@ -547,22 +549,24 @@ class SmsManagementController extends Controller
                     'attendee_id' => $attendee->id,
                     'attendee_name' => $attendee->name,
                     'attendee_phone' => $attendee->phone,
+                    'formatted_phone' => $formattedPhone,
                     'phone_validation' => false,
                     'timestamp' => now()->toIso8601String()
                 ]);
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Invalid phone number format for ' . $attendee->name
+                    'message' => 'Invalid phone number format for ' . $attendee->name . '. Expected format: 0769289824 or +255769289824'
                 ], 422);
             }
 
-            // Log phone number validation success
-            Log::info('Manual invitation SMS phone number validation passed', [
+            // Log phone number validation and formatting success
+            Log::info('Manual invitation SMS phone number validation and formatting passed', [
                 'user_id' => $userId,
                 'event_id' => $event->id,
                 'attendee_id' => $attendee->id,
-                'attendee_phone' => $attendee->phone,
+                'original_phone' => $attendee->phone,
+                'formatted_phone' => $formattedPhone,
                 'phone_validation' => true,
                 'timestamp' => now()->toIso8601String()
             ]);
@@ -585,7 +589,7 @@ class SmsManagementController extends Controller
             
             $payload = [
                 'from' => 'SENDOFF',
-                'to' => $attendee->phone,
+                'to' => $formattedPhone,
                 'text' => $message,
                 'reference' => $reference
             ];
@@ -595,7 +599,8 @@ class SmsManagementController extends Controller
                 'user_id' => $userId,
                 'event_id' => $event->id,
                 'attendee_id' => $attendee->id,
-                'recipient' => $attendee->phone,
+                'original_phone' => $attendee->phone,
+                'formatted_phone' => $formattedPhone,
                 'message_type' => 'invitation',
                 'reference' => $reference,
                 'payload_keys' => array_keys($payload),
@@ -666,7 +671,8 @@ class SmsManagementController extends Controller
                 'success' => true,
                 'message' => 'SMS sent successfully to ' . $attendee->name,
                 'recipient' => $attendee->name,
-                'phone' => $attendee->phone,
+                'original_phone' => $attendee->phone,
+                'formatted_phone' => $formattedPhone,
                 'sms_result' => [
                     'to' => $smsResult['to'],
                     'status' => $smsResult['status'],
@@ -698,7 +704,8 @@ class SmsManagementController extends Controller
                 'success' => false,
                 'message' => 'Failed to send SMS: ' . $e->getMessage(),
                 'recipient' => $attendee->name ?? null,
-                'phone' => $attendee->phone ?? null
+                'original_phone' => $attendee->phone ?? null,
+                'formatted_phone' => $formattedPhone ?? null
             ], 500);
         }
     }
@@ -714,6 +721,50 @@ class SmsManagementController extends Controller
     }
 
     /**
+     * Format phone number to Tanzanian format (255XXXXXXXXX)
+     *
+     * @param string|null $phone
+     * @return string|null
+     */
+    private function formatPhoneNumber(?string $phone): ?string
+    {
+        if (empty($phone)) {
+            return null;
+        }
+
+        // Remove any spaces, dashes, parentheses, or other non-digit characters
+        $phone = preg_replace('/[^\d]/', '', $phone);
+
+        // If it's already in the correct format (255XXXXXXXXX), return as is
+        if (preg_match('/^255\d{9}$/', $phone)) {
+            return $phone;
+        }
+
+        // If it starts with 0, replace with 255 (Tanzania country code)
+        if (preg_match('/^0(\d{9})$/', $phone, $matches)) {
+            return '255' . $matches[1];
+        }
+
+        // If it's 9 digits, assume it's a local number and add 255
+        if (preg_match('/^(\d{9})$/', $phone)) {
+            return '255' . $phone;
+        }
+
+        // If it's already 12 digits but doesn't start with 255, assume it's already formatted
+        if (preg_match('/^(\d{12})$/', $phone)) {
+            return $phone;
+        }
+
+        // If it starts with +255, remove the + and return
+        if (preg_match('/^\+255(\d{9})$/', $phone, $matches)) {
+            return '255' . $matches[1];
+        }
+
+        // If none of the above patterns match, return null
+        return null;
+    }
+
+    /**
      * Validate phone number format
      *
      * @param string|null $phone
@@ -721,26 +772,8 @@ class SmsManagementController extends Controller
      */
     private function isValidPhoneNumber(?string $phone): bool
     {
-        if (empty($phone)) {
-            return false;
-        }
-
-        // Remove any spaces, dashes, or parentheses
-        $phone = preg_replace('/[\s\-\(\)]/', '', $phone);
-
-        // Must start with + and country code
-        if (!preg_match('/^\+[1-9]\d{1,14}$/', $phone)) {
-            return false;
-        }
-
-        // Additional country-specific validation can be added here
-        // For Tanzania numbers (starting with +255)
-        if (strpos($phone, '+255') === 0) {
-            // Must be 12 digits after +255
-            return strlen($phone) === 13;
-        }
-
-        return true;
+        $formattedPhone = $this->formatPhoneNumber($phone);
+        return $formattedPhone !== null && preg_match('/^255\d{9}$/', $formattedPhone);
     }
 
     /**
