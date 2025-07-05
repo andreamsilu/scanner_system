@@ -292,6 +292,15 @@
     @push('scripts')
     <script>
         $(document).ready(function() {
+            // Global error handler to ensure loading overlay is hidden on any error
+            $(document).ajaxError(function(event, xhr, settings) {
+                if (settings.url && settings.url.includes('send-attendee-invitation')) {
+                    $('#smsLoadingOverlay').addClass('d-none');
+                    const submitBtn = $('#sendInvitationBtn');
+                    submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i> Send SMS');
+                    console.error('Global AJAX error handler - reset loading state');
+                }
+            });
             $('#tickets-table').DataTable({
                 processing: true,
                 pageLength: 15,
@@ -522,6 +531,8 @@
             // Set a timeout to hide loading overlay after 30 seconds (safety mechanism)
             const loadingTimeout = setTimeout(function() {
                 $('#smsLoadingOverlay').addClass('d-none');
+                const submitBtn = $('#sendInvitationBtn');
+                submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i> Send SMS');
                 console.warn('Loading overlay hidden by timeout - SMS request may have timed out');
             }, 30000);
 
@@ -546,6 +557,10 @@
                 success: function(response) {
                     // Hide loading overlay first
                     $('#smsLoadingOverlay').addClass('d-none');
+                    
+                    // Reset the submit button immediately
+                    const submitBtn = $('#sendInvitationBtn');
+                    submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i> Send SMS');
                     
                     // Hide the modal
                     $('#sendInvitationModal').modal('hide');
@@ -643,6 +658,10 @@
                 error: function(xhr) {
                     // Hide loading overlay first
                     $('#smsLoadingOverlay').addClass('d-none');
+                    
+                    // Reset the submit button immediately
+                    const submitBtn = $('#sendInvitationBtn');
+                    submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i> Send SMS');
                     
                     let errorMessage = 'Failed to send SMS invitation';
                     let errorTitle = 'Error';
@@ -746,8 +765,12 @@
                     // Hide loading overlay
                     $('#smsLoadingOverlay').addClass('d-none');
                     
-                    // Reset button
-                    submitBtn.prop('disabled', false).html(originalBtnText);
+                    // Reset button (fallback)
+                    const submitBtn = $('#sendInvitationBtn');
+                    submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i> Send SMS');
+                    
+                    // Debug logging
+                    console.log('AJAX complete - loading overlay hidden, submit button reset');
                 }
             });
         });
@@ -757,8 +780,15 @@
             // Hide loading overlay if it's still visible
             $('#smsLoadingOverlay').addClass('d-none');
             
+            // Reset the submit button
+            const submitBtn = $('#sendInvitationBtn');
+            submitBtn.prop('disabled', false).html('<i class="fas fa-paper-plane me-1"></i> Send SMS');
+            
             // Reset all send buttons to normal state
             $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
+            
+            // Debug logging
+            console.log('Modal closed - loading overlay hidden, buttons reset');
         });
     </script>
     @endpush
