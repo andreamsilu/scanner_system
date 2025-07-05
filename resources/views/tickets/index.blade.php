@@ -122,8 +122,6 @@
                                             <button type="button"
                                                     class="btn btn-outline-success send-invitation-btn"
                                                     title="Send Invitation SMS"
-                                                    data-bs-toggle="modal"
-                                                    data-bs-target="#sendInvitationModal"
                                                     data-ticket-id="{{ $ticket->id }}"
                                                     data-attendee-name="{{ $ticket->attendee->name }}"
                                                     data-attendee-phone="{{ $ticket->attendee->phone }}"
@@ -444,8 +442,20 @@
             const period = hours >= 12 ? 'jioni' : 'asubuhi';
             const formattedTime = `${hours}:${minutes}`;
 
-            // Create predefined SMS message with actual values
+            // Create predefined SMS message with actual values from the modal
             const smsTemplate = `Ndugu ${attendeeName}, unakaribishwa kwenye {{ $event->name }} itakayofanyika ${dayName} ${eventDate.toLocaleDateString('en-GB')} saa ${formattedTime} ${period}. Mahali: {{ $event->location }}. Ukumbi: {{ $event->venue }}. Tiketi: ${token} (${ticketType.toUpperCase()}). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824`;
+            
+            // Validate that we have all required data
+            if (!attendeeName || !token || !ticketType) {
+                console.error('Missing required data for SMS template:', {
+                    attendeeName,
+                    token,
+                    ticketType,
+                    eventName: '{{ $event->name }}',
+                    eventDate: eventDate.toLocaleDateString('en-GB'),
+                    eventTime: `${formattedTime} ${period}`
+                });
+            }
             
             // Set the predefined message in the hidden input
             $('#predefinedMessage').val(smsTemplate);
@@ -465,11 +475,23 @@
             const submitBtn = $('#sendInvitationBtn');
             const originalBtnText = submitBtn.html();
             
+            // Show loading state
             submitBtn.prop('disabled', true)
                 .html('<i class="fas fa-spinner fa-spin me-1"></i> Sending...');
+            
+            // Show loading overlay
+            $('#smsLoadingOverlay').removeClass('d-none');
 
             // Get the predefined message
             const message = $('#predefinedMessage').val();
+            
+            // Log the message being sent for debugging
+            console.log('Sending SMS message:', {
+                message: message,
+                messageLength: message.length,
+                attendeeName: $('#invitationAttendeeName').text(),
+                phone: $('#invitationAttendeePhone').text()
+            });
 
             $.ajax({
                 url: $(this).attr('action'),
@@ -479,34 +501,62 @@
                     message: message // Send the predefined message
                 },
                 success: function(response) {
+                    // Hide the modal
                     $('#sendInvitationModal').modal('hide');
                     
                     // Show success message with details
-                    toastr.success(`SMS invitation sent successfully to ${response.recipient}!`, 'Success', {
-                        timeOut: 5000,
-                        extendedTimeOut: 2000
-                    });
+                    if (response.success) {
+                        toastr.success(`SMS invitation sent successfully to ${response.recipient}!`, 'Success');
+                        
+                        // Show additional details in console for debugging
+                        console.log('SMS sent successfully:', {
+                            recipient: response.recipient,
+                            phone: response.formatted_phone || response.original_phone,
+                            message_id: response.sms_result?.messageId,
+                            reference: response.reference
+                        });
+                    } else {
+                        toastr.warning('SMS was processed but may not have been delivered successfully.', 'Warning');
+                    }
                     
                     // Reset all send buttons to normal state
                     $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
-                    
-                    // Log success for debugging
-                    console.log('SMS sent successfully:', response);
                 },
                 error: function(xhr) {
-                    const errorMessage = xhr.responseJSON?.message || 'Failed to send SMS invitation';
-                    toastr.error(errorMessage, 'Error', {
-                        timeOut: 8000,
-                        extendedTimeOut: 3000
-                    });
+                    let errorMessage = 'Failed to send SMS invitation';
+                    let errorTitle = 'Error';
+                    
+                    if (xhr.responseJSON) {
+                        errorMessage = xhr.responseJSON.message || errorMessage;
+                        
+                        // Handle specific error cases
+                        if (xhr.status === 422) {
+                            errorTitle = 'Validation Error';
+                        } else if (xhr.status === 429) {
+                            errorTitle = 'Rate Limit Exceeded';
+                            errorMessage = 'Too many SMS requests. Please wait a moment before trying again.';
+                        } else if (xhr.status === 500) {
+                            errorTitle = 'Server Error';
+                        }
+                    }
+                    
+                    toastr.error(errorMessage, errorTitle);
                     
                     // Reset all send buttons to normal state
                     $('.send-invitation-btn').prop('disabled', false).html('<i class="bi bi-envelope"></i><span class="ms-1 d-none">SMS</span>');
                     
                     // Log error for debugging
-                    console.error('SMS sending failed:', xhr.responseJSON);
+                    console.error('SMS sending failed:', {
+                        status: xhr.status,
+                        response: xhr.responseJSON,
+                        error: errorMessage
+                    });
                 },
                 complete: function() {
+                    // Hide loading overlay
+                    $('#smsLoadingOverlay').addClass('d-none');
+                    
+                    // Reset button
                     submitBtn.prop('disabled', false).html(originalBtnText);
                 }
             });
@@ -583,6 +633,18 @@
                         <button type="submit" class="btn btn-primary" id="sendInvitationBtn">
                             <i class="fas fa-paper-plane me-1"></i> Send SMS
                         </button>
+                    </div>
+                    
+                    <!-- Loading overlay -->
+                    <div id="smsLoadingOverlay" class="position-absolute top-0 start-0 w-100 h-100 bg-white bg-opacity-75 d-none" style="z-index: 1050;">
+                        <div class="d-flex justify-content-center align-items-center h-100">
+                            <div class="text-center">
+                                <div class="spinner-border text-primary mb-2" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="text-muted mb-0">Sending SMS...</p>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>

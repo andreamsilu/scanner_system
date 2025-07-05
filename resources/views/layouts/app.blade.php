@@ -158,13 +158,18 @@
         <!-- jQuery -->
         <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
 
+        <!-- Toastr for notifications -->
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
         <!-- DataTables -->
         <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
         <script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
 
-        <!-- Initialize DataTables -->
+        <!-- Initialize DataTables and Toastr -->
         <script>
             $(document).ready(function() {
+                // Initialize DataTables
                 $('.datatable').DataTable({
                     responsive: true,
                     language: {
@@ -172,6 +177,25 @@
                         searchPlaceholder: "Search..."
                     }
                 });
+
+                // Configure Toastr
+                toastr.options = {
+                    "closeButton": true,
+                    "debug": false,
+                    "newestOnTop": true,
+                    "progressBar": true,
+                    "positionClass": "toast-top-right",
+                    "preventDuplicates": false,
+                    "onclick": null,
+                    "showDuration": "300",
+                    "hideDuration": "1000",
+                    "timeOut": "5000",
+                    "extendedTimeOut": "1000",
+                    "showEasing": "swing",
+                    "hideEasing": "linear",
+                    "showMethod": "fadeIn",
+                    "hideMethod": "fadeOut"
+                };
             });
         </script>
 

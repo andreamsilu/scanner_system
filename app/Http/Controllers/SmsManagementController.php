@@ -571,8 +571,8 @@ class SmsManagementController extends Controller
                 'timestamp' => now()->toIso8601String()
             ]);
 
-            // Prepare SMS payload
-            $message = $request->custom_message ?? $this->getDefaultInvitationMessage($ticket);
+            // Prepare SMS payload - use the message from the modal
+            $message = $request->message ?? $request->custom_message ?? $this->getDefaultInvitationMessage($ticket);
             $reference = 'EVT-' . $event->id . '-' . $ticket->id . '-' . time();
             
             // Log message preparation
@@ -582,6 +582,7 @@ class SmsManagementController extends Controller
                 'attendee_id' => $attendee->id,
                 'message_length' => strlen($message),
                 'message_preview' => substr($message, 0, 100) . '...',
+                'message_source' => $request->message ? 'modal' : ($request->custom_message ? 'custom' : 'default'),
                 'uses_custom_message' => !empty($request->custom_message),
                 'reference' => $reference,
                 'timestamp' => now()->toIso8601String()
@@ -619,6 +620,7 @@ class SmsManagementController extends Controller
                     'reference' => $reference,
                     'user_id' => $userId,
                     'invitation_type' => 'manual',
+                    'message_source' => $request->message ? 'modal' : ($request->custom_message ? 'custom' : 'default'),
                     'uses_custom_message' => !empty($request->custom_message)
                 ]
             );
