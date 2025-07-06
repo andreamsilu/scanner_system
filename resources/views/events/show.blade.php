@@ -199,6 +199,105 @@
             </div>
         </div>
 
+        <!-- Card Template Preview -->
+        @if($event->cardTemplate)
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-id-card me-2"></i>Card Template Preview
+                    </h5>
+                    <div>
+                        <span class="badge bg-primary">{{ $event->cardTemplate->name }}</span>
+                        <span class="badge bg-secondary">{{ App\Models\CardTemplate::getTypes()[$event->cardTemplate->type] ?? $event->cardTemplate->type }}</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="template-preview-container border rounded p-3 bg-light" style="min-height: 400px; max-height: 600px; overflow-y: auto;">
+                                {!! $event->cardTemplate->render([
+                                    'event_name' => $event->name,
+                                    'event_date' => $event->start_date->format('F j, Y'),
+                                    'event_time' => $event->start_date->format('g:i A'),
+                                    'event_venue' => $event->venue,
+                                    'attendee_name' => 'Sample Attendee',
+                                    'attendee_email' => 'sample@example.com',
+                                    'attendee_phone' => '+255 712 345 678',
+                                    'attendee_company' => 'Sample Company',
+                                    'attendee_position' => 'Manager',
+                                    'attendee_status' => 'Registered',
+                                    'ticket_id' => 'TKT-' . strtoupper(substr(md5(uniqid()), 0, 8))
+                                ]) !!}
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="template-info">
+                                <h6 class="text-muted mb-3">Template Information</h6>
+                                <p><strong>Name:</strong> {{ $event->cardTemplate->name }}</p>
+                                <p><strong>Type:</strong> {{ App\Models\CardTemplate::getTypes()[$event->cardTemplate->type] ?? $event->cardTemplate->type }}</p>
+                                @if($event->cardTemplate->description)
+                                <p><strong>Description:</strong> {{ $event->cardTemplate->description }}</p>
+                                @endif
+                                <p><strong>Status:</strong> 
+                                    <span class="badge bg-{{ $event->cardTemplate->is_active ? 'success' : 'secondary' }}">
+                                        {{ $event->cardTemplate->is_active ? 'Active' : 'Inactive' }}
+                                    </span>
+                                </p>
+                                <div class="mt-3">
+                                    <a href="{{ route('card-templates.show', $event->cardTemplate) }}" class="btn btn-outline-primary btn-sm">
+                                        <i class="bi bi-eye me-2"></i>View Template Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @else
+        <div class="col-12">
+            <div class="card shadow-sm border-warning">
+                <div class="card-header bg-transparent">
+                    <h5 class="card-title mb-0 text-warning">
+                        <i class="bi bi-exclamation-triangle me-2"></i>No Card Template Assigned
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted mb-3">This event doesn't have a card template assigned. Attendees will use the default card format.</p>
+                    <a href="{{ route('events.edit', $event) }}" class="btn btn-warning btn-sm">
+                        <i class="bi bi-pencil me-2"></i>Assign Template
+                    </a>
+                </div>
+            </div>
+        </div>
+        @endif
+                    </div>
+                    <!-- Progress bar for check-in status -->
+                    <div class="mt-4">
+                        <h6 class="text-muted mb-2">Check-in Progress</h6>
+                        <div class="progress" style="height: 8px;">
+                            @php
+                                $totalAttendees = $event->attendees->count();
+                                $checkedInAttendees = $event->attendees->where('registration_status', 'checked_in')->count();
+                                $checkInPercentage = $totalAttendees > 0 ? ($checkedInAttendees / $totalAttendees) * 100 : 0;
+                            @endphp
+                            <div class="progress-bar bg-success" 
+                                 role="progressbar" 
+                                 style="width: {{ $checkInPercentage }}%"
+                                 aria-valuenow="{{ $checkInPercentage }}"
+                                 aria-valuemin="0"
+                                 aria-valuemax="100">
+                            </div>
+                        </div>
+                        <small class="text-muted mt-2 d-block">
+                            {{ $checkedInAttendees }} of {{ $totalAttendees }} attendees checked in
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Scanner Assignments Card - Full Width Row -->
         <div class="col-12">
             <div class="card shadow-sm">
