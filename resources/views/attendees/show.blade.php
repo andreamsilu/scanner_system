@@ -304,11 +304,11 @@
                     <div class="card-body">
                         <div class="d-grid gap-2">
                             @if($attendee->ticket)
-                                <a href="{{ route('events.events.tickets.print', [$event, $attendee->ticket]) }}"
-                                   class="btn btn-outline-primary"
-                                   target="_blank">
+                                <button type="button"
+                                        class="btn btn-outline-primary"
+                                        onclick="downloadTicket('{{ route('events.events.tickets.print', [$event, $attendee->ticket]) }}')">
                                     <i class="bi bi-download me-2"></i>Download Ticket
-                                </a>
+                                </button>
                                 @if($attendee->ticket->status === 'valid')
                                     <form action="{{ route('events.events.tickets.deactivate', [$event, $attendee->ticket]) }}"
                                           method="POST"
@@ -362,4 +362,19 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function downloadTicket(url) {
+            // Create a temporary link element
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = ''; // This will use the filename from the server
+            link.style.display = 'none';
+            
+            // Append to body, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
 </x-app-layout> 

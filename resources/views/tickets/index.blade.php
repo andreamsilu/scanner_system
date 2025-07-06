@@ -400,7 +400,16 @@
         });
 
         function downloadTicket(url) {
-            window.open(url, '_blank');
+            // Create a temporary link element
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = ''; // This will use the filename from the server
+            link.style.display = 'none';
+            
+            // Append to body, click, and remove
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         function shareViaWhatsApp(eventName, attendeeName, token, eventDate, ticketUrl) {
