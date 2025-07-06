@@ -21,7 +21,8 @@ class Event extends Model
         'end_date',
         'capacity',
         'status',
-        'created_by'
+        'created_by',
+        'card_template_id'
     ];
 
     protected $casts = [
@@ -197,6 +198,14 @@ class Event extends Model
     public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
+    }
+
+    /**
+     * Get the card template associated with this event
+     */
+    public function cardTemplate(): BelongsTo
+    {
+        return $this->belongsTo(CardTemplate::class);
     }
 
     /**

@@ -36,7 +36,8 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'start_date' => 'required|date_format:d/m/Y H:i',
             'end_date' => 'required|date_format:d/m/Y H:i|after:start_date',
-            'capacity' => 'required|integer|min:1'
+            'capacity' => 'required|integer|min:1',
+            'card_template_id' => 'nullable|exists:card_templates,id'
         ]);
 
         // Convert dates to database format
@@ -91,7 +92,8 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'start_date' => 'required|date_format:d/m/Y H:i',
             'end_date' => 'required|date_format:d/m/Y H:i|after:start_date',
-            'capacity' => 'required|integer|min:1'
+            'capacity' => 'required|integer|min:1',
+            'card_template_id' => 'nullable|exists:card_templates,id'
         ]);
 
         // Convert dates to database format
