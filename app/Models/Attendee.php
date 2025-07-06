@@ -55,11 +55,11 @@ class Attendee extends Model
         parent::boot();
 
         static::creating(function ($attendee) {
-            // Generate unique 7-digit token if not provided
+            // Generate unique 6-digit token if not provided
             if (empty($attendee->token)) {
                 do {
-                    // Generate a random 7-digit number
-                    $token = str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT);
+                    // Generate a random 6-digit number
+                    $token = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
                 } while (static::where('token', $token)->exists());
                 
                 $attendee->token = $token;
