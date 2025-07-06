@@ -123,6 +123,14 @@ class TicketController extends Controller
                     'actions' => [
                         'view_url' => $ticket->attendee ? route('events.tickets.show', ['event' => $event->id, 'token' => $ticket->attendee->token]) : '#',
                         'print_url' => $ticket->attendee ? route('events.tickets.print', ['event' => $event->id, 'token' => $ticket->attendee->token]) : '#',
+                        'sms_data' => ($ticket->attendee && $ticket->attendee->phone) ? [
+                            'attendee_id' => $ticket->attendee->id,
+                            'attendee_name' => $ticket->attendee->name,
+                            'phone' => $ticket->attendee->phone,
+                            'ticket_id' => $ticket->id,
+                            'ticket_type' => $ticket->type,
+                            'event_id' => $event->id
+                        ] : null,
                         'deactivate_url' => ($ticket->status === 'active' && $ticket->attendee) ? 
                             route('events.tickets.deactivate', ['event' => $event->id, 'token' => $ticket->attendee->token]) : null
                     ]

@@ -97,6 +97,41 @@
         </div>
     </div>
 
+    <!-- Send SMS Modal -->
+    <div class="modal fade" id="sendSmsModal" tabindex="-1" aria-labelledby="sendSmsModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="sendSmsModalLabel">Send SMS Invitation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="sendSmsForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label for="smsRecipient" class="form-label">Recipient</label>
+                            <input type="text" class="form-control" id="smsRecipient" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="smsPhone" class="form-label">Phone Number</label>
+                            <input type="text" class="form-control" id="smsPhone" readonly>
+                        </div>
+                        <div class="mb-3">
+                            <label for="smsMessage" class="form-label">Message</label>
+                            <textarea class="form-control" id="smsMessage" rows="4" readonly></textarea>
+                        </div>
+                        <div id="smsResult" class="alert" style="display: none;"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-primary" id="sendSmsBtn">
+                            <i class="bi bi-send me-2"></i>Send SMS
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     @push('styles')
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/dataTables.bootstrap5.min.css">
     <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
@@ -249,6 +284,14 @@
                                             onclick="printTicket('${data.print_url}')">
                                         <i class="bi bi-printer"></i>
                                     </button>
+                                    ${data.sms_data ? `
+                                        <button type="button"
+                                                class="btn btn-outline-success"
+                                                title="Send SMS"
+                                                onclick="openSmsModal(${JSON.stringify(data.sms_data)})">
+                                            <i class="bi bi-send"></i>
+                                        </button>
+                                    ` : ''}
                                     ${data.deactivate_url ? `
                                         <form action="${data.deactivate_url}" 
                                               method="POST" 
@@ -363,6 +406,77 @@
         function printTicket(url) {
             window.open(url, '_blank');
         }
+
+        // Open SMS modal function
+        function openSmsModal(smsData) {
+            // Populate modal with SMS data
+            document.getElementById('smsRecipient').value = smsData.attendee_name;
+            document.getElementById('smsPhone').value = smsData.phone;
+            
+            // Generate invitation message
+            const message = `Ndugu ${smsData.attendee_name}, unakaribishwa kwenye {{ $event->name }}. Tiketi: ${smsData.ticket_type}. Maelezo: 0769289824`;
+            document.getElementById('smsMessage').value = message;
+            
+            // Store SMS data for form submission
+            document.getElementById('sendSmsForm').setAttribute('data-sms-data', JSON.stringify(smsData));
+            
+            // Show modal
+            new bootstrap.Modal(document.getElementById('sendSmsModal')).show();
+        }
+
+        // Handle SMS form submission
+        document.getElementById('sendSmsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const form = e.target;
+            const submitBtn = document.getElementById('sendSmsBtn');
+            const resultDiv = document.getElementById('smsResult');
+            const smsData = JSON.parse(form.getAttribute('data-sms-data'));
+            
+            try {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Sending...';
+                resultDiv.style.display = 'none';
+                
+                const response = await fetch('{{ route("sms.management.send-attendee-invitation", $event) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        attendee_id: smsData.attendee_id,
+                        phone: smsData.phone,
+                        user_name: smsData.attendee_name,
+                        ticket_type: smsData.ticket_type,
+                        ticket_id: smsData.ticket_id,
+                        event_id: smsData.event_id
+                    })
+                });
+                
+                const result = await response.json();
+                
+                resultDiv.className = result.success ? 'alert alert-success' : 'alert alert-danger';
+                resultDiv.innerHTML = result.message;
+                resultDiv.style.display = 'block';
+                
+                if (result.success) {
+                    submitBtn.innerHTML = '<i class="bi bi-check me-2"></i>Sent Successfully';
+                    setTimeout(() => {
+                        bootstrap.Modal.getInstance(document.getElementById('sendSmsModal')).hide();
+                    }, 2000);
+                } else {
+                    submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Send SMS';
+                }
+            } catch (error) {
+                resultDiv.className = 'alert alert-danger';
+                resultDiv.innerHTML = 'Failed to send SMS. Please try again.';
+                resultDiv.style.display = 'block';
+                submitBtn.innerHTML = '<i class="bi bi-send me-2"></i>Send SMS';
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
     </script>
     @endpush
 </x-app-layout> 
