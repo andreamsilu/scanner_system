@@ -8,6 +8,7 @@ use App\Models\Attendee;
 use App\Services\SmsService;
 use App\Jobs\SendSingleSms;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
