@@ -8,7 +8,6 @@ use App\Models\Attendee;
 use App\Services\SmsService;
 use App\Jobs\SendSingleSms;
 use Illuminate\Http\Request;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
@@ -39,113 +38,14 @@ class TicketController extends Controller
     /**
      * Display a listing of the tickets.
      */
-    public function index(Event $event, Request $request): View|JsonResponse
+    public function index(Event $event)
     {
-        if ($request->ajax()) {
-            $query = $event->tickets()->with(['event', 'attendee', 'scanLogs' => function($query) {
-                $query->latest();
-            }]);
+        $tickets = Ticket::with(['event', 'attendee'])
+            ->where('event_id', $event->id)
+            ->latest()
+            ->paginate(20);
 
-            // Apply filters
-            if ($request->search['value']) {
-                $searchValue = $request->search['value'];
-                $query->where(function($q) use ($searchValue) {
-                    $q->where('ticket_number', 'like', '%' . $searchValue . '%')
-                      ->orWhere('type', 'like', '%' . $searchValue . '%')
-                      ->orWhere('status', 'like', '%' . $searchValue . '%')
-                      ->orWhereHas('attendee', function($q) use ($searchValue) {
-                          $q->where('name', 'like', '%' . $searchValue . '%')
-                            ->orWhere('token', 'like', '%' . $searchValue . '%');
-                      });
-                });
-            }
-
-            if ($request->ticket_type) {
-                $query->where('type', $request->ticket_type);
-            }
-
-            if ($request->status) {
-                $query->where('status', $request->status);
-            }
-
-            // Get total count before pagination
-            $totalRecords = $query->count();
-            $totalFiltered = $totalRecords;
-
-            // Apply ordering
-            $orderColumn = $request->order[0]['column'] ?? 6; // Default to created_at
-            $orderDir = $request->order[0]['dir'] ?? 'desc';
-            $columns = ['attendee', 'type', 'status', 'last_scan', 'created_at'];
-            
-            if (isset($columns[$orderColumn])) {
-                $column = $columns[$orderColumn];
-                if ($column === 'attendee') {
-                    $query->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id')
-                          ->orderBy('attendees.name', $orderDir)
-                          ->select('tickets.*');
-                } elseif ($column === 'last_scan') {
-                    $query->leftJoin('scan_logs', function($join) {
-                        $join->on('tickets.id', '=', 'scan_logs.ticket_id')
-                             ->whereRaw('scan_logs.id IN (SELECT MAX(id) FROM scan_logs GROUP BY ticket_id)');
-                    })
-                    ->orderBy('scan_logs.created_at', $orderDir)
-                    ->select('tickets.*');
-                } else {
-                    $query->orderBy($column, $orderDir);
-                }
-            }
-
-            // Apply pagination
-            $start = $request->start ?? 0;
-            $length = $request->length ?? 15;
-            $tickets = $query->skip($start)->take($length)->get();
-
-            // Transform data for DataTables
-            $data = $tickets->map(function ($ticket) use ($event) {
-                return [
-                    'attendee' => $ticket->attendee ? [
-                        'name' => $ticket->attendee->name,
-                        'token' => $ticket->attendee->token
-                    ] : null,
-                    'type' => [
-                        'type' => ucfirst($ticket->type),
-                        'badge' => $this->getTicketTypeBadge($ticket->type)
-                    ],
-                    'status' => [
-                        'status' => $ticket->status,
-                        'badge' => $ticket->status === 'active' ? 'success' : 'danger'
-                    ],
-                    'last_scan' => $ticket->scanLogs->first() ? [
-                        'time' => $ticket->scanLogs->first()->created_at->format('Y-m-d H:i:s'),
-                        'diff' => $ticket->scanLogs->first()->created_at->diffForHumans()
-                    ] : null,
-                    'created_at' => $ticket->created_at->format('d-m-Y H:i'),
-                    'actions' => [
-                        'view_url' => $ticket->attendee ? route('events.tickets.show', ['event' => $event->id, 'token' => $ticket->attendee->token]) : '#',
-                        'print_url' => $ticket->attendee ? route('events.tickets.print', ['event' => $event->id, 'token' => $ticket->attendee->token]) : '#',
-                        'sms_data' => ($ticket->attendee && $ticket->attendee->phone) ? [
-                            'attendee_id' => $ticket->attendee->id,
-                            'attendee_name' => $ticket->attendee->name,
-                            'phone' => $ticket->attendee->phone,
-                            'ticket_id' => $ticket->id,
-                            'ticket_type' => $ticket->type,
-                            'event_id' => $event->id
-                        ] : null,
-                        'deactivate_url' => ($ticket->status === 'active' && $ticket->attendee) ? 
-                            route('events.tickets.deactivate', ['event' => $event->id, 'token' => $ticket->attendee->token]) : null
-                    ]
-                ];
-            });
-
-            return response()->json([
-                'draw' => $request->draw,
-                'recordsTotal' => $totalRecords,
-                'recordsFiltered' => $totalFiltered,
-                'data' => $data
-            ]);
-        }
-
-        return view('tickets.index', compact('event'));
+        return view('tickets.index', compact('tickets', 'event'));
     }
 
     /**
@@ -386,28 +286,6 @@ class TicketController extends Controller
             return back()
                 ->withInput()
                 ->with('error', $e->getMessage());
-        }
-    }
-
-    /**
-     * Get the badge class for ticket type
-     *
-     * @param string $type
-     * @return string
-     */
-    protected function getTicketTypeBadge(string $type): string
-    {
-        switch ($type) {
-            case 'vip':
-                return 'warning';
-            case 'regular':
-                return 'secondary';
-            case 'single':
-                return 'primary';
-            case 'double':
-                return 'success';
-            default:
-                return 'secondary';
         }
     }
 
