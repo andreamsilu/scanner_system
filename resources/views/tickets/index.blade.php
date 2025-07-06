@@ -114,9 +114,9 @@
                                         </a>
                                         <button type="button"
                                                 class="btn btn-outline-primary"
-                                                title="Print Ticket"
-                                                onclick="printTicket('{{ route('events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
-                                            <i class="bi bi-printer"></i>
+                                                title="Download Ticket"
+                                                onclick="downloadTicket('{{ route('events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
+                                            <i class="bi bi-download"></i>
                                         </button>
 
                                         @if($ticket->attendee && $ticket->attendee->phone)
@@ -399,11 +399,8 @@
             });
         });
 
-        function printTicket(url) {
-            const printWindow = window.open(url, '_blank');
-            printWindow.onload = function() {
-                printWindow.print();
-            };
+        function downloadTicket(url) {
+            window.open(url, '_blank');
         }
 
         function shareViaWhatsApp(eventName, attendeeName, token, eventDate, ticketUrl) {

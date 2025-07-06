@@ -57,7 +57,7 @@
 
     <div class="no-print" style="text-align: center; margin-top: 20px;">
         <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 4px;">
-            Print Ticket
+            Download Ticket
         </button>
         <a href="{{ route('tickets.show', $ticket) }}" style="padding: 10px 20px; font-size: 16px; text-decoration: none; background: #6c757d; color: white; border-radius: 4px; margin-left: 10px;">
             View Default Design

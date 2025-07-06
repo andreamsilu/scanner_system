@@ -148,9 +148,9 @@
                                             </a>
                                             <a href="{{ route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) }}" 
                                                class="text-green-600 hover:text-green-900"
-                                               title="Print Ticket"
+                                               title="Download Ticket"
                                                target="_blank">
-                                                <i class="bi bi-printer"></i>
+                                                <i class="bi bi-download"></i>
                                             </a>
                                             @if($ticket->is_active)
                                                 <form action="{{ route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) }}" 
@@ -361,8 +361,8 @@ $(document).ready(function() {
                     }
                     
                     if (data.print_url) {
-                        html += `<a href="${data.print_url}" class="text-green-600 hover:text-green-900" title="Print Ticket" target="_blank">
-                            <i class="bi bi-printer"></i>
+                        html += `<a href="${data.print_url}" class="text-green-600 hover:text-green-900" title="Download Ticket" target="_blank">
+                            <i class="bi bi-download"></i>
                         </a>`;
                     }
                     

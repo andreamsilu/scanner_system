@@ -307,7 +307,7 @@
                                 <a href="{{ route('events.events.tickets.print', [$event, $attendee->ticket]) }}"
                                    class="btn btn-outline-primary"
                                    target="_blank">
-                                    <i class="bi bi-printer me-2"></i>Print Ticket
+                                    <i class="bi bi-download me-2"></i>Download Ticket
                                 </a>
                                 @if($attendee->ticket->status === 'valid')
                                     <form action="{{ route('events.events.tickets.deactivate', [$event, $attendee->ticket]) }}"

@@ -194,7 +194,7 @@
     </div>
     <div class="no-print" style="text-align: center; margin-top: 20px;">
         <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
-            Print Ticket
+            Download Ticket
         </button>
     </div>
 </body>
