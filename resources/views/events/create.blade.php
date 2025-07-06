@@ -131,25 +131,7 @@
                         </div>
                     </div>
 
-                    <div class="col-md-6">
-                        <div class="form-group">
-                            <label for="card_template_id" class="form-label">Card Template</label>
-                            <select class="form-select @error('card_template_id') is-invalid @enderror" 
-                                    id="card_template_id" 
-                                    name="card_template_id">
-                                <option value="">Select a template (optional)</option>
-                                @foreach(App\Models\CardTemplate::active()->get() as $template)
-                                    <option value="{{ $template->id }}" {{ old('card_template_id') == $template->id ? 'selected' : '' }}>
-                                        {{ $template->name }} ({{ App\Models\CardTemplate::getTypes()[$template->type] ?? $template->type }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            <div class="form-text">Choose a template for generating attendee cards</div>
-                            @error('card_template_id')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
+
                 </div>
 
                 <div class="mt-4">

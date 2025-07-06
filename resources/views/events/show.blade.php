@@ -97,45 +97,7 @@
             </div>
         </div>
 
-        <!-- Card Template Preview -->
-        @if($event->cardTemplate)
-        <div class="col-12">
-            <div class="card shadow-sm">
-                <div class="card-header bg-transparent">
-                    <h5 class="card-title mb-0">
-                        <i class="bi bi-id-card me-2"></i>Card Template Preview
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <h6 class="text-muted mb-2">Selected Template</h6>
-                                <p class="mb-0 fw-medium">{{ $event->cardTemplate->name }}</p>
-                                <small class="text-muted">{{ App\Models\CardTemplate::getTypes()[$event->cardTemplate->type] ?? $event->cardTemplate->type }}</small>
-                            </div>
-                            <div class="mb-3">
-                                <h6 class="text-muted mb-2">Template Description</h6>
-                                <p class="mb-0">{{ $event->cardTemplate->description ?: 'No description available' }}</p>
-                            </div>
-                            <div class="mb-3">
-                                <a href="{{ route('card-templates.show', $event->cardTemplate) }}" class="btn btn-outline-primary btn-sm">
-                                    <i class="bi bi-eye me-2"></i>View Template Details
-                                </a>
-                            </div>
-                        </div>
-                        <div class="col-md-8">
-                            <div class="border rounded p-3 bg-light" style="max-height: 400px; overflow-y: auto;">
-                                <div id="templatePreview">
-                                    <!-- Template preview will be loaded here -->
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        @endif
+
 
         <!-- Statistics Card - Full Width Row -->
         <div class="col-12">
@@ -539,36 +501,7 @@
     @push('scripts')
     <script>
     document.addEventListener('DOMContentLoaded', function() {
-        // Load template preview if template exists
-        @if($event->cardTemplate)
-        loadTemplatePreview();
-        @endif
 
-        function loadTemplatePreview() {
-            const sampleData = {
-                event_name: '{{ $event->name }}',
-                event_date: '{{ $event->start_date->format("F j, Y") }}',
-                event_time: '{{ $event->start_date->format("g:i A") }}',
-                event_venue: '{{ $event->venue }}',
-                attendee_name: 'Sample Attendee',
-                attendee_email: 'sample@example.com',
-                attendee_phone: '+255 712 345 678',
-                attendee_company: 'Sample Company',
-                attendee_position: 'Manager',
-                attendee_status: 'Registered',
-                ticket_id: 'TKT-{{ $event->id }}-001'
-            };
-
-            const templateContent = `{!! addslashes($event->cardTemplate->content) !!}`;
-            let previewContent = templateContent;
-            
-            Object.keys(sampleData).forEach(key => {
-                const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
-                previewContent = previewContent.replace(regex, sampleData[key]);
-            });
-
-            document.getElementById('templatePreview').innerHTML = previewContent;
-        }
         // Handle scanner selection in assign modal
         const scannerSelect = document.getElementById('scanner_id');
         const scannerDetails = document.getElementById('scannerDetails');

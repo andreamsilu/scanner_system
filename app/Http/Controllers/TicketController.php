@@ -104,16 +104,7 @@ class TicketController extends Controller
         return view('tickets.print', compact('event', 'ticket'));
     }
 
-    /**
-     * Show the ticket using the event's card template.
-     */
-    public function showTemplate(Ticket $ticket)
-    {
-        // Load the event and attendee relationships
-        $ticket->load(['event.cardTemplate', 'attendee']);
-        
-        return view('tickets.template-show', compact('ticket'));
-    }
+
 
     /**
      * Deactivate a specific ticket.
@@ -371,25 +362,7 @@ class TicketController extends Controller
         return $pdf->download('ticket-' . $ticket->token . '.pdf');
     }
 
-    /**
-     * Export a single ticket as PDF using the event's card template
-     */
-    public function exportTicketWithTemplate(Event $event, $token)
-    {
-        $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
-            $query->where('token', $token);
-        })
-        ->where('event_id', $event->id)
-        ->with(['attendee', 'event.cardTemplate'])
-        ->firstOrFail();
 
-        // Use template view if available, otherwise fallback to default
-        $view = $ticket->event->cardTemplate ? 'tickets.template-show' : 'tickets.show';
-        
-        $pdf = \PDF::loadView($view, compact('ticket'));
-        
-        return $pdf->download('ticket-' . $ticket->token . '-template.pdf');
-    }
 
     /**
      * Get tickets data for DataTable with server-side processing

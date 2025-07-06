@@ -10,13 +10,7 @@
     >
         <x-slot name="actions">
             <div class="d-flex gap-2">
-                @if($event->cardTemplate)
-                <a href="{{ route('events.attendees.card', [$event, $attendee]) }}" 
-                   class="btn btn-success" 
-                   target="_blank">
-                    <i class="bi bi-id-card me-2"></i>Generate Card
-                </a>
-                @endif
+
                 <a href="{{ route('events.attendees.edit', [$event, $attendee]) }}" class="btn btn-primary">
                     <i class="bi bi-pencil me-2"></i>Edit Attendee
                 </a>
