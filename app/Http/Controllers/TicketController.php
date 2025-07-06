@@ -104,125 +104,7 @@ class TicketController extends Controller
         return view('tickets.print', compact('event', 'ticket'));
     }
 
-    /**
-     * Download ticket as JPG image.
-     */
-    public function downloadJpg(Event $event, $token)
-    {
-        try {
-            $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
-                $query->where('token', $token);
-            })->where('event_id', $event->id)->firstOrFail();
 
-            $ticket->load(['attendee', 'event']);
-            
-            // Create image manager with GD driver
-            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
-            
-            // Create a new image canvas (smaller size for testing)
-            $image = $manager->create(600, 800, '#ffffff');
-            
-            // Add basic text content
-            $this->addBasicTextToTicketImage($image, $ticket);
-            
-            // Generate QR code
-            $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
-                ->size(150)
-                ->generate(route('tickets.verify', $ticket->token));
-            
-            // Add QR code to image
-            $qrImage = $manager->read($qrCode);
-            $image->place($qrImage, 'bottom-right', 30, 30);
-            
-            // Convert to JPG and return
-            $jpgData = $image->toJpeg(90);
-            
-            $filename = 'ticket-' . $ticket->attendee->name . '-' . $ticket->token . '.jpg';
-            $filename = preg_replace('/[^a-zA-Z0-9-_.]/', '-', $filename);
-            
-            return response($jpgData)
-                ->header('Content-Type', 'image/jpeg')
-                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-                
-        } catch (\Exception $e) {
-            \Log::error('Ticket JPG generation failed: ' . $e->getMessage(), [
-                'event_id' => $event->id,
-                'token' => $token,
-                'trace' => $e->getTraceAsString()
-            ]);
-            
-            return response('Failed to generate ticket image: ' . $e->getMessage(), 500);
-        }
-    }
-
-    /**
-     * Add basic text content to the ticket image (simplified version).
-     */
-    private function addBasicTextToTicketImage($image, $ticket): void
-    {
-        $attendee = $ticket->attendee;
-        $event = $ticket->event;
-        
-        // Header
-        $image->text('TICKET', 300, 50, [
-            'color' => '#bfa46d',
-            'size' => 24,
-            'align' => 'center'
-        ]);
-        
-        // Attendee name
-        $image->text('Name: ' . strtoupper($attendee->name), 300, 100, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        // Event name
-        $image->text('Event: ' . $event->name, 300, 130, [
-            'color' => '#000000',
-            'size' => 14,
-            'align' => 'center'
-        ]);
-        
-        // Ticket ID
-        $image->text('Ticket ID: ' . $ticket->token, 300, 160, [
-            'color' => '#bfa46d',
-            'size' => 14,
-            'align' => 'center'
-        ]);
-        
-        // Ticket type
-        $image->text('Type: ' . strtoupper($ticket->type), 300, 190, [
-            'color' => '#000000',
-            'size' => 14,
-            'align' => 'center'
-        ]);
-        
-        // Event date
-        if ($event->start_date) {
-            $image->text('Date: ' . $event->start_date->format('d/m/Y'), 300, 220, [
-                'color' => '#000000',
-                'size' => 14,
-                'align' => 'center'
-            ]);
-        }
-        
-        // Event venue
-        if ($event->venue) {
-            $image->text('Venue: ' . $event->venue, 300, 250, [
-                'color' => '#000000',
-                'size' => 14,
-                'align' => 'center'
-            ]);
-        }
-        
-        // Footer
-        $image->text('Please present this ticket at the entrance', 300, 750, [
-            'color' => '#bfa46d',
-            'size' => 12,
-            'align' => 'center'
-        ]);
-    }
 
     /**
      * Deactivate a specific ticket.
@@ -480,6 +362,8 @@ class TicketController extends Controller
         return $pdf->download('ticket-' . $ticket->token . '.pdf');
     }
 
+
+
     /**
      * Get tickets data for DataTable with server-side processing
      */
@@ -612,7 +496,7 @@ class TicketController extends Controller
                 'created_at' => $ticket->created_at->format('Y-m-d H:i:s'),
                 'actions' => [
                     'view_url' => route('events.tickets.show', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
-                    'print_url' => route('events.tickets.download-jpg', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
+                    'print_url' => route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
                     'deactivate_url' => $ticket->status === 'active' ? 
                         route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]) : null
                 ]

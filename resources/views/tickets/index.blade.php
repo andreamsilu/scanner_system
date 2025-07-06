@@ -114,9 +114,9 @@
                                         </a>
                                         <button type="button"
                                                 class="btn btn-outline-primary"
-                                                title="Download Ticket"
-                                                onclick="downloadTicket('{{ route('events.tickets.download-jpg', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
-                                            <i class="bi bi-download"></i>
+                                                title="Print Ticket"
+                                                onclick="printTicket('{{ route('events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
+                                            <i class="bi bi-printer"></i>
                                         </button>
 
                                         @if($ticket->attendee && $ticket->attendee->phone)
@@ -399,17 +399,11 @@
             });
         });
 
-        function downloadTicket(url) {
-            // Create a temporary link element
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = ''; // This will use the filename from the server
-            link.style.display = 'none';
-            
-            // Append to body, click, and remove
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+        function printTicket(url) {
+            const printWindow = window.open(url, '_blank');
+            printWindow.onload = function() {
+                printWindow.print();
+            };
         }
 
         function shareViaWhatsApp(eventName, attendeeName, token, eventDate, ticketUrl) {
