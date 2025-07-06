@@ -109,219 +109,120 @@ class TicketController extends Controller
      */
     public function downloadJpg(Event $event, $token)
     {
-        $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
-            $query->where('token', $token);
-        })->where('event_id', $event->id)->firstOrFail();
+        try {
+            $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
+                $query->where('token', $token);
+            })->where('event_id', $event->id)->firstOrFail();
 
-        $ticket->load(['attendee', 'event']);
-        
-        // Create image manager with GD driver
-        $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
-        
-        // Create a new image canvas
-        $image = $manager->create(800, 1200, '#ffffff');
-        
-        // Add text and styling to the image
-        $this->addTextToTicketImage($image, $ticket);
-        
-        // Generate QR code
-        $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
-            ->size(200)
-            ->generate(route('tickets.verify', $ticket->token));
-        
-        // Add QR code to image
-        $qrImage = $manager->read($qrCode);
-        $image->place($qrImage, 'bottom-right', 50, 50);
-        
-        // Convert to JPG and return
-        $jpgData = $image->toJpeg(90);
-        
-        $filename = 'ticket-' . $ticket->attendee->name . '-' . $ticket->token . '.jpg';
-        $filename = preg_replace('/[^a-zA-Z0-9-_.]/', '-', $filename);
-        
-        return response($jpgData)
-            ->header('Content-Type', 'image/jpeg')
-            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+            $ticket->load(['attendee', 'event']);
+            
+            // Create image manager with GD driver
+            $manager = new \Intervention\Image\ImageManager(new \Intervention\Image\Drivers\Gd\Driver());
+            
+            // Create a new image canvas (smaller size for testing)
+            $image = $manager->create(600, 800, '#ffffff');
+            
+            // Add basic text content
+            $this->addBasicTextToTicketImage($image, $ticket);
+            
+            // Generate QR code
+            $qrCode = \SimpleSoftwareIO\QrCode\Facades\QrCode::format('png')
+                ->size(150)
+                ->generate(route('tickets.verify', $ticket->token));
+            
+            // Add QR code to image
+            $qrImage = $manager->read($qrCode);
+            $image->place($qrImage, 'bottom-right', 30, 30);
+            
+            // Convert to JPG and return
+            $jpgData = $image->toJpeg(90);
+            
+            $filename = 'ticket-' . $ticket->attendee->name . '-' . $ticket->token . '.jpg';
+            $filename = preg_replace('/[^a-zA-Z0-9-_.]/', '-', $filename);
+            
+            return response($jpgData)
+                ->header('Content-Type', 'image/jpeg')
+                ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+                
+        } catch (\Exception $e) {
+            \Log::error('Ticket JPG generation failed: ' . $e->getMessage(), [
+                'event_id' => $event->id,
+                'token' => $token,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response('Failed to generate ticket image: ' . $e->getMessage(), 500);
+        }
     }
 
     /**
-     * Add text content to the ticket image.
+     * Add basic text content to the ticket image (simplified version).
      */
-    private function addTextToTicketImage($image, $ticket): void
+    private function addBasicTextToTicketImage($image, $ticket): void
     {
         $attendee = $ticket->attendee;
         $event = $ticket->event;
         
         // Header
-        $image->text('MWALIKO WA SENDOFF', 400, 80, [
-            'color' => '#bfa46d',
-            'size' => 36,
-            'align' => 'center'
-        ]);
-        
-        // Invitation content
-        $y = 150;
-        $image->text('Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,', 400, $y, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        $y += 30;
-        $image->text('wanayo furaha kubwa kukualika / kuwaalika', 400, $y, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        $y += 40;
-        $image->text('Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi', 400, $y, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        // Guest name
-        $y += 60;
-        $image->text('Jina la Mwalikwa:', 400, $y, [
-            'color' => '#000000',
-            'size' => 18,
-            'align' => 'center'
-        ]);
-        
-        $y += 40;
-        $image->text(strtoupper($attendee->name), 400, $y, [
+        $image->text('TICKET', 300, 50, [
             'color' => '#bfa46d',
             'size' => 24,
             'align' => 'center'
         ]);
         
-        // Event details
-        $y += 80;
-        $image->text('Kwenye sherehe ya SENDOFF ya binti yao mpendwa', 400, $y, [
+        // Attendee name
+        $image->text('Name: ' . strtoupper($attendee->name), 300, 100, [
             'color' => '#000000',
             'size' => 16,
             'align' => 'center'
         ]);
         
-        $y += 30;
-        $image->text('ALICE PIENZI CHAMBILA', 400, $y, [
-            'color' => '#bfa46d',
-            'size' => 20,
-            'align' => 'center'
-        ]);
-        
-        $y += 40;
-        $image->text('Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025', 400, $y, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        $y += 30;
-        $image->text('Kuanzia saa 12:00 jioni', 400, $y, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        $y += 40;
-        $image->text('Katika ukumbi wa GBF Garden Hall,', 400, $y, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        $y += 30;
-        $image->text('uliopo Dar es Salaam – Tabata, Barakuda.', 400, $y, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        $y += 40;
-        $image->text('Karibu tusherehekee kwa pamoja tukio hili maalum', 400, $y, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        $y += 30;
-        $image->text('la furaha na kumbukumbu ya pekee.', 400, $y, [
-            'color' => '#000000',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        // Ticket ID
-        $y += 60;
-        $image->text('Kitambulisho cha Tiketi: ' . $ticket->token, 400, $y, [
-            'color' => '#bfa46d',
-            'size' => 18,
-            'align' => 'center'
-        ]);
-        
-        $y += 40;
-        $image->text('Aina ya Tiketi: ' . strtoupper($ticket->type), 400, $y, [
-            'color' => '#bfa46d',
-            'size' => 18,
-            'align' => 'center'
-        ]);
-        
-        // RSVP Section if enabled
-        if ($event->rsvp_enabled && ($event->rsvp_option_1_phone || $event->rsvp_option_2_phone)) {
-            $y += 60;
-            $image->text('RSVP - Tafadhali Jibu', 400, $y, [
-                'color' => '#bfa46d',
-                'size' => 20,
-                'align' => 'center'
-            ]);
-            
-            if ($event->rsvp_message) {
-                $y += 30;
-                $image->text($event->rsvp_message, 400, $y, [
-                    'color' => '#000000',
-                    'size' => 14,
-                    'align' => 'center'
-                ]);
-            }
-            
-            if ($event->rsvp_option_1_label && $event->rsvp_option_1_phone) {
-                $y += 40;
-                $image->text($event->rsvp_option_1_label . ': ' . $event->rsvp_option_1_phone, 400, $y, [
-                    'color' => '#000000',
-                    'size' => 16,
-                    'align' => 'center'
-                ]);
-            }
-            
-            if ($event->rsvp_option_2_label && $event->rsvp_option_2_phone) {
-                $y += 30;
-                $image->text($event->rsvp_option_2_label . ': ' . $event->rsvp_option_2_phone, 400, $y, [
-                    'color' => '#000000',
-                    'size' => 16,
-                    'align' => 'center'
-                ]);
-            }
-        }
-        
-        // Footer
-        $y += 60;
-        $image->text('Tafadhali wasilisha tiketi hii mlangoni', 400, $y, [
-            'color' => '#bfa46d',
-            'size' => 16,
-            'align' => 'center'
-        ]);
-        
-        $y += 30;
-        $image->text('Kwa maelezo zaidi tafadhali wasiliana na: 0769289824', 400, $y, [
+        // Event name
+        $image->text('Event: ' . $event->name, 300, 130, [
             'color' => '#000000',
             'size' => 14,
             'align' => 'center'
         ]);
+        
+        // Ticket ID
+        $image->text('Ticket ID: ' . $ticket->token, 300, 160, [
+            'color' => '#bfa46d',
+            'size' => 14,
+            'align' => 'center'
+        ]);
+        
+        // Ticket type
+        $image->text('Type: ' . strtoupper($ticket->type), 300, 190, [
+            'color' => '#000000',
+            'size' => 14,
+            'align' => 'center'
+        ]);
+        
+        // Event date
+        if ($event->start_date) {
+            $image->text('Date: ' . $event->start_date->format('d/m/Y'), 300, 220, [
+                'color' => '#000000',
+                'size' => 14,
+                'align' => 'center'
+            ]);
+        }
+        
+        // Event venue
+        if ($event->venue) {
+            $image->text('Venue: ' . $event->venue, 300, 250, [
+                'color' => '#000000',
+                'size' => 14,
+                'align' => 'center'
+            ]);
+        }
+        
+        // Footer
+        $image->text('Please present this ticket at the entrance', 300, 750, [
+            'color' => '#bfa46d',
+            'size' => 12,
+            'align' => 'center'
+        ]);
     }
-
-
 
     /**
      * Deactivate a specific ticket.
@@ -578,8 +479,6 @@ class TicketController extends Controller
         
         return $pdf->download('ticket-' . $ticket->token . '.pdf');
     }
-
-
 
     /**
      * Get tickets data for DataTable with server-side processing
