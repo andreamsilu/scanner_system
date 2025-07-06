@@ -234,7 +234,7 @@
                 // Replace variables in content
                 let previewContent = content;
                 Object.keys(sampleData).forEach(key => {
-                    const regex = new RegExp(`{{${key}}}`, 'g');
+                    const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g');
                     previewContent = previewContent.replace(regex, sampleData[key]);
                 });
 
