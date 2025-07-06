@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\BulkUploadController;
 use App\Http\Controllers\SmsManagementController;
+use App\Http\Controllers\CardTemplateController;
 
 // Authentication Routes
 /* Removed (or commented out) the fallback route (or any route named 'welcome') so that if a user (or a seeder) tries to redirect to route('welcome') (or GET /) then a 404 (or a fallback) is returned (and no "Route [welcome] not defined" error is thrown). */
@@ -173,6 +174,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::post('/settings/clear-cache', [SettingController::class, 'clearCache'])->name('settings.clear-cache');
         Route::post('/settings/clear-logs', [SettingController::class, 'clearLogs'])->name('settings.clear-logs');
+
+        // Card Template Management Routes
+        Route::resource('card-templates', CardTemplateController::class);
+        Route::get('/card-templates/{cardTemplate}/preview', [CardTemplateController::class, 'preview'])->name('card-templates.preview');
+        Route::patch('/card-templates/{cardTemplate}/toggle-status', [CardTemplateController::class, 'toggleStatus'])->name('card-templates.toggle-status');
+        Route::get('/card-templates/type/{type}', [CardTemplateController::class, 'getByType'])->name('card-templates.by-type');
 
         // Ticket exports
         Route::get('/tickets/export/{format?}', [TicketController::class, 'exportAll'])->name('tickets.export');

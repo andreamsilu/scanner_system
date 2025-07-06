@@ -72,6 +72,12 @@
                         </a>
                     </li>
                     <li class="nav-item mb-2">
+                        <a class="nav-link {{ request()->routeIs('card-templates.*') ? 'active' : '' }}" 
+                           href="{{ route('card-templates.index') }}">
+                            <i class="bi bi-id-card me-2"></i> Card Templates
+                        </a>
+                    </li>
+                    <li class="nav-item mb-2">
                         <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" 
                            href="{{ route('reports.index') }}">
                             <i class="bi bi-graph-up me-2"></i> Reports
