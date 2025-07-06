@@ -773,34 +773,40 @@ class AttendeeController extends Controller
             $dateString = 'tarehe itakayotangazwa';
         }
 
+        // Build RSVP contact information
+        $contactInfo = "0769289824"; // Default fallback
+        
+        if ($event->rsvp_enabled && ($event->rsvp_option_1_phone || $event->rsvp_option_2_phone)) {
+            $rsvpContacts = [];
+            
+            if ($event->rsvp_option_1_label && $event->rsvp_option_1_phone) {
+                $rsvpContacts[] = $event->rsvp_option_1_label . ": " . $event->rsvp_option_1_phone;
+            }
+            
+            if ($event->rsvp_option_2_label && $event->rsvp_option_2_phone) {
+                $rsvpContacts[] = $event->rsvp_option_2_label . ": " . $event->rsvp_option_2_phone;
+            }
+            
+            if (!empty($rsvpContacts)) {
+                $contactInfo = "RSVP: " . implode(", ", $rsvpContacts);
+            }
+        }
+
         $baseMessage = sprintf(
-            "Ndugu %s, unakaribishwa kwenye %s itakayofanyika %s. Mahali: %s. Ukumbi: %s. Tiketi: %s (%s). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824",
+            "Ndugu %s, unakaribishwa kwenye %s itakayofanyika %s. Mahali: %s. Ukumbi: %s. Tiketi: %s (%s). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: %s",
             $attendee->name,
             $event->name,
             $dateString,
             $event->location,
             $event->venue,
             $ticket->token,
-            ucfirst($ticket->type)
+            ucfirst($ticket->type),
+            $contactInfo
         );
 
-        // Add RSVP information if enabled
-        if ($event->rsvp_enabled && ($event->rsvp_option_1_phone || $event->rsvp_option_2_phone)) {
-            $rsvpMessage = "\n\nRSVP:";
-            
-            if ($event->rsvp_message) {
-                $rsvpMessage .= "\n" . $event->rsvp_message;
-            }
-            
-            if ($event->rsvp_option_1_label && $event->rsvp_option_1_phone) {
-                $rsvpMessage .= "\n" . $event->rsvp_option_1_label . ": " . $event->rsvp_option_1_phone;
-            }
-            
-            if ($event->rsvp_option_2_label && $event->rsvp_option_2_phone) {
-                $rsvpMessage .= "\n" . $event->rsvp_option_2_label . ": " . $event->rsvp_option_2_phone;
-            }
-            
-            $baseMessage .= $rsvpMessage;
+        // Add additional RSVP message if provided
+        if ($event->rsvp_enabled && $event->rsvp_message) {
+            $baseMessage .= "\n\n" . $event->rsvp_message;
         }
 
         return $baseMessage;
