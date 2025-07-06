@@ -108,13 +108,7 @@ class TicketController extends Controller
                     ] : null,
                     'type' => [
                         'type' => ucfirst($ticket->type),
-                        'badge' => match($ticket->type) {
-                            'vip' => 'warning',
-                            'regular' => 'secondary',
-                            'single' => 'primary',
-                            'double' => 'success',
-                            default => 'secondary'
-                        }
+                        'badge' => $this->getTicketTypeBadge($ticket->type)
                     ],
                     'status' => [
                         'status' => $ticket->status,
@@ -126,10 +120,10 @@ class TicketController extends Controller
                     ] : null,
                     'created_at' => $ticket->created_at->format('d-m-Y H:i'),
                     'actions' => [
-                        'view_url' => route('events.tickets.show', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
-                        'print_url' => route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
-                        'deactivate_url' => $ticket->status === 'active' ? 
-                            route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]) : null
+                        'view_url' => $ticket->attendee ? route('events.tickets.show', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) : '#',
+                        'print_url' => $ticket->attendee ? route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) : '#',
+                        'deactivate_url' => ($ticket->status === 'active' && $ticket->attendee) ? 
+                            route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) : null
                     ]
                 ];
             });
@@ -383,6 +377,28 @@ class TicketController extends Controller
             return back()
                 ->withInput()
                 ->with('error', $e->getMessage());
+        }
+    }
+
+    /**
+     * Get the badge class for ticket type
+     *
+     * @param string $type
+     * @return string
+     */
+    protected function getTicketTypeBadge(string $type): string
+    {
+        switch ($type) {
+            case 'vip':
+                return 'warning';
+            case 'regular':
+                return 'secondary';
+            case 'single':
+                return 'primary';
+            case 'double':
+                return 'success';
+            default:
+                return 'secondary';
         }
     }
 

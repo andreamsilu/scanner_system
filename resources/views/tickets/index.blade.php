@@ -186,7 +186,7 @@
                     },
                     error: function(xhr, error, thrown) {
                         console.error('DataTables error:', error, thrown);
-                        toastr.error('Error loading tickets data. Please try again.');
+                        alert('Error loading tickets data. Please try again.');
                     }
                 },
                 columns: [

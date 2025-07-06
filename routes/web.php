@@ -98,11 +98,11 @@ Route::middleware('auth')->group(function () {
                     Route::get('/data', [TicketController::class, 'getTicketsData'])->name('data');
                     Route::get('/create/{attendee}', [TicketController::class, 'create'])->name('create');
                     Route::post('/store/{attendee}', [TicketController::class, 'store'])->name('store');
-                    Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
+                    Route::get('/{token}', [TicketController::class, 'show'])->name('show');
                     Route::post('/generate', [TicketController::class, 'generate'])->name('generate');
-                    Route::get('/{ticket}/print', [TicketController::class, 'print'])->name('print');
-                    Route::get('/{ticket}/export', [TicketController::class, 'exportTicket'])->name('export');
-                    Route::patch('/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('deactivate');
+                    Route::get('/{token}/print', [TicketController::class, 'print'])->name('print');
+                    Route::get('/{token}/export', [TicketController::class, 'exportTicket'])->name('export');
+                    Route::patch('/{token}/deactivate', [TicketController::class, 'deactivate'])->name('deactivate');
                 });
                 
                 // Scanner Assignment Routes
