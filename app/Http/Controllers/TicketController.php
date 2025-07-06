@@ -38,14 +38,111 @@ class TicketController extends Controller
     /**
      * Display a listing of the tickets.
      */
-    public function index(Event $event)
+    public function index(Event $event, Request $request): View|JsonResponse
     {
-        $tickets = Ticket::with(['event', 'attendee'])
-            ->where('event_id', $event->id)
-            ->latest()
-            ->paginate(20);
+        if ($request->ajax()) {
+            $query = $event->tickets()->with(['event', 'attendee', 'scanLogs' => function($query) {
+                $query->latest();
+            }]);
 
-        return view('tickets.index', compact('tickets', 'event'));
+            // Apply filters
+            if ($request->search['value']) {
+                $searchValue = $request->search['value'];
+                $query->where(function($q) use ($searchValue) {
+                    $q->where('ticket_number', 'like', '%' . $searchValue . '%')
+                      ->orWhere('type', 'like', '%' . $searchValue . '%')
+                      ->orWhere('status', 'like', '%' . $searchValue . '%')
+                      ->orWhereHas('attendee', function($q) use ($searchValue) {
+                          $q->where('name', 'like', '%' . $searchValue . '%')
+                            ->orWhere('token', 'like', '%' . $searchValue . '%');
+                      });
+                });
+            }
+
+            if ($request->ticket_type) {
+                $query->where('type', $request->ticket_type);
+            }
+
+            if ($request->status) {
+                $query->where('status', $request->status);
+            }
+
+            // Get total count before pagination
+            $totalRecords = $query->count();
+            $totalFiltered = $totalRecords;
+
+            // Apply ordering
+            $orderColumn = $request->order[0]['column'] ?? 6; // Default to created_at
+            $orderDir = $request->order[0]['dir'] ?? 'desc';
+            $columns = ['attendee', 'type', 'status', 'last_scan', 'created_at'];
+            
+            if (isset($columns[$orderColumn])) {
+                $column = $columns[$orderColumn];
+                if ($column === 'attendee') {
+                    $query->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id')
+                          ->orderBy('attendees.name', $orderDir)
+                          ->select('tickets.*');
+                } elseif ($column === 'last_scan') {
+                    $query->leftJoin('scan_logs', function($join) {
+                        $join->on('tickets.id', '=', 'scan_logs.ticket_id')
+                             ->whereRaw('scan_logs.id IN (SELECT MAX(id) FROM scan_logs GROUP BY ticket_id)');
+                    })
+                    ->orderBy('scan_logs.created_at', $orderDir)
+                    ->select('tickets.*');
+                } else {
+                    $query->orderBy($column, $orderDir);
+                }
+            }
+
+            // Apply pagination
+            $start = $request->start ?? 0;
+            $length = $request->length ?? 15;
+            $tickets = $query->skip($start)->take($length)->get();
+
+            // Transform data for DataTables
+            $data = $tickets->map(function ($ticket) use ($event) {
+                return [
+                    'attendee' => $ticket->attendee ? [
+                        'name' => $ticket->attendee->name,
+                        'token' => $ticket->attendee->token
+                    ] : null,
+                    'type' => [
+                        'type' => ucfirst($ticket->type),
+                        'badge' => match($ticket->type) {
+                            'vip' => 'warning',
+                            'regular' => 'secondary',
+                            'single' => 'primary',
+                            'double' => 'success',
+                            default => 'secondary'
+                        }
+                    ],
+                    'status' => [
+                        'status' => $ticket->status,
+                        'badge' => $ticket->status === 'active' ? 'success' : 'danger'
+                    ],
+                    'last_scan' => $ticket->scanLogs->first() ? [
+                        'time' => $ticket->scanLogs->first()->created_at->format('Y-m-d H:i:s'),
+                        'diff' => $ticket->scanLogs->first()->created_at->diffForHumans()
+                    ] : null,
+                    'created_at' => $ticket->created_at->format('d-m-Y H:i'),
+                    'actions' => [
+                        'view_url' => route('events.tickets.show', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
+                        'print_url' => route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
+                        'deactivate_url' => $ticket->status === 'active' ? 
+                            route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]) : null
+                    ]
+                ];
+            });
+
+            return response()->json([
+                'draw' => $request->draw,
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalFiltered,
+                'data' => $data
+            ]);
+        }
+
+        return view('tickets.index', compact('event'));
     }
 
     /**
