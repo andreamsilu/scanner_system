@@ -18,6 +18,38 @@
                             <p>Event: <strong>{{ $attendee->event->name }}</strong></p>
                         @endif
                         <p class="mb-2">Your ticket has been checked in. Enjoy the event!</p>
+                        
+                        <!-- RSVP Section -->
+                        @if($attendee->event && $attendee->event->rsvp_enabled && ($attendee->event->rsvp_option_1_phone || $attendee->event->rsvp_option_2_phone))
+                        <div class="mt-4 p-4" style="border: 2px solid #0d6efd; border-radius: 8px; background: rgba(13, 110, 253, 0.05);">
+                            <h5 class="text-primary mb-3">RSVP - Tafadhali Jibu</h5>
+                            
+                            @if($attendee->event->rsvp_message)
+                                <p class="mb-3" style="font-style: italic; color: #6c757d;">{{ $attendee->event->rsvp_message }}</p>
+                            @endif
+                            
+                            <div class="row justify-content-center">
+                                @if($attendee->event->rsvp_option_1_label && $attendee->event->rsvp_option_1_phone)
+                                <div class="col-md-6 text-center mb-3">
+                                    <div class="p-3" style="border: 1px solid #dee2e6; border-radius: 8px; background: white;">
+                                        <div class="text-primary fw-bold mb-2">{{ $attendee->event->rsvp_option_1_label }}</div>
+                                        <div style="font-family: monospace; font-size: 1.1rem; color: #495057;">{{ $attendee->event->rsvp_option_1_phone }}</div>
+                                    </div>
+                                </div>
+                                @endif
+                                
+                                @if($attendee->event->rsvp_option_2_label && $attendee->event->rsvp_option_2_phone)
+                                <div class="col-md-6 text-center mb-3">
+                                    <div class="p-3" style="border: 1px solid #dee2e6; border-radius: 8px; background: white;">
+                                        <div class="text-primary fw-bold mb-2">{{ $attendee->event->rsvp_option_2_label }}</div>
+                                        <div style="font-family: monospace; font-size: 1.1rem; color: #495057;">{{ $attendee->event->rsvp_option_2_phone }}</div>
+                                    </div>
+                                </div>
+                                @endif
+                            </div>
+                        </div>
+                        @endif
+                        
                         <div class="mt-4">
                             <a href="/" class="btn btn-primary">Back to Home</a>
                         </div>

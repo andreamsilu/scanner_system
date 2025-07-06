@@ -158,6 +158,33 @@
                         {!! QrCode::size(140)->generate(route('tickets.verify', $ticket->token)) !!}
                     @endif
                 </div>
+                <!-- RSVP Section -->
+                @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
+                <div style="margin: 2em 0; padding: 1em; border: 2px solid #bfa46d; border-radius: 8px; background: rgba(191, 164, 109, 0.1);">
+                    <h4 style="color: #bfa46d; margin-bottom: 1em; font-size: 1.2em;">RSVP - Tafadhali Jibu</h4>
+                    
+                    @if($ticket->event->rsvp_message)
+                        <p style="margin-bottom: 1em; color: #000000; font-style: italic;">{{ $ticket->event->rsvp_message }}</p>
+                    @endif
+                    
+                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1em;">
+                        @if($ticket->event->rsvp_option_1_label && $ticket->event->rsvp_option_1_phone)
+                        <div style="text-align: center;">
+                            <div style="color: #bfa46d; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_1_label }}</div>
+                            <div style="color: #000000; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_1_phone }}</div>
+                        </div>
+                        @endif
+                        
+                        @if($ticket->event->rsvp_option_2_label && $ticket->event->rsvp_option_2_phone)
+                        <div style="text-align: center;">
+                            <div style="color: #bfa46d; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_2_label }}</div>
+                            <div style="color: #000000; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_2_phone }}</div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @endif
+
                 <div class="footer" style="color: #000000;">
                     <p style="color: #bfa46d; font-weight: bold;">Tafadhali wasilisha tiketi hii mlangoni</p>
                     <p>Kwa maelezo zaidi tafadhali wasiliana na: 0769289824</p>

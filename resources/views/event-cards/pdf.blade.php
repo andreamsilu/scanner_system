@@ -190,6 +190,37 @@
                     Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
                 </p>
             </div>
+
+            <!-- RSVP Section -->
+            @if($card->attendee->event->rsvp_enabled && ($card->attendee->event->rsvp_option_1_phone || $card->attendee->event->rsvp_option_2_phone))
+            <div style="margin-top: 40px; padding: 20px; border: 2px solid #0d6efd; border-radius: 8px; background-color: rgba(13, 110, 253, 0.05); text-align: center;">
+                <h3 style="color: #0d6efd; margin-bottom: 15px; font-size: 20px;">RSVP - Tafadhali Jibu</h3>
+                
+                @if($card->attendee->event->rsvp_message)
+                    <p style="margin-bottom: 15px; font-style: italic; color: #6c757d; font-size: 16px;">{{ $card->attendee->event->rsvp_message }}</p>
+                @endif
+                
+                <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 20px;">
+                    @if($card->attendee->event->rsvp_option_1_label && $card->attendee->event->rsvp_option_1_phone)
+                    <div style="text-align: center; flex: 1; min-width: 200px;">
+                        <div style="padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; background-color: white;">
+                            <div style="color: #0d6efd; font-weight: bold; margin-bottom: 8px; font-size: 16px;">{{ $card->attendee->event->rsvp_option_1_label }}</div>
+                            <div style="font-family: monospace; font-size: 16px; color: #495057;">{{ $card->attendee->event->rsvp_option_1_phone }}</div>
+                        </div>
+                    </div>
+                    @endif
+                    
+                    @if($card->attendee->event->rsvp_option_2_label && $card->attendee->event->rsvp_option_2_phone)
+                    <div style="text-align: center; flex: 1; min-width: 200px;">
+                        <div style="padding: 15px; border: 1px solid #dee2e6; border-radius: 8px; background-color: white;">
+                            <div style="color: #0d6efd; font-weight: bold; margin-bottom: 8px; font-size: 16px;">{{ $card->attendee->event->rsvp_option_2_label }}</div>
+                            <div style="font-family: monospace; font-size: 16px; color: #495057;">{{ $card->attendee->event->rsvp_option_2_phone }}</div>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+            </div>
+            @endif
         </div>
 
         <!-- QR Code Section -->

@@ -130,6 +130,37 @@
                         </dl>
                     </div>
                 </div>
+
+                <!-- RSVP Section -->
+                @if($event->rsvp_enabled && ($event->rsvp_option_1_phone || $event->rsvp_option_2_phone))
+                <div class="mt-4 p-4" style="border: 2px solid #0d6efd; border-radius: 8px; background: rgba(13, 110, 253, 0.05);">
+                    <h5 class="text-primary mb-3 text-center">RSVP - Tafadhali Jibu</h5>
+                    
+                    @if($event->rsvp_message)
+                        <p class="mb-3 text-center" style="font-style: italic; color: #6c757d;">{{ $event->rsvp_message }}</p>
+                    @endif
+                    
+                    <div class="row justify-content-center">
+                        @if($event->rsvp_option_1_label && $event->rsvp_option_1_phone)
+                        <div class="col-md-6 text-center mb-3">
+                            <div class="p-3" style="border: 1px solid #dee2e6; border-radius: 8px; background: white;">
+                                <div class="text-primary fw-bold mb-2">{{ $event->rsvp_option_1_label }}</div>
+                                <div style="font-family: monospace; font-size: 1.1rem; color: #495057;">{{ $event->rsvp_option_1_phone }}</div>
+                            </div>
+                        </div>
+                        @endif
+                        
+                        @if($event->rsvp_option_2_label && $event->rsvp_option_2_phone)
+                        <div class="col-md-6 text-center mb-3">
+                            <div class="p-3" style="border: 1px solid #dee2e6; border-radius: 8px; background: white;">
+                                <div class="text-primary fw-bold mb-2">{{ $event->rsvp_option_2_label }}</div>
+                                <div style="font-family: monospace; font-size: 1.1rem; color: #495057;">{{ $event->rsvp_option_2_phone }}</div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @endif
             </div>
 
             <div class="ticket-footer">

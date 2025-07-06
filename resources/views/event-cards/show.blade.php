@@ -73,6 +73,37 @@
                                         Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
                                     </p>
                                 </div>
+
+                                <!-- RSVP Section -->
+                                @if($card->attendee->event->rsvp_enabled && ($card->attendee->event->rsvp_option_1_phone || $card->attendee->event->rsvp_option_2_phone))
+                                <div class="rsvp-section mt-5 p-4" style="border: 2px solid #0d6efd; border-radius: 12px; background: rgba(13, 110, 253, 0.05);">
+                                    <h4 class="text-primary mb-3 text-center" style="font-size: 1.3rem;">RSVP - Tafadhali Jibu</h4>
+                                    
+                                    @if($card->attendee->event->rsvp_message)
+                                        <p class="mb-3 text-center" style="font-style: italic; color: #6c757d;">{{ $card->attendee->event->rsvp_message }}</p>
+                                    @endif
+                                    
+                                    <div class="row justify-content-center">
+                                        @if($card->attendee->event->rsvp_option_1_label && $card->attendee->event->rsvp_option_1_phone)
+                                        <div class="col-md-6 text-center mb-3">
+                                            <div class="rsvp-option p-3" style="border: 1px solid #dee2e6; border-radius: 8px; background: white;">
+                                                <div class="text-primary fw-bold mb-2">{{ $card->attendee->event->rsvp_option_1_label }}</div>
+                                                <div class="phone-number" style="font-family: monospace; font-size: 1.1rem; color: #495057;">{{ $card->attendee->event->rsvp_option_1_phone }}</div>
+                                            </div>
+                                        </div>
+                                        @endif
+                                        
+                                        @if($card->attendee->event->rsvp_option_2_label && $card->attendee->event->rsvp_option_2_phone)
+                                        <div class="col-md-6 text-center mb-3">
+                                            <div class="rsvp-option p-3" style="border: 1px solid #dee2e6; border-radius: 8px; background: white;">
+                                                <div class="text-primary fw-bold mb-2">{{ $card->attendee->event->rsvp_option_2_label }}</div>
+                                                <div class="phone-number" style="font-family: monospace; font-size: 1.1rem; color: #495057;">{{ $card->attendee->event->rsvp_option_2_phone }}</div>
+                                            </div>
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                                @endif
                             </div>
                         </div>
                     </div>
