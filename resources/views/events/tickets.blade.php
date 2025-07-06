@@ -146,10 +146,9 @@
                                                title="View Details">
                                                 <i class="bi bi-eye"></i>
                                             </a>
-                                            <a href="{{ route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) }}" 
+                                            <a href="{{ route('events.tickets.download-jpg', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) }}" 
                                                class="text-green-600 hover:text-green-900"
-                                               title="Download Ticket"
-                                               target="_blank">
+                                               title="Download Ticket">
                                                 <i class="bi bi-download"></i>
                                             </a>
                                             @if($ticket->is_active)
@@ -361,7 +360,7 @@ $(document).ready(function() {
                     }
                     
                     if (data.print_url) {
-                        html += `<a href="${data.print_url}" class="text-green-600 hover:text-green-900" title="Download Ticket" target="_blank">
+                        html += `<a href="${data.print_url}" class="text-green-600 hover:text-green-900" title="Download Ticket">
                             <i class="bi bi-download"></i>
                         </a>`;
                     }

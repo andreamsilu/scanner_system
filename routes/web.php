@@ -102,6 +102,7 @@ Route::middleware('auth')->group(function () {
                     Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
                     Route::post('/generate', [TicketController::class, 'generate'])->name('generate');
                     Route::get('/{ticket}/print', [TicketController::class, 'print'])->name('print');
+                    Route::get('/{ticket}/download-jpg', [TicketController::class, 'downloadJpg'])->name('download-jpg');
                     Route::get('/{ticket}/export', [TicketController::class, 'exportTicket'])->name('export');
                     Route::patch('/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('deactivate');
                 });

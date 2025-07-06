@@ -115,7 +115,7 @@
                                         <button type="button"
                                                 class="btn btn-outline-primary"
                                                 title="Download Ticket"
-                                                onclick="downloadTicket('{{ route('events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
+                                                onclick="downloadTicket('{{ route('events.tickets.download-jpg', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
                                             <i class="bi bi-download"></i>
                                         </button>
 

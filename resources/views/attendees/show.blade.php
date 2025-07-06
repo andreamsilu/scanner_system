@@ -306,7 +306,7 @@
                             @if($attendee->ticket)
                                 <button type="button"
                                         class="btn btn-outline-primary"
-                                        onclick="downloadTicket('{{ route('events.events.tickets.print', [$event, $attendee->ticket]) }}')">
+                                        onclick="downloadTicket('{{ route('events.tickets.download-jpg', ['event' => $event->id, 'ticket' => $attendee->ticket->token]) }}')">
                                     <i class="bi bi-download me-2"></i>Download Ticket
                                 </button>
                                 @if($attendee->ticket->status === 'valid')
