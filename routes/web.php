@@ -183,6 +183,10 @@ Route::middleware('auth')->group(function () {
 
         // Ticket exports
         Route::get('/tickets/export/{format?}', [TicketController::class, 'exportAll'])->name('tickets.export');
+        Route::get('/tickets/{ticket}/template', [TicketController::class, 'showTemplate'])->name('tickets.template');
+        Route::get('/events/{event}/tickets/{token}/export-template', [TicketController::class, 'exportTicketWithTemplate'])->name('events.tickets.export-template');
+        Route::get('/events/{event}/attendees/{attendee}/card', [AttendeeController::class, 'generateCard'])->name('events.attendees.card');
+        Route::post('/events/{event}/attendees/bulk-cards', [AttendeeController::class, 'generateBulkCards'])->name('events.attendees.bulk-cards');
 
         // Bulk Upload Routes
         Route::get('/events/{event}/attendees/bulk-upload', [BulkUploadController::class, 'create'])->name('events.attendees.bulk-upload');

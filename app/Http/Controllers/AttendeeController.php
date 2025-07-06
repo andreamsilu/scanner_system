@@ -751,6 +751,76 @@ class AttendeeController extends Controller
     }
 
     /**
+     * Generate attendee card using event's template
+     */
+    public function generateCard(Event $event, Attendee $attendee)
+    {
+        // Load the event with card template
+        $event->load('cardTemplate');
+        
+        if (!$event->cardTemplate) {
+            return back()->with('error', 'No card template assigned to this event.');
+        }
+
+        // Prepare data for template rendering
+        $data = [
+            'event_name' => $event->name,
+            'event_date' => $event->start_date->format('F j, Y'),
+            'event_time' => $event->start_date->format('g:i A'),
+            'event_venue' => $event->venue,
+            'attendee_name' => $attendee->name,
+            'attendee_email' => $attendee->email,
+            'attendee_phone' => $attendee->phone,
+            'attendee_company' => $attendee->company,
+            'attendee_position' => $attendee->position,
+            'attendee_status' => $attendee->registration_status,
+            'ticket_id' => $attendee->token
+        ];
+
+        // Generate PDF using template
+        $pdf = \PDF::loadView('attendees.card-template', [
+            'attendee' => $attendee,
+            'event' => $event,
+            'templateData' => $data
+        ]);
+        
+        return $pdf->download('attendee-card-' . $attendee->token . '.pdf');
+    }
+
+    /**
+     * Generate cards for multiple attendees using event's template
+     */
+    public function generateBulkCards(Request $request, Event $event)
+    {
+        // Load the event with card template
+        $event->load('cardTemplate');
+        
+        if (!$event->cardTemplate) {
+            return back()->with('error', 'No card template assigned to this event.');
+        }
+
+        $attendeeIds = $request->input('attendee_ids', []);
+        
+        if (empty($attendeeIds)) {
+            return back()->with('error', 'Please select at least one attendee.');
+        }
+
+        $attendees = $event->attendees()->whereIn('id', $attendeeIds)->get();
+        
+        if ($attendees->isEmpty()) {
+            return back()->with('error', 'No valid attendees found.');
+        }
+
+        // Create a combined PDF with all attendee cards
+        $pdf = \PDF::loadView('attendees.bulk-cards-template', [
+            'attendees' => $attendees,
+            'event' => $event
+        ]);
+        
+        return $pdf->download('attendee-cards-' . $event->name . '-' . now()->format('Y-m-d') . '.pdf');
+    }
+
+    /**
      * Format an invitation message for SMS
      *
      * @param Event $event The event

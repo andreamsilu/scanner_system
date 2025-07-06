@@ -118,6 +118,14 @@
                                                 onclick="printTicket('{{ route('events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
                                             <i class="bi bi-printer"></i>
                                         </button>
+                                        @if($ticket->event->cardTemplate)
+                                        <a href="{{ route('tickets.template', $ticket) }}" 
+                                           class="btn btn-outline-info"
+                                           title="View with Template"
+                                           target="_blank">
+                                            <i class="bi bi-id-card"></i>
+                                        </a>
+                                        @endif
                                         @if($ticket->attendee && $ticket->attendee->phone)
                                             <button type="button"
                                                     class="btn btn-outline-success send-invitation-btn"
@@ -169,6 +177,13 @@
                                                     <i class="bi bi-file-pdf me-2"></i> Download PDF
                                                 </a>
                                             </li>
+                                            @if($ticket->event->cardTemplate)
+                                            <li>
+                                                <a class="dropdown-item" href="{{ route('events.tickets.export-template', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
+                                                    <i class="bi bi-file-pdf me-2"></i> Download Template PDF
+                                                </a>
+                                            </li>
+                                            @endif
                                         </ul>
                                         @if($ticket->is_active)
                                             <form action="{{ route('tickets.deactivate', $ticket) }}" 
