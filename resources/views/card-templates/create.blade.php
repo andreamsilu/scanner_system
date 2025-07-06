@@ -84,22 +84,22 @@
                                         <div class="col-md-6">
                                             <strong>Event Variables:</strong>
                                             <ul class="mb-0">
-                                                <li><code>{{ event_name }}</code> - Event name</li>
-                                                <li><code>{{ event_date }}</code> - Event date</li>
-                                                <li><code>{{ event_time }}</code> - Event time</li>
-                                                <li><code>{{ event_venue }}</code> - Event venue</li>
+                                                <li><code>@{{ event_name }}</code> - Event name</li>
+                                                <li><code>@{{ event_date }}</code> - Event date</li>
+                                                <li><code>@{{ event_time }}</code> - Event time</li>
+                                                <li><code>@{{ event_venue }}</code> - Event venue</li>
                                             </ul>
                                         </div>
                                         <div class="col-md-6">
                                             <strong>Attendee Variables:</strong>
                                             <ul class="mb-0">
-                                                <li><code>{{ attendee_name }}</code> - Attendee name</li>
-                                                <li><code>{{ attendee_email }}</code> - Attendee email</li>
-                                                <li><code>{{ attendee_phone }}</code> - Attendee phone</li>
-                                                <li><code>{{ attendee_company }}</code> - Attendee company</li>
-                                                <li><code>{{ attendee_position }}</code> - Attendee position</li>
-                                                <li><code>{{ attendee_status }}</code> - Registration status</li>
-                                                <li><code>{{ ticket_id }}</code> - Ticket/QR token</li>
+                                                <li><code>@{{ attendee_name }}</code> - Attendee name</li>
+                                                <li><code>@{{ attendee_email }}</code> - Attendee email</li>
+                                                <li><code>@{{ attendee_phone }}</code> - Attendee phone</li>
+                                                <li><code>@{{ attendee_company }}</code> - Attendee company</li>
+                                                <li><code>@{{ attendee_position }}</code> - Attendee position</li>
+                                                <li><code>@{{ attendee_status }}</code> - Registration status</li>
+                                                <li><code>@{{ ticket_id }}</code> - Ticket/QR token</li>
                                             </ul>
                                         </div>
                                     </div>
