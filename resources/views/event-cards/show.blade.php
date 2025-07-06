@@ -30,68 +30,50 @@
                 <div class="col-md-8">
                     <div class="card border-0 shadow-sm">
                         <div class="card-body p-4">
-                            @if($card->attendee->event->cardTemplate)
-                                <!-- Use Event Template -->
-                                {!! $card->attendee->event->cardTemplate->render([
-                                    'event_name' => $card->attendee->event->name,
-                                    'event_date' => $card->attendee->event->start_date->format('F j, Y'),
-                                    'event_time' => $card->attendee->event->start_date->format('g:i A'),
-                                    'event_venue' => $card->attendee->event->venue,
-                                    'attendee_name' => $card->attendee->name,
-                                    'attendee_email' => $card->attendee->email,
-                                    'attendee_phone' => $card->attendee->phone,
-                                    'attendee_company' => $card->attendee->company,
-                                    'attendee_position' => $card->attendee->position,
-                                    'attendee_status' => $card->attendee->registration_status,
-                                    'ticket_id' => $card->attendee->qr_token
-                                ]) !!}
-                            @else
-                                <!-- Default Template -->
-                                <!-- Header -->
-                                <div class="text-center mb-5">
-                                    <h1 class="text-primary mb-0 fw-bold" style="font-size: 2.5rem;">MWALIKO WA SENDOFF</h1>
+                            <!-- Header -->
+                            <div class="text-center mb-5">
+                                <h1 class="text-primary mb-0 fw-bold" style="font-size: 2.5rem;">MWALIKO WA SENDOFF</h1>
+                            </div>
+
+                            <!-- Invitation Content -->
+                            <div class="invitation-content text-center">
+                                <div class="mb-4">
+                                    <p class="mb-3" style="font-size: 1.1rem;">
+                                        Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                                        wanayo furaha kubwa kukualika / kuwaalika
+                                    </p>
+                                    <p class="mb-4" style="font-size: 1.1rem;">
+                                        Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
+                                    </p>
                                 </div>
 
-                                <!-- Invitation Content -->
-                                <div class="invitation-content text-center">
-                                    <div class="mb-4">
-                                        <p class="mb-3" style="font-size: 1.1rem;">
-                                            Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
-                                            wanayo furaha kubwa kukualika / kuwaalika
-                                        </p>
-                                        <p class="mb-4" style="font-size: 1.1rem;">
-                                            Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
-                                        </p>
-                                    </div>
-
-                                    <!-- Guest Name -->
-                                    <div class="guest-name mb-5">
-                                        <p class="mb-2" style="font-size: 1.2rem;">Jina la Mwalikwa:</p>
-                                        <div class="underline-text mx-auto" style="max-width: 500px;">
-                                            {{ $card->attendee->name }}
-                                        </div>
-                                    </div>
-
-                                    <!-- Event Details -->
-                                    <div class="event-details">
-                                        <p class="mb-3" style="font-size: 1.1rem;">
-                                            Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                                            <strong class="text-primary" style="font-size: 1.3rem;">ALICE PIENZI CHAMBILA</strong>
-                                        </p>
-                                        <p class="mb-3" style="font-size: 1.1rem;">
-                                            Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
-                                            Kuanzia saa 12:00 jioni
-                                        </p>
-                                        <p class="mb-3" style="font-size: 1.1rem;">
-                                            Katika ukumbi wa GBF Garden Hall,<br>
-                                            uliopo Dar es Salaam – Tabata, Barakuda.
-                                        </p>
-                                        <p class="mb-0" style="font-size: 1.1rem;">
-                                            Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
-                                        </p>
+                                <!-- Guest Name -->
+                                <div class="guest-name mb-5">
+                                    <p class="mb-2" style="font-size: 1.2rem;">Jina la Mwalikwa:</p>
+                                    <div class="underline-text mx-auto" style="max-width: 500px;">
+                                        {{ $card->attendee->name }}
                                     </div>
                                 </div>
-                            @endif
+
+                                <!-- Event Details -->
+                                <div class="event-details">
+                                    <p class="mb-3" style="font-size: 1.1rem;">
+                                        Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
+                                        <strong class="text-primary" style="font-size: 1.3rem;">ALICE PIENZI CHAMBILA</strong>
+                                    </p>
+                                    <p class="mb-3" style="font-size: 1.1rem;">
+                                        Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
+                                        Kuanzia saa 12:00 jioni
+                                    </p>
+                                    <p class="mb-3" style="font-size: 1.1rem;">
+                                        Katika ukumbi wa GBF Garden Hall,<br>
+                                        uliopo Dar es Salaam – Tabata, Barakuda.
+                                    </p>
+                                    <p class="mb-0" style="font-size: 1.1rem;">
+                                        Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

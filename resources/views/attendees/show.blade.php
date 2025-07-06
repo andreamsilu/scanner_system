@@ -146,40 +146,6 @@
                     </div>
                 </div>
 
-                <!-- Card Template Preview -->
-                @if($event->cardTemplate)
-                <div class="card shadow-sm mt-4">
-                    <div class="card-header bg-transparent d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">
-                            <i class="bi bi-id-card me-2"></i>Card Preview
-                        </h5>
-                        <div>
-                            <span class="badge bg-primary">{{ $event->cardTemplate->name }}</span>
-                            <a href="{{ route('event-cards.show', $attendee) }}" class="btn btn-sm btn-outline-primary ms-2">
-                                <i class="bi bi-eye me-2"></i>View Full Card
-                            </a>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div class="template-preview-container border rounded p-3 bg-light" style="min-height: 300px; max-height: 400px; overflow-y: auto;">
-                            {!! $event->cardTemplate->render([
-                                'event_name' => $event->name,
-                                'event_date' => $event->start_date->format('F j, Y'),
-                                'event_time' => $event->start_date->format('g:i A'),
-                                'event_venue' => $event->venue,
-                                'attendee_name' => $attendee->name,
-                                'attendee_email' => $attendee->email,
-                                'attendee_phone' => $attendee->phone,
-                                'attendee_company' => $attendee->company,
-                                'attendee_position' => $attendee->position,
-                                'attendee_status' => $attendee->registration_status,
-                                'ticket_id' => $attendee->qr_token
-                            ]) !!}
-                        </div>
-                    </div>
-                </div>
-                @endif
-
                 <!-- Ticket Information -->
                 <div class="card shadow-sm mt-4">
                     <div class="card-header bg-transparent">

@@ -147,70 +147,50 @@
 </head>
 <body>
     <div class="card">
-        @if($card->attendee->event->cardTemplate)
-            <!-- Use Event Template -->
-            <div class="invitation-content">
-                {!! $card->attendee->event->cardTemplate->render([
-                    'event_name' => $card->attendee->event->name,
-                    'event_date' => $card->attendee->event->start_date->format('F j, Y'),
-                    'event_time' => $card->attendee->event->start_date->format('g:i A'),
-                    'event_venue' => $card->attendee->event->venue,
-                    'attendee_name' => $card->attendee->name,
-                    'attendee_email' => $card->attendee->email,
-                    'attendee_phone' => $card->attendee->phone,
-                    'attendee_company' => $card->attendee->company,
-                    'attendee_position' => $card->attendee->position,
-                    'attendee_status' => $card->attendee->registration_status,
-                    'ticket_id' => $card->attendee->qr_token
-                ]) !!}
-            </div>
-        @else
-            <!-- Default Template -->
-            <!-- Header -->
-            <div class="header">
-                <h1>MWALIKO WA SENDOFF</h1>
+        <!-- Header -->
+        <div class="header">
+            <h1>MWALIKO WA SENDOFF</h1>
+        </div>
+
+        <!-- Invitation Content -->
+        <div class="invitation-content">
+            <div>
+                <p>
+                    Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                    wanayo furaha kubwa kukualika / kuwaalika
+                </p>
+                <p>
+                    Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
+                </p>
             </div>
 
-            <!-- Invitation Content -->
-            <div class="invitation-content">
-                <div>
-                    <p>
-                        Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
-                        wanayo furaha kubwa kukualika / kuwaalika
-                    </p>
-                    <p>
-                        Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
-                    </p>
-                </div>
-
-                <!-- Guest Name -->
-                <div class="guest-name">
-                    <p>Jina la Mwalikwa:</p>
-                    <div class="underline-text">
-                        {{ $card->attendee->name }}
-                    </div>
-                </div>
-
-                <!-- Event Details -->
-                <div class="event-details">
-                    <p>
-                        Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                        <strong>ALICE PIENZI CHAMBILA</strong>
-                    </p>
-                    <p>
-                        Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
-                        Kuanzia saa 12:00 jioni
-                    </p>
-                    <p>
-                        Katika ukumbi wa GBF Garden Hall,<br>
-                        uliopo Dar es Salaam – Tabata, Barakuda.
-                    </p>
-                    <p>
-                        Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
-                    </p>
+            <!-- Guest Name -->
+            <div class="guest-name">
+                <p>Jina la Mwalikwa:</p>
+                <div class="underline-text">
+                    {{ $card->attendee->name }}
                 </div>
             </div>
-        @endif
+
+            <!-- Event Details -->
+            <div class="event-details">
+                <p>
+                    Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
+                    <strong>ALICE PIENZI CHAMBILA</strong>
+                </p>
+                <p>
+                    Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
+                    Kuanzia saa 12:00 jioni
+                </p>
+                <p>
+                    Katika ukumbi wa GBF Garden Hall,<br>
+                    uliopo Dar es Salaam – Tabata, Barakuda.
+                </p>
+                <p>
+                    Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
+                </p>
+            </div>
+        </div>
 
         <!-- QR Code Section -->
         <div class="qr-section">

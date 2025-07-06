@@ -115,54 +115,36 @@
     <div class="invitation-border">
         <div class="border-pattern">
             <div class="invitation-content">
-                @if($ticket->attendee->event->cardTemplate)
-                    <!-- Use Event Template -->
-                    {!! $ticket->attendee->event->cardTemplate->render([
-                        'event_name' => $ticket->attendee->event->name,
-                        'event_date' => $ticket->attendee->event->start_date->format('F j, Y'),
-                        'event_time' => $ticket->attendee->event->start_date->format('g:i A'),
-                        'event_venue' => $ticket->attendee->event->venue,
-                        'attendee_name' => $ticket->attendee->name,
-                        'attendee_email' => $ticket->attendee->email,
-                        'attendee_phone' => $ticket->attendee->phone,
-                        'attendee_company' => $ticket->attendee->company,
-                        'attendee_position' => $ticket->attendee->position,
-                        'attendee_status' => $ticket->attendee->registration_status,
-                        'ticket_id' => $ticket->token
-                    ]) !!}
-                @else
-                    <!-- Default Template -->
-                    <div class="invitation-message">
-                        <h2 style="color: #bfa46d; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
-                        <p style="margin-bottom: 1em; color: #000000;">
-                            Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
-                            wanayo furaha kubwa kukualika / kuwaalika
-                        </p>
-                        <p style="margin-bottom: 1em; color: #000000;">
-                            Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
-                        </p>
-                        <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #bfa46d; padding: 0.5em; color: #000000;">
-                            {{ strtoupper($ticket->attendee->name) }}
-                        </div>
-                        <div style="text-align: center; margin: 1em 0;">
-                        </div>
-                        <p style="margin-bottom: 1em; color: #000000;">
-                            Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                            <strong style="color: #bfa46d; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
-                        </p>
-                        <p style="margin-bottom: 1em; color: #000000;">
-                            Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
-                            Kuanzia saa 12:00 jioni
-                        </p>
-                        <p style="margin-bottom: 1em; color: #000000;">
-                            Katika ukumbi wa GBF Garden Hall,<br>
-                            uliopo Dar es Salaam – Tabata, Barakuda.
-                        </p>
-                        <p style="margin-bottom: 1em; color: #000000;">
-                            Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
-                        </p>
+                <div class="invitation-message">
+                    <h2 style="color: #bfa46d; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
+                    <p style="margin-bottom: 1em; color: #000000;">
+                        Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                        wanayo furaha kubwa kukualika / kuwaalika
+                    </p>
+                    <p style="margin-bottom: 1em; color: #000000;">
+                        Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
+                    </p>
+                    <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #bfa46d; padding: 0.5em; color: #000000;">
+                        {{ strtoupper($ticket->attendee->name) }}
                     </div>
-                @endif
+                    <div style="text-align: center; margin: 1em 0;">
+                    </div>
+                    <p style="margin-bottom: 1em; color: #000000;">
+                        Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
+                        <strong style="color: #bfa46d; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
+                    </p>
+                    <p style="margin-bottom: 1em; color: #000000;">
+                        Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
+                        Kuanzia saa 12:00 jioni
+                    </p>
+                    <p style="margin-bottom: 1em; color: #000000;">
+                        Katika ukumbi wa GBF Garden Hall,<br>
+                        uliopo Dar es Salaam – Tabata, Barakuda.
+                    </p>
+                    <p style="margin-bottom: 1em; color: #000000;">
+                        Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
+                    </p>
+                </div>
                 <div class="ticket-id" style="color: #bfa46d; font-weight: bold;">
                     Kitambulisho cha Tiketi: {{ $ticket->token }}
                 </div>
