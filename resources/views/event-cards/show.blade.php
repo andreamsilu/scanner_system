@@ -14,7 +14,7 @@
                         <div class="d-flex gap-2">
                             <a href="{{ route('event-cards.download', $card->attendee) }}" 
                                 class="btn btn-outline-primary">
-                                <i class="fas fa-print me-2"></i>Print Card
+                                <i class="fas fa-download me-2"></i>Download Card
                             </a>
                             <a href="{{ route('event-cards.index') }}" class="btn btn-outline-secondary">
                                 <i class="fas fa-arrow-left me-2"></i>Back to List
@@ -164,6 +164,10 @@
                         <div class="card-body p-4">
                             <h6 class="text-primary mb-3">Card Actions</h6>
                             <div class="d-grid gap-2">
+                                <a href="{{ route('event-cards.download', $card->attendee) }}" 
+                                    class="btn btn-success">
+                                    <i class="fas fa-download me-2"></i>Download JPG
+                                </a>
                                 <a href="{{ route('event-cards.edit', $card->attendee) }}" 
                                     class="btn btn-primary">
                                     <i class="fas fa-edit me-2"></i>Edit Invitation
