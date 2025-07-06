@@ -756,13 +756,13 @@ class AttendeeController extends Controller
      * Format an invitation message for SMS
      *
      * @param Event $event The event
-     * @param Ticket $ticket The ticket
+     * @param \App\Models\Ticket $ticket The ticket
      * @return string Formatted message
      */
-    protected function formatInvitationMessage(Event $event, Ticket $ticket): string
+    protected function formatInvitationMessage(Event $event, \App\Models\Ticket $ticket): string
     {
         $attendee = $ticket->attendee;
-        $eventDate = $event->date ? \Carbon\Carbon::parse($event->date) : null;
+        $eventDate = $event->start_date;
         
         if ($eventDate) {
             $dayName = $eventDate->locale('sw')->isoFormat('dddd');
@@ -773,15 +773,36 @@ class AttendeeController extends Controller
             $dateString = 'tarehe itakayotangazwa';
         }
 
-        return sprintf(
+        $baseMessage = sprintf(
             "Ndugu %s, unakaribishwa kwenye %s itakayofanyika %s. Mahali: %s. Ukumbi: %s. Tiketi: %s (%s). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824",
             $attendee->name,
             $event->name,
             $dateString,
             $event->location,
             $event->venue,
-            $ticket->ticket_number,
+            $ticket->token,
             ucfirst($ticket->type)
         );
+
+        // Add RSVP information if enabled
+        if ($event->rsvp_enabled && ($event->rsvp_option_1_phone || $event->rsvp_option_2_phone)) {
+            $rsvpMessage = "\n\nRSVP:";
+            
+            if ($event->rsvp_message) {
+                $rsvpMessage .= "\n" . $event->rsvp_message;
+            }
+            
+            if ($event->rsvp_option_1_label && $event->rsvp_option_1_phone) {
+                $rsvpMessage .= "\n" . $event->rsvp_option_1_label . ": " . $event->rsvp_option_1_phone;
+            }
+            
+            if ($event->rsvp_option_2_label && $event->rsvp_option_2_phone) {
+                $rsvpMessage .= "\n" . $event->rsvp_option_2_label . ": " . $event->rsvp_option_2_phone;
+            }
+            
+            $baseMessage .= $rsvpMessage;
+        }
+
+        return $baseMessage;
     }
 } 

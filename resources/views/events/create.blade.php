@@ -116,6 +116,94 @@
                         </div>
                     </div>
 
+                    <!-- RSVP Section -->
+                    <div class="col-12">
+                        <div class="card border-primary">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0">
+                                    <i class="bi bi-telephone me-2"></i>RSVP Configuration (Optional)
+                                </h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row g-3">
+                                    <div class="col-12">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="rsvp_enabled" name="rsvp_enabled" value="1" {{ old('rsvp_enabled') ? 'checked' : '' }}>
+                                            <label class="form-check-label" for="rsvp_enabled">
+                                                Enable RSVP for this event
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="rsvp_option_1_label" class="form-label">RSVP Option 1 Label</label>
+                                        <input type="text" 
+                                               class="form-control @error('rsvp_option_1_label') is-invalid @enderror" 
+                                               id="rsvp_option_1_label" 
+                                               name="rsvp_option_1_label" 
+                                               value="{{ old('rsvp_option_1_label') }}" 
+                                               placeholder="e.g., Accept Invitation">
+                                        @error('rsvp_option_1_label')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="rsvp_option_1_phone" class="form-label">RSVP Option 1 Phone</label>
+                                        <input type="text" 
+                                               class="form-control @error('rsvp_option_1_phone') is-invalid @enderror" 
+                                               id="rsvp_option_1_phone" 
+                                               name="rsvp_option_1_phone" 
+                                               value="{{ old('rsvp_option_1_phone') }}" 
+                                               placeholder="e.g., +255 712 345 678">
+                                        @error('rsvp_option_1_phone')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="rsvp_option_2_label" class="form-label">RSVP Option 2 Label</label>
+                                        <input type="text" 
+                                               class="form-control @error('rsvp_option_2_label') is-invalid @enderror" 
+                                               id="rsvp_option_2_label" 
+                                               name="rsvp_option_2_label" 
+                                               value="{{ old('rsvp_option_2_label') }}" 
+                                               placeholder="e.g., Decline Invitation">
+                                        @error('rsvp_option_2_label')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="col-md-6">
+                                        <label for="rsvp_option_2_phone" class="form-label">RSVP Option 2 Phone</label>
+                                        <input type="text" 
+                                               class="form-control @error('rsvp_option_2_phone') is-invalid @enderror" 
+                                               id="rsvp_option_2_phone" 
+                                               name="rsvp_option_2_phone" 
+                                               value="{{ old('rsvp_option_2_phone') }}" 
+                                               placeholder="e.g., +255 712 345 679">
+                                        @error('rsvp_option_2_phone')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    <div class="col-12">
+                                        <label for="rsvp_message" class="form-label">RSVP Message</label>
+                                        <textarea class="form-control @error('rsvp_message') is-invalid @enderror" 
+                                                  id="rsvp_message" 
+                                                  name="rsvp_message" 
+                                                  rows="3" 
+                                                  placeholder="Optional message to include with RSVP options">{{ old('rsvp_message') }}</textarea>
+                                        @error('rsvp_message')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <small class="form-text text-muted">This message will be included in SMS invitations and event cards.</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="col-md-6">
                         <div class="form-group">
                             <label for="location" class="form-label">Location <span class="text-danger">*</span></label>

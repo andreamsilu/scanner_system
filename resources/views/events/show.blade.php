@@ -201,6 +201,50 @@
             </div>
         </div>
 
+        <!-- RSVP Information Card -->
+        @if($event->rsvp_enabled)
+        <div class="col-12">
+            <div class="card shadow-sm border-info">
+                <div class="card-header bg-info text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-telephone me-2"></i>RSVP Information
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if($event->rsvp_message)
+                        <p class="mb-3"><strong>Message:</strong> {{ $event->rsvp_message }}</p>
+                    @endif
+                    
+                    <div class="row g-3">
+                        @if($event->rsvp_option_1_label && $event->rsvp_option_1_phone)
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center p-3 border rounded bg-light">
+                                <i class="bi bi-check-circle text-success me-3 fs-4"></i>
+                                <div>
+                                    <strong>{{ $event->rsvp_option_1_label }}</strong><br>
+                                    <small class="text-muted">{{ $event->rsvp_option_1_phone }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                        
+                        @if($event->rsvp_option_2_label && $event->rsvp_option_2_phone)
+                        <div class="col-md-6">
+                            <div class="d-flex align-items-center p-3 border rounded bg-light">
+                                <i class="bi bi-x-circle text-danger me-3 fs-4"></i>
+                                <div>
+                                    <strong>{{ $event->rsvp_option_2_label }}</strong><br>
+                                    <small class="text-muted">{{ $event->rsvp_option_2_phone }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <!-- Scanner Assignments Card - Full Width Row -->
         <div class="col-12">
             <div class="card shadow-sm">

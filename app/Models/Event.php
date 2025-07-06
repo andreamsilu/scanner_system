@@ -22,13 +22,20 @@ class Event extends Model
         'capacity',
         'status',
         'created_by',
-        'card_template_id'
+        'card_template_id',
+        'rsvp_enabled',
+        'rsvp_option_1_label',
+        'rsvp_option_1_phone',
+        'rsvp_option_2_label',
+        'rsvp_option_2_phone',
+        'rsvp_message'
     ];
 
     protected $casts = [
         'start_date' => 'datetime',
         'end_date' => 'datetime',
-        'capacity' => 'integer'
+        'capacity' => 'integer',
+        'rsvp_enabled' => 'boolean'
     ];
 
     protected $appends = ['status_badge'];

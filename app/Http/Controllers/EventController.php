@@ -36,7 +36,13 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'start_date' => 'required|date_format:d/m/Y H:i',
             'end_date' => 'required|date_format:d/m/Y H:i|after:start_date',
-            'capacity' => 'required|integer|min:1'
+            'capacity' => 'required|integer|min:1',
+            'rsvp_enabled' => 'boolean',
+            'rsvp_option_1_label' => 'nullable|string|max:255',
+            'rsvp_option_1_phone' => 'nullable|string|max:20',
+            'rsvp_option_2_label' => 'nullable|string|max:255',
+            'rsvp_option_2_phone' => 'nullable|string|max:20',
+            'rsvp_message' => 'nullable|string|max:1000'
         ]);
 
         // Convert dates to database format
@@ -91,7 +97,13 @@ class EventController extends Controller
             'location' => 'required|string|max:255',
             'start_date' => 'required|date_format:d/m/Y H:i',
             'end_date' => 'required|date_format:d/m/Y H:i|after:start_date',
-            'capacity' => 'required|integer|min:1'
+            'capacity' => 'required|integer|min:1',
+            'rsvp_enabled' => 'boolean',
+            'rsvp_option_1_label' => 'nullable|string|max:255',
+            'rsvp_option_1_phone' => 'nullable|string|max:20',
+            'rsvp_option_2_label' => 'nullable|string|max:255',
+            'rsvp_option_2_phone' => 'nullable|string|max:20',
+            'rsvp_message' => 'nullable|string|max:1000'
         ]);
 
         // Convert dates to database format
