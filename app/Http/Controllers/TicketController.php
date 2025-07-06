@@ -120,10 +120,10 @@ class TicketController extends Controller
                     ] : null,
                     'created_at' => $ticket->created_at->format('d-m-Y H:i'),
                     'actions' => [
-                        'view_url' => $ticket->attendee ? route('events.tickets.show', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) : '#',
-                        'print_url' => $ticket->attendee ? route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) : '#',
+                        'view_url' => $ticket->attendee ? route('events.tickets.show', ['event' => $event->id, 'token' => $ticket->attendee->token]) : '#',
+                        'print_url' => $ticket->attendee ? route('events.tickets.print', ['event' => $event->id, 'token' => $ticket->attendee->token]) : '#',
                         'deactivate_url' => ($ticket->status === 'active' && $ticket->attendee) ? 
-                            route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee->token]) : null
+                            route('events.tickets.deactivate', ['event' => $event->id, 'token' => $ticket->attendee->token]) : null
                     ]
                 ];
             });
