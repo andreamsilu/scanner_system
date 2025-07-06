@@ -15,7 +15,9 @@ class CardTemplateSeeder extends Seeder
     public function run(): void
     {
         // Get the first admin user or create one
-        $adminUser = User::where('role', 'admin')->first() ?? User::first();
+        $adminUser = User::whereHas('roles', function($query) {
+            $query->where('slug', 'admin');
+        })->first() ?? User::first();
 
         $templates = [
             [
