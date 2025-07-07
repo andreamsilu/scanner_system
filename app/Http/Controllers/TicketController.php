@@ -567,7 +567,7 @@ class TicketController extends Controller
 
         $manager = new ImageManager(new Driver());
         // Create base image
-        $image = $manager->canvas(800, 1200, '#ffffff');
+        $image = $manager->create(800, 1200, '#ffffff');
 
         // Add background image
         $bgPath = public_path('images/image.png');
@@ -575,7 +575,7 @@ class TicketController extends Controller
             $bg = $manager->make($bgPath)->fit(800, 1200);
             $image->insert($bg, 'top-left', 0, 0);
             // Add semi-transparent overlay for readability
-            $overlay = $manager->canvas(800, 1200, [255,255,255,(int)(0.82*255)]);
+            $overlay = $manager->create(800, 1200, [255,255,255,(int)(0.82*255)]);
             $image->insert($overlay, 'top-left', 0, 0);
         }
 
