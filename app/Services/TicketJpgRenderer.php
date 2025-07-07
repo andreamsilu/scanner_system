@@ -11,7 +11,7 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 class TicketJpgRenderer
 {
     /**
-     * Render the ticket as a JPG and return the binary data
+     * Render the ticket as a JPG and return the binary data.
      *
      * @param Ticket $ticket
      * @param Event $event
@@ -22,14 +22,14 @@ class TicketJpgRenderer
         $manager = new ImageManager(new Driver());
         $image = $manager->create(800, 1200, '#ffffff');
 
-        // Optional background
+        // === Background with white overlay for text readability ===
         $bgPath = public_path('images/image.png');
         if (file_exists($bgPath)) {
             $bg = $manager->read($bgPath)->cover(800, 1200);
             $image->place($bg, 'top-left', 0, 0);
 
-            // Darker overlay for text readability
-            $overlay = $manager->create(800, 1200, [0, 0, 0, 0.4]); // black with opacity
+            // ✅ Apply full white semi-transparent overlay
+            $overlay = $manager->create(800, 1200, [255, 255, 255, 0.75]);
             $image->place($overlay, 'top-left', 0, 0);
         }
 
@@ -37,82 +37,54 @@ class TicketJpgRenderer
         $y = 80;
         $xCenter = 400;
 
-        // Helper function to simplify text
-        $addText = function ($text, $yPos, $size = 20, $color = '#5A6B47') use ($image, $fontPath, $xCenter) {
-            $image->text($text, $xCenter, $yPos, function ($font) use ($fontPath, $size, $color) {
+        // Helper to place centered text
+        $addText = function (string $text, int &$y, int $size = 20, string $color = '#5A6B47', int $gap = 30) use ($image, $fontPath, $xCenter) {
+            $image->text($text, $xCenter, $y, function ($font) use ($fontPath, $size, $color) {
                 $font->filename($fontPath);
                 $font->size($size);
                 $font->color($color);
                 $font->align('center');
             });
+            $y += $gap;
         };
 
-        // Main Title
-        $addText('MWALIKO WA SENDOFF', $y, 44, '#9CAF88');
-        $y += 70;
+        // === Main Content ===
+        $addText('MWALIKO WA SENDOFF', $y, 38, '#9CAF88', 50);
+        $addText('Familia ya MZEE PAUL MSILU', $y, 24, '#5A6B47', 30);
+        $addText('inayo furaha kukualika', $y, 18, '#5A6B47', 26);
+        $addText('Kwa: ' . strtoupper($ticket->attendee->name), $y, 24, '#2E4E1E', 36);
+        $addText('Kwenye sherehe ya SENDOFF ya', $y, 18, '#5A6B47', 26);
+        $addText('ANITHA PAUL MSILU', $y, 30, '#D2691E', 40);
+        $addText('🗓 Tarehe: Ijumaa, 11-07-2025', $y, 18, '#5A6B47', 24);
+        $addText('⏰ Saa: 12:00 jioni', $y, 18, '#5A6B47', 24);
+        $addText('📍 Mahali: Destiny Hall, Kwa Mathias, Kibaha - Pwani', $y, 16, '#5A6B47', 34);
+        $addText('🎫 Tiketi: ' . $ticket->token, $y, 20, '#D2691E', 28);
+        $addText('Aina ya Tiketi: ' . strtoupper($ticket->type), $y, 20, '#D2691E', 28);
+        $addText('------------------------------', $y, 16, '#C4D1B3', 26);
+        $addText('Scan to Verify Ticket', $y, 14, '#2E4E1E', 20);
 
-        // Host family
-        $addText('Familia ya MZEE PAUL MSILU', $y, 26, '#5A6B47');
-        $y += 40;
-
-        $addText('inayo furaha kukualika', $y, 20);
-        $y += 50;
-
-        // Invitee name
-        $addText('Kwa: ' . strtoupper($ticket->attendee->name), $y, 28, '#2E4E1E');
-        $y += 60;
-
-        // Event subject
-        $addText('Kwenye sherehe ya SENDOFF ya', $y);
-        $y += 35;
-
-        $addText('ANITHA PAUL MSILU', $y, 34, '#D2691E');
-        $y += 60;
-
-        // Date & time
-        $addText('🗓 Tarehe: Ijumaa, 11-07-2025', $y);
-        $y += 35;
-
-        $addText('⏰ Saa: 12:00 jioni', $y);
-        $y += 35;
-
-        // Venue
-        $addText('📍 Mahali: Destiny Hall, Kwa Mathias, Kibaha - Pwani', $y, 18);
-        $y += 70;
-
-        // Ticket info
-        $addText('🎫 Tiketi: ' . $ticket->token, $y, 22, '#D2691E');
-        $y += 35;
-
-        $addText('Aina ya Tiketi: ' . strtoupper($ticket->type), $y, 22, '#D2691E');
-        $y += 50;
-
-        // Divider
-        $addText('------------------------------', $y, 18, '#C4D1B3');
-        $y += 40;
-
-        // QR label
-        $addText('Scan to Verify Ticket', $y, 16, '#2E4E1E');
-        $y += 10;
-
-        // QR Code
+        // === QR Code ===
         $qrCode = QrCode::format('png')
-            ->size(140)
+            ->size(130)
             ->generate(route('tickets.verify', $ticket->token));
-
         $tempQrPath = tempnam(sys_get_temp_dir(), 'qr_');
         file_put_contents($tempQrPath, $qrCode);
         $qrImage = $manager->read($tempQrPath);
-        $image->place($qrImage, 'top-left', 330, $y);
+        $image->place($qrImage, 'top-left', 335, $y);
         unlink($tempQrPath);
 
-        $y += 160;
+        $y += 150;
 
-        // Footer
-        $addText('Wasilisha tiketi hii mlangoni', $y, 16, '#D2691E');
-        $y += 30;
+        // === Footer ===
+        $addText('Wasilisha tiketi hii mlangoni', $y, 14, '#D2691E', 24);
+        $addText('T-KADI: 0769289824', $y, 14, '#5A6B47', 20);
 
-        $addText('T-KADI: 0769289824', $y, 14);
+        // === Optional border frame ===
+        $borderPath = public_path('images/border-frame.png');
+        if (file_exists($borderPath)) {
+            $frame = $manager->read($borderPath)->resize(800, 1200);
+            $image->place($frame, 'top-left', 0, 0);
+        }
 
         return $image->toJpeg(90);
     }
