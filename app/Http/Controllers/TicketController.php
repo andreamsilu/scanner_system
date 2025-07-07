@@ -575,7 +575,7 @@ class TicketController extends Controller
             $bg = $manager->read($bgPath)->cover(800, 1200);
             $image->place($bg, 'top-left', 0, 0);
             // Add semi-transparent overlay for readability
-            $overlay = $manager->create(800, 1200, [255,255,255,(int)(0.82*255)]);
+            $overlay = $manager->create(800, 1200, [0,0,0,0.3]);
             $image->place($overlay, 'top-left', 0, 0);
         }
 
@@ -672,7 +672,7 @@ class TicketController extends Controller
             $font->align('center');
         });
         $jpgData = $image->toJpeg(90);
-        $filename = 'ticket-' . $ticket->token . '.jpg';
+        $filename = $ticket->attendee->name . '-' . $ticket->token . '.jpg';
         return response($jpgData)
             ->header('Content-Type', 'image/jpeg')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
