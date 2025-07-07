@@ -671,7 +671,7 @@ class TicketController extends Controller
             $font->size(14);
             $font->align('center');
         });
-        $jpgData = $image->encode('jpg', 90);
+        $jpgData = $image->toJpeg(90);
         $filename = 'ticket-' . $ticket->token . '.jpg';
         return response($jpgData)
             ->header('Content-Type', 'image/jpeg')
