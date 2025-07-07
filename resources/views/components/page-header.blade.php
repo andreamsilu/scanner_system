@@ -30,7 +30,7 @@
                 </ol>
             </nav>
             <div class="text-muted border-start ps-3 ms-3">
-                Welcome, {{ Auth::user()->name }}
+                Welcome, {{ auth()->user()->name }}
             </div>
         </div>
     </div>
