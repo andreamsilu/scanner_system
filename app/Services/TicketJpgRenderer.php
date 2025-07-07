@@ -142,9 +142,11 @@ class TicketJpgRenderer
         $y += 60;
 
         // Optional Divider Line
-        $image->line([100, $y, 700, $y], function ($draw) {
-            $draw->color('#C4D1B3');
-            $draw->width(1);
+        $image->draw(function ($draw) use ($y) {
+            $draw->line(100, $y, 700, $y, function ($stroke) {
+                $stroke->color('#C4D1B3');
+                $stroke->width(1);
+            });
         });
 
         $y += 40;
