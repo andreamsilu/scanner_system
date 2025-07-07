@@ -10,170 +10,99 @@ use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class TicketJpgRenderer
 {
-    /**
-     * Render the ticket as a JPG and return the binary data
-     *
-     * @param Ticket $ticket
-     * @param Event $event
-     * @return string JPEG binary data
-     */
     public static function render(Ticket $ticket, Event $event): string
     {
         $manager = new ImageManager(new Driver());
         $image = $manager->create(800, 1200, '#ffffff');
 
-        // Add background image if exists
+        // Background image
         $bgPath = public_path('images/image.png');
         if (file_exists($bgPath)) {
             $bg = $manager->read($bgPath)->cover(800, 1200);
             $image->place($bg, 'top-left', 0, 0);
 
-            // Add a semi-transparent white overlay for better readability
-            $overlay = $manager->create(800, 1200, [255, 255, 255, 0.82]);
+            // Improved: Darker overlay for better text contrast
+            $overlay = $manager->create(800, 1200, [0, 0, 0, 0.4]);
             $image->place($overlay, 'top-left', 0, 0);
         }
 
         $fontPath = public_path('fonts/georgiab.ttf');
         $y = 80;
+        $xCenter = 400;
 
-        // Main Header
-        $image->text('MWALIKO WA SENDOFF', 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#9CAF88');
-            $font->size(42);
-            $font->align('center');
-        });
+        // === Helper function ===
+        $addText = function ($text, $yPos, $size = 20, $color = '#5A6B47') use ($image, $fontPath, $xCenter) {
+            $image->text($text, $xCenter, $yPos, function ($font) use ($fontPath, $size, $color) {
+                $font->filename($fontPath);
+                $font->size($size);
+                $font->color($color);
+                $font->align('center');
+            });
+        };
 
+        // === Text content ===
+        $addText('MWALIKO WA SENDOFF', $y, 44, '#9CAF88');
         $y += 70;
 
-        // Subheader
-        $image->text('Familia ya MZEE PAUL MSILU', 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#5A6B47');
-            $font->size(26);
-            $font->align('center');
-        });
-
+        $addText('Familia ya MZEE PAUL MSILU', $y, 26, '#5A6B47');
         $y += 40;
 
-        $image->text('wanayo furaha kukualika', 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#5A6B47');
-            $font->size(20);
-            $font->align('center');
-        });
-
+        $addText('inayo furaha kukualika', $y, 20, '#5A6B47');
         $y += 50;
 
-        // Invitee Name
-        $image->text('Kwa: ' . strtoupper($ticket->attendee->name), 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#2E4E1E');
-            $font->size(28);
-            $font->align('center');
-        });
-
+        $addText('Kwa: ' . strtoupper($ticket->attendee->name), $y, 28, '#2E4E1E');
         $y += 60;
 
-        // Event Description
-        $image->text('Kwenye sherehe ya SENDOFF ya', 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#5A6B47');
-            $font->size(20);
-            $font->align('center');
-        });
-
+        $addText('Kwenye sherehe ya SENDOFF ya', $y, 20, '#5A6B47');
         $y += 35;
 
-        $image->text('ANITHA PAUL MSILU', 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#D2691E');
-            $font->size(34);
-            $font->align('center');
-        });
-
+        $addText('ANITHA PAUL MSILU', $y, 34, '#D2691E');
         $y += 60;
 
-        // Date, Time, Venue
-        $image->text('🗓 Tarehe: Ijumaa, 11-07-2025', 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#5A6B47');
-            $font->size(20);
-            $font->align('center');
-        });
-
+        $addText('🗓 Tarehe: Ijumaa, 11-07-2025', $y);
         $y += 35;
 
-        $image->text('⏰ Saa: 12:00 jioni', 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#5A6B47');
-            $font->size(20);
-            $font->align('center');
-        });
-
+        $addText('⏰ Saa: 12:00 jioni', $y);
         $y += 35;
 
-        $image->text('📍 Mahali: Destiny Hall, Kwa Mathias, Kibaha - Pwani', 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#5A6B47');
-            $font->size(18);
-            $font->align('center');
-        });
-
+        $addText('📍 Mahali: Destiny Hall, Kwa Mathias, Kibaha - Pwani', $y, 18);
         $y += 70;
 
-        // Ticket ID and Type
-        $image->text('🎫 Tiketi: ' . $ticket->token, 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#D2691E');
-            $font->size(22);
-            $font->align('center');
-        });
-
+        $addText('🎫 Tiketi: ' . $ticket->token, $y, 22, '#D2691E');
         $y += 35;
 
-        $image->text('Aina ya Tiketi: ' . strtoupper($ticket->type), 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#D2691E');
-            $font->size(22);
-            $font->align('center');
-        });
+        $addText('Aina ya Tiketi: ' . strtoupper($ticket->type), $y, 22, '#D2691E');
+        $y += 50;
 
-        $y += 60;
+        // Divider line
+        $addText('------------------------------', $y, 18, '#C4D1B3');
+        $y += 40;
 
-        // Optional Divider Line (as dashed text)
+        // QR Label
+        $addText('Scan to Verify Ticket', $y, 16, '#2E4E1E');
         $y += 10;
-        $image->text('------------------------------', 400, $y, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#C4D1B3');
-            $font->size(18);
-            $font->align('center');
-        });
-        $y += 30;
 
-        // QR Code
+        // === QR Code ===
         $qrCode = QrCode::format('png')
             ->size(140)
             ->generate(route('tickets.verify', $ticket->token));
         $tempQrPath = tempnam(sys_get_temp_dir(), 'qr_');
         file_put_contents($tempQrPath, $qrCode);
         $qrImage = $manager->read($tempQrPath);
-        $image->place($qrImage, 'bottom', 400 - 70, 160); // Moved up from bottom
+        $image->place($qrImage, 'top-left', 330, $y); // Adjusted to center
         unlink($tempQrPath);
 
-        // Footer
-        $image->text('Wasilisha tiketi hii mlangoni', 400, 1040, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#D2691E');
-            $font->size(16);
-            $font->align('center');
-        });
+        $y += 160;
 
-        $image->text('T-KADI: 0769289824', 400, 1070, function ($font) use ($fontPath) {
-            $font->filename($fontPath);
-            $font->color('#5A6B47');
-            $font->size(14);
-            $font->align('center');
+        // Footer
+        $addText('Wasilisha tiketi hii mlangoni', $y, 16, '#D2691E');
+        $y += 30;
+
+        $addText('T-KADI: 0769289824', $y, 14, '#5A6B47');
+
+        // Optional border frame
+        $image->rectangle(10, 10, 790, 1190, function ($draw) {
+            $draw->border(2, '#5A6B47');
         });
 
         return $image->toJpeg(90);
