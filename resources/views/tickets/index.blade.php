@@ -186,6 +186,11 @@
                                                 </button>
                                             </form>
                                         @endif
+                                        <a href="{{ route('events.tickets.download-jpg', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}"
+                                           class="btn btn-outline-warning"
+                                           title="Download JPG">
+                                            <i class="bi bi-file-image"></i>
+                                        </a>
                                     </div>
                                 </td>
                             </tr>

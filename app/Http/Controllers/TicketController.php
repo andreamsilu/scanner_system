@@ -17,6 +17,9 @@ use Illuminate\View\View;
 use App\Exports\TicketsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
+use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class TicketController extends Controller
 {
@@ -103,8 +106,6 @@ class TicketController extends Controller
 
         return view('tickets.print', compact('event', 'ticket'));
     }
-
-
 
     /**
      * Deactivate a specific ticket.
@@ -362,8 +363,6 @@ class TicketController extends Controller
         return $pdf->download('ticket-' . $ticket->token . '.pdf');
     }
 
-
-
     /**
      * Get tickets data for DataTable with server-side processing
      */
@@ -552,5 +551,121 @@ class TicketController extends Controller
             \Log::error('Ticket export failed: ' . $e->getMessage());
             return back()->with('error', 'Failed to export tickets. Please try again.');
         }
+    }
+
+    /**
+     * Download the ticket as a JPG image.
+     */
+    public function downloadJpg(Event $event, $token)
+    {
+        $ticket = Ticket::whereHas('attendee', function($query) use ($token) {
+            $query->where('token', $token);
+        })
+        ->where('event_id', $event->id)
+        ->with(['attendee', 'event'])
+        ->firstOrFail();
+
+        $manager = new ImageManager(new Driver());
+        $image = $manager->create(800, 1200, '#ffffff');
+
+        // Add background image
+        $bgPath = public_path('images/image.png');
+        if (file_exists($bgPath)) {
+            $bg = $manager->read($bgPath)->cover(800, 1200);
+            $image->place($bg, 'top-left', 0, 0);
+            // Add semi-transparent overlay for readability
+            $overlay = $manager->create(800, 1200, 'rgba(255,255,255,0.82)');
+            $image->place($overlay, 'top-left', 0, 0);
+        }
+
+        // Add ticket details (simplified, can be styled further)
+        $y = 80;
+        $image->text('MWALIKO WA SENDOFF', 400, $y, [
+            'color' => '#9CAF88',
+            'size' => 36,
+            'align' => 'center',
+        ]);
+        $y += 60;
+        $image->text('Familia ya MR & MRS PIENZI CHAMBILA', 400, $y, [
+            'color' => '#5A6B47',
+            'size' => 18,
+            'align' => 'center',
+        ]);
+        $y += 30;
+        $image->text('wanayo furaha kukualika', 400, $y, [
+            'color' => '#5A6B47',
+            'size' => 16,
+            'align' => 'center',
+        ]);
+        $y += 40;
+        $image->text('Kwa: ' . strtoupper($ticket->attendee->name), 400, $y, [
+            'color' => '#5A6B47',
+            'size' => 20,
+            'align' => 'center',
+        ]);
+        $y += 30;
+        $image->text('Kwenye sherehe ya SENDOFF ya', 400, $y, [
+            'color' => '#5A6B47',
+            'size' => 16,
+            'align' => 'center',
+        ]);
+        $y += 30;
+        $image->text('ALICE PIENZI CHAMBILA', 400, $y, [
+            'color' => '#D2691E',
+            'size' => 24,
+            'align' => 'center',
+        ]);
+        $y += 50;
+        $image->text('Tarehe: Alhamisi, 05-06-2025', 400, $y, [
+            'color' => '#5A6B47',
+            'size' => 16,
+            'align' => 'center',
+        ]);
+        $y += 30;
+        $image->text('Saa: 12:00 jioni', 400, $y, [
+            'color' => '#5A6B47',
+            'size' => 16,
+            'align' => 'center',
+        ]);
+        $y += 30;
+        $image->text('Mahali: GBF Garden Hall, Dar es Salaam', 400, $y, [
+            'color' => '#5A6B47',
+            'size' => 16,
+            'align' => 'center',
+        ]);
+        $y += 50;
+        $image->text('Tiketi: ' . $ticket->token, 400, $y, [
+            'color' => '#D2691E',
+            'size' => 18,
+            'align' => 'center',
+        ]);
+        $y += 30;
+        $image->text('Aina: ' . strtoupper($ticket->type), 400, $y, [
+            'color' => '#D2691E',
+            'size' => 18,
+            'align' => 'center',
+        ]);
+        // Add QR code
+        $qrCode = QrCode::format('png')
+            ->size(180)
+            ->generate(route('tickets.verify', $ticket->token));
+        $qrImage = $manager->read($qrCode);
+        $image->place($qrImage, 'bottom', 400, 100);
+        // Footer
+        $image->text('Wasilisha tiketi hii mlangoni', 400, 1100, [
+            'color' => '#D2691E',
+            'size' => 16,
+            'align' => 'center',
+        ]);
+        $image->text('Maelezo: 0769289824', 400, 1140, [
+            'color' => '#5A6B47',
+            'size' => 14,
+            'align' => 'center',
+        ]);
+        $jpgData = $image->toJpeg(90);
+        $filename = 'ticket-' . $ticket->token . '.jpg';
+        return response($jpgData)
+            ->header('Content-Type', 'image/jpeg')
+            ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 } 

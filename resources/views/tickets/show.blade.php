@@ -185,6 +185,9 @@
         <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; cursor: pointer;">
             Print Ticket
         </button>
+        <a href="{{ route('events.tickets.download-jpg', ['event' => $event->id, 'ticket' => $ticket->token]) }}" style="padding: 10px 20px; font-size: 16px; text-decoration: none; background: #D2691E; color: white; border-radius: 4px; margin-left: 10px;">
+            Download as JPG
+        </a>
     </div>
 </body>
 </html> 
