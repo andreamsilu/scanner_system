@@ -118,7 +118,7 @@
                 <div class="invitation-message">
                     <h2 style="color: #bfa46d; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
                     <p style="margin-bottom: 1em; color: #000000;">
-                        Familia ya MZEE PAUL MSILU wa  Dar es Salaam,<br>
+                        Familia ya MZEE PAUL MSILU wa  Kibaha-Pwani,<br>
                         wanayo furaha kubwa kukualika / kuwaalika
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
