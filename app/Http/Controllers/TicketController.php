@@ -17,8 +17,7 @@ use Illuminate\View\View;
 use App\Exports\TicketsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Intervention\Image\Facades\Image;
-use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class TicketController extends Controller
@@ -565,16 +564,17 @@ class TicketController extends Controller
         ->with(['attendee', 'event'])
         ->firstOrFail();
 
+        $manager = new ImageManager();
         // Create base image
-        $image = Image::canvas(800, 1200, '#ffffff');
+        $image = $manager->canvas(800, 1200, '#ffffff');
 
         // Add background image
         $bgPath = public_path('images/image.png');
         if (file_exists($bgPath)) {
-            $bg = Image::make($bgPath)->fit(800, 1200);
+            $bg = $manager->make($bgPath)->fit(800, 1200);
             $image->insert($bg, 'top-left', 0, 0);
             // Add semi-transparent overlay for readability
-            $overlay = Image::canvas(800, 1200, [255,255,255,(int)(0.82*255)]);
+            $overlay = $manager->canvas(800, 1200, [255,255,255,(int)(0.82*255)]);
             $image->insert($overlay, 'top-left', 0, 0);
         }
 
@@ -649,7 +649,7 @@ class TicketController extends Controller
         $qrCode = QrCode::format('png')
             ->size(180)
             ->generate(route('tickets.verify', $ticket->token));
-        $qrImage = Image::make($qrCode);
+        $qrImage = $manager->make($qrCode);
         $image->insert($qrImage, 'bottom', 400 - 90, 100); // Centered horizontally
         // Footer
         $image->text('Wasilisha tiketi hii mlangoni', 400, 1100, function($font) {
