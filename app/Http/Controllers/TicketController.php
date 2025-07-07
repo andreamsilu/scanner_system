@@ -580,71 +580,71 @@ class TicketController extends Controller
 
         // Add ticket details (simplified, can be styled further)
         $y = 80;
-        $image->text('MWALIKO WA SENDOFF', 400, $y, [
-            'color' => '#9CAF88',
-            'size' => 36,
-            'align' => 'center',
-        ]);
+        $image->text('MWALIKO WA SENDOFF', 400, $y, function($font) {
+            $font->color('#9CAF88');
+            $font->size(36);
+            $font->align('center');
+        });
         $y += 60;
-        $image->text('Familia ya MR & MRS PIENZI CHAMBILA', 400, $y, [
-            'color' => '#5A6B47',
-            'size' => 18,
-            'align' => 'center',
-        ]);
+        $image->text('Familia ya MR & MRS PIENZI CHAMBILA', 400, $y, function($font) {
+            $font->color('#5A6B47');
+            $font->size(18);
+            $font->align('center');
+        });
         $y += 30;
-        $image->text('wanayo furaha kukualika', 400, $y, [
-            'color' => '#5A6B47',
-            'size' => 16,
-            'align' => 'center',
-        ]);
+        $image->text('wanayo furaha kukualika', 400, $y, function($font) {
+            $font->color('#5A6B47');
+            $font->size(16);
+            $font->align('center');
+        });
         $y += 40;
-        $image->text('Kwa: ' . strtoupper($ticket->attendee->name), 400, $y, [
-            'color' => '#5A6B47',
-            'size' => 20,
-            'align' => 'center',
-        ]);
+        $image->text('Kwa: ' . strtoupper($ticket->attendee->name), 400, $y, function($font) {
+            $font->color('#5A6B47');
+            $font->size(20);
+            $font->align('center');
+        });
         $y += 30;
-        $image->text('Kwenye sherehe ya SENDOFF ya', 400, $y, [
-            'color' => '#5A6B47',
-            'size' => 16,
-            'align' => 'center',
-        ]);
+        $image->text('Kwenye sherehe ya SENDOFF ya', 400, $y, function($font) {
+            $font->color('#5A6B47');
+            $font->size(16);
+            $font->align('center');
+        });
         $y += 30;
-        $image->text('ALICE PIENZI CHAMBILA', 400, $y, [
-            'color' => '#D2691E',
-            'size' => 24,
-            'align' => 'center',
-        ]);
+        $image->text('ALICE PIENZI CHAMBILA', 400, $y, function($font) {
+            $font->color('#D2691E');
+            $font->size(24);
+            $font->align('center');
+        });
         $y += 50;
-        $image->text('Tarehe: Alhamisi, 05-06-2025', 400, $y, [
-            'color' => '#5A6B47',
-            'size' => 16,
-            'align' => 'center',
-        ]);
+        $image->text('Tarehe: Alhamisi, 05-06-2025', 400, $y, function($font) {
+            $font->color('#5A6B47');
+            $font->size(16);
+            $font->align('center');
+        });
         $y += 30;
-        $image->text('Saa: 12:00 jioni', 400, $y, [
-            'color' => '#5A6B47',
-            'size' => 16,
-            'align' => 'center',
-        ]);
+        $image->text('Saa: 12:00 jioni', 400, $y, function($font) {
+            $font->color('#5A6B47');
+            $font->size(16);
+            $font->align('center');
+        });
         $y += 30;
-        $image->text('Mahali: GBF Garden Hall, Dar es Salaam', 400, $y, [
-            'color' => '#5A6B47',
-            'size' => 16,
-            'align' => 'center',
-        ]);
+        $image->text('Mahali: GBF Garden Hall, Dar es Salaam', 400, $y, function($font) {
+            $font->color('#5A6B47');
+            $font->size(16);
+            $font->align('center');
+        });
         $y += 50;
-        $image->text('Tiketi: ' . $ticket->token, 400, $y, [
-            'color' => '#D2691E',
-            'size' => 18,
-            'align' => 'center',
-        ]);
+        $image->text('Tiketi: ' . $ticket->token, 400, $y, function($font) {
+            $font->color('#D2691E');
+            $font->size(18);
+            $font->align('center');
+        });
         $y += 30;
-        $image->text('Aina: ' . strtoupper($ticket->type), 400, $y, [
-            'color' => '#D2691E',
-            'size' => 18,
-            'align' => 'center',
-        ]);
+        $image->text('Aina: ' . strtoupper($ticket->type), 400, $y, function($font) {
+            $font->color('#D2691E');
+            $font->size(18);
+            $font->align('center');
+        });
         // Add QR code
         $qrCode = QrCode::format('png')
             ->size(180)
@@ -652,16 +652,16 @@ class TicketController extends Controller
         $qrImage = $manager->read($qrCode);
         $image->place($qrImage, 'bottom', 400, 100);
         // Footer
-        $image->text('Wasilisha tiketi hii mlangoni', 400, 1100, [
-            'color' => '#D2691E',
-            'size' => 16,
-            'align' => 'center',
-        ]);
-        $image->text('Maelezo: 0769289824', 400, 1140, [
-            'color' => '#5A6B47',
-            'size' => 14,
-            'align' => 'center',
-        ]);
+        $image->text('Wasilisha tiketi hii mlangoni', 400, 1100, function($font) {
+            $font->color('#D2691E');
+            $font->size(16);
+            $font->align('center');
+        });
+        $image->text('Maelezo: 0769289824', 400, 1140, function($font) {
+            $font->color('#5A6B47');
+            $font->size(14);
+            $font->align('center');
+        });
         $jpgData = $image->toJpeg(90);
         $filename = 'ticket-' . $ticket->token . '.jpg';
         return response($jpgData)
