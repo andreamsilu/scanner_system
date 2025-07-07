@@ -60,7 +60,7 @@
                                                     <div class="d-flex align-items-center">
                                                         <div>
                                                             <h6 class="mb-0">{{ $event->name }}</h6>
-                                                            <small class="text-muted">{{ Str::limit($event->description, 50) }}</small>
+                                                            <small class="text-muted">{{ \Illuminate\Support\Str::limit($event->description, 50) }}</small>
                                                         </div>
                                                     </div>
                                                 </td>

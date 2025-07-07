@@ -56,7 +56,7 @@
                         </td>
                         <td>{{ $log->description }}</td>
                         <td>{{ $log->ip_address }}</td>
-                        <td>{{ Str::limit($log->user_agent, 50) }}</td>
+                        <td>{{ \Illuminate\Support\Str::limit($log->user_agent, 50) }}</td>
                         <td>{{ $log->created_at->format('M d, Y H:i:s') }}</td>
                     </tr>
                 @empty

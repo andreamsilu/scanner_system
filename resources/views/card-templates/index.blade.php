@@ -134,7 +134,7 @@
                             </div>
 
                             <p class="card-text text-muted small mb-2">
-                                {{ Str::limit($template->description, 100) }}
+                                {{ \Illuminate\Support\Str::limit($template->description, 100) }}
                             </p>
 
                             <div class="mb-3">

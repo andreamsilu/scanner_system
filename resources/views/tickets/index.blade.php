@@ -68,7 +68,7 @@
                                 </td>
                                 <td class="py-2">
                                     <a href="{{ route('events.show', $ticket->event) }}" class="text-decoration-none">
-                                        {{ Str::limit($ticket->event->name, 20) }}
+                                        {{ \Illuminate\Support\Str::limit($ticket->event->name, 20) }}
                                     </a>
                                 </td>
                                 <td class="py-2">

@@ -213,7 +213,7 @@
                                         {{ ucfirst($log->status) }}
                                     </span>
                                 </div>
-                                <p class="mb-1 small">{{ Str::limit($log->content, 60) }}</p>
+                                <p class="mb-1 small">{{ \Illuminate\Support\Str::limit($log->content, 60) }}</p>
                                 <small class="text-muted">{{ $log->created_at->diffForHumans() }}</small>
                             </div>
                         @empty
