@@ -29,7 +29,7 @@ class TicketJpgRenderer
             $image->place($bg, 'top-left', 0, 0);
 
             // ✅ Apply full white semi-transparent overlay
-            $overlay = $manager->create(800, 1200, [255, 255, 255, 0.75]);
+            $overlay = $manager->create(800, 1200, [255, 255, 255, 0.9]);
             $image->place($overlay, 'top-left', 0, 0);
         }
 
