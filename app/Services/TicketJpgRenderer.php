@@ -141,15 +141,15 @@ class TicketJpgRenderer
 
         $y += 60;
 
-        // Optional Divider Line
-        $image->draw(function ($draw) use ($y) {
-            $draw->line(100, $y, 700, $y, function ($stroke) {
-                $stroke->color('#C4D1B3');
-                $stroke->width(1);
-            });
+        // Optional Divider Line (as dashed text)
+        $y += 10;
+        $image->text('------------------------------', 400, $y, function ($font) use ($fontPath) {
+            $font->filename($fontPath);
+            $font->color('#C4D1B3');
+            $font->size(18);
+            $font->align('center');
         });
-
-        $y += 40;
+        $y += 30;
 
         // QR Code
         $qrCode = QrCode::format('png')
