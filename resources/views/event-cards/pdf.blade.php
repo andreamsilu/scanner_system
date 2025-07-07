@@ -156,7 +156,7 @@
         <div class="invitation-content">
             <div>
                 <p>
-                    Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                    Familia ya MZEE PAUL MSILU wa Kigogo, Dar es Salaam,<br>
                     wanayo furaha kubwa kukualika / kuwaalika
                 </p>
                 <p>
@@ -230,7 +230,7 @@
             <div style="background-color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: left; font-size: 12px; line-height: 1.6;">
                 <h5 style="color: #0d6efd; text-align: center; margin-bottom: 15px; font-weight: bold;">MWALIKO WA SENDOFF</h5>
                 <p style="margin-bottom: 8px;">
-                    Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                    Familia ya MZEE PAUL MSILU wa Kigogo, Dar es Salaam,<br>
                     wanayo furaha kubwa kukualika / kuwaalika
                 </p>
                 <p style="margin-bottom: 8px;">

@@ -591,7 +591,7 @@ class TicketController extends Controller
         });
         $y += 60;
         // Family invitation
-        $image->text('Familia ya MR & MRS PIENZI CHAMBILA', 400, $y, function($font) use ($fontPath) {
+        $image->text('Familia ya MZEE PAUL MSILU', 400, $y, function($font) use ($fontPath) {
             $font->filename($fontPath);
             $font->color('#5A6B47');
             $font->size(22);
@@ -621,7 +621,7 @@ class TicketController extends Controller
             $font->align('center');
         });
         $y += 30;
-        $image->text('ALICE PIENZI CHAMBILA', 400, $y, function($font) use ($fontPath) {
+        $image->text('ANITHA PAUL MSILU', 400, $y, function($font) use ($fontPath) {
             $font->filename($fontPath);
             $font->color('#D2691E');
             $font->size(32);

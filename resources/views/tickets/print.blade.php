@@ -133,7 +133,7 @@
                 <div class="invitation-message">
                     <h2 style="color: #9CAF88; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
                     <p style="margin-bottom: 1em; color: #5A6B47;">
-                        Familia ya MR & MRS PIENZI CHAMBILA<br>
+                        Familia ya MZEE PAUL MSILU<br>
                         wanayo furaha kukualika
                     </p>
                     <p style="margin-bottom: 1em; color: #5A6B47; font-weight: bold;">
@@ -142,7 +142,7 @@
                     <hr style="border: none; border-top: 1.5px dotted #9CAF88; margin: 1.5em 0;">
                     <p style="margin-bottom: 1em; color: #5A6B47;">
                         Kwenye sherehe ya SENDOFF ya<br>
-                        <strong style="color: #D2691E; font-size: 1.5em; letter-spacing: 0.04em;">ALICE PIENZI CHAMBILA</strong>
+                        <strong style="color: #D2691E; font-size: 1.5em; letter-spacing: 0.04em;">ANITHA PAUL MSILU</strong>
                     </p>
                     <p style="margin-bottom: 1em; color: #5A6B47;">
                         <strong>Tarehe:</strong> Alhamisi, 05-06-2025<br>

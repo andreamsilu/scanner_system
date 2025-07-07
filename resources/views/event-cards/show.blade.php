@@ -39,7 +39,7 @@
                             <div class="invitation-content text-center">
                                 <div class="mb-4">
                                     <p class="mb-3" style="font-size: 1.1rem;">
-                                        Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                                        Familia ya MZEE PAUL MSILU wa Kigogo, Dar es Salaam,<br>
                                         wanayo furaha kubwa kukualika / kuwaalika
                                     </p>
                                     <p class="mb-4" style="font-size: 1.1rem;">
@@ -119,7 +119,7 @@
                                 <div class="ticket-content bg-white p-3 rounded-3 mb-4 text-start" style="font-size: 0.9rem; line-height: 1.6;">
                                     <h5 class="text-primary text-center mb-3 fw-bold">MWALIKO WA SENDOFF</h5>
                                     <p class="mb-2">
-                                        Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                                        Familia ya MZEE PAUL MSILU wa Kigogo, Dar es Salaam,<br>
                                         wanayo furaha kubwa kukualika / kuwaalika
                                     </p>
                                     <p class="mb-2">

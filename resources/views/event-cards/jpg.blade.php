@@ -131,7 +131,7 @@
         <div class="invitation-content">
             <div>
                 <p>
-                    Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
+                    Familia ya MZEE PAUL MSILU wa Kigogo, Dar es Salaam,<br>
                     wanayo furaha kubwa kukualika / kuwaalika
                 </p>
                 <p>
