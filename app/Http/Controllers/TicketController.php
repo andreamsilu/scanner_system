@@ -574,8 +574,8 @@ class TicketController extends Controller
         if (file_exists($bgPath)) {
             $bg = $manager->read($bgPath)->cover(800, 1200);
             $image->place($bg, 'top-left', 0, 0);
-            // Add semi-transparent overlay for readability
-            $overlay = $manager->create(800, 1200, [0,0,0,0.3]);
+            // Add a darker semi-transparent overlay for maximum readability
+            $overlay = $manager->create(800, 1200, [0,0,0,0.6]);
             $image->place($overlay, 'top-left', 0, 0);
         }
 
