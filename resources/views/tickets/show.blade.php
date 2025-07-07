@@ -145,9 +145,9 @@
                         <strong style="color: #D2691E; font-size: 1.5em; letter-spacing: 0.04em;">ANITHA PAUL MSILU</strong>
                     </p>
                     <p style="margin-bottom: 1em; color: #5A6B47;">
-                        <strong>Tarehe:</strong> Alhamisi, 05-06-2025<br>
+                        <strong>Tarehe:</strong> Ijumaa, 11-07-2025<br>
                         <strong>Saa:</strong> 12:00 jioni<br>
-                        <strong>Mahali:</strong> GBF Garden Hall, Dar es Salaam
+                        <strong>Mahali:</strong> Destiny Hall, Kwa Mathias Kibaha-Pwani
                     </p>
                     @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
                         <p style="margin-bottom: 1em; color: #5A6B47; font-size: 1em;">
