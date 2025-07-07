@@ -22,16 +22,18 @@ class TicketJpgRenderer
         $manager = new ImageManager(new Driver());
         $image = $manager->canvas(800, 1200, '#ffffff');
 
-        // === Background with white overlay for text readability ===
+        // === Background ===
         $bgPath = public_path('images/image.png');
         if (file_exists($bgPath)) {
             $bg = $manager->make($bgPath)->fit(800, 1200);
             $image->insert($bg, 'top-left', 0, 0);
 
-            // Full white semi-transparent overlay covering whole card
-            $overlay = $manager->canvas(800, 1200);
-            $overlay->fill('rgba(255, 255, 255, 0.7)'); // 70% opaque white overlay
-            $image->insert($overlay, 'top-left', 0, 0);
+            // === White semi-transparent overlay covering whole card ===
+            $image->rectangle(0, 0, 800, 1200, function ($draw) {
+                // Alpha: 0 (opaque) to 127 (fully transparent)
+                // 90 ~ about 70% opacity white overlay
+                $draw->background([255, 255, 255, 90]);
+            });
         }
 
         $fontPath = public_path('fonts/georgiab.ttf');
