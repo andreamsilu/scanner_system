@@ -579,83 +579,89 @@ class TicketController extends Controller
             $image->place($overlay, 'top-left', 0, 0);
         }
 
-        // Add ticket details (matching PDF layout exactly)
+        $fontPath = public_path('fonts/georgiab.ttf');
+        // Add ticket details (matching PDF layout exactly, with custom font)
         $y = 100;
-        
         // Main title
-        $image->text('MWALIKO WA SENDOFF', 400, $y, function($font) {
+        $image->text('MWALIKO WA SENDOFF', 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#9CAF88');
-            $font->size(32);
+            $font->size(40);
             $font->align('center');
         });
         $y += 60;
-        
         // Family invitation
-        $image->text('Familia ya MR & MRS PIENZI CHAMBILA', 400, $y, function($font) {
+        $image->text('Familia ya MR & MRS PIENZI CHAMBILA', 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#5A6B47');
-            $font->size(18);
+            $font->size(22);
             $font->align('center');
         });
         $y += 30;
-        $image->text('wanayo furaha kukualika', 400, $y, function($font) {
+        $image->text('wanayo furaha kukualika', 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#5A6B47');
-            $font->size(16);
+            $font->size(18);
             $font->align('center');
         });
         $y += 40;
-        
         // Guest name
-        $image->text('Kwa: ' . strtoupper($ticket->attendee->name), 400, $y, function($font) {
+        $image->text('Kwa: ' . strtoupper($ticket->attendee->name), 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#5A6B47');
-            $font->size(20);
+            $font->size(26);
             $font->align('center');
         });
         $y += 50;
-        
         // Event details
-        $image->text('Kwenye sherehe ya SENDOFF ya', 400, $y, function($font) {
+        $image->text('Kwenye sherehe ya SENDOFF ya', 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#5A6B47');
-            $font->size(16);
+            $font->size(18);
             $font->align('center');
         });
         $y += 30;
-        $image->text('ALICE PIENZI CHAMBILA', 400, $y, function($font) {
+        $image->text('ALICE PIENZI CHAMBILA', 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#D2691E');
-            $font->size(28);
+            $font->size(32);
             $font->align('center');
         });
         $y += 50;
-        
         // Date and time
-        $image->text('Tarehe: Alhamisi, 05-06-2025', 400, $y, function($font) {
+        $image->text('Tarehe: Alhamisi, 05-06-2025', 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#5A6B47');
-            $font->size(16);
+            $font->size(18);
             $font->align('center');
         });
         $y += 30;
-        $image->text('Saa: 12:00 jioni', 400, $y, function($font) {
+        $image->text('Saa: 12:00 jioni', 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#5A6B47');
-            $font->size(16);
+            $font->size(18);
             $font->align('center');
         });
         $y += 30;
-        $image->text('Mahali: GBF Garden Hall, Dar es Salaam', 400, $y, function($font) {
+        $image->text('Mahali: GBF Garden Hall, Dar es Salaam', 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#5A6B47');
-            $font->size(16);
+            $font->size(18);
             $font->align('center');
         });
         $y += 60;
-        
         // Ticket details
-        $image->text('Tiketi: ' . $ticket->token, 400, $y, function($font) {
+        $image->text('Tiketi: ' . $ticket->token, 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#D2691E');
-            $font->size(18);
+            $font->size(22);
             $font->align('center');
         });
         $y += 30;
-        $image->text('Aina: ' . strtoupper($ticket->type), 400, $y, function($font) {
+        $image->text('Aina: ' . strtoupper($ticket->type), 400, $y, function($font) use ($fontPath) {
+            $font->filename($fontPath);
             $font->color('#D2691E');
-            $font->size(18);
+            $font->size(22);
             $font->align('center');
         });
         $y += 60;
