@@ -11,21 +11,21 @@
         }
         body {
             font-family: 'Georgia', 'Times New Roman', serif;
-            background: #ffffff; /* White background */
+            background: #9CAF88; /* Sage Green background */
             margin: 0;
             padding: 0;
         }
         .invitation-border {
             max-width: 600px;
             margin: 40px auto;
-            background: #ffffff; /* White background */
+            background: #9CAF88; /* Sage Green background */
             border-radius: 8px;
             padding: 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             position: relative;
         }
         .border-pattern {
-            border: 2px solid #000000; /* Black border */
+            border: 3px solid #D2691E; /* Burnt Orange border */
             border-radius: 8px;
             padding: 36px 32px 32px 32px;
             margin: 0;
@@ -35,8 +35,8 @@
             content: '';
             position: absolute;
             left: 0; right: 0;
-            height: 8px;
-            background: repeating-linear-gradient(90deg, #000000, #000000 2px, transparent 2px, transparent 16px); /* Black pattern */
+            height: 12px;
+            background: repeating-linear-gradient(90deg, #D2691E, #D2691E 2px, transparent 2px, transparent 16px); /* Burnt Orange pattern */
         }
         .border-pattern:before {
             top: 0;
@@ -50,12 +50,12 @@
         }
         .invitation-content {
             text-align: center;
-            color: #000000; /* Black text */
+            color: #ffffff; /* White text */
         }
         .invitation-content .invitation-message {
             font-size: 1.1rem;
             font-style: italic;
-            color: #000000; /* Black text */
+            color: #ffffff; /* White text */
             margin-bottom: 2em;
         }
         .invitation-content .names {
@@ -67,7 +67,7 @@
         .invitation-content .is-invited {
             font-size: 1.1rem;
             font-style: italic;
-            color: #000000; /* Black text */
+            color: #ffffff; /* White text */
             margin: 0.2em 0 0.2em 0;
         }
         .invitation-content .event-name {
@@ -79,13 +79,13 @@
         .invitation-content .event-details {
             font-size: 1.1rem;
             margin: 1.5em 0 0.5em 0;
-            color: #000000; /* Black text */
+            color: #ffffff; /* White text */
         }
         .invitation-content .ticket-id {
             font-size: 1.1rem;
             letter-spacing: 0.1em;
             margin: 2em 0 0.5em 0;
-            color: #000000; /* Black text */
+            color: #D2691E; /* Burnt Orange accent */
             font-family: monospace;
         }
         .invitation-content .qr {
@@ -95,11 +95,11 @@
             font-size: 1rem;
             font-style: italic;
             margin: 1.5em 0 0 0;
-            color: #000000; /* Black text */
+            color: #ffffff; /* White text */
         }
         @media print {
             body {
-                background: #ffffff; /* White background */
+                background: #9CAF88; /* Sage Green background */
             }
             .invitation-border {
                 box-shadow: none;
@@ -116,39 +116,39 @@
         <div class="border-pattern">
             <div class="invitation-content">
                 <div class="invitation-message">
-                    <h2 style="color: #000000; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
-                    <p style="margin-bottom: 1em; color: #000000;">
+                    <h2 style="color: #ffffff; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
+                    <p style="margin-bottom: 1em; color: #ffffff;">
                         Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,<br>
                         wanayo furaha kubwa kukualika / kuwaalika
                     </p>
-                    <p style="margin-bottom: 1em; color: #000000;">
+                    <p style="margin-bottom: 1em; color: #ffffff;">
                         Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
                     </p>
-                    <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #000000; padding: 0.5em; color: #000000;">
+                    <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #D2691E; padding: 0.5em; color: #ffffff;">
                         {{ strtoupper($ticket->attendee->name) }}
                     </div>
                     <div style="text-align: center; margin: 1em 0;">
                     </div>
-                    <p style="margin-bottom: 1em; color: #000000;">
+                    <p style="margin-bottom: 1em; color: #ffffff;">
                         Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                        <strong style="color: #000000; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
+                        <strong style="color: #ffffff; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
                     </p>
-                    <p style="margin-bottom: 1em; color: #000000;">
+                    <p style="margin-bottom: 1em; color: #ffffff;">
                         Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
                         Kuanzia saa 12:00 jioni
                     </p>
-                    <p style="margin-bottom: 1em; color: #000000;">
+                    <p style="margin-bottom: 1em; color: #ffffff;">
                         Katika ukumbi wa GBF Garden Hall,<br>
                         uliopo Dar es Salaam – Tabata, Barakuda.
                     </p>
-                    <p style="margin-bottom: 1em; color: #000000;">
+                    <p style="margin-bottom: 1em; color: #ffffff;">
                         Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
                     </p>
                 </div>
-                <div class="ticket-id" style="color: #000000; font-weight: bold;">
+                <div class="ticket-id" style="color: #D2691E; font-weight: bold;">
                     Kitambulisho cha Tiketi: {{ $ticket->token }}
                 </div>
-                <div style="text-align: center; margin: 1em 0; color: #000000; font-weight: bold;">
+                <div style="text-align: center; margin: 1em 0; color: #D2691E; font-weight: bold;">
                     Aina ya Tiketi: {{ strtoupper($ticket->type) }}
                 </div>
                 <div class="qr">
@@ -160,33 +160,33 @@
                 </div>
                 <!-- RSVP Section -->
                 @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
-                <div style="margin: 2em 0; padding: 1em; border: 1px solid #000000; border-radius: 8px;">
-                    <h4 style="color: #000000; margin-bottom: 1em; font-size: 1.2em;">RSVP - Tafadhali Jibu</h4>
+                <div style="margin: 2em 0; padding: 1em; border: 2px solid #D2691E; border-radius: 8px; background: rgba(210, 105, 30, 0.1);">
+                    <h4 style="color: #D2691E; margin-bottom: 1em; font-size: 1.2em;">RSVP - Tafadhali Jibu</h4>
                     
                     @if($ticket->event->rsvp_message)
-                        <p style="margin-bottom: 1em; color: #000000; font-style: italic;">{{ $ticket->event->rsvp_message }}</p>
+                        <p style="margin-bottom: 1em; color: #ffffff; font-style: italic;">{{ $ticket->event->rsvp_message }}</p>
                     @endif
                     
                     <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1em;">
                         @if($ticket->event->rsvp_option_1_label && $ticket->event->rsvp_option_1_phone)
                         <div style="text-align: center;">
-                            <div style="color: #000000; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_1_label }}</div>
-                            <div style="color: #000000; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_1_phone }}</div>
+                            <div style="color: #D2691E; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_1_label }}</div>
+                            <div style="color: #ffffff; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_1_phone }}</div>
                         </div>
                         @endif
                         
                         @if($ticket->event->rsvp_option_2_label && $ticket->event->rsvp_option_2_phone)
                         <div style="text-align: center;">
-                            <div style="color: #000000; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_2_label }}</div>
-                            <div style="color: #000000; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_2_phone }}</div>
+                            <div style="color: #D2691E; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_2_label }}</div>
+                            <div style="color: #ffffff; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_2_phone }}</div>
                         </div>
                         @endif
                     </div>
                 </div>
                 @endif
 
-                <div class="footer" style="color: #000000;">
-                    <p style="color: #000000; font-weight: bold;">Tafadhali wasilisha tiketi hii mlangoni</p>
+                <div class="footer" style="color: #ffffff;">
+                    <p style="color: #D2691E; font-weight: bold;">Tafadhali wasilisha tiketi hii mlangoni</p>
                     <p>Kwa maelezo zaidi tafadhali wasiliana na: 0769289824</p>
                 </div>
             </div>
