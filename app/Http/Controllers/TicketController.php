@@ -572,7 +572,7 @@ class TicketController extends Controller
         // Add background image
         $bgPath = public_path('images/image.png');
         if (file_exists($bgPath)) {
-            $bg = $manager->read($bgPath)->fit(800, 1200);
+            $bg = $manager->read($bgPath)->cover(800, 1200);
             $image->insert($bg, 'top-left', 0, 0);
             // Add semi-transparent overlay for readability
             $overlay = $manager->create(800, 1200, [255,255,255,(int)(0.82*255)]);
