@@ -23,13 +23,28 @@
             padding: 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.1);
             position: relative;
+            background-image: url('/images/image.png');
+            background-size: cover;
+            background-position: center;
+            overflow: hidden;
+        }
+        .invitation-border::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,255,255,0.82);
+            z-index: 1;
+            border-radius: 8px;
+        }
+        .border-pattern, .invitation-content {
+            position: relative;
+            z-index: 2;
         }
         .border-pattern {
             border: 3px solid #D2691E;
             border-radius: 8px;
             padding: 36px 32px 32px 32px;
             margin: 0;
-            position: relative;
         }
         .border-pattern:before, .border-pattern:after {
             content: '';
