@@ -134,6 +134,17 @@
                         <strong>Saa:</strong> 12:00 jioni<br>
                         <strong>Mahali:</strong> GBF Garden Hall, Dar es Salaam
                     </p>
+                    @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
+                        <p style="margin-bottom: 1em; color: #5A6B47; font-size: 1em;">
+                            <strong>RSVP:</strong>
+                            @if($ticket->event->rsvp_option_1_label && $ticket->event->rsvp_option_1_phone)
+                                {{ $ticket->event->rsvp_option_1_label }}: <a href="tel:{{ $ticket->event->rsvp_option_1_phone }}" style="color: #5A6B47; text-decoration: none;">{{ $ticket->event->rsvp_option_1_phone }}</a>
+                            @endif
+                            @if($ticket->event->rsvp_option_2_label && $ticket->event->rsvp_option_2_phone)
+                                &nbsp;|&nbsp; {{ $ticket->event->rsvp_option_2_label }}: <a href="tel:{{ $ticket->event->rsvp_option_2_phone }}" style="color: #5A6B47; text-decoration: none;">{{ $ticket->event->rsvp_option_2_phone }}</a>
+                            @endif
+                        </p>
+                    @endif
                 </div>
                 <div class="ticket-id" style="color: #D2691E; font-weight: bold;">
                     Tiketi: {{ $ticket->token }}
@@ -148,39 +159,6 @@
                         {!! QrCode::size(140)->generate(route('tickets.verify', $ticket->token)) !!}
                     @endif
                 </div>
-                <!-- RSVP Section -->
-                @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
-                <div style="margin: 2em 0; padding: 0.7em; border: 2px solid #D2691E; border-radius: 8px; background: rgba(156, 175, 136, 0.1);">
-                    <h4 style="color: #D2691E; margin-bottom: 1em; font-size: 1.2em;">RSVP</h4>
-                    
-                    @if($ticket->event->rsvp_message)
-                        <p style="margin-bottom: 1em; color: #5A6B47; font-style: italic;">{{ $ticket->event->rsvp_message }}</p>
-                    @endif
-                    
-                    <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1em;">
-                        @if($ticket->event->rsvp_option_1_label && $ticket->event->rsvp_option_1_phone)
-                        <div style="text-align: center;">
-                            <div style="color: #D2691E; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_1_label }}</div>
-                            <div style="color: #5A6B47; font-family: monospace; font-size: 1.1em; display: flex; align-items: center; justify-content: center;">
-                                <span style='font-size:1.1em; margin-right: 0.3em;'>&#128222;</span>
-                                <a href="tel:{{ $ticket->event->rsvp_option_1_phone }}" style="color: #5A6B47; text-decoration: none;">{{ $ticket->event->rsvp_option_1_phone }}</a>
-                            </div>
-                        </div>
-                        @endif
-                        
-                        @if($ticket->event->rsvp_option_2_label && $ticket->event->rsvp_option_2_phone)
-                        <div style="text-align: center;">
-                            <div style="color: #D2691E; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_2_label }}</div>
-                            <div style="color: #5A6B47; font-family: monospace; font-size: 1.1em; display: flex; align-items: center; justify-content: center;">
-                                <span style='font-size:1.1em; margin-right: 0.3em;'>&#128222;</span>
-                                <a href="tel:{{ $ticket->event->rsvp_option_2_phone }}" style="color: #5A6B47; text-decoration: none;">{{ $ticket->event->rsvp_option_2_phone }}</a>
-                            </div>
-                        </div>
-                        @endif
-                    </div>
-                </div>
-                @endif
-
                 <div class="footer" style="color: #5A6B47;">
                     <p style="color: #D2691E; font-weight: bold;">Wasilisha tiketi hii mlangoni</p>
                     <p>Maelezo: 0769289824</p>
