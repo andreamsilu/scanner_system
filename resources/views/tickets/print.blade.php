@@ -11,21 +11,21 @@
         }
         body {
             font-family: 'Georgia', 'Times New Roman', serif;
-            background: #f8f5f2;
+            background: #9CAF88; /* Sage Green background */
             margin: 0;
             padding: 0;
         }
         .invitation-border {
             max-width: 600px;
             margin: 40px auto;
-            background: #fff;
+            background: #9CAF88; /* Sage Green background */
             border-radius: 8px;
             padding: 0;
             box-shadow: 0 2px 8px rgba(0,0,0,0.04);
             position: relative;
         }
         .border-pattern {
-            border: 3px solid #bfa46d;
+            border: 3px solid #D2691E; /* Burnt Orange border */
             border-radius: 8px;
             padding: 36px 32px 32px 32px;
             margin: 0;
@@ -36,7 +36,7 @@
             position: absolute;
             left: 0; right: 0;
             height: 16px;
-            background: repeating-linear-gradient(90deg, #bfa46d, #bfa46d 2px, transparent 2px, transparent 16px);
+            background: repeating-linear-gradient(90deg, #D2691E, #D2691E 2px, transparent 2px, transparent 16px); /* Burnt Orange pattern */
         }
         .border-pattern:before {
             top: 0;
@@ -50,12 +50,12 @@
         }
         .invitation-content {
             text-align: center;
-            color: #7a6a4f;
+            color: #5A6B47; /* Dark Sage text */
         }
         .invitation-content .invitation-message {
             font-size: 1.1rem;
             font-style: italic;
-            color: #bfa46d;
+            color: #FFD700; /* Gold for main title */
             margin-bottom: 2em;
         }
         .invitation-content .names {
@@ -67,7 +67,7 @@
         .invitation-content .is-invited {
             font-size: 1.1rem;
             font-style: italic;
-            color: #bfa46d;
+            color: #FFD700; /* Gold */
             margin: 0.2em 0 0.2em 0;
         }
         .invitation-content .event-name {
@@ -79,13 +79,13 @@
         .invitation-content .event-details {
             font-size: 1.1rem;
             margin: 1.5em 0 0.5em 0;
-            color: #7a6a4f;
+            color: #5A6B47; /* Dark Sage */
         }
         .invitation-content .ticket-id {
             font-size: 1.1rem;
             letter-spacing: 0.1em;
             margin: 2em 0 0.5em 0;
-            color: #bfa46d;
+            color: #D2691E; /* Burnt Orange */
             font-family: monospace;
         }
         .invitation-content .qr {
@@ -95,11 +95,11 @@
             font-size: 1rem;
             font-style: italic;
             margin: 1.5em 0 0 0;
-            color: #bfa46d;
+            color: #D2691E; /* Burnt Orange */
         }
         @media print {
             body {
-                background: #fff;
+                background: #9CAF88; /* Sage Green background */
             }
             .invitation-border {
                 box-shadow: none;
@@ -116,40 +116,40 @@
         <div class="border-pattern">
             <div class="invitation-content">
                 <div class="invitation-message">
-                    <h2 style="color: #bfa46d; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
-                    <p style="margin-bottom: 1em; color: #000000;">
-                        Familia ya MZEE PAUL MSILU wa  Kibaha-Pwani,<br>
+                    <h2 style="color: #FFD700; margin-bottom: 1.5em;">MWALIKO WA SENDOFF</h2>
+                    <p style="margin-bottom: 1em; color: #5A6B47;">
+                        Familia ya MR & MRS MOSES NDIMBO wa  Dar es Salaam,<br>
                         wanayo furaha kubwa kukualika / kuwaalika
                     </p>
-                    <p style="margin-bottom: 1em; color: #000000;">
+                    <p style="margin-bottom: 1em; color: #5A6B47;">
                         Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi
                     </p>
-                    <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #bfa46d; padding: 0.5em; color: #000000;">
+                    <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #D2691E; padding: 0.5em; color: #FFD700;">
                         {{ strtoupper($ticket->attendee->name) }}
                     </div>
                     <div style="text-align: center; margin: 1em 0;">
                     </div>
-                    <p style="margin-bottom: 1em; color: #000000;">
+                    <p style="margin-bottom: 1em; color: #5A6B47;">
                         Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                        <strong style="color: #bfa46d; font-size: 1.2em;">ANITHA PAUL MSILU</strong>
+                        <strong style="color: #FFD700; font-size: 1.2em;">YASINTA MOSES NDIMBO</strong>
                     </p>
-                    <p style="margin-bottom: 1em; color: #000000;">
-                        Itakayofanyika siku ya Ijumaa, tarehe 11-07-2025<br>
+                    <p style="margin-bottom: 1em; color: #5A6B47;">
+                        Itakayofanyika siku ya Alhamisi, tarehe 12-06-2025<br>
                         Kuanzia saa 12:00 jioni
                     </p>
-                    <p style="margin-bottom: 1em; color: #000000;">
-                        Katika ukumbi wa  Destiny Hall,<br>
-                        uliopo Kwa Mathias Kibaha-Pwani.
+                    <p style="margin-bottom: 1em; color: #5A6B47;">
+                        Katika ukumbi wa  Highland Hall,<br>
+                        uliopo Dar es Salaam – Tabata, Barakuda.
                     </p>
-                    <p style="margin-bottom: 1em; color: #000000;">
+                    <p style="margin-bottom: 1em; color: #5A6B47;">
                         Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
                     </p>
                 </div>
-                <div class="ticket-id" style="color: #bfa46d; font-weight: bold;">
-                    kadi: {{ $ticket->token }}
+                <div class="ticket-id" style="color: #D2691E; font-weight: bold;">
+                    Kitambulisho cha Tiketi: {{ $ticket->token }}
                 </div>
-                <div style="text-align: center; margin: 1em 0; color: #bfa46d; font-weight: bold;">
-                    Aina ya kadi: {{ strtoupper($ticket->type) }}
+                <div style="text-align: center; margin: 1em 0; color: #D2691E; font-weight: bold;">
+                    Aina ya Tiketi: {{ strtoupper($ticket->type) }}
                 </div>
                 <div class="qr">
                     @if($ticket->attendee->qr_code)
@@ -160,34 +160,34 @@
                 </div>
                 <!-- RSVP Section -->
                 @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
-                <div style="margin: 2em 0; padding: 1em; border: 2px solid #bfa46d; border-radius: 8px; background: rgba(191, 164, 109, 0.1);">
-                    <h4 style="color: #bfa46d; margin-bottom: 1em; font-size: 1.2em;">RSVP</h4>
+                <div style="margin: 2em 0; padding: 1em; border: 2px solid #D2691E; border-radius: 8px; background: rgba(210, 105, 30, 0.1);">
+                    <h4 style="color: #D2691E; margin-bottom: 1em; font-size: 1.2em;">RSVP - Tafadhali Jibu</h4>
                     
                     @if($ticket->event->rsvp_message)
-                        <p style="margin-bottom: 1em; color: #000000; font-style: italic;">{{ $ticket->event->rsvp_message }}</p>
+                        <p style="margin-bottom: 1em; color: #5A6B47; font-style: italic;">{{ $ticket->event->rsvp_message }}</p>
                     @endif
                     
                     <div style="display: flex; justify-content: space-around; flex-wrap: wrap; gap: 1em;">
                         @if($ticket->event->rsvp_option_1_label && $ticket->event->rsvp_option_1_phone)
                         <div style="text-align: center;">
-                            <div style="color: #bfa46d; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_1_label }}</div>
-                            <div style="color: #000000; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_1_phone }}</div>
+                            <div style="color: #D2691E; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_1_label }}</div>
+                            <div style="color: #5A6B47; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_1_phone }}</div>
                         </div>
                         @endif
                         
                         @if($ticket->event->rsvp_option_2_label && $ticket->event->rsvp_option_2_phone)
                         <div style="text-align: center;">
-                            <div style="color: #bfa46d; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_2_label }}</div>
-                            <div style="color: #000000; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_2_phone }}</div>
+                            <div style="color: #D2691E; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_2_label }}</div>
+                            <div style="color: #5A6B47; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_2_phone }}</div>
                         </div>
                         @endif
                     </div>
                 </div>
                 @endif
 
-                <div class="footer" style="color: #000000;">
-                    <p style="color: #bfa46d; font-weight: bold;">Tafadhali wasilisha tiketi hii mlangoni</p>
-                    <!-- <p>Kwa maelezo zaidi tafadhali wasiliana na: 0769289824</p> -->
+                <div class="footer" style="color: #5A6B47;">
+                    <p style="color: #D2691E; font-weight: bold;">Tafadhali wasilisha tiketi hii mlangoni</p>
+                    <p>Kwa maelezo zaidi tafadhali wasiliana na: 0769289824</p>
                 </div>
             </div>
         </div>
