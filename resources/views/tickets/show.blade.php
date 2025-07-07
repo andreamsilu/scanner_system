@@ -121,12 +121,13 @@
                         Familia ya MR & MRS PIENZI CHAMBILA<br>
                         wanayo furaha kukualika
                     </p>
-                    <div style="text-align: center; margin: 1em 0; min-height: 2.5em; border-bottom: 2px solid #D2691E; padding: 0.5em; color: #5A6B47;">
-                        {{ strtoupper($ticket->attendee->name) }}
-                    </div>
+                    <p style="margin-bottom: 1em; color: #5A6B47; font-weight: bold;">
+                        Kwa: {{ strtoupper($ticket->attendee->name) }}
+                    </p>
+                    <hr style="border: none; border-top: 1.5px dotted #9CAF88; margin: 1.5em 0;">
                     <p style="margin-bottom: 1em; color: #5A6B47;">
                         Kwenye sherehe ya SENDOFF ya<br>
-                        <strong style="color: #9CAF88; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
+                        <strong style="color: #D2691E; font-size: 1.5em; letter-spacing: 0.04em;">ALICE PIENZI CHAMBILA</strong>
                     </p>
                     <p style="margin-bottom: 1em; color: #5A6B47;">
                         <strong>Tarehe:</strong> Alhamisi, 05-06-2025<br>
@@ -149,7 +150,7 @@
                 </div>
                 <!-- RSVP Section -->
                 @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
-                <div style="margin: 2em 0; padding: 1em; border: 2px solid #D2691E; border-radius: 8px; background: rgba(156, 175, 136, 0.1);">
+                <div style="margin: 2em 0; padding: 0.7em; border: 2px solid #D2691E; border-radius: 8px; background: rgba(156, 175, 136, 0.1);">
                     <h4 style="color: #D2691E; margin-bottom: 1em; font-size: 1.2em;">RSVP</h4>
                     
                     @if($ticket->event->rsvp_message)
@@ -160,14 +161,20 @@
                         @if($ticket->event->rsvp_option_1_label && $ticket->event->rsvp_option_1_phone)
                         <div style="text-align: center;">
                             <div style="color: #D2691E; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_1_label }}</div>
-                            <div style="color: #5A6B47; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_1_phone }}</div>
+                            <div style="color: #5A6B47; font-family: monospace; font-size: 1.1em; display: flex; align-items: center; justify-content: center;">
+                                <span style='font-size:1.1em; margin-right: 0.3em;'>&#128222;</span>
+                                <a href="tel:{{ $ticket->event->rsvp_option_1_phone }}" style="color: #5A6B47; text-decoration: none;">{{ $ticket->event->rsvp_option_1_phone }}</a>
+                            </div>
                         </div>
                         @endif
                         
                         @if($ticket->event->rsvp_option_2_label && $ticket->event->rsvp_option_2_phone)
                         <div style="text-align: center;">
                             <div style="color: #D2691E; font-weight: bold; margin-bottom: 0.5em;">{{ $ticket->event->rsvp_option_2_label }}</div>
-                            <div style="color: #5A6B47; font-family: monospace; font-size: 1.1em;">{{ $ticket->event->rsvp_option_2_phone }}</div>
+                            <div style="color: #5A6B47; font-family: monospace; font-size: 1.1em; display: flex; align-items: center; justify-content: center;">
+                                <span style='font-size:1.1em; margin-right: 0.3em;'>&#128222;</span>
+                                <a href="tel:{{ $ticket->event->rsvp_option_2_phone }}" style="color: #5A6B47; text-decoration: none;">{{ $ticket->event->rsvp_option_2_phone }}</a>
+                            </div>
                         </div>
                         @endif
                     </div>
