@@ -565,17 +565,17 @@ class TicketController extends Controller
         ->with(['attendee', 'event'])
         ->firstOrFail();
 
-        $manager = new ImageManager(new Driver());
-        $image = $manager->create(800, 1200, '#ffffff');
+        // Create base image
+        $image = Image::canvas(800, 1200, '#ffffff');
 
         // Add background image
         $bgPath = public_path('images/image.png');
         if (file_exists($bgPath)) {
-            $bg = $manager->read($bgPath)->cover(800, 1200);
-            $image->place($bg, 'top-left', 0, 0);
+            $bg = Image::make($bgPath)->fit(800, 1200);
+            $image->insert($bg, 'top-left', 0, 0);
             // Add semi-transparent overlay for readability
-            $overlay = $manager->create(800, 1200, 'rgba(255,255,255,0.82)');
-            $image->place($overlay, 'top-left', 0, 0);
+            $overlay = Image::canvas(800, 1200, [255,255,255,(int)(0.82*255)]);
+            $image->insert($overlay, 'top-left', 0, 0);
         }
 
         // Add ticket details (simplified, can be styled further)
@@ -650,7 +650,7 @@ class TicketController extends Controller
             ->size(180)
             ->generate(route('tickets.verify', $ticket->token));
         $qrImage = Image::make($qrCode);
-        $image->place($qrImage, 'bottom', 400, 100);
+        $image->insert($qrImage, 'bottom', 400 - 90, 100); // Centered horizontally
         // Footer
         $image->text('Wasilisha tiketi hii mlangoni', 400, 1100, function($font) {
             $font->color('#D2691E');
@@ -662,7 +662,7 @@ class TicketController extends Controller
             $font->size(14);
             $font->align('center');
         });
-        $jpgData = $image->toJpeg(90);
+        $jpgData = $image->encode('jpg', 90);
         $filename = 'ticket-' . $ticket->token . '.jpg';
         return response($jpgData)
             ->header('Content-Type', 'image/jpeg')
