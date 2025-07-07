@@ -134,7 +134,7 @@
                         <strong style="color: #bfa46d; font-size: 1.2em;">ANITHA PAUL MSILU</strong>
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
-                        Itakayofanyika siku ya Alhamisi, tarehe 12-06-2025<br>
+                        Itakayofanyika siku ya Ijumaa, tarehe 11-07-2025<br>
                         Kuanzia saa 12:00 jioni
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
