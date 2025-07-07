@@ -20,7 +20,7 @@ class TicketJpgRenderer
     public static function render(Ticket $ticket, Event $event): string
     {
         $manager = new ImageManager(new Driver());
-        $image = $manager->canvas(800, 1200, '#ffffff');
+        $image = $manager->create(800, 1200, '#ffffff');
 
         // === Background ===
         $bgPath = public_path('images/image.png');
