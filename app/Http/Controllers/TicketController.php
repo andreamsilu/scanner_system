@@ -579,14 +579,18 @@ class TicketController extends Controller
             $image->place($overlay, 'top-left', 0, 0);
         }
 
-        // Add ticket details (simplified, can be styled further)
-        $y = 80;
+        // Add ticket details (matching PDF layout exactly)
+        $y = 100;
+        
+        // Main title
         $image->text('MWALIKO WA SENDOFF', 400, $y, function($font) {
             $font->color('#9CAF88');
-            $font->size(36);
+            $font->size(32);
             $font->align('center');
         });
         $y += 60;
+        
+        // Family invitation
         $image->text('Familia ya MR & MRS PIENZI CHAMBILA', 400, $y, function($font) {
             $font->color('#5A6B47');
             $font->size(18);
@@ -599,12 +603,16 @@ class TicketController extends Controller
             $font->align('center');
         });
         $y += 40;
+        
+        // Guest name
         $image->text('Kwa: ' . strtoupper($ticket->attendee->name), 400, $y, function($font) {
             $font->color('#5A6B47');
             $font->size(20);
             $font->align('center');
         });
-        $y += 30;
+        $y += 50;
+        
+        // Event details
         $image->text('Kwenye sherehe ya SENDOFF ya', 400, $y, function($font) {
             $font->color('#5A6B47');
             $font->size(16);
@@ -613,10 +621,12 @@ class TicketController extends Controller
         $y += 30;
         $image->text('ALICE PIENZI CHAMBILA', 400, $y, function($font) {
             $font->color('#D2691E');
-            $font->size(24);
+            $font->size(28);
             $font->align('center');
         });
         $y += 50;
+        
+        // Date and time
         $image->text('Tarehe: Alhamisi, 05-06-2025', 400, $y, function($font) {
             $font->color('#5A6B47');
             $font->size(16);
@@ -634,7 +644,9 @@ class TicketController extends Controller
             $font->size(16);
             $font->align('center');
         });
-        $y += 50;
+        $y += 60;
+        
+        // Ticket details
         $image->text('Tiketi: ' . $ticket->token, 400, $y, function($font) {
             $font->color('#D2691E');
             $font->size(18);
@@ -646,9 +658,11 @@ class TicketController extends Controller
             $font->size(18);
             $font->align('center');
         });
-        // Add QR code
+        $y += 60;
+
+        // Add QR code (centered, smaller size like PDF)
         $qrCode = QrCode::format('png')
-            ->size(180)
+            ->size(140)
             ->generate(route('tickets.verify', $ticket->token));
         
         // Save QR code to temporary file
@@ -656,17 +670,18 @@ class TicketController extends Controller
         file_put_contents($tempQrPath, $qrCode);
         
         $qrImage = $manager->read($tempQrPath);
-        $image->place($qrImage, 'bottom', 400 - 90, 100); // Centered horizontally
+        $image->place($qrImage, 'bottom', 400 - 70, 80); // Centered horizontally, positioned like PDF
         
         // Clean up temporary file
         unlink($tempQrPath);
-        // Footer
-        $image->text('Wasilisha tiketi hii mlangoni', 400, 1100, function($font) {
+        
+        // Footer (matching PDF styling)
+        $image->text('Wasilisha tiketi hii mlangoni', 400, 1050, function($font) {
             $font->color('#D2691E');
             $font->size(16);
             $font->align('center');
         });
-        $image->text('Maelezo: 0769289824', 400, 1140, function($font) {
+        $image->text('Maelezo: 0769289824', 400, 1080, function($font) {
             $font->color('#5A6B47');
             $font->size(14);
             $font->align('center');
