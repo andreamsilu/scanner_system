@@ -137,7 +137,7 @@
                         wanayo furaha kukualika
                     </p>
                     <p style="margin-bottom: 1em; color: #5A6B47; font-weight: bold;">
-                        Kwa: {{ strtoupper($ticket->attendee->name) }}
+                         {{ strtoupper($ticket->attendee->name) }}
                     </p>
                     <hr style="border: none; border-top: 1.5px dotted #9CAF88; margin: 1.5em 0;">
                     <p style="margin-bottom: 1em; color: #5A6B47;">
@@ -147,7 +147,7 @@
                     <p style="margin-bottom: 1em; color: #5A6B47;">
                         <strong>Tarehe:</strong> Ijumaa, 11-07-2025<br>
                         <strong>Saa:</strong> 12:00 jioni<br>
-                        <strong>Mahali:</strong> Destiny Hall, Kwa Mathias Kibaha-Pwani
+                        <strong>Ukumbi:</strong> Destiny Hall, Kwa Mathias Kibaha-Pwani
                     </p>
                     @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
                         <p style="margin-bottom: 1em; color: #5A6B47; font-size: 1em;">
