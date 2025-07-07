@@ -650,8 +650,16 @@ class TicketController extends Controller
         $qrCode = QrCode::format('png')
             ->size(180)
             ->generate(route('tickets.verify', $ticket->token));
-        $qrImage = $manager->read($qrCode);
+        
+        // Save QR code to temporary file
+        $tempQrPath = tempnam(sys_get_temp_dir(), 'qr_');
+        file_put_contents($tempQrPath, $qrCode);
+        
+        $qrImage = $manager->read($tempQrPath);
         $image->place($qrImage, 'bottom', 400 - 90, 100); // Centered horizontally
+        
+        // Clean up temporary file
+        unlink($tempQrPath);
         // Footer
         $image->text('Wasilisha tiketi hii mlangoni', 400, 1100, function($font) {
             $font->color('#D2691E');
