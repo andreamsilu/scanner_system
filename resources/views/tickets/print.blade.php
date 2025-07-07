@@ -138,18 +138,18 @@
                         Kuanzia saa 12:00 jioni
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
-                        Katika ukumbi wa  Highland Hall,<br>
-                        uliopo Dar es Salaam – Tabata, Barakuda.
+                        Katika ukumbi wa  Destiny Hall,<br>
+                        uliopo Kwa Mathias Kibaha-Pwani.
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
                         Karibu tusherehekee kwa pamoja tukio hili maalum la furaha na kumbukumbu ya pekee.
                     </p>
                 </div>
                 <div class="ticket-id" style="color: #bfa46d; font-weight: bold;">
-                    Kitambulisho cha Tiketi: {{ $ticket->token }}
+                    kadi: {{ $ticket->token }}
                 </div>
                 <div style="text-align: center; margin: 1em 0; color: #bfa46d; font-weight: bold;">
-                    Aina ya Tiketi: {{ strtoupper($ticket->type) }}
+                    Aina ya kadi: {{ strtoupper($ticket->type) }}
                 </div>
                 <div class="qr">
                     @if($ticket->attendee->qr_code)
@@ -161,7 +161,7 @@
                 <!-- RSVP Section -->
                 @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
                 <div style="margin: 2em 0; padding: 1em; border: 2px solid #bfa46d; border-radius: 8px; background: rgba(191, 164, 109, 0.1);">
-                    <h4 style="color: #bfa46d; margin-bottom: 1em; font-size: 1.2em;">RSVP - Tafadhali Jibu</h4>
+                    <h4 style="color: #bfa46d; margin-bottom: 1em; font-size: 1.2em;">RSVP</h4>
                     
                     @if($ticket->event->rsvp_message)
                         <p style="margin-bottom: 1em; color: #000000; font-style: italic;">{{ $ticket->event->rsvp_message }}</p>
@@ -187,7 +187,7 @@
 
                 <div class="footer" style="color: #000000;">
                     <p style="color: #bfa46d; font-weight: bold;">Tafadhali wasilisha tiketi hii mlangoni</p>
-                    <p>Kwa maelezo zaidi tafadhali wasiliana na: 0769289824</p>
+                    <!-- <p>Kwa maelezo zaidi tafadhali wasiliana na: 0769289824</p> -->
                 </div>
             </div>
         </div>
