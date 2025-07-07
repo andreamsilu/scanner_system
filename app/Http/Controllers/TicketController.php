@@ -573,10 +573,10 @@ class TicketController extends Controller
         $bgPath = public_path('images/image.png');
         if (file_exists($bgPath)) {
             $bg = $manager->read($bgPath)->cover(800, 1200);
-            $image->insert($bg, 'top-left', 0, 0);
+            $image->place($bg, 'top-left', 0, 0);
             // Add semi-transparent overlay for readability
             $overlay = $manager->create(800, 1200, [255,255,255,(int)(0.82*255)]);
-            $image->insert($overlay, 'top-left', 0, 0);
+            $image->place($overlay, 'top-left', 0, 0);
         }
 
         // Add ticket details (simplified, can be styled further)
@@ -651,7 +651,7 @@ class TicketController extends Controller
             ->size(180)
             ->generate(route('tickets.verify', $ticket->token));
         $qrImage = $manager->read($qrCode);
-        $image->insert($qrImage, 'bottom', 400 - 90, 100); // Centered horizontally
+        $image->place($qrImage, 'bottom', 400 - 90, 100); // Centered horizontally
         // Footer
         $image->text('Wasilisha tiketi hii mlangoni', 400, 1100, function($font) {
             $font->color('#D2691E');
