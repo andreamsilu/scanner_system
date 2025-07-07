@@ -85,8 +85,8 @@ class EventCardController extends Controller
         // Create image manager with GD driver
         $manager = new ImageManager(new Driver());
         
-        // Create a new image canvas
-        $image = $manager->create(800, 1200, '#ffffff');
+        // Create a new image canvas with Sage Green background
+        $image = $manager->create(800, 1200, '#9CAF88'); // Sage Green background
         
         // Add text and styling to the image
         $this->addTextToImage($image, $attendee);
@@ -130,112 +130,117 @@ class EventCardController extends Controller
     {
         $event = $attendee->event;
         
-        // Header
+        // Header - Gold color
         $image->text('MWALIKO WA SENDOFF', 400, 80, [
-            'color' => '#0d6efd',
+            'color' => '#FFD700', // Gold
             'size' => 36,
             'align' => 'center'
         ]);
         
-        // Invitation content
+        // Invitation content - Dark Sage
         $y = 150;
         $image->text('Familia ya MZEE PAUL MSILU  wa Kibaha, Pwani,', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
         $y += 30;
         $image->text('wanayo furaha kubwa kukualika / kuwaalika', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
         $y += 40;
         $image->text('Ndg / Mhe / Dr / Prof / Mch / Bw / Bi / Bw & Bi', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
-        // Guest name
+        // Guest name label - Dark Sage
         $y += 60;
         $image->text('Jina la Mwalikwa:', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 18,
             'align' => 'center'
         ]);
         
+        // Guest name - Gold
         $y += 40;
         $image->text(strtoupper($attendee->name), 400, $y, [
-            'color' => '#0d6efd',
+            'color' => '#FFD700', // Gold
             'size' => 24,
             'align' => 'center'
         ]);
         
-        // Event details
+        // Event details - Dark Sage
         $y += 80;
         $image->text('Kwenye sherehe ya SENDOFF ya binti yao mpendwa', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
+        // Event name - Gold
         $y += 30;
         $image->text('ANITHA PAUL MSILU', 400, $y, [
-            'color' => '#0d6efd',
+            'color' => '#FFD700', // Gold
             'size' => 20,
             'align' => 'center'
         ]);
         
+        // Date and time - Dark Sage
         $y += 40;
         $image->text('Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
         $y += 30;
         $image->text('Kuanzia saa 12:00 jioni', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
+        // Venue - Dark Sage
         $y += 40;
         $image->text('Katika ukumbi wa GBF Garden Hall,', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
         $y += 30;
         $image->text('uliopo Dar es Salaam – Tabata, Barakuda.', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
+        // Closing message - Dark Sage
         $y += 40;
         $image->text('Karibu tusherehekee kwa pamoja tukio hili maalum', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
         $y += 30;
         $image->text('la furaha na kumbukumbu ya pekee.', 400, $y, [
-            'color' => '#000000',
+            'color' => '#5A6B47', // Dark Sage
             'size' => 16,
             'align' => 'center'
         ]);
         
-        // RSVP Section if enabled
+        // RSVP Section if enabled - Burnt Orange accents
         if ($event->rsvp_enabled && ($event->rsvp_option_1_phone || $event->rsvp_option_2_phone)) {
             $y += 60;
             $image->text('RSVP - Tafadhali Jibu', 400, $y, [
-                'color' => '#0d6efd',
+                'color' => '#D2691E', // Burnt Orange
                 'size' => 20,
                 'align' => 'center'
             ]);
@@ -243,7 +248,7 @@ class EventCardController extends Controller
             if ($event->rsvp_message) {
                 $y += 30;
                 $image->text($event->rsvp_message, 400, $y, [
-                    'color' => '#6c757d',
+                    'color' => '#5A6B47', // Dark Sage
                     'size' => 14,
                     'align' => 'center'
                 ]);
@@ -252,7 +257,7 @@ class EventCardController extends Controller
             if ($event->rsvp_option_1_label && $event->rsvp_option_1_phone) {
                 $y += 30;
                 $image->text($event->rsvp_option_1_label . ': ' . $event->rsvp_option_1_phone, 400, $y, [
-                    'color' => '#000000',
+                    'color' => '#D2691E', // Burnt Orange
                     'size' => 16,
                     'align' => 'center'
                 ]);
@@ -261,16 +266,16 @@ class EventCardController extends Controller
             if ($event->rsvp_option_2_label && $event->rsvp_option_2_phone) {
                 $y += 30;
                 $image->text($event->rsvp_option_2_label . ': ' . $event->rsvp_option_2_phone, 400, $y, [
-                    'color' => '#000000',
+                    'color' => '#D2691E', // Burnt Orange
                     'size' => 16,
                     'align' => 'center'
                 ]);
             }
         }
         
-        // Footer
+        // Footer - Burnt Orange
         $image->text('Tafadhali wasilisha tiketi hii mlangoni', 400, 1100, [
-            'color' => '#0d6efd',
+            'color' => '#D2691E', // Burnt Orange
             'size' => 14,
             'align' => 'center'
         ]);
