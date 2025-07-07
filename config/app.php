@@ -144,4 +144,8 @@ return [
         App\Providers\SmsServiceProvider::class,
     ])->toArray(),
 
+    'aliases' => [
+        'Image' => Intervention\Image\Facades\Image::class,
+    ],
+
 ];

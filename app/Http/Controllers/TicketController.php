@@ -17,10 +17,9 @@ use Illuminate\View\View;
 use App\Exports\TicketsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Intervention\Image\ImageManager;
+use Intervention\Image\Facades\Image;
 use Intervention\Image\Drivers\Gd\Driver;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
-use Intervention\Image\ImageManagerStatic as Image;
 
 class TicketController extends Controller
 {
