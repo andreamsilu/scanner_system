@@ -18,6 +18,7 @@ use App\Exports\TicketsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Intervention\Image\ImageManager;
+use Intervention\Image\Drivers\Gd\Driver;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class TicketController extends Controller
@@ -564,7 +565,7 @@ class TicketController extends Controller
         ->with(['attendee', 'event'])
         ->firstOrFail();
 
-        $manager = new ImageManager();
+        $manager = new ImageManager(new Driver());
         // Create base image
         $image = $manager->canvas(800, 1200, '#ffffff');
 
