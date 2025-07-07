@@ -131,7 +131,7 @@
                     </div>
                     <p style="margin-bottom: 1em; color: #000000;">
                         Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                        <strong style="color: #bfa46d; font-size: 1.2em;">ALICE PIENZI CHAMBILA</strong>
+                        <strong style="color: #bfa46d; font-size: 1.2em;">ANITHA PAUL MSILU</strong>
                     </p>
                     <p style="margin-bottom: 1em; color: #000000;">
                         Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>

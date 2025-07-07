@@ -139,7 +139,7 @@ class EventCardController extends Controller
         
         // Invitation content
         $y = 150;
-        $image->text('Familia ya MR & MRS PIENZI CHAMBILA wa Kigogo, Dar es Salaam,', 400, $y, [
+        $image->text('Familia ya MZEE PAUL MSILU  wa Kibaha, Pwani,', 400, $y, [
             'color' => '#000000',
             'size' => 16,
             'align' => 'center'
@@ -183,7 +183,7 @@ class EventCardController extends Controller
         ]);
         
         $y += 30;
-        $image->text('ALICE PIENZI CHAMBILA', 400, $y, [
+        $image->text('ANITHA PAUL MSILU', 400, $y, [
             'color' => '#0d6efd',
             'size' => 20,
             'align' => 'center'

@@ -59,7 +59,7 @@
                                 <div class="event-details">
                                     <p class="mb-3" style="font-size: 1.1rem;">
                                         Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                                        <strong class="text-primary" style="font-size: 1.3rem;">ALICE PIENZI CHAMBILA</strong>
+                                        <strong class="text-primary" style="font-size: 1.3rem;">ANITHA PAUL MSILU</strong>
                                     </p>
                                     <p class="mb-3" style="font-size: 1.1rem;">
                                         Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
@@ -130,7 +130,7 @@
                                     </div>
                                     <p class="mb-2">
                                         Kwenye sherehe ya SENDOFF ya binti yao mpendwa<br>
-                                        <strong>ALICE PIENZI CHAMBILA</strong>
+                                        <strong>ANITHA PAUL MSILU</strong>
                                     </p>
                                     <p class="mb-2">
                                         Itakayofanyika siku ya Alhamisi, tarehe 05-06-2025<br>
