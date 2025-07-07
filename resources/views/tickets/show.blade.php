@@ -176,7 +176,7 @@
                 </div>
                 <div class="footer" style="color: #5A6B47;">
                     <p style="color: #D2691E; font-weight: bold;">Wasilisha tiketi hii mlangoni</p>
-                    <p>Maelezo: 0769289824</p>
+                    <p>T-KADI: 0769289824</p>
                 </div>
             </div>
         </div>
