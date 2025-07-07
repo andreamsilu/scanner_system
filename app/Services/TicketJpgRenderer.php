@@ -20,17 +20,18 @@ class TicketJpgRenderer
     public static function render(Ticket $ticket, Event $event): string
     {
         $manager = new ImageManager(new Driver());
-        $image = $manager->create(800, 1200, '#ffffff');
+        $image = $manager->canvas(800, 1200, '#ffffff');
 
         // === Background with white overlay for text readability ===
         $bgPath = public_path('images/image.png');
         if (file_exists($bgPath)) {
-            $bg = $manager->read($bgPath)->cover(800, 1200);
-            $image->place($bg, 'top-left', 0, 0);
+            $bg = $manager->make($bgPath)->fit(800, 1200);
+            $image->insert($bg, 'top-left', 0, 0);
 
-            // ✅ Apply full white semi-transparent overlay
-            $overlay = $manager->create(800, 1200, [255, 255, 255, 0.9]);
-            $image->place($overlay, 'top-left', 0, 0);
+            // Full white semi-transparent overlay covering whole card
+            $overlay = $manager->canvas(800, 1200);
+            $overlay->fill('rgba(255, 255, 255, 0.7)'); // 70% opaque white overlay
+            $image->insert($overlay, 'top-left', 0, 0);
         }
 
         $fontPath = public_path('fonts/georgiab.ttf');
@@ -40,10 +41,11 @@ class TicketJpgRenderer
         // Helper to place centered text
         $addText = function (string $text, int &$y, int $size = 20, string $color = '#5A6B47', int $gap = 30) use ($image, $fontPath, $xCenter) {
             $image->text($text, $xCenter, $y, function ($font) use ($fontPath, $size, $color) {
-                $font->filename($fontPath);
+                $font->file($fontPath);
                 $font->size($size);
                 $font->color($color);
                 $font->align('center');
+                $font->valign('top');
             });
             $y += $gap;
         };
@@ -69,8 +71,8 @@ class TicketJpgRenderer
             ->generate(route('tickets.verify', $ticket->token));
         $tempQrPath = tempnam(sys_get_temp_dir(), 'qr_');
         file_put_contents($tempQrPath, $qrCode);
-        $qrImage = $manager->read($tempQrPath);
-        $image->place($qrImage, 'top-left', 335, $y);
+        $qrImage = $manager->make($tempQrPath);
+        $image->insert($qrImage, 'top-left', 335, $y);
         unlink($tempQrPath);
 
         $y += 150;
@@ -82,10 +84,10 @@ class TicketJpgRenderer
         // === Optional border frame ===
         $borderPath = public_path('images/border-frame.png');
         if (file_exists($borderPath)) {
-            $frame = $manager->read($borderPath)->resize(800, 1200);
-            $image->place($frame, 'top-left', 0, 0);
+            $frame = $manager->make($borderPath)->resize(800, 1200);
+            $image->insert($frame, 'top-left', 0, 0);
         }
 
-        return $image->toJpeg(90);
+        return $image->encode('jpg', 90)->getEncoded();
     }
 }
