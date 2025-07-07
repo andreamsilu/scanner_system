@@ -137,7 +137,7 @@
                         wanayo furaha kukualika
                     </p>
                     <p style="margin-bottom: 1em; color: #5A6B47; font-weight: bold;">
-                        Kwa: {{ strtoupper($ticket->attendee->name) }}
+                            {{ strtoupper($ticket->attendee->name) }}
                     </p>
                     <hr style="border: none; border-top: 1.5px dotted #9CAF88; margin: 1.5em 0;">
                     <p style="margin-bottom: 1em; color: #5A6B47;">

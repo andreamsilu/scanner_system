@@ -147,7 +147,7 @@
                     <p style="margin-bottom: 1em; color: #5A6B47;">
                         <strong>Tarehe:</strong> Ijumaa, 11-07-2025<br>
                         <strong>Saa:</strong> 12:00 jioni<br>
-                        <strong>Ukumbi:</strong> Destiny Hall, Kwa Mathias Kibaha-Pwani
+                        <strong>Mahali:</strong> Destiny Hall, Kwa Mathias Kibaha-Pwani
                     </p>
                     @if($ticket->event->rsvp_enabled && ($ticket->event->rsvp_option_1_phone || $ticket->event->rsvp_option_2_phone))
                         <p style="margin-bottom: 1em; color: #5A6B47; font-size: 1em;">
