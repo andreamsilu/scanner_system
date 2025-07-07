@@ -35,7 +35,7 @@ class RedirectIfAuthenticated
             }
         }
 
-        \Log::info('User is not authenticated, proceeding');
+        Log::info('User is not authenticated, proceeding');
         return $next($request);
     }
 } 
