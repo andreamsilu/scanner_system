@@ -20,6 +20,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Intervention\Image\ImageManagerStatic as Image;
 
 class TicketController extends Controller
 {
@@ -649,7 +650,7 @@ class TicketController extends Controller
         $qrCode = QrCode::format('png')
             ->size(180)
             ->generate(route('tickets.verify', $ticket->token));
-        $qrImage = $manager->make($qrCode);
+        $qrImage = Image::make($qrCode);
         $image->place($qrImage, 'bottom', 400, 100);
         // Footer
         $image->text('Wasilisha tiketi hii mlangoni', 400, 1100, function($font) {
