@@ -121,7 +121,7 @@ class Attendee extends Model
      */
     public function smsLogs(): HasMany
     {
-        return $this->hasMany(SmsLog::class, 'to', 'phone');
+        return $this->hasMany(SmsLog::class, 'recipient', 'phone');
     }
 
     /**
@@ -129,7 +129,7 @@ class Attendee extends Model
      */
     public function lastSms()
     {
-        return $this->hasOne(SmsLog::class, 'to', 'phone')->latest();
+        return $this->hasOne(SmsLog::class, 'recipient', 'phone')->latest();
     }
 
     /**
