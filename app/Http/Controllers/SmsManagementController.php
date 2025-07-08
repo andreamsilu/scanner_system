@@ -1148,7 +1148,7 @@ class SmsManagementController extends Controller
 
             // Store job information in cache for tracking
             $jobKey = "sms_job_{$event->id}";
-            \Cache::put($jobKey, [
+            Cache::put($jobKey, [
                 'job_id' => $jobId,
                 'event_id' => $event->id,
                 'event_name' => $event->name,
@@ -1228,7 +1228,7 @@ class SmsManagementController extends Controller
             exec($command, $output, $returnCode);
 
             if ($returnCode === 0) {
-                $pid = \Cache::get('sms_queue_pid');
+                $pid = Cache::get('sms_queue_pid');
                 
                 Log::info('SMS queue worker started', [
                     'user_id' => auth()->id(),
@@ -1268,7 +1268,7 @@ class SmsManagementController extends Controller
     public function stopQueue(): JsonResponse
     {
         try {
-            $pid = \Cache::get('sms_queue_pid');
+            $pid = Cache::get('sms_queue_pid');
             
             if (!$pid) {
                 return response()->json([
@@ -1324,7 +1324,7 @@ class SmsManagementController extends Controller
     {
         try {
             $isRunning = $this->isQueueRunning();
-            $pid = \Cache::get('sms_queue_pid');
+            $pid = Cache::get('sms_queue_pid');
             
             // Get active jobs
             $activeJobs = \DB::table('jobs')->count();
@@ -1332,10 +1332,10 @@ class SmsManagementController extends Controller
             
             // Get job progress for all events
             $jobProgress = [];
-            $cacheKeys = \Cache::get('active_sms_jobs', []);
+            $cacheKeys = Cache::get('active_sms_jobs', []);
             
             foreach ($cacheKeys as $jobKey) {
-                $jobData = \Cache::get($jobKey);
+                $jobData = Cache::get($jobKey);
                 if ($jobData) {
                     $jobProgress[] = $jobData;
                 }
@@ -1411,7 +1411,7 @@ class SmsManagementController extends Controller
      */
     private function isQueueRunning(): bool
     {
-        $pid = \Cache::get('sms_queue_pid');
+        $pid = Cache::get('sms_queue_pid');
         
         if (!$pid) {
             return false;

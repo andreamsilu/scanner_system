@@ -112,13 +112,13 @@ class SendInvitationSmsJob implements ShouldQueue
             ];
 
             // Store initial progress
-            \Cache::put($jobKey, $progressData, 3600);
+            Cache::put($jobKey, $progressData, 3600);
             
             // Add to active jobs list
-            $activeJobs = \Cache::get('active_sms_jobs', []);
+            $activeJobs = Cache::get('active_sms_jobs', []);
             if (!in_array($jobKey, $activeJobs)) {
                 $activeJobs[] = $jobKey;
-                \Cache::put('active_sms_jobs', $activeJobs, 3600);
+                Cache::put('active_sms_jobs', $activeJobs, 3600);
             }
 
             Log::info('Invitation SMS job statistics', [
@@ -136,7 +136,7 @@ class SendInvitationSmsJob implements ShouldQueue
                     // Update progress - current attendee
                     $progressData['current_attendee'] = $attendee->name;
                     $progressData['progress'] = round(($processedCount / $totalAttendees) * 100, 2);
-                    \Cache::put($jobKey, $progressData, 3600);
+                    Cache::put($jobKey, $progressData, 3600);
 
                     // Skip if no phone number
                     if (!$attendee->phone) {
@@ -228,7 +228,7 @@ class SendInvitationSmsJob implements ShouldQueue
                     $progressData['skipped_count'] = $skippedCount;
                     $progressData['errors'] = $errors;
                     $progressData['progress'] = round(($processedCount / $totalAttendees) * 100, 2);
-                    \Cache::put($jobKey, $progressData, 3600);
+                    Cache::put($jobKey, $progressData, 3600);
 
                     // Add a small delay between SMS to avoid rate limiting
                     usleep(100000); // 0.1 second delay
@@ -262,14 +262,14 @@ class SendInvitationSmsJob implements ShouldQueue
             $progressData['completed_at'] = now()->toIso8601String();
             $progressData['progress'] = 100;
             $progressData['current_attendee'] = null;
-            \Cache::put($jobKey, $progressData, 3600);
+            Cache::put($jobKey, $progressData, 3600);
 
             // Remove from active jobs list
-            $activeJobs = \Cache::get('active_sms_jobs', []);
+            $activeJobs = Cache::get('active_sms_jobs', []);
             $activeJobs = array_filter($activeJobs, function($key) use ($jobKey) {
                 return $key !== $jobKey;
             });
-            \Cache::put('active_sms_jobs', $activeJobs, 3600);
+            Cache::put('active_sms_jobs', $activeJobs, 3600);
 
             // Log job completion
             Log::info('Invitation SMS job completed', [
@@ -290,18 +290,18 @@ class SendInvitationSmsJob implements ShouldQueue
         } catch (\Exception $e) {
             // Mark job as failed
             $jobKey = "sms_job_{$this->eventId}";
-            $progressData = \Cache::get($jobKey, []);
+            $progressData = Cache::get($jobKey, []);
             $progressData['status'] = 'failed';
             $progressData['completed_at'] = now()->toIso8601String();
             $progressData['error'] = $e->getMessage();
-            \Cache::put($jobKey, $progressData, 3600);
+            Cache::put($jobKey, $progressData, 3600);
 
             // Remove from active jobs list
-            $activeJobs = \Cache::get('active_sms_jobs', []);
+            $activeJobs = Cache::get('active_sms_jobs', []);
             $activeJobs = array_filter($activeJobs, function($key) use ($jobKey) {
                 return $key !== $jobKey;
             });
-            \Cache::put('active_sms_jobs', $activeJobs, 3600);
+            Cache::put('active_sms_jobs', $activeJobs, 3600);
 
             Log::error('Invitation SMS job failed', [
                 'job_id' => $jobId,
