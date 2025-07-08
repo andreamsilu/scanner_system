@@ -52,7 +52,10 @@ class SmsManagementController extends Controller
                 ->take(10)
                 ->get();
 
-            return view('sms.management.index', compact('balance', 'provider', 'recentLogs'));
+            // Get all events for selection
+            $events = \App\Models\Event::orderBy('name')->get();
+
+            return view('sms.management.index', compact('balance', 'provider', 'recentLogs', 'events'));
         } catch (\Exception $e) {
             Log::error('SMS Management Dashboard Error', [
                 'error' => $e->getMessage(),
@@ -61,7 +64,8 @@ class SmsManagementController extends Controller
             
             return view('sms.management.index', [
                 'error' => 'Unable to load SMS management dashboard. Please try again later.',
-                'recentLogs' => collect() // Empty collection as fallback
+                'recentLogs' => collect(), // Empty collection as fallback
+                'events' => collect() // Empty collection as fallback
             ]);
         }
     }
@@ -1051,15 +1055,15 @@ class SmsManagementController extends Controller
 
         // Apply filters
         if ($type = request('type')) {
-            $query->where('type', $type);
+            $query->whereJsonContains('metadata->type', $type);
         }
 
         if ($status = request('status')) {
             $query->where('status', $status);
         }
 
-        if ($provider = request('provider')) {
-            $query->where('provider', $provider);
+        if ($event = request('event')) {
+            $query->whereJsonContains('metadata->event_id', (int)$event);
         }
 
         if ($search = request('search')) {
@@ -1080,6 +1084,7 @@ class SmsManagementController extends Controller
             $metadata = $log->metadata ?? [];
             $log->attendee_name = $metadata['attendee_name'] ?? null;
             $log->attendee_phone = $metadata['attendee_phone'] ?? $log->recipient;
+            $log->type = $metadata['type'] ?? 'unknown';
             return $log;
         });
 
@@ -1106,6 +1111,74 @@ class SmsManagementController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to refresh balance: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Dispatch invitation SMS job for all attendees
+     *
+     * @param Event $event
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function dispatchInvitationSmsJob(Event $event): JsonResponse
+    {
+        try {
+            // Check if user has permission to send SMS for this event
+            if (!auth()->user()->hasRole('admin')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'You do not have permission to send SMS for this event.'
+                ], 403);
+            }
+
+            // Get statistics before dispatching
+            $totalAttendees = $event->attendees()->count();
+            $attendeesWithPhone = $event->attendees()->whereNotNull('phone')->count();
+            $alreadySentCount = $event->attendees()
+                ->whereHas('smsLogs', function($query) {
+                    $query->whereJsonContains('metadata->type', 'invitation');
+                })
+                ->count();
+
+            // Dispatch the job
+            $job = \App\Jobs\SendInvitationSmsJob::dispatch($event->id, auth()->id());
+
+            Log::info('Invitation SMS job dispatched', [
+                'user_id' => auth()->id(),
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'job_id' => $job->getJobId(),
+                'total_attendees' => $totalAttendees,
+                'attendees_with_phone' => $attendeesWithPhone,
+                'already_sent_count' => $alreadySentCount,
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invitation SMS job has been queued successfully. SMS will be sent to all attendees who haven\'t received invitations yet.',
+                'job_id' => $job->getJobId(),
+                'statistics' => [
+                    'total_attendees' => $totalAttendees,
+                    'attendees_with_phone' => $attendeesWithPhone,
+                    'already_sent_count' => $alreadySentCount,
+                    'will_be_sent_to' => $attendeesWithPhone - $alreadySentCount
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to dispatch invitation SMS job', [
+                'user_id' => auth()->id(),
+                'event_id' => $event->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to dispatch invitation SMS job: ' . $e->getMessage()
             ], 500);
         }
     }

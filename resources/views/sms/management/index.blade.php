@@ -119,6 +119,45 @@
         </div>
     </div>
 
+    <!-- Event Selection and Invitation SMS -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">Send Invitation SMS to Event Attendees</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label for="eventSelect" class="form-label">Select Event</label>
+                    <select class="form-select" id="eventSelect" required>
+                        <option value="">Choose an event...</option>
+                        @foreach(\App\Models\Event::orderBy('name')->get() as $event)
+                            <option value="{{ $event->id }}" 
+                                    data-attendees-count="{{ $event->attendees()->count() }}"
+                                    data-attendees-with-phone="{{ $event->attendees()->whereNotNull('phone')->count() }}"
+                                    data-already-sent="{{ $event->attendees()->whereHas('smsLogs', function($query) { $query->whereJsonContains('metadata->type', 'invitation'); })->count() }}">
+                                {{ $event->name }} ({{ $event->date ? \Carbon\Carbon::parse($event->date)->format('M d, Y') : 'No date' }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">Event Statistics</label>
+                    <div id="eventStats" class="text-muted small">
+                        Select an event to see statistics
+                    </div>
+                </div>
+                <div class="col-12">
+                    <button type="button" class="btn btn-success" id="sendInvitationSmsBtn" disabled>
+                        <i class="bi bi-envelope-paper me-2"></i>Send Invitation SMS
+                    </button>
+                    <small class="text-muted d-block mt-2">
+                        This will send invitation SMS to all attendees who haven't received invitations yet.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Recent SMS Logs -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -195,6 +234,116 @@
 
     @push('scripts')
     <script>
+    // Event Selection and Invitation SMS functionality
+    document.getElementById('eventSelect').addEventListener('change', function() {
+        const eventSelect = this;
+        const sendBtn = document.getElementById('sendInvitationSmsBtn');
+        const statsDiv = document.getElementById('eventStats');
+        
+        if (eventSelect.value) {
+            const selectedOption = eventSelect.options[eventSelect.selectedIndex];
+            const attendeesCount = parseInt(selectedOption.dataset.attendeesCount);
+            const attendeesWithPhone = parseInt(selectedOption.dataset.attendeesWithPhone);
+            const alreadySent = parseInt(selectedOption.dataset.alreadySent);
+            const willBeSent = attendeesWithPhone - alreadySent;
+            
+            // Update statistics
+            statsDiv.innerHTML = `
+                <div class="row g-2">
+                    <div class="col-6">
+                        <strong>Total Attendees:</strong> ${attendeesCount}
+                    </div>
+                    <div class="col-6">
+                        <strong>With Phone:</strong> ${attendeesWithPhone}
+                    </div>
+                    <div class="col-6">
+                        <strong>Already Sent:</strong> ${alreadySent}
+                    </div>
+                    <div class="col-6">
+                        <strong>Will Receive:</strong> ${willBeSent}
+                    </div>
+                </div>
+            `;
+            
+            // Enable/disable send button based on whether there are attendees to send to
+            if (willBeSent > 0) {
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('btn-secondary');
+                sendBtn.classList.add('btn-success');
+            } else {
+                sendBtn.disabled = true;
+                sendBtn.classList.remove('btn-success');
+                sendBtn.classList.add('btn-secondary');
+            }
+        } else {
+            statsDiv.innerHTML = 'Select an event to see statistics';
+            sendBtn.disabled = true;
+            sendBtn.classList.remove('btn-success');
+            sendBtn.classList.add('btn-secondary');
+        }
+    });
+
+    // Send Invitation SMS functionality
+    document.getElementById('sendInvitationSmsBtn').addEventListener('click', async function() {
+        const eventSelect = document.getElementById('eventSelect');
+        const sendBtn = this;
+        const originalText = sendBtn.innerHTML;
+        
+        if (!eventSelect.value) {
+            toastr.error('Please select an event first');
+            return;
+        }
+        
+        // Confirm action
+        if (!confirm('This will send invitation SMS to ALL attendees who haven\'t received invitations yet. Are you sure you want to continue?')) {
+            return;
+        }
+        
+        try {
+            // Show loading state
+            sendBtn.disabled = true;
+            sendBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+            
+            const response = await fetch(`/sms/management/events/${eventSelect.value}/dispatch-invitation-sms`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                // Show success message with statistics
+                let message = result.message;
+                if (result.statistics) {
+                    const stats = result.statistics;
+                    message += `\n\nStatistics:\n• Total attendees: ${stats.total_attendees}\n• Attendees with phone: ${stats.attendees_with_phone}\n• Already sent invitations: ${stats.already_sent_count}\n• Will receive invitations: ${stats.will_be_sent_to}`;
+                }
+                
+                toastr.success(message);
+                
+                // Update the event statistics
+                const selectedOption = eventSelect.options[eventSelect.selectedIndex];
+                selectedOption.dataset.alreadySent = parseInt(selectedOption.dataset.alreadySent) + (result.statistics?.will_be_sent_to || 0);
+                
+                // Trigger change event to update display
+                eventSelect.dispatchEvent(new Event('change'));
+                
+            } else {
+                toastr.error(result.message || 'Failed to dispatch invitation SMS job');
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            toastr.error('An error occurred while processing the request');
+        } finally {
+            // Reset button state
+            sendBtn.disabled = false;
+            sendBtn.innerHTML = originalText;
+        }
+    });
+
     document.getElementById('testSmsForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         

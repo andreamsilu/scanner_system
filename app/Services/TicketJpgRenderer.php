@@ -93,3 +93,4 @@ class TicketJpgRenderer
         return $image->encode('jpg', 90)->getEncoded();
     }
 }
+ 

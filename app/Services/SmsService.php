@@ -197,13 +197,14 @@ class SmsService
             'attendee_id' => $attendee->id,
             'ticket_id' => $ticket->id,
             'attendee_name' => $attendee->name,
-                'attendee_phone' => $attendee->phone,
+            'attendee_phone' => $attendee->phone,
             'ticket_number' => $ticket->ticket_number,
             'ticket_type' => $ticket->type->name,
-                'event_name' => $event->name,
-                'event_date' => $eventDate->toDateTimeString(),
-                'location' => $event->location,
-                'venue' => $event->venue
+            'event_name' => $event->name,
+            'event_date' => $eventDate->toDateTimeString(),
+            'location' => $event->location,
+            'venue' => $event->venue,
+            'type' => 'invitation'
         ];
 
         return $this->send($attendee->phone, $message, 'invitation', $metadata);
@@ -258,7 +259,9 @@ class SmsService
         $eventDate = Carbon::parse($event->date);
         $dayName = $eventDate->locale('sw')->isoFormat('dddd');
         $formattedTime = $eventDate->format('g:i');
-        $period = $eventDate->format('A');
+        
+        // Convert AM/PM to Swahili
+        $period = $eventDate->format('A') === 'PM' ? 'jioni' : 'asubuhi';
 
         return sprintf(
             "Ndugu %s, unakaribishwa kwenye %s itakayofanyika %s %s saa %s %s. Mahali: %s. Ukumbi: %s. Tiketi: %s (%s). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824",
@@ -288,7 +291,9 @@ class SmsService
         $eventDate = Carbon::parse($event->date);
         $dayName = $eventDate->locale('sw')->isoFormat('dddd');
         $formattedTime = $eventDate->format('g:i');
-        $period = $eventDate->format('A');
+        
+        // Convert AM/PM to Swahili
+        $period = $eventDate->format('A') === 'PM' ? 'jioni' : 'asubuhi';
 
         return sprintf(
             "Kumbusho: Ndugu %s, tukio la %s litafanyika %s %s saa %s %s. Mahali: %s. Ukumbi: %s. Tiketi: %s. Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824",
@@ -435,14 +440,19 @@ class SmsService
     protected function formatTicketUsageMessage(Event $event, Ticket $ticket, string $entryPoint): string
     {
         $attendee = $ticket->attendee;
-        $scannedTime = now()->format('g:i A');
+        $scannedTime = now();
+        $formattedTime = $scannedTime->format('g:i');
+        
+        // Convert AM/PM to Swahili
+        $period = $scannedTime->format('A') === 'PM' ? 'jioni' : 'asubuhi';
+        $timeString = $formattedTime . ' ' . $period;
 
         return sprintf(
             "Ndugu %s, tiketi yako ya %s imethibitishwa na kuingia kupitia %s saa %s. Asante kwa kuhudhuria %s. Karibu tena!",
             $attendee->name,
             $event->name,
             $entryPoint,
-            $scannedTime,
+            $timeString,
             $event->name
         );
     }
@@ -463,7 +473,10 @@ class SmsService
         if ($eventDate) {
             $dayName = $eventDate->locale('sw')->isoFormat('dddd');
             $formattedTime = $eventDate->format('g:i');
-            $period = $eventDate->format('A');
+            
+            // Convert AM/PM to Swahili
+            $period = $eventDate->format('A') === 'PM' ? 'jioni' : 'asubuhi';
+            
             $dateString = $dayName . ' ' . $eventDate->toLocaleDateString('en-GB') . ' saa ' . $formattedTime . ' ' . $period;
         } else {
             $dateString = 'tarehe itakayotangazwa';

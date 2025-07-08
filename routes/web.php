@@ -223,6 +223,7 @@ Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.man
     Route::get('/events/{event}', [App\Http\Controllers\SmsManagementController::class, 'showEvent'])->name('event');
     Route::post('/events/{event}/bulk-send', [App\Http\Controllers\SmsManagementController::class, 'bulkSend'])->name('event.bulk-send');
     Route::post('/events/{event}/send-attendee-invitation', [App\Http\Controllers\SmsManagementController::class, 'sendAttendeeInvitation'])->name('send-attendee-invitation');
+    Route::post('/events/{event}/dispatch-invitation-sms', [App\Http\Controllers\SmsManagementController::class, 'dispatchInvitationSmsJob'])->name('event.dispatch-invitation-sms');
 });
 
 

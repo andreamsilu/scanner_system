@@ -35,12 +35,12 @@
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <label for="provider" class="form-label">Provider</label>
-                    <select name="provider" id="provider" class="form-select">
-                        <option value="">All Providers</option>
-                        @foreach(\App\Models\SmsLog::distinct()->pluck('provider') as $provider)
-                            <option value="{{ $provider }}" {{ request('provider') === $provider ? 'selected' : '' }}>
-                                {{ ucfirst($provider) }}
+                    <label for="event" class="form-label">Event</label>
+                    <select name="event" id="event" class="form-select">
+                        <option value="">All Events</option>
+                        @foreach(\App\Models\Event::orderBy('name')->get() as $event)
+                            <option value="{{ $event->id }}" {{ request('event') == $event->id ? 'selected' : '' }}>
+                                {{ $event->name }}
                             </option>
                         @endforeach
                     </select>
@@ -73,21 +73,28 @@
                             <th>Recipient</th>
                             <th>Contact</th>
                             <th>Type</th>
+                            <th>Event</th>
                             <th>Status</th>
-                            <th>Provider</th>
                             <th>Message</th>
-                            <th>Message ID</th>
+                            <th>Reference</th>
                             <th>Error</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($logs as $log)
+                            @php
+                                $metadata = $log->metadata ?? [];
+                                $smsType = $metadata['type'] ?? 'unknown';
+                                $eventName = $metadata['event_name'] ?? null;
+                                $attendeeName = $metadata['attendee_name'] ?? null;
+                                $attendeePhone = $metadata['attendee_phone'] ?? $log->recipient;
+                            @endphp
                             <tr>
                                 <td>{{ $log->created_at->format('M j, Y g:i A') }}</td>
                                 <td>
-                                    @if($log->attendee_name)
+                                    @if($attendeeName)
                                         <div class="d-flex flex-column">
-                                            <span class="fw-medium">{{ $log->attendee_name }}</span>
+                                            <span class="fw-medium">{{ $attendeeName }}</span>
                                             <small class="text-muted">Attendee</small>
                                         </div>
                                     @else
@@ -96,23 +103,37 @@
                                 </td>
                                 <td>
                                     <div class="d-flex flex-column">
-                                        <span>{{ $log->attendee_phone }}</span>
-                                        @if($log->attendee_phone !== $log->recipient)
+                                        <span>{{ $attendeePhone }}</span>
+                                        @if($attendeePhone !== $log->recipient)
                                             <small class="text-muted">Original: {{ $log->recipient }}</small>
                                         @endif
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ $log->type === 'invitation' ? 'primary' : ($log->type === 'reminder' ? 'warning' : 'info') }}">
-                                        {{ ucfirst($log->type) }}
+                                    <span class="badge bg-{{ $smsType === 'invitation' ? 'primary' : ($smsType === 'reminder' ? 'warning' : ($smsType === 'notification' ? 'info' : 'secondary')) }}">
+                                        {{ ucfirst($smsType) }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ $log->status === 'sent' ? 'success' : ($log->status === 'failed' ? 'danger' : 'secondary') }}">
-                                        {{ ucfirst($log->status) }}
-                                    </span>
+                                    @if($eventName)
+                                        <span class="text-truncate d-inline-block" style="max-width: 150px;" 
+                                              data-bs-toggle="tooltip" title="{{ $eventName }}">
+                                            {{ $eventName }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
                                 </td>
-                                <td>{{ ucfirst($log->provider) }}</td>
+                                <td>
+                                    <span class="badge bg-{{ $log->getStatusBadgeClass() }}">
+                                        {{ $log->getStatusMessage() }}
+                                    </span>
+                                    @if($log->provider_status && $log->provider_status !== $log->status)
+                                        <small class="text-muted d-block">
+                                            Provider: {{ ucfirst($log->provider_status) }}
+                                        </small>
+                                    @endif
+                                </td>
                                 <td>
                                     <span class="text-truncate d-inline-block" style="max-width: 200px;" 
                                           data-bs-toggle="tooltip" title="{{ $log->message }}">
@@ -120,8 +141,8 @@
                                     </span>
                                 </td>
                                 <td>
-                                    @if($log->message_id)
-                                        <small class="text-muted">{{ $log->message_id }}</small>
+                                    @if($log->reference)
+                                        <small class="text-muted">{{ $log->reference }}</small>
                                     @else
                                         <span class="text-muted">-</span>
                                     @endif
@@ -168,4 +189,5 @@
     });
     </script>
     @endpush
+</x-app-layout> 
 </x-app-layout> 

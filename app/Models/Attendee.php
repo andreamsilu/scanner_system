@@ -117,6 +117,22 @@ class Attendee extends Model
     }
 
     /**
+     * Get SMS logs for this attendee.
+     */
+    public function smsLogs(): HasMany
+    {
+        return $this->hasMany(SmsLog::class, 'to', 'phone');
+    }
+
+    /**
+     * Get the last SMS sent to this attendee.
+     */
+    public function lastSms()
+    {
+        return $this->hasOne(SmsLog::class, 'to', 'phone')->latest();
+    }
+
+    /**
      * Scope a query to only include active attendees (those with active tickets).
      */
     public function scopeActive($query)
