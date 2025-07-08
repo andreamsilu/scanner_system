@@ -34,7 +34,20 @@ class TicketJpgRenderer
      * @return string JPEG binary data
      * @throws \Exception
      */
-    public function render(Ticket $ticket, Event $event): string
+    public static function render(Ticket $ticket, Event $event): string
+    {
+        return (new static())->renderInstance($ticket, $event);
+    }
+
+    /**
+     * Instance method to render the ticket.
+     *
+     * @param Ticket $ticket
+     * @param Event $event
+     * @return string JPEG binary data
+     * @throws \Exception
+     */
+    public function renderInstance(Ticket $ticket, Event $event): string
     {
         try {
             $image = $this->createBaseImage();
