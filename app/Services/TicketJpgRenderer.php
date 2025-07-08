@@ -29,11 +29,8 @@ class TicketJpgRenderer
             $image->place($bg, 0, 0);
 
             // === White semi-transparent overlay covering whole card ===
-            $image->rectangle(0, 0, 800, 1200, function ($draw) {
-                // Alpha: 0 (opaque) to 127 (fully transparent)
-                // 90 ~ about 70% opacity white overlay
-                $draw->background([255, 255, 255, 90]);
-            });
+            $overlay = $manager->create(800, 1200, 'rgba(255,255,255,0.35)'); // ~70% opacity
+            $image->place($overlay, 0, 0);
         }
 
         $fontPath = public_path('fonts/georgiab.ttf');
