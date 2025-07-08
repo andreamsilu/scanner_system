@@ -81,7 +81,7 @@ class SendSingleSms implements ShouldQueue
      */
     public function handle(SmsService $smsService): void
     {
-        $jobId = $this->job->getJobId();
+        $jobId = uniqid('single_sms_', true);
         $attemptNumber = $this->attempts();
         
         try {
@@ -236,8 +236,9 @@ class SendSingleSms implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
+        $jobId = uniqid('single_sms_', true);
         Log::error('Single SMS job failed permanently', [
-            'job_id' => $this->job->getJobId(),
+            'job_id' => $jobId,
             'recipient' => $this->phone,
             'type' => $this->type,
             'error' => $exception->getMessage(),

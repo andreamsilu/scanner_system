@@ -54,9 +54,11 @@ class SendBulkSms implements ShouldQueue
      */
     public function handle(SmsService $smsService): void
     {
+        $jobId = uniqid('bulk_sms_', true);
+        
         try {
             Log::info('Starting bulk SMS job', [
-                'job_id' => $this->job->getJobId(),
+                'job_id' => $jobId,
                 'sms_count' => count($this->smsData),
                 'timestamp' => now()->toIso8601String()
             ]);
@@ -77,7 +79,7 @@ class SendBulkSms implements ShouldQueue
                     if ($result['success']) {
                         $successCount++;
                         Log::info('Bulk SMS sent successfully', [
-                            'job_id' => $this->job->getJobId(),
+                            'job_id' => $jobId,
                             'index' => $index,
                             'recipient' => $smsItem['phone'],
                             'message_id' => $result['message_id'] ?? null
@@ -90,7 +92,7 @@ class SendBulkSms implements ShouldQueue
                             'error' => $result['error'] ?? 'Unknown error'
                         ];
                         Log::warning('Bulk SMS failed', [
-                            'job_id' => $this->job->getJobId(),
+                            'job_id' => $jobId,
                             'index' => $index,
                             'recipient' => $smsItem['phone'],
                             'error' => $result['error'] ?? 'Unknown error'
@@ -108,7 +110,7 @@ class SendBulkSms implements ShouldQueue
                         'error' => $e->getMessage()
                     ];
                     Log::error('Bulk SMS exception', [
-                        'job_id' => $this->job->getJobId(),
+                        'job_id' => $jobId,
                         'index' => $index,
                         'recipient' => $smsItem['phone'] ?? 'unknown',
                         'error' => $e->getMessage(),
@@ -118,7 +120,7 @@ class SendBulkSms implements ShouldQueue
             }
 
             Log::info('Bulk SMS job completed', [
-                'job_id' => $this->job->getJobId(),
+                'job_id' => $jobId,
                 'total_count' => count($this->smsData),
                 'success_count' => $successCount,
                 'failure_count' => $failureCount,
@@ -127,7 +129,7 @@ class SendBulkSms implements ShouldQueue
 
         } catch (\Exception $e) {
             Log::error('Bulk SMS job failed', [
-                'job_id' => $this->job->getJobId(),
+                'job_id' => $jobId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -144,8 +146,9 @@ class SendBulkSms implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
+        $jobId = uniqid('bulk_sms_', true);
         Log::error('Bulk SMS job failed permanently', [
-            'job_id' => $this->job->getJobId(),
+            'job_id' => $jobId,
             'error' => $exception->getMessage(),
             'trace' => $exception->getTraceAsString(),
             'sms_data_count' => count($this->smsData)

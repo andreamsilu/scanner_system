@@ -1143,12 +1143,13 @@ class SmsManagementController extends Controller
 
             // Dispatch the job
             $job = \App\Jobs\SendInvitationSmsJob::dispatch($event->id, auth()->id());
+            $jobId = uniqid('invitation_job_', true);
 
             Log::info('Invitation SMS job dispatched', [
                 'user_id' => auth()->id(),
                 'event_id' => $event->id,
                 'event_name' => $event->name,
-                'job_id' => $job->getJobId(),
+                'job_id' => $jobId,
                 'total_attendees' => $totalAttendees,
                 'attendees_with_phone' => $attendeesWithPhone,
                 'already_sent_count' => $alreadySentCount,
@@ -1158,7 +1159,7 @@ class SmsManagementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Invitation SMS job has been queued successfully. SMS will be sent to all attendees who haven\'t received invitations yet.',
-                'job_id' => $job->getJobId(),
+                'job_id' => $jobId,
                 'statistics' => [
                     'total_attendees' => $totalAttendees,
                     'attendees_with_phone' => $attendeesWithPhone,

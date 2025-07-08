@@ -68,10 +68,11 @@ class SendInvitationSmsJob implements ShouldQueue
     public function handle(SmsService $smsService): void
     {
         $startTime = microtime(true);
+        $jobId = uniqid('sms_job_', true);
         
         try {
             Log::info('Starting invitation SMS job for event', [
-                'job_id' => $this->job->getJobId(),
+                'job_id' => $jobId,
                 'event_id' => $this->eventId,
                 'user_id' => $this->userId,
                 'timestamp' => now()->toIso8601String()
@@ -89,7 +90,7 @@ class SendInvitationSmsJob implements ShouldQueue
             $errors = [];
 
             Log::info('Invitation SMS job statistics', [
-                'job_id' => $this->job->getJobId(),
+                'job_id' => $jobId,
                 'event_id' => $this->eventId,
                 'event_name' => $event->name,
                 'total_attendees' => $totalAttendees,
@@ -103,7 +104,7 @@ class SendInvitationSmsJob implements ShouldQueue
                     if (!$attendee->phone) {
                         $skippedCount++;
                         Log::info('Skipping attendee - no phone number', [
-                            'job_id' => $this->job->getJobId(),
+                            'job_id' => $jobId,
                             'event_id' => $this->eventId,
                             'attendee_id' => $attendee->id,
                             'attendee_name' => $attendee->name,
@@ -117,7 +118,7 @@ class SendInvitationSmsJob implements ShouldQueue
                     if ($existingSms) {
                         $alreadySentCount++;
                         Log::info('Skipping attendee - invitation SMS already sent', [
-                            'job_id' => $this->job->getJobId(),
+                            'job_id' => $jobId,
                             'event_id' => $this->eventId,
                             'attendee_id' => $attendee->id,
                             'attendee_name' => $attendee->name,
@@ -133,7 +134,7 @@ class SendInvitationSmsJob implements ShouldQueue
                     if (!$ticket) {
                         $skippedCount++;
                         Log::warning('Skipping attendee - no ticket found', [
-                            'job_id' => $this->job->getJobId(),
+                            'job_id' => $jobId,
                             'event_id' => $this->eventId,
                             'attendee_id' => $attendee->id,
                             'attendee_name' => $attendee->name,
@@ -148,7 +149,7 @@ class SendInvitationSmsJob implements ShouldQueue
                     if ($result['success']) {
                         $sentCount++;
                         Log::info('Invitation SMS sent successfully', [
-                            'job_id' => $this->job->getJobId(),
+                            'job_id' => $jobId,
                             'event_id' => $this->eventId,
                             'attendee_id' => $attendee->id,
                             'attendee_name' => $attendee->name,
@@ -166,7 +167,7 @@ class SendInvitationSmsJob implements ShouldQueue
                             'error' => $result['error'] ?? 'Unknown error'
                         ];
                         Log::error('Failed to send invitation SMS', [
-                            'job_id' => $this->job->getJobId(),
+                            'job_id' => $jobId,
                             'event_id' => $this->eventId,
                             'attendee_id' => $attendee->id,
                             'attendee_name' => $attendee->name,
@@ -187,7 +188,7 @@ class SendInvitationSmsJob implements ShouldQueue
                         'error' => $e->getMessage()
                     ];
                     Log::error('Exception while sending invitation SMS', [
-                        'job_id' => $this->job->getJobId(),
+                        'job_id' => $jobId,
                         'event_id' => $this->eventId,
                         'attendee_id' => $attendee->id,
                         'attendee_name' => $attendee->name,
@@ -201,7 +202,7 @@ class SendInvitationSmsJob implements ShouldQueue
 
             // Log job completion
             Log::info('Invitation SMS job completed', [
-                'job_id' => $this->job->getJobId(),
+                'job_id' => $jobId,
                 'event_id' => $this->eventId,
                 'event_name' => $event->name,
                 'total_attendees' => $totalAttendees,
@@ -217,7 +218,7 @@ class SendInvitationSmsJob implements ShouldQueue
 
         } catch (\Exception $e) {
             Log::error('Invitation SMS job failed', [
-                'job_id' => $this->job->getJobId(),
+                'job_id' => $jobId,
                 'event_id' => $this->eventId,
                 'user_id' => $this->userId,
                 'exception_class' => get_class($e),
@@ -239,8 +240,9 @@ class SendInvitationSmsJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
+        $jobId = uniqid('sms_job_', true);
         Log::error('Invitation SMS job failed permanently', [
-            'job_id' => $this->job->getJobId(),
+            'job_id' => $jobId,
             'event_id' => $this->eventId,
             'user_id' => $this->userId,
             'error' => $exception->getMessage(),
