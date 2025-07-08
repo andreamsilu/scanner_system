@@ -224,6 +224,12 @@ Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.man
     Route::post('/events/{event}/bulk-send', [App\Http\Controllers\SmsManagementController::class, 'bulkSend'])->name('event.bulk-send');
     Route::post('/events/{event}/send-attendee-invitation', [App\Http\Controllers\SmsManagementController::class, 'sendAttendeeInvitation'])->name('send-attendee-invitation');
     Route::post('/events/{event}/dispatch-invitation-sms', [App\Http\Controllers\SmsManagementController::class, 'dispatchInvitationSmsJob'])->name('event.dispatch-invitation-sms');
+    
+    // Queue Management Routes
+    Route::post('/queue/start', [App\Http\Controllers\SmsManagementController::class, 'startQueue'])->name('queue.start');
+    Route::post('/queue/stop', [App\Http\Controllers\SmsManagementController::class, 'stopQueue'])->name('queue.stop');
+    Route::get('/queue/status', [App\Http\Controllers\SmsManagementController::class, 'getQueueStatus'])->name('queue.status');
+    Route::post('/queue/process-one', [App\Http\Controllers\SmsManagementController::class, 'processOneJob'])->name('queue.process-one');
 });
 
 

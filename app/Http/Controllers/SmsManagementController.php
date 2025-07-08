@@ -1145,6 +1145,25 @@ class SmsManagementController extends Controller
             $job = \App\Jobs\SendInvitationSmsJob::dispatch($event->id, auth()->id());
             $jobId = uniqid('invitation_job_', true);
 
+            // Store job information in cache for tracking
+            $jobKey = "sms_job_{$event->id}";
+            \Cache::put($jobKey, [
+                'job_id' => $jobId,
+                'event_id' => $event->id,
+                'event_name' => $event->name,
+                'user_id' => auth()->id(),
+                'total_attendees' => $totalAttendees,
+                'attendees_with_phone' => $attendeesWithPhone,
+                'already_sent_count' => $alreadySentCount,
+                'sent_count' => 0,
+                'failed_count' => 0,
+                'skipped_count' => 0,
+                'status' => 'queued',
+                'started_at' => now()->toIso8601String(),
+                'completed_at' => null,
+                'progress' => 0
+            ], 3600); // Cache for 1 hour
+
             Log::info('Invitation SMS job dispatched', [
                 'user_id' => auth()->id(),
                 'event_id' => $event->id,
@@ -1182,5 +1201,222 @@ class SmsManagementController extends Controller
                 'message' => 'Failed to dispatch invitation SMS job: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Start the SMS queue worker
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function startQueue(): JsonResponse
+    {
+        try {
+            // Check if queue is already running
+            if ($this->isQueueRunning()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Queue worker is already running.'
+                ], 400);
+            }
+
+            // Use the custom command to start the queue worker
+            $command = 'php ' . base_path('artisan') . ' sms:queue:start --daemon';
+            $output = [];
+            $returnCode = 0;
+            
+            exec($command, $output, $returnCode);
+
+            if ($returnCode === 0) {
+                $pid = \Cache::get('sms_queue_pid');
+                
+                Log::info('SMS queue worker started', [
+                    'user_id' => auth()->id(),
+                    'pid' => $pid,
+                    'timestamp' => now()->toIso8601String()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'SMS queue worker started successfully.',
+                    'pid' => $pid
+                ]);
+            } else {
+                throw new \Exception('Command failed with return code: ' . $returnCode);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to start SMS queue worker', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to start queue worker: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Stop the SMS queue worker
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function stopQueue(): JsonResponse
+    {
+        try {
+            $pid = \Cache::get('sms_queue_pid');
+            
+            if (!$pid) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No queue worker PID found.'
+                ], 400);
+            }
+
+            // Use the custom command to stop the queue worker
+            $command = 'php ' . base_path('artisan') . ' sms:queue:stop';
+            $output = [];
+            $returnCode = 0;
+            
+            exec($command, $output, $returnCode);
+
+            if ($returnCode === 0) {
+                Log::info('SMS queue worker stopped', [
+                    'user_id' => auth()->id(),
+                    'pid' => $pid,
+                    'timestamp' => now()->toIso8601String()
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'SMS queue worker stopped successfully.',
+                    'pid' => $pid
+                ]);
+            } else {
+                throw new \Exception('Command failed with return code: ' . $returnCode);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Failed to stop SMS queue worker', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to stop queue worker: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get queue status and job progress
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getQueueStatus(): JsonResponse
+    {
+        try {
+            $isRunning = $this->isQueueRunning();
+            $pid = \Cache::get('sms_queue_pid');
+            
+            // Get active jobs
+            $activeJobs = \DB::table('jobs')->count();
+            $failedJobs = \DB::table('failed_jobs')->count();
+            
+            // Get job progress for all events
+            $jobProgress = [];
+            $cacheKeys = \Cache::get('active_sms_jobs', []);
+            
+            foreach ($cacheKeys as $jobKey) {
+                $jobData = \Cache::get($jobKey);
+                if ($jobData) {
+                    $jobProgress[] = $jobData;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'queue_status' => [
+                    'is_running' => $isRunning,
+                    'pid' => $pid,
+                    'active_jobs' => $activeJobs,
+                    'failed_jobs' => $failedJobs
+                ],
+                'job_progress' => $jobProgress
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to get queue status', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to get queue status: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Process one job from the queue (for immediate processing)
+     *
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function processOneJob(): JsonResponse
+    {
+        try {
+            $output = \Artisan::call('queue:work', ['--once' => true]);
+            
+            Log::info('Processed one job from queue', [
+                'user_id' => auth()->id(),
+                'output' => $output,
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Processed one job from queue.',
+                'output' => $output
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Failed to process job from queue', [
+                'user_id' => auth()->id(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process job: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Check if queue worker is running
+     *
+     * @return bool
+     */
+    private function isQueueRunning(): bool
+    {
+        $pid = \Cache::get('sms_queue_pid');
+        
+        if (!$pid) {
+            return false;
+        }
+
+        // Check if process is still running
+        return file_exists("/proc/{$pid}");
     }
 } 

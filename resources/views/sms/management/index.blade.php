@@ -158,6 +158,84 @@
         </div>
     </div>
 
+    <!-- Queue Management -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">SMS Queue Management</h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-primary" id="startQueueBtn">
+                            <i class="bi bi-play-circle me-2"></i>Start Queue Worker
+                        </button>
+                        <button type="button" class="btn btn-warning" id="stopQueueBtn" disabled>
+                            <i class="bi bi-stop-circle me-2"></i>Stop Queue Worker
+                        </button>
+                        <button type="button" class="btn btn-info" id="processOneBtn">
+                            <i class="bi bi-arrow-right-circle me-2"></i>Process One Job
+                        </button>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="d-flex gap-2">
+                        <button type="button" class="btn btn-outline-secondary" id="refreshStatusBtn">
+                            <i class="bi bi-arrow-clockwise me-2"></i>Refresh Status
+                        </button>
+                        <span class="badge bg-secondary" id="queueStatusBadge">Unknown</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Queue Status -->
+            <div class="mt-3">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <div class="card border">
+                            <div class="card-body p-2 text-center">
+                                <h6 class="card-subtitle mb-1 text-muted small">Queue Status</h6>
+                                <h5 class="card-title mb-0" id="queueStatusText">Unknown</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border">
+                            <div class="card-body p-2 text-center">
+                                <h6 class="card-subtitle mb-1 text-muted small">Active Jobs</h6>
+                                <h5 class="card-title mb-0" id="activeJobsCount">0</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border">
+                            <div class="card-body p-2 text-center">
+                                <h6 class="card-subtitle mb-1 text-muted small">Failed Jobs</h6>
+                                <h5 class="card-title mb-0" id="failedJobsCount">0</h5>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border">
+                            <div class="card-body p-2 text-center">
+                                <h6 class="card-subtitle mb-1 text-muted small">Running Jobs</h6>
+                                <h5 class="card-title mb-0" id="runningJobsCount">0</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Job Progress -->
+            <div class="mt-3" id="jobProgressSection" style="display: none;">
+                <h6>Active SMS Jobs</h6>
+                <div id="jobProgressList">
+                    <!-- Job progress cards will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Recent SMS Logs -->
     <div class="card">
         <div class="card-header d-flex justify-content-between align-items-center">
@@ -461,6 +539,267 @@
             }
         </style>
     `);
+
+    // Queue Management JavaScript
+    let queueStatusInterval;
+
+    // Initialize queue management
+    document.addEventListener('DOMContentLoaded', function() {
+        refreshQueueStatus();
+        // Refresh status every 5 seconds
+        queueStatusInterval = setInterval(refreshQueueStatus, 5000);
+    });
+
+    // Start Queue Worker
+    document.getElementById('startQueueBtn').addEventListener('click', async function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Starting...';
+            
+            const response = await fetch('{{ route("sms.management.queue.start") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                toastr.success(result.message);
+                refreshQueueStatus();
+            } else {
+                toastr.error(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            toastr.error('Failed to start queue worker');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    // Stop Queue Worker
+    document.getElementById('stopQueueBtn').addEventListener('click', async function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        
+        if (!confirm('Are you sure you want to stop the queue worker? This will stop processing all pending jobs.')) {
+            return;
+        }
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Stopping...';
+            
+            const response = await fetch('{{ route("sms.management.queue.stop") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                toastr.success(result.message);
+                refreshQueueStatus();
+            } else {
+                toastr.error(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            toastr.error('Failed to stop queue worker');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    // Process One Job
+    document.getElementById('processOneBtn').addEventListener('click', async function() {
+        const btn = this;
+        const originalText = btn.innerHTML;
+        
+        try {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>Processing...';
+            
+            const response = await fetch('{{ route("sms.management.queue.process-one") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                toastr.success(result.message);
+                refreshQueueStatus();
+            } else {
+                toastr.error(result.message);
+            }
+        } catch (error) {
+            console.error('Error:', error);
+            toastr.error('Failed to process job');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    });
+
+    // Refresh Status
+    document.getElementById('refreshStatusBtn').addEventListener('click', function() {
+        refreshQueueStatus();
+    });
+
+    // Refresh Queue Status
+    async function refreshQueueStatus() {
+        try {
+            const response = await fetch('{{ route("sms.management.queue.status") }}');
+            const result = await response.json();
+            
+            if (result.success) {
+                updateQueueStatusDisplay(result.queue_status, result.job_progress);
+            } else {
+                console.error('Failed to get queue status:', result.message);
+            }
+        } catch (error) {
+            console.error('Error refreshing queue status:', error);
+        }
+    }
+
+    // Update Queue Status Display
+    function updateQueueStatusDisplay(queueStatus, jobProgress) {
+        const statusText = document.getElementById('queueStatusText');
+        const statusBadge = document.getElementById('queueStatusBadge');
+        const activeJobsCount = document.getElementById('activeJobsCount');
+        const failedJobsCount = document.getElementById('failedJobsCount');
+        const runningJobsCount = document.getElementById('runningJobsCount');
+        const startBtn = document.getElementById('startQueueBtn');
+        const stopBtn = document.getElementById('stopQueueBtn');
+        const jobProgressSection = document.getElementById('jobProgressSection');
+        const jobProgressList = document.getElementById('jobProgressList');
+
+        // Update queue status
+        if (queueStatus.is_running) {
+            statusText.textContent = 'Running';
+            statusBadge.textContent = 'Running';
+            statusBadge.className = 'badge bg-success';
+            startBtn.disabled = true;
+            stopBtn.disabled = false;
+        } else {
+            statusText.textContent = 'Stopped';
+            statusBadge.textContent = 'Stopped';
+            statusBadge.className = 'badge bg-danger';
+            startBtn.disabled = false;
+            stopBtn.disabled = true;
+        }
+
+        // Update job counts
+        activeJobsCount.textContent = queueStatus.active_jobs;
+        failedJobsCount.textContent = queueStatus.failed_jobs;
+        runningJobsCount.textContent = jobProgress.length;
+
+        // Update job progress
+        if (jobProgress.length > 0) {
+            jobProgressSection.style.display = 'block';
+            jobProgressList.innerHTML = '';
+
+            jobProgress.forEach(job => {
+                const jobCard = createJobProgressCard(job);
+                jobProgressList.appendChild(jobCard);
+            });
+        } else {
+            jobProgressSection.style.display = 'none';
+        }
+    }
+
+    // Create Job Progress Card
+    function createJobProgressCard(job) {
+        const card = document.createElement('div');
+        card.className = 'card border mb-2';
+        
+        const statusClass = job.status === 'completed' ? 'success' : 
+                           job.status === 'failed' ? 'danger' : 
+                           job.status === 'processing' ? 'warning' : 'secondary';
+        
+        const statusText = job.status.charAt(0).toUpperCase() + job.status.slice(1);
+        
+        card.innerHTML = `
+            <div class="card-body p-3">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 class="card-title mb-1">${job.event_name}</h6>
+                        <small class="text-muted">Job ID: ${job.job_id}</small>
+                    </div>
+                    <span class="badge bg-${statusClass}">${statusText}</span>
+                </div>
+                
+                <div class="progress mb-2" style="height: 8px;">
+                    <div class="progress-bar bg-${statusClass}" role="progressbar" 
+                         style="width: ${job.progress}%" 
+                         aria-valuenow="${job.progress}" aria-valuemin="0" aria-valuemax="100">
+                    </div>
+                </div>
+                
+                <div class="row text-center">
+                    <div class="col-3">
+                        <small class="text-muted">Total</small>
+                        <div class="fw-bold">${job.total_attendees}</div>
+                    </div>
+                    <div class="col-3">
+                        <small class="text-muted">Sent</small>
+                        <div class="fw-bold text-success">${job.sent_count}</div>
+                    </div>
+                    <div class="col-3">
+                        <small class="text-muted">Failed</small>
+                        <div class="fw-bold text-danger">${job.failed_count}</div>
+                    </div>
+                    <div class="col-3">
+                        <small class="text-muted">Skipped</small>
+                        <div class="fw-bold text-warning">${job.skipped_count}</div>
+                    </div>
+                </div>
+                
+                ${job.current_attendee ? `
+                    <div class="mt-2">
+                        <small class="text-muted">Currently processing: ${job.current_attendee}</small>
+                    </div>
+                ` : ''}
+                
+                ${job.errors && job.errors.length > 0 ? `
+                    <div class="mt-2">
+                        <small class="text-danger">${job.errors.length} error(s) occurred</small>
+                    </div>
+                ` : ''}
+                
+                <div class="mt-2">
+                    <small class="text-muted">
+                        Started: ${new Date(job.started_at).toLocaleString()}
+                        ${job.completed_at ? `<br>Completed: ${new Date(job.completed_at).toLocaleString()}` : ''}
+                    </small>
+                </div>
+            </div>
+        `;
+        
+        return card;
+    }
+
+    // Cleanup interval on page unload
+    window.addEventListener('beforeunload', function() {
+        if (queueStatusInterval) {
+            clearInterval(queueStatusInterval);
+        }
+    });
     </script>
     @endpush
 </x-app-layout> 
