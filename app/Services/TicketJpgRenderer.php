@@ -87,6 +87,6 @@ class TicketJpgRenderer
             $image->place($frame, 0, 0);
         }
 
-        return $image->toJpeg(90)->encode();
+        return $image->toJpeg(90);
     }
 }
