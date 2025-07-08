@@ -103,7 +103,7 @@ class EventCardController extends Controller
         // Convert to JPG and return
         $jpgData = $image->toJpeg(90);
         
-        $filename = 'event-card-' . $attendee->name . '-' . $attendee->token . '.jpg';
+        $filename = $attendee->name . '-' . $attendee->token . '.jpg';
         $filename = preg_replace('/[^a-zA-Z0-9-_.]/', '-', $filename);
         
         return response($jpgData)
