@@ -61,7 +61,6 @@ saa [Time]. Asante kwa kuhudhuria [Event]. Karibu tena!
 NEXTSMS_API_URL=https://messaging-service.co.tz/api/sms/v1
 NEXTSMS_USERNAME=your_username
 NEXTSMS_PASSWORD=your_password
-NEXTSMS_API_KEY=your_api_key
 NEXTSMS_SENDER_ID=EVENT
 SMS_DEFAULT_COUNTRY_CODE=255
 
