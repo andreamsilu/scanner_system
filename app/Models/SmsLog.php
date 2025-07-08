@@ -17,7 +17,7 @@ class SmsLog extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'to',
+        'recipient',
         'message',
         'type',
         'status',
