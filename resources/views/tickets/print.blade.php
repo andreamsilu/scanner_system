@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Print Ticket - {{ $ticket->attendee->name }}</title>
+    <title>Ticket - {{ $ticket->attendee->name }}</title>
     <style>
         @page {
             size: A4;

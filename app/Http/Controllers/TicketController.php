@@ -361,7 +361,7 @@ class TicketController extends Controller
 
         $pdf = \PDF::loadView('tickets.show', compact('ticket'));
         
-        return $pdf->download('ticket-' . $ticket->token . '.pdf');
+        return $pdf->download($ticket->attendee->name . '-' . $ticket->token . '.pdf');
     }
 
     /**
