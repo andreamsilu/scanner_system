@@ -27,8 +27,8 @@ trait HasSmsLogging
         // Log to Laravel's logging system
         Log::channel('sms')->$level(json_encode($logData));
 
-        // Log to database for send-related actions
-        if (in_array($action, ['send', 'send_attempt', 'send_success']) && isset($data['recipient'])) {
+        // Log to database if it's a send action
+        if ($action === 'send' && isset($data['recipient'])) {
             $this->createSmsLogEntry($logData);
         }
     }

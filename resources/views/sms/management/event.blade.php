@@ -109,9 +109,6 @@
                         <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#sendSmsModal">
                             <i class="bi bi-send me-2"></i>Send SMS
                         </button>
-                        <button type="button" class="btn btn-success btn-sm" id="sendInvitationSmsBtn">
-                            <i class="bi bi-envelope-paper me-2"></i>Send Invitations
-                        </button>
                     </div>
                 </div>
                 <div class="card-body">
@@ -1026,99 +1023,6 @@ $(document).ready(function() {
                         </td>
                     </tr>
                 `);
-            }
-        });
-    });
-
-    // Send Invitation SMS to All Attendees
-    $('#sendInvitationSmsBtn').on('click', function() {
-        const btn = $(this);
-        const originalText = btn.html();
-        
-        // Confirm action
-        if (!confirm('This will send invitation SMS to ALL attendees who haven\'t received invitations yet. Are you sure you want to continue?')) {
-            return;
-        }
-        
-        // Show loading state
-        btn.prop('disabled', true).html('<i class="bi bi-hourglass-split me-2"></i>Processing...');
-        
-        // Make AJAX request
-        $.ajax({
-            url: '{{ route("sms.management.event.dispatch-invitation-sms", $event) }}',
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
-            success: function(response) {
-                if (response.success) {
-                    // Show success message
-                    const alert = $(`
-                        <div class="alert alert-success alert-dismissible fade show" role="alert">
-                            <i class="bi bi-check-circle me-2"></i>
-                            <strong>Success!</strong> ${response.message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    `);
-                    
-                    // Add statistics if available
-                    if (response.statistics) {
-                        const stats = response.statistics;
-                        alert.append(`
-                            <div class="mt-2 small">
-                                <strong>Statistics:</strong><br>
-                                • Total attendees: ${stats.total_attendees}<br>
-                                • Attendees with phone: ${stats.attendees_with_phone}<br>
-                                • Already sent invitations: ${stats.already_sent_count}<br>
-                                • Will receive invitations: ${stats.will_be_sent_to}
-                            </div>
-                        `);
-                    }
-                    
-                    // Insert alert at the top of the page
-                    $('.container-fluid').prepend(alert);
-                    
-                    // Auto-remove alert after 10 seconds
-                    setTimeout(() => {
-                        alert.alert('close');
-                    }, 10000);
-                    
-                } else {
-                    // Show error message
-                    const alert = $(`
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="bi bi-exclamation-triangle me-2"></i>
-                            <strong>Error!</strong> ${response.message}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    `);
-                    
-                    $('.container-fluid').prepend(alert);
-                }
-            },
-            error: function(xhr) {
-                let errorMessage = 'An error occurred while processing the request.';
-                
-                try {
-                    const response = JSON.parse(xhr.responseText);
-                    errorMessage = response.message || errorMessage;
-                } catch (e) {
-                    console.error('Error parsing response:', e);
-                }
-                
-                const alert = $(`
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Error!</strong> ${errorMessage}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    </div>
-                `);
-                
-                $('.container-fluid').prepend(alert);
-            },
-            complete: function() {
-                // Reset button state
-                btn.prop('disabled', false).html(originalText);
             }
         });
     });

@@ -17,14 +17,19 @@ class SmsLog extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'recipient',
-        'message',
-        'type',
-        'status',
         'message_id',
-        'metadata',
-        'provider',
-        'error'
+        'reference',
+        'recipient',
+        'sender_id',
+        'message',
+        'status',
+        'provider_status',
+        'provider_message',
+        'delivered_at',
+        'last_status_check',
+        'status_check_count',
+        'error',
+        'metadata'
     ];
 
     /**
