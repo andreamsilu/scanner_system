@@ -25,8 +25,8 @@ class TicketJpgRenderer
         // === Background ===
         $bgPath = public_path('images/image.png');
         if (file_exists($bgPath)) {
-            $bg = $manager->make($bgPath)->fit(800, 1200);
-            $image->insert($bg, 'top-left', 0, 0);
+            $bg = $manager->read($bgPath)->cover(800, 1200);
+            $image->place($bg, 0, 0);
 
             // === White semi-transparent overlay covering whole card ===
             $image->rectangle(0, 0, 800, 1200, function ($draw) {
@@ -73,8 +73,8 @@ class TicketJpgRenderer
             ->generate(route('tickets.verify', $ticket->token));
         $tempQrPath = tempnam(sys_get_temp_dir(), 'qr_');
         file_put_contents($tempQrPath, $qrCode);
-        $qrImage = $manager->make($tempQrPath);
-        $image->insert($qrImage, 'top-left', 335, $y);
+        $qrImage = $manager->read($tempQrPath);
+        $image->place($qrImage, 335, $y);
         unlink($tempQrPath);
 
         $y += 150;
@@ -86,10 +86,10 @@ class TicketJpgRenderer
         // === Optional border frame ===
         $borderPath = public_path('images/border-frame.png');
         if (file_exists($borderPath)) {
-            $frame = $manager->make($borderPath)->resize(800, 1200);
-            $image->insert($frame, 'top-left', 0, 0);
+            $frame = $manager->read($borderPath)->resize(800, 1200);
+            $image->place($frame, 0, 0);
         }
 
-        return $image->encode('jpg', 90)->getEncoded();
+        return $image->toJpeg(90)->encode();
     }
 }
