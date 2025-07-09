@@ -512,18 +512,20 @@ class TicketController extends Controller
     }
 
     /**
-     * Export all tickets in the specified format (Excel or PDF)
+     * Export all tickets for a specific event in the specified format (Excel or PDF)
      *
+     * @param Event $event
      * @param string $format
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
      */
-    public function exportAll($format = 'excel')
+    public function exportAll(Event $event, $format = 'excel')
     {
         try {
-            // Get all tickets with related data
+            // Get tickets for the specific event with related data
             $tickets = DB::table('tickets')
                 ->join('events', 'tickets.event_id', '=', 'events.id')
                 ->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id')
+                ->where('tickets.event_id', $event->id)
                 ->select([
                     'tickets.token',
                     'tickets.type',
@@ -537,19 +539,20 @@ class TicketController extends Controller
                 ->get();
 
             if ($format === 'excel') {
-                return Excel::download(new TicketsExport($tickets), 'tickets-list-' . now()->format('Y-m-d-His') . '.xlsx');
+                return Excel::download(new TicketsExport($tickets), $event->name . '-tickets-' . now()->format('Y-m-d-His') . '.xlsx');
             }
 
             // Generate PDF
             $pdf = PDF::loadView('tickets.export-pdf', [
                 'tickets' => $tickets,
+                'event' => $event,
                 'generatedAt' => now()->format('Y-m-d H:i:s')
             ]);
 
-            return $pdf->download('tickets-list-' . now()->format('Y-m-d-His') . '.pdf');
+            return $pdf->download($event->name . '-tickets-' . now()->format('Y-m-d-His') . '.pdf');
 
         } catch (\Exception $e) {
-            \Log::error('Ticket export failed: ' . $e->getMessage());
+            \Log::error('Ticket export failed for event ' . $event->id . ': ' . $e->getMessage());
             return back()->with('error', 'Failed to export tickets. Please try again.');
         }
     }

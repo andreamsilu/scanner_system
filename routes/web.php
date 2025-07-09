@@ -189,7 +189,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/event-cards/verify/{token}', [EventCardController::class, 'verify'])->name('event-cards.verify');
 
         // Ticket exports
-        Route::get('/tickets/export/{format?}', [TicketController::class, 'exportAll'])->name('tickets.export');
+        Route::get('/events/{event}/tickets/export/{format?}', [TicketController::class, 'exportAll'])->name('events.tickets.export');
 
 
         // Bulk Upload Routes

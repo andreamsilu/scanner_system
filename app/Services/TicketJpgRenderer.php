@@ -231,12 +231,12 @@ class TicketTextRenderer
             if ($this->fontPath) {
                 $font->file($this->fontPath);
             }
-            $font->size($size);
-            $font->color($color);
-            $font->align('center');
-            $font->valign('top');
-        });
-        $y += $gap;
+                $font->size($size);
+                $font->color($color);
+                $font->align('center');
+                $font->valign('top');
+            });
+            $y += $gap;
     }
 
     public function addWrappedText(string $text, int &$y, int $size = 20, string $color = '#5A6B47', int $gap = 30, int $maxWidth = 720): void

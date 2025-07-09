@@ -14,12 +14,12 @@
                     </button>
                     <ul class="dropdown-menu">
                         <li>
-                            <a class="dropdown-item" href="{{ route('tickets.export', ['format' => 'excel']) }}">
+                            <a class="dropdown-item" href="{{ route('events.tickets.export', ['event' => $event, 'format' => 'excel']) }}">
                                 <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel
                             </a>
                         </li>
                         <li>
-                            <a class="dropdown-item" href="{{ route('tickets.export', ['format' => 'pdf']) }}">
+                            <a class="dropdown-item" href="{{ route('events.tickets.export', ['event' => $event, 'format' => 'pdf']) }}">
                                 <i class="bi bi-file-earmark-pdf me-2"></i>Export to PDF
                             </a>
                         </li>
