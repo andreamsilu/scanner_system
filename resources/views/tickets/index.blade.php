@@ -98,8 +98,8 @@
                 <table class="table table-hover table-sm mb-0 align-middle" id="tickets-table">
                     <thead class="table-light">
                         <tr>
+                            <th class="py-3 px-2 text-center">#</th>
                             <th class="py-3 px-2 text-start">Attendee</th>
-                            <th class="py-3 px-2 text-start">Event</th>
                             <th class="py-3 px-2 text-center">Type</th>
                             <th class="py-3 px-2 text-center">Status</th>
                             <th class="py-3 px-2 text-center">Last Scan</th>
@@ -263,6 +263,15 @@
         #loadingOverlay {
             backdrop-filter: blur(2px);
         }
+
+        /* Serial number styling */
+        .badge.bg-light {
+            background-color: #f8f9fa !important;
+            color: #6c757d !important;
+            border: 1px solid #dee2e6 !important;
+            font-weight: 600;
+            min-width: 2rem;
+        }
     </style>
     @endpush
 
@@ -304,6 +313,16 @@
                 },
                 columns: [
                     {
+                        data: null,
+                        name: 'serial',
+                        orderable: false,
+                        searchable: false,
+                        className: 'text-center',
+                        render: function(data, type, row, meta) {
+                            return '<span class="badge bg-light text-dark border">' + (meta.row + meta.settings._iDisplayStart + 1) + '</span>';
+                        }
+                    },
+                    {
                         data: 'attendee',
                         name: 'attendee',
                         render: function(data, type, row) {
@@ -314,15 +333,6 @@
                                        '</div>';
                             }
                             return '<span class="text-muted">Unassigned</span>';
-                        }
-                    },
-                    {
-                        data: 'event_name',
-                        name: 'event_name',
-                        render: function(data, type, row) {
-                            return '<a href="{{ route("events.show", $event) }}" class="text-decoration-none">' +
-                                   data.substring(0, 20) + (data.length > 20 ? '...' : '') +
-                                   '</a>';
                         }
                     },
                     {
