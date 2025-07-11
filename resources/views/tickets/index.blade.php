@@ -47,12 +47,12 @@
         </div>
         <div class="card-body">
             <div class="row g-3">
-                <div class="col-md-4">
-                    <label for="searchInput" class="form-label">Search</label>
+                <div class="col-lg-4 col-md-6">
+                    <label for="searchInput" class="form-label fw-medium">Search</label>
                     <input type="text" class="form-control" id="searchInput" placeholder="Search by attendee name, token, email, phone...">
                 </div>
-                <div class="col-md-2">
-                    <label for="ticketTypeFilter" class="form-label">Ticket Type</label>
+                <div class="col-lg-2 col-md-3 col-sm-6">
+                    <label for="ticketTypeFilter" class="form-label fw-medium">Ticket Type</label>
                     <select class="form-select" id="ticketTypeFilter">
                         <option value="">All Types</option>
                         <option value="regular">Regular</option>
@@ -61,8 +61,8 @@
                         <option value="double">Double</option>
                     </select>
                 </div>
-                <div class="col-md-2">
-                    <label for="statusFilter" class="form-label">Status</label>
+                <div class="col-lg-2 col-md-3 col-sm-6">
+                    <label for="statusFilter" class="form-label fw-medium">Status</label>
                     <select class="form-select" id="statusFilter">
                         <option value="">All Status</option>
                         <option value="active">Active</option>
@@ -70,13 +70,13 @@
                         <option value="cancelled">Cancelled</option>
                     </select>
                 </div>
-                <div class="col-md-3">
-                    <label for="dateRangeFilter" class="form-label">Date Range</label>
+                <div class="col-lg-3 col-md-6">
+                    <label for="dateRangeFilter" class="form-label fw-medium">Date Range</label>
                     <input type="text" class="form-control" id="dateRangeFilter" placeholder="Select date range">
                 </div>
-                <div class="col-md-1">
-                    <label class="form-label">&nbsp;</label>
-                    <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters">
+                <div class="col-lg-1 col-md-6 col-sm-6">
+                    <label class="form-label fw-medium">&nbsp;</label>
+                    <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters" title="Clear all filters">
                         <i class="bi bi-x-circle"></i>
                     </button>
                 </div>
@@ -95,16 +95,16 @@
                 </div>
             </div>
             <div class="table-responsive">
-                <table class="table table-hover table-sm mb-0" id="tickets-table">
+                <table class="table table-hover table-sm mb-0 align-middle" id="tickets-table">
                     <thead class="table-light">
                         <tr>
-                            <th class="py-2">Attendee</th>
-                            <th class="py-2">Event</th>
-                            <th class="py-2">Type</th>
-                            <th class="py-2">Status</th>
-                            <th class="py-2">Last Scan</th>
-                            <th class="py-2">Created</th>
-                            <th class="py-2 text-end">Actions</th>
+                            <th class="py-3 px-2 text-start">Attendee</th>
+                            <th class="py-3 px-2 text-start">Event</th>
+                            <th class="py-3 px-2 text-center">Type</th>
+                            <th class="py-3 px-2 text-center">Status</th>
+                            <th class="py-3 px-2 text-center">Last Scan</th>
+                            <th class="py-3 px-2 text-center">Created</th>
+                            <th class="py-3 px-2 text-end">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -113,14 +113,7 @@
                 </table>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center px-3 py-2 border-top">
-                <div class="text-muted small">
-                    Showing {{ $tickets->firstItem() ?? 0 }} to {{ $tickets->lastItem() ?? 0 }} of {{ $tickets->total() }} entries
-                </div>
-                <div>
-                    {{ $tickets->links() }}
-                </div>
-            </div>
+            <!-- DataTable will handle pagination automatically -->
         </div>
     </div>
 
@@ -205,6 +198,71 @@
         .send-invitation-btn.btn-danger {
             box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
         }
+
+        /* Improved table alignment */
+        .table th {
+            font-weight: 600;
+            font-size: 0.875rem;
+            border-bottom: 2px solid #dee2e6;
+        }
+
+        .table td {
+            vertical-align: middle;
+            font-size: 0.875rem;
+        }
+
+        /* Better responsive design */
+        @media (max-width: 768px) {
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+            
+            .btn-group-sm .btn {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.75rem;
+            }
+            
+            .badge {
+                font-size: 0.7rem;
+            }
+        }
+
+        /* DataTable customization */
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter,
+        .dataTables_wrapper .dataTables_info,
+        .dataTables_wrapper .dataTables_processing,
+        .dataTables_wrapper .dataTables_paginate {
+            margin: 0.5rem 0;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            padding: 0.25rem 0.5rem;
+            margin: 0 0.1rem;
+            border-radius: 0.25rem;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #0d6efd;
+            color: white !important;
+            border: 1px solid #0d6efd;
+        }
+
+        /* Filter improvements */
+        .form-label.fw-medium {
+            color: #495057;
+            margin-bottom: 0.5rem;
+        }
+
+        .card-header {
+            background-color: #f8f9fa;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        /* Loading overlay improvements */
+        #loadingOverlay {
+            backdrop-filter: blur(2px);
+        }
     </style>
     @endpush
 
@@ -270,6 +328,7 @@
                     {
                         data: 'type',
                         name: 'type',
+                        className: 'text-center',
                         render: function(data, type, row) {
                             var badgeClass = 'bg-secondary';
                             switch(data) {
@@ -278,33 +337,36 @@
                                 case 'single': badgeClass = 'bg-primary'; break;
                                 case 'double': badgeClass = 'bg-success'; break;
                             }
-                            return '<span class="badge ' + badgeClass + ' px-2 py-1">' + 
-                                   data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
+                            return '<div class="text-center"><span class="badge ' + badgeClass + ' px-2 py-1">' + 
+                                   data.charAt(0).toUpperCase() + data.slice(1) + '</span></div>';
                         }
                     },
                     {
                         data: 'status',
                         name: 'status',
+                        className: 'text-center',
                         render: function(data, type, row) {
-                            return '<span class="badge bg-' + data.badge + ' px-2 py-1">' + 
-                                   data.value.charAt(0).toUpperCase() + data.value.slice(1) + '</span>';
+                            return '<div class="text-center"><span class="badge bg-' + data.badge + ' px-2 py-1">' + 
+                                   data.value.charAt(0).toUpperCase() + data.value.slice(1) + '</span></div>';
                         }
                     },
                     {
                         data: 'last_scan',
                         name: 'last_scan',
+                        className: 'text-center',
                         render: function(data, type, row) {
                             if (data) {
-                                return '<span class="text-muted" title="' + data.time + '">' + data.diff + '</span>';
+                                return '<div class="text-center"><span class="text-muted" title="' + data.time + '">' + data.diff + '</span></div>';
                             }
-                            return '<span class="text-muted">Never</span>';
+                            return '<div class="text-center"><span class="text-muted">Never</span></div>';
                         }
                     },
                     {
                         data: 'created_at',
                         name: 'created_at',
+                        className: 'text-center',
                         render: function(data, type, row) {
-                            return '<span class="text-muted">' + new Date(data).toLocaleDateString('en-GB') + '</span>';
+                            return '<div class="text-center"><span class="text-muted">' + new Date(data).toLocaleDateString('en-GB') + '</span></div>';
                         }
                     },
                     {
