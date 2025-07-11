@@ -71,8 +71,8 @@
                                                class="form-control" 
                                                id="manualToken" 
                                                placeholder="Enter ticket token manually"
-                                               pattern="[0-9]{7}"
-                                               title="Please enter a valid 7-digit token"
+                                               pattern="[0-9]{6}"
+                                               title="Please enter a valid 6-digit token"
                                                required>
                                         <button type="submit" class="btn btn-sm btn-primary">
                                             <i class="bi bi-search me-1"></i>Validate
@@ -471,8 +471,8 @@
             return;
         }
 
-        if (token.length !== 7 || !/^\d{7}$/.test(token)) {
-            showManualValidationResult('error', 'Invalid token format', 'Token must be exactly 7 digits');
+        if (token.length !== 6 || !/^\d{6}$/.test(token)) {
+            showManualValidationResult('error', 'Invalid token format', 'Token must be exactly 6 digits');
             return;
         }
 

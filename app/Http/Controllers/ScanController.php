@@ -40,7 +40,7 @@ class ScanController extends Controller
         try {
             // Validate the token
             $request->validate([
-                'token' => 'required|string|size:7'
+                'token' => 'required|string|size:6'
             ]);
 
             $scanner = Auth::user();

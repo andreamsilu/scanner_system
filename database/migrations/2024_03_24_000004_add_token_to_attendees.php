@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::table('attendees', function (Blueprint $table) {
             // Add token column if it doesn't exist
             if (!Schema::hasColumn('attendees', 'token')) {
-                $table->string('token', 7)->unique()->after('position');
+                $table->string('token', 6)->unique()->after('position');
             }
             
             // Add qr_code column if it doesn't exist
@@ -30,7 +30,7 @@ return new class extends Migration
             ->orderBy('id')
             ->each(function ($attendee) {
                 do {
-                    $token = str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT);
+                    $token = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
                 } while (DB::table('attendees')->where('token', $token)->exists());
                 
                 DB::table('attendees')

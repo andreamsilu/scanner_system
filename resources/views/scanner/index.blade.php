@@ -30,9 +30,9 @@
                 <div class="flex gap-2">
                     <input type="text" id="manual-token" 
                            class="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                           placeholder="Enter 7-digit token"
-                           maxlength="7"
-                           pattern="[A-Za-z0-9]{7}">
+                           placeholder="Enter 6-digit token"
+                           maxlength="6"
+                           pattern="[A-Za-z0-9]{6}">
                     <button onclick="manualScan()" 
                             class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                         Check In
@@ -46,7 +46,7 @@
                 <ul class="list-disc list-inside text-gray-600 space-y-1">
                     <li>Position the QR code within the scanner frame</li>
                     <li>Hold steady until the code is recognized</li>
-                    <li>Or enter the 7-digit token manually</li>
+                    <li>Or enter the 6-digit token manually</li>
                     <li>Wait for confirmation of successful check-in</li>
                 </ul>
             </div>
@@ -145,8 +145,8 @@ function manualScan() {
     const tokenInput = document.getElementById('manual-token');
     const token = tokenInput.value.trim();
 
-    if (token.length !== 7) {
-        updateStatus("Please enter a valid 7-digit token", "error");
+    if (token.length !== 6) {
+        updateStatus("Please enter a valid 6-digit token", "error");
         return;
     }
 

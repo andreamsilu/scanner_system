@@ -90,7 +90,7 @@ class DatabaseSeeder extends Seeder
 
         // Create sample attendees with tickets for event 1
         for ($i = 1; $i <= 5; $i++) {
-            $token = str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT);
+            $token = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
             $attendee = Attendee::create([
                 'event_id' => $event1->id,
                 'name' => "Attendee {$i}",
@@ -112,7 +112,7 @@ class DatabaseSeeder extends Seeder
 
         // Create sample attendees with tickets for event 2
         for ($i = 6; $i <= 10; $i++) {
-            $token = str_pad(mt_rand(0, 9999999), 7, '0', STR_PAD_LEFT);
+            $token = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
             $attendee = Attendee::create([
                 'event_id' => $event2->id,
                 'name' => "Attendee {$i}",
