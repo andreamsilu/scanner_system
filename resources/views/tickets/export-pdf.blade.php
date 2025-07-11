@@ -23,6 +23,12 @@
             color: #666;
             margin: 5px 0 0;
         }
+        .header .event-info {
+            font-size: 14px;
+            color: #333;
+            margin: 8px 0 0;
+            font-weight: 600;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -52,7 +58,8 @@
 </head>
 <body>
     <div class="header">
-        <h1>Tickets List</h1>
+        <h1>{{ $event->name }} - Tickets List</h1>
+        <p class="event-info">Total Tickets: {{ count($tickets) }}</p>
         <p>Generated on: {{ $generatedAt }}</p>
     </div>
 

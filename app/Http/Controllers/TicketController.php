@@ -529,7 +529,7 @@ class TicketController extends Controller
                 ->get();
 
             if ($format === 'excel') {
-                return Excel::download(new TicketsExport($tickets), $event->name . '-tickets-' . now()->format('Y-m-d-His') . '.xlsx');
+                return Excel::download(new TicketsExport($tickets, $event), $event->name . '-tickets-' . now()->format('Y-m-d-His') . '.xlsx');
             }
 
             // Generate PDF
