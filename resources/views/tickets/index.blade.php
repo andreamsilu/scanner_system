@@ -243,7 +243,7 @@
                     complete: function() {
                         $('#loadingOverlay').addClass('d-none');
                     }
-
+                },
                 columns: [
                     {
                         data: 'attendee',
