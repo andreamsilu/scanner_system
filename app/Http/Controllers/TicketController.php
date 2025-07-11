@@ -374,9 +374,9 @@ class TicketController extends Controller
                 $query->latest();
             }]);
 
-        // Handle search
-        if ($request->search['value']) {
-            $searchValue = $request->search['value'];
+        // Handle search - support both DataTable search and custom search
+        $searchValue = $request->search['value'] ?? $request->search;
+        if ($searchValue) {
             $query->where(function($q) use ($searchValue) {
                 // Search in tickets table
                 $q->where('tickets.ticket_number', 'like', '%' . $searchValue . '%')
@@ -427,8 +427,10 @@ class TicketController extends Controller
         }
 
         // Get total count before pagination
-        $totalRecords = $query->count();
-        $totalFiltered = $totalRecords;
+        $totalRecords = $event->tickets()->count();
+        
+        // Get filtered count
+        $totalFiltered = $query->count();
 
         // Define sortable columns and their relationships
         $sortableColumns = [

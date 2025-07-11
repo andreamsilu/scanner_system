@@ -300,6 +300,7 @@
                     type: 'GET',
                     data: function(d) {
                         // Add custom filters to the request
+                        d.search = $('#searchInput').val();
                         d.ticket_type = $('#ticketTypeFilter').val();
                         d.status = $('#statusFilter').val();
                         d.date_range = $('#dateRangeFilter').val();
@@ -564,9 +565,9 @@
                 table.ajax.reload();
             });
 
-            // Event handlers for filters
+            // Event handlers for filters - all using AJAX
             $('#searchInput').on('keyup', function() {
-                table.search(this.value).draw();
+                table.ajax.reload();
             });
 
             $('#ticketTypeFilter, #statusFilter').on('change', function() {
@@ -579,7 +580,6 @@
                 $('#ticketTypeFilter').val('');
                 $('#statusFilter').val('');
                 $('#dateRangeFilter').val('');
-                table.search('').draw();
                 table.ajax.reload();
             });
         });
