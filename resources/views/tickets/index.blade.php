@@ -24,6 +24,48 @@
 
 
     <div class="card">
+        <div class="card-header">
+            <div class="row align-items-center">
+                <div class="col-md-3">
+                    <label for="searchInput" class="form-label fw-medium">Search</label>
+                    <input type="text" class="form-control form-control-sm" id="searchInput" placeholder="Search tickets...">
+                </div>
+                <div class="col-md-2">
+                    <label for="typeFilter" class="form-label fw-medium">Type</label>
+                    <select class="form-select form-select-sm" id="typeFilter">
+                        <option value="">All Types</option>
+                        <option value="vip">VIP</option>
+                        <option value="regular">Regular</option>
+                        <option value="single">Single</option>
+                        <option value="double">Double</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="statusFilter" class="form-label fw-medium">Status</label>
+                    <select class="form-select form-select-sm" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="used">Used</option>
+                        <option value="expired">Expired</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="dateFromFilter" class="form-label fw-medium">From Date</label>
+                    <input type="date" class="form-control form-control-sm" id="dateFromFilter">
+                </div>
+                <div class="col-md-2">
+                    <label for="dateToFilter" class="form-label fw-medium">To Date</label>
+                    <input type="date" class="form-control form-control-sm" id="dateToFilter">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label fw-medium">&nbsp;</label>
+                    <button type="button" class="btn btn-outline-secondary btn-sm w-100" id="clearFilters">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
         <div class="card-body p-0">
             <!-- Loading overlay -->
             <div id="loadingOverlay" class="position-absolute w-100 h-100 d-none" style="background: rgba(255,255,255,0.8); z-index: 1000; top: 0; left: 0;">
@@ -198,6 +240,34 @@
             border-bottom: 1px solid #dee2e6;
         }
 
+        /* Filter controls styling */
+        .card-header .form-control-sm,
+        .card-header .form-select-sm {
+            font-size: 0.875rem;
+        }
+
+        .card-header .btn-sm {
+            font-size: 0.875rem;
+            padding: 0.375rem 0.5rem;
+        }
+
+        /* Responsive filter layout */
+        @media (max-width: 768px) {
+            .card-header .row > div {
+                margin-bottom: 0.5rem;
+            }
+            
+            .card-header .form-label {
+                margin-bottom: 0.25rem;
+                font-size: 0.8rem;
+            }
+            
+            .card-header .form-control-sm,
+            .card-header .form-select-sm {
+                font-size: 0.8rem;
+            }
+        }
+
         /* Loading overlay improvements */
         #loadingOverlay {
             backdrop-filter: blur(2px);
@@ -243,6 +313,14 @@
                 ajax: {
                     url: '{{ route("events.tickets.data", $event) }}',
                     type: 'GET',
+                    data: function(d) {
+                        // Add custom filter parameters
+                        d.search = $('#searchInput').val();
+                        d.type = $('#typeFilter').val();
+                        d.status = $('#statusFilter').val();
+                        d.date_from = $('#dateFromFilter').val();
+                        d.date_to = $('#dateToFilter').val();
+                    },
                     beforeSend: function() {
                         $('#loadingOverlay').removeClass('d-none');
                     },
@@ -394,7 +472,7 @@
                         }
                     }
                 ],
-                dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
+                dom: '<"row mb-3"<"col-sm-12"B>>' +
                      '<"row"<"col-sm-12"tr>>' +
                      '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 buttons: [
@@ -425,6 +503,32 @@
                 }
             });
 
+            // Filter event handlers
+            var searchTimeout;
+            $('#searchInput').on('keyup', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(function() {
+                    table.ajax.reload();
+                }, 500); // 500ms delay to prevent too many requests
+            });
+
+            $('#typeFilter, #statusFilter').on('change', function() {
+                table.ajax.reload();
+            });
+
+            $('#dateFromFilter, #dateToFilter').on('change', function() {
+                table.ajax.reload();
+            });
+
+            // Clear filters button
+            $('#clearFilters').on('click', function() {
+                $('#searchInput').val('');
+                $('#typeFilter').val('');
+                $('#statusFilter').val('');
+                $('#dateFromFilter').val('');
+                $('#dateToFilter').val('');
+                table.ajax.reload();
+            });
 
         });
 

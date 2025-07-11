@@ -374,7 +374,7 @@ class TicketController extends Controller
                 $query->latest();
             }]);
 
-        // Handle search
+        // Handle search (from DataTable search box)
         if ($request->search['value']) {
             $searchValue = $request->search['value'];
             $query->where(function($q) use ($searchValue) {
@@ -406,6 +406,42 @@ class TicketController extends Controller
                         ->orWhere('users.email', 'like', '%' . $searchValue . '%');
                   });
             });
+        }
+
+        // Handle custom filters
+        if ($request->search && !empty($request->search)) {
+            $query->where(function($q) use ($request) {
+                // Search in attendees table
+                $q->whereHas('attendee', function($q) use ($request) {
+                    $q->where('attendees.token', 'like', '%' . $request->search . '%')
+                      ->orWhere('attendees.name', 'like', '%' . $request->search . '%')
+                      ->orWhere('attendees.email', 'like', '%' . $request->search . '%')
+                      ->orWhere('attendees.phone', 'like', '%' . $request->search . '%');
+                })
+                // Search in tickets table
+                ->orWhere('tickets.ticket_number', 'like', '%' . $request->search . '%')
+                ->orWhere('tickets.type', 'like', '%' . $request->search . '%')
+                ->orWhere('tickets.status', 'like', '%' . $request->search . '%');
+            });
+        }
+
+        // Filter by ticket type
+        if ($request->type && !empty($request->type)) {
+            $query->where('tickets.type', $request->type);
+        }
+
+        // Filter by status
+        if ($request->status && !empty($request->status)) {
+            $query->where('tickets.status', $request->status);
+        }
+
+        // Filter by date range
+        if ($request->date_from && !empty($request->date_from)) {
+            $query->whereDate('tickets.created_at', '>=', $request->date_from);
+        }
+
+        if ($request->date_to && !empty($request->date_to)) {
+            $query->whereDate('tickets.created_at', '<=', $request->date_to);
         }
 
         // Get total count before pagination
