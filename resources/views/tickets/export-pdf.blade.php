@@ -59,14 +59,16 @@
     <table>
         <thead>
             <tr>
+                <th style="width: 8%; text-align: center;">#</th>
                 <th>Attendee Name</th>
                 <th>Token</th>
                 <th>Ticket Type</th>
             </tr>
         </thead>
         <tbody>
-            @foreach($tickets as $ticket)
+            @foreach($tickets as $index => $ticket)
                 <tr>
+                    <td style="text-align: center; font-weight: bold;">{{ $index + 1 }}</td>
                     <td>{{ $ticket->attendee_name ?? 'Unassigned' }}</td>
                     <td>{{ $ticket->token }}</td>
                     <td>{{ ucfirst($ticket->type) }}</td>

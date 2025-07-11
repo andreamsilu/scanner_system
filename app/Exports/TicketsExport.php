@@ -25,6 +25,7 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
     public function headings(): array
     {
         return [
+            '#',
             'Attendee Name',
             'Token',
             'Ticket Type'
@@ -33,7 +34,11 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
 
     public function map($ticket): array
     {
+        static $index = 0;
+        $index++;
+        
         return [
+            $index,
             $ticket->attendee_name ?? 'Unassigned',
             $ticket->token,
             ucfirst($ticket->type)
@@ -44,13 +49,19 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
     {
         return [
             1 => ['font' => ['bold' => true]], // Header row
-            'A1:C1' => [
+            'A1:D1' => [
                 'fill' => [
                     'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
                     'startColor' => ['rgb' => 'F8F9FA']
                 ]
             ],
-            'A:C' => [
+            'A:A' => [
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER
+                ],
+                'font' => ['bold' => true]
+            ],
+            'B:D' => [
                 'alignment' => [
                     'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_LEFT
                 ]
