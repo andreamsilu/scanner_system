@@ -173,7 +173,7 @@
 
                                         </ul>
                                         @if($ticket->is_active)
-                                            <form action="{{ route('tickets.deactivate', $ticket) }}" 
+                                            <form action="{{ route('events.tickets.deactivate', [$ticket->event, $ticket]) }}" 
                                                   method="POST" 
                                                   class="d-inline"
                                                   onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
