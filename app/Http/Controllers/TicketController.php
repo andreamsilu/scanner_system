@@ -374,9 +374,9 @@ class TicketController extends Controller
                 $query->latest();
             }]);
 
-        // Handle search - support both DataTable search and custom search
-        $searchValue = $request->search['value'] ?? $request->search;
-        if ($searchValue) {
+        // Handle search
+        if ($request->search['value']) {
+            $searchValue = $request->search['value'];
             $query->where(function($q) use ($searchValue) {
                 // Search in tickets table
                 $q->where('tickets.ticket_number', 'like', '%' . $searchValue . '%')
@@ -406,24 +406,6 @@ class TicketController extends Controller
                         ->orWhere('users.email', 'like', '%' . $searchValue . '%');
                   });
             });
-        }
-
-        // Handle filters
-        if ($request->ticket_type) {
-            $query->where('type', $request->ticket_type);
-        }
-
-        if ($request->status) {
-            $query->where('status', $request->status);
-        }
-
-        if ($request->date_range) {
-            $dates = explode(' - ', $request->date_range);
-            if (count($dates) === 2) {
-                $startDate = \Carbon\Carbon::parse($dates[0])->startOfDay();
-                $endDate = \Carbon\Carbon::parse($dates[1])->endOfDay();
-                $query->whereBetween('created_at', [$startDate, $endDate]);
-            }
         }
 
         // Get total count before pagination

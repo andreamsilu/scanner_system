@@ -38,51 +38,7 @@
         </div>
     @endif
 
-    <!-- Search and Filters -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="card-title mb-0">
-                <i class="bi bi-search me-2"></i>Search & Filters
-            </h5>
-        </div>
-        <div class="card-body">
-            <div class="row g-3">
-                <div class="col-lg-4 col-md-6">
-                    <label for="searchInput" class="form-label fw-medium">Search</label>
-                    <input type="text" class="form-control" id="searchInput" placeholder="Search by attendee name, token, email, phone...">
-                </div>
-                <div class="col-lg-2 col-md-3 col-sm-6">
-                    <label for="ticketTypeFilter" class="form-label fw-medium">Ticket Type</label>
-                    <select class="form-select" id="ticketTypeFilter">
-                        <option value="">All Types</option>
-                        <option value="regular">Regular</option>
-                        <option value="vip">VIP</option>
-                        <option value="single">Single</option>
-                        <option value="double">Double</option>
-                    </select>
-                </div>
-                <div class="col-lg-2 col-md-3 col-sm-6">
-                    <label for="statusFilter" class="form-label fw-medium">Status</label>
-                    <select class="form-select" id="statusFilter">
-                        <option value="">All Status</option>
-                        <option value="active">Active</option>
-                        <option value="used">Used</option>
-                        <option value="cancelled">Cancelled</option>
-                    </select>
-                </div>
-                <div class="col-lg-3 col-md-6">
-                    <label for="dateRangeFilter" class="form-label fw-medium">Date Range</label>
-                    <input type="text" class="form-control" id="dateRangeFilter" placeholder="Select date range">
-                </div>
-                <div class="col-lg-1 col-md-6 col-sm-6">
-                    <label class="form-label fw-medium">&nbsp;</label>
-                    <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters" title="Clear all filters">
-                        <i class="bi bi-x-circle"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     <div class="card">
         <div class="card-body p-0">
@@ -118,8 +74,6 @@
     </div>
 
     @push('styles')
-    <!-- Date Range Picker CSS -->
-    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <style>
         @media print {
             .table {
@@ -276,8 +230,6 @@
     @endpush
 
     @push('scripts')
-    <!-- Date Range Picker JS -->
-    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script>
         $(document).ready(function() {
             // Global error handler to ensure loading overlay is hidden on any error
@@ -298,13 +250,6 @@
                 ajax: {
                     url: '{{ route("events.tickets.data", $event) }}',
                     type: 'GET',
-                    data: function(d) {
-                        // Add custom filters to the request
-                        d.search = $('#searchInput').val();
-                        d.ticket_type = $('#ticketTypeFilter').val();
-                        d.status = $('#statusFilter').val();
-                        d.date_range = $('#dateRangeFilter').val();
-                    },
                     beforeSend: function() {
                         $('#loadingOverlay').removeClass('d-none');
                     },
@@ -547,41 +492,7 @@
                 }
             });
 
-            // Initialize date range picker
-            $('#dateRangeFilter').daterangepicker({
-                autoUpdateInput: false,
-                locale: {
-                    cancelLabel: 'Clear'
-                }
-            });
 
-            $('#dateRangeFilter').on('apply.daterangepicker', function(ev, picker) {
-                $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
-                table.ajax.reload();
-            });
-
-            $('#dateRangeFilter').on('cancel.daterangepicker', function(ev, picker) {
-                $(this).val('');
-                table.ajax.reload();
-            });
-
-            // Event handlers for filters - all using AJAX
-            $('#searchInput').on('keyup', function() {
-                table.ajax.reload();
-            });
-
-            $('#ticketTypeFilter, #statusFilter').on('change', function() {
-                table.ajax.reload();
-            });
-
-            // Clear filters button
-            $('#clearFilters').on('click', function() {
-                $('#searchInput').val('');
-                $('#ticketTypeFilter').val('');
-                $('#statusFilter').val('');
-                $('#dateRangeFilter').val('');
-                table.ajax.reload();
-            });
         });
 
         function printTicket(url) {
