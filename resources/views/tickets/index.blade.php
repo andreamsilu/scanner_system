@@ -8,23 +8,6 @@
     >
         <x-slot name="actions">
             <div class="d-flex gap-2">
-                <div class="dropdown">
-                    <button class="btn btn-success dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="bi bi-download me-2"></i>Export All
-                    </button>
-                    <ul class="dropdown-menu">
-                        <li>
-                            <a class="dropdown-item" href="{{ route('events.tickets.export', ['event' => $event, 'format' => 'excel']) }}">
-                                <i class="bi bi-file-earmark-excel me-2"></i>Export to Excel
-                            </a>
-                        </li>
-                        <li>
-                            <a class="dropdown-item" href="{{ route('events.tickets.export', ['event' => $event, 'format' => 'pdf']) }}">
-                                <i class="bi bi-file-earmark-pdf me-2"></i>Export to PDF
-                            </a>
-                        </li>
-                    </ul>
-                </div>
                 <a href="{{ route('events.index') }}" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Back to Events
                 </a>
@@ -411,87 +394,27 @@
                         }
                     }
                 ],
-                dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
+                dom: '<"row mb-3"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>' +
                      '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
                 buttons: [
                     {
-                        extend: 'collection',
-                        text: '<i class="bi bi-download me-2"></i>Export',
-                        className: 'btn btn-sm btn-primary',
-                        buttons: [
-                            {
-                                extend: 'excel',
-                                text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
-                                className: 'btn btn-sm btn-success',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5],
-                                    search: 'none',
-                                    format: {
-                                        body: function(data, row, column, node) {
-                                            if (column === 0) {
-                                                return $(data).find('.fw-medium').text();
-                                            }
-                                            if (column === 2 || column === 3) {
-                                                return $(data).text().trim();
-                                            }
-                                            return data;
-                                        }
-                                    }
-                                },
-                                title: 'Tickets List - {{ now()->format('Y-m-d H:i:s') }}',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
-                                customize: function(xlsx) {
-                                    var sheet = xlsx.xl.worksheets['sheet1.xml'];
-                                    $('row:first c', sheet).attr('s', '2'); // Bold headers
-                                }
-                            },
-                            {
-                                extend: 'pdf',
-                                text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
-                                className: 'btn btn-sm btn-danger',
-                                exportOptions: {
-                                    columns: [0, 1, 2, 3, 4, 5],
-                                    search: 'none',
-                                    format: {
-                                        body: function(data, row, column, node) {
-                                            if (column === 0) {
-                                                return $(data).find('.fw-medium').text();
-                                            }
-                                            if (column === 2 || column === 3) {
-                                                return $(data).text().trim();
-                                            }
-                                            return data;
-                                        }
-                                    }
-                                },
-                                title: 'Tickets List - {{ now()->format('Y-m-d H:i:s') }}',
-                                messageTop: 'Generated on: ' + new Date().toLocaleDateString(),
-                                customize: function(doc) {
-                                    doc.defaultStyle.fontSize = 9;
-                                    doc.styles.tableHeader.fontSize = 10;
-                                    doc.styles.tableHeader.fillColor = '#f8f9fa';
-                                    doc.styles.tableHeader.color = '#212529';
-                                    doc.pageMargins = [20, 40, 20, 40];
-                                    doc.defaultStyle.alignment = 'left';
-                                    doc.styles.tableHeader.alignment = 'left';
-                                    
-                                    // Add footer with page numbers
-                                    doc.footer = function(currentPage, pageCount) {
-                                        return {
-                                            columns: [
-                                                {
-                                                    text: 'Page ' + currentPage.toString() + ' of ' + pageCount,
-                                                    alignment: 'center',
-                                                    fontSize: 8,
-                                                    margin: [0, 10]
-                                                }
-                                            ]
-                                        };
-                                    };
-                                }
-                            }
-                        ]
+                        extend: 'excel',
+                        text: '<i class="bi bi-file-earmark-excel me-2"></i>Excel',
+                        className: 'btn btn-sm btn-success',
+                        exportOptions: {
+                            columns: [0, 1, 2, 3, 4, 5]
+                        },
+                        title: 'Tickets List - {{ now()->format('Y-m-d H:i:s') }}'
+                    },
+                    {
+                        extend: 'pdf',
+                        text: '<i class="bi bi-file-earmark-pdf me-2"></i>PDF',
+                        className: 'btn btn-sm btn-danger',
+                        exportOptions: {
+                            columns: [0, 1, 2, 3, 4, 5]
+                        },
+                        title: 'Tickets List - {{ now()->format('Y-m-d H:i:s') }}'
                     }
                 ],
                 language: {
