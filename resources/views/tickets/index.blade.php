@@ -349,15 +349,15 @@
                             actions += '<li><a class="dropdown-item" href="#" onclick="shareViaWhatsApp(\'' + 
                                       row.event_name + '\', \'' + (row.attendee ? row.attendee.name : 'Unassigned') + 
                                       '\', \'' + row.attendee.token + '\', \'' + row.event_date + '\', \'' + 
-                                      '{{ route("tickets.verify") }}/' + row.attendee.token + '\')">' +
+                                      '{{ url("/tickets") }}/' + row.attendee.token + '/verify\')">' +
                                       '<i class="fab fa-whatsapp me-2"></i> WhatsApp</a></li>';
                             actions += '<li><a class="dropdown-item" href="#" onclick="shareViaSMS(\'' + 
                                       row.event_name + '\', \'' + (row.attendee ? row.attendee.name : 'Unassigned') + 
                                       '\', \'' + row.attendee.token + '\', \'' + row.event_date + '\', \'' + 
-                                      '{{ route("tickets.verify") }}/' + row.attendee.token + '\')">' +
+                                      '{{ url("/tickets") }}/' + row.attendee.token + '/verify\')">' +
                                       '<i class="fas fa-sms me-2"></i> SMS</a></li>';
                             actions += '<li><a class="dropdown-item" href="#" onclick="copyTicketLink(\'' + 
-                                      '{{ route("tickets.verify") }}/' + row.attendee.token + '\')">' +
+                                      '{{ url("/tickets") }}/' + row.attendee.token + '/verify\')">' +
                                       '<i class="fas fa-link me-2"></i> Copy Link</a></li>';
                             actions += '<li><hr class="dropdown-divider"></li>';
                             actions += '<li><a class="dropdown-item" href="' + data.export_url + '" target="_blank">' +
