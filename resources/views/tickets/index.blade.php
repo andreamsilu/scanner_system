@@ -38,8 +38,62 @@
         </div>
     @endif
 
+    <!-- Search and Filters -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="card-title mb-0">
+                <i class="bi bi-search me-2"></i>Search & Filters
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label for="searchInput" class="form-label">Search</label>
+                    <input type="text" class="form-control" id="searchInput" placeholder="Search by attendee name, token, email, phone...">
+                </div>
+                <div class="col-md-2">
+                    <label for="ticketTypeFilter" class="form-label">Ticket Type</label>
+                    <select class="form-select" id="ticketTypeFilter">
+                        <option value="">All Types</option>
+                        <option value="regular">Regular</option>
+                        <option value="vip">VIP</option>
+                        <option value="single">Single</option>
+                        <option value="double">Double</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="statusFilter" class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="active">Active</option>
+                        <option value="used">Used</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="dateRangeFilter" class="form-label">Date Range</label>
+                    <input type="text" class="form-control" id="dateRangeFilter" placeholder="Select date range">
+                </div>
+                <div class="col-md-1">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-outline-secondary w-100" id="clearFilters">
+                        <i class="bi bi-x-circle"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="card">
         <div class="card-body p-0">
+            <!-- Loading overlay -->
+            <div id="loadingOverlay" class="position-absolute w-100 h-100 d-none" style="background: rgba(255,255,255,0.8); z-index: 1000; top: 0; left: 0;">
+                <div class="d-flex justify-content-center align-items-center h-100">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                </div>
+            </div>
             <div class="table-responsive">
                 <table class="table table-hover table-sm mb-0" id="tickets-table">
                     <thead class="table-light">
@@ -54,151 +108,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @forelse($tickets as $ticket)
-                            <tr>
-                                <td class="py-2">
-                                    @if($ticket->attendee)
-                                        <div class="d-flex flex-column">
-                                            <span class="fw-medium">{{ $ticket->attendee->name }}</span>
-                                            <small class="text-muted">#{{ $ticket->token }}</small>
-                                        </div>
-                                    @else
-                                        <span class="text-muted">Unassigned</span>
-                                    @endif
-                                </td>
-                                <td class="py-2">
-                                    <a href="{{ route('events.show', $ticket->event) }}" class="text-decoration-none">
-                                        {{ \Illuminate\Support\Str::limit($ticket->event->name, 20) }}
-                                    </a>
-                                </td>
-                                <td class="py-2">
-                                    @php
-                                        $ticketType = $ticket->type;
-                                        $badgeClass = match($ticketType) {
-                                            'vip' => 'bg-warning',
-                                            'regular' => 'bg-secondary',
-                                            'single' => 'bg-primary',
-                                            'double' => 'bg-success',
-                                            default => 'bg-secondary'
-                                        };
-                                    @endphp
-                                    <span class="badge {{ $badgeClass }} px-2 py-1">
-                                        {{ ucfirst($ticketType) }}
-                                    </span>
-                                </td>
-                                <td class="py-2">
-                                    @if($ticket->is_active)
-                                        <span class="badge bg-success px-2 py-1">Active</span>
-                                    @else
-                                        <span class="badge bg-danger px-2 py-1">Inactive</span>
-                                    @endif
-                                </td>
-                                <td class="py-2">
-                                    @if($ticket->last_scan)
-                                        <span class="text-muted" title="{{ $ticket->last_scan->created_at->format('d-m-Y H:i') }}">
-                                            {{ $ticket->last_scan->created_at->diffForHumans() }}
-                                        </span>
-                                    @else
-                                        <span class="text-muted">Never</span>
-                                    @endif
-                                </td>
-                                <td class="py-2">
-                                    <span class="text-muted">{{ $ticket->created_at->format('d-m-Y') }}</span>
-                                </td>
-                                <td class="py-2 text-end">
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{{ route('events.tickets.show', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" 
-                                           class="btn btn-outline-info" 
-                                           title="View Details">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <button type="button"
-                                                class="btn btn-outline-primary"
-                                                title="Print Ticket"
-                                                onclick="printTicket('{{ route('events.tickets.print', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}')">
-                                            <i class="bi bi-printer"></i>
-                                        </button>
-
-                                        @if($ticket->attendee && $ticket->attendee->phone)
-                                            <button type="button"
-                                                    class="btn btn-outline-success send-invitation-btn"
-                                                    title="Send Invitation SMS"
-                                                    data-ticket-id="{{ $ticket->id }}"
-                                                    data-attendee-name="{{ $ticket->attendee->name }}"
-                                                    data-attendee-phone="{{ $ticket->attendee->phone }}"
-                                                    data-attendee-id="{{ $ticket->attendee->id }}"
-                                                    data-ticket-type="{{ $ticket->type }}"
-                                                    data-token="{{ $ticket->token }}"
-                                                    onclick="prepareInvitation(this)">
-                                                <i class="bi bi-envelope"></i>
-                                                <span class="ms-1 d-none">SMS</span>
-                                            </button>
-                                        @else
-                                            <button type="button"
-                                                    class="btn btn-outline-secondary"
-                                                    title="No phone number available"
-                                                    disabled>
-                                                <i class="bi bi-envelope"></i>
-                                            </button>
-                                        @endif
-                                        <button type="button" 
-                                                class="btn btn-outline-success" 
-                                                title="Share Ticket"
-                                                data-bs-toggle="dropdown" 
-                                                aria-expanded="false">
-                                            <i class="bi bi-share"></i>
-                                        </button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="shareViaWhatsApp('{{ $ticket->event->name }}', '{{ $ticket->attendee ? $ticket->attendee->name : 'Unassigned' }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', ['token' => $ticket->token]) }}')">
-                                                    <i class="fab fa-whatsapp me-2"></i> WhatsApp
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="shareViaSMS('{{ $ticket->event->name }}', '{{ $ticket->attendee ? $ticket->attendee->name : 'Unassigned' }}', '{{ $ticket->token }}', '{{ $ticket->event->start_date->format('M d, Y') }}', '{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fas fa-sms me-2"></i> SMS
-                                                </a>
-                                            </li>
-                                            <li>
-                                                <a class="dropdown-item" href="#" onclick="copyTicketLink('{{ route('tickets.verify', $ticket->token) }}')">
-                                                    <i class="fas fa-link me-2"></i> Copy Link
-                                                </a>
-                                            </li>
-                                            <li><hr class="dropdown-divider"></li>
-                                            <li>
-                                                <a class="dropdown-item" href="{{ route('events.tickets.export', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}" target="_blank">
-                                                    <i class="bi bi-file-pdf me-2"></i> Download PDF
-                                                </a>
-                                            </li>
-
-                                        </ul>
-                                        @if($ticket->is_active)
-                                            <form action="{{ route('events.tickets.deactivate', [$ticket->event, $ticket]) }}" 
-                                                  method="POST" 
-                                                  class="d-inline"
-                                                  onsubmit="return confirm('Are you sure you want to deactivate this ticket?');">
-                                                @csrf
-                                                @method('PATCH')
-                                                <button type="submit" 
-                                                        class="btn btn-outline-warning" 
-                                                        title="Deactivate">
-                                                    <i class="bi bi-x-circle"></i>
-                                                </button>
-                                            </form>
-                                        @endif
-                                        <a href="{{ route('events.tickets.download-jpg', ['event' => $ticket->event->id, 'ticket' => $ticket->token]) }}"
-                                           class="btn btn-outline-warning"
-                                           title="Download JPG">
-                                            <i class="bi bi-file-image"></i>
-                                        </a>
-                                    </div>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center py-3">No tickets found.</td>
-                            </tr>
-                        @endforelse
+                        <!-- Data will be loaded via AJAX -->
                     </tbody>
                 </table>
             </div>
@@ -215,6 +125,8 @@
     </div>
 
     @push('styles')
+    <!-- Date Range Picker CSS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
     <style>
         @media print {
             .table {
@@ -297,6 +209,8 @@
     @endpush
 
     @push('scripts')
+    <!-- Date Range Picker JS -->
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
     <script>
         $(document).ready(function() {
             // Global error handler to ensure loading overlay is hidden on any error
@@ -308,10 +222,167 @@
                     console.error('Global AJAX error handler - reset loading state');
                 }
             });
-            $('#tickets-table').DataTable({
+            // Initialize DataTable with server-side processing
+            var table = $('#tickets-table').DataTable({
                 processing: true,
+                serverSide: true,
                 pageLength: 15,
                 order: [[5, 'desc']],
+                ajax: {
+                    url: '{{ route("events.tickets.data", $event) }}',
+                    type: 'GET',
+                    data: function(d) {
+                        // Add custom filters to the request
+                        d.ticket_type = $('#ticketTypeFilter').val();
+                        d.status = $('#statusFilter').val();
+                        d.date_range = $('#dateRangeFilter').val();
+                    },
+                    beforeSend: function() {
+                        $('#loadingOverlay').removeClass('d-none');
+                    },
+                    complete: function() {
+                        $('#loadingOverlay').addClass('d-none');
+                    }
+
+                columns: [
+                    {
+                        data: 'attendee',
+                        name: 'attendee',
+                        render: function(data, type, row) {
+                            if (data) {
+                                return '<div class="d-flex flex-column">' +
+                                       '<span class="fw-medium">' + data.name + '</span>' +
+                                       '<small class="text-muted">#' + data.token + '</small>' +
+                                       '</div>';
+                            }
+                            return '<span class="text-muted">Unassigned</span>';
+                        }
+                    },
+                    {
+                        data: 'event_name',
+                        name: 'event_name',
+                        render: function(data, type, row) {
+                            return '<a href="{{ route("events.show", $event) }}" class="text-decoration-none">' +
+                                   data.substring(0, 20) + (data.length > 20 ? '...' : '') +
+                                   '</a>';
+                        }
+                    },
+                    {
+                        data: 'type',
+                        name: 'type',
+                        render: function(data, type, row) {
+                            var badgeClass = 'bg-secondary';
+                            switch(data) {
+                                case 'vip': badgeClass = 'bg-warning'; break;
+                                case 'regular': badgeClass = 'bg-secondary'; break;
+                                case 'single': badgeClass = 'bg-primary'; break;
+                                case 'double': badgeClass = 'bg-success'; break;
+                            }
+                            return '<span class="badge ' + badgeClass + ' px-2 py-1">' + 
+                                   data.charAt(0).toUpperCase() + data.slice(1) + '</span>';
+                        }
+                    },
+                    {
+                        data: 'status',
+                        name: 'status',
+                        render: function(data, type, row) {
+                            return '<span class="badge bg-' + data.badge + ' px-2 py-1">' + 
+                                   data.value.charAt(0).toUpperCase() + data.value.slice(1) + '</span>';
+                        }
+                    },
+                    {
+                        data: 'last_scan',
+                        name: 'last_scan',
+                        render: function(data, type, row) {
+                            if (data) {
+                                return '<span class="text-muted" title="' + data.time + '">' + data.diff + '</span>';
+                            }
+                            return '<span class="text-muted">Never</span>';
+                        }
+                    },
+                    {
+                        data: 'created_at',
+                        name: 'created_at',
+                        render: function(data, type, row) {
+                            return '<span class="text-muted">' + new Date(data).toLocaleDateString('en-GB') + '</span>';
+                        }
+                    },
+                    {
+                        data: 'actions',
+                        name: 'actions',
+                        orderable: false,
+                        searchable: false,
+                        render: function(data, type, row) {
+                            var actions = '<div class="btn-group btn-group-sm">';
+                            
+                            // View button
+                            actions += '<a href="' + data.view_url + '" class="btn btn-outline-info" title="View Details">' +
+                                      '<i class="bi bi-eye"></i></a>';
+                            
+                            // Print button
+                            actions += '<button type="button" class="btn btn-outline-primary" title="Print Ticket" ' +
+                                      'onclick="printTicket(\'' + data.print_url + '\')">' +
+                                      '<i class="bi bi-printer"></i></button>';
+                            
+                            // SMS button (if attendee has phone)
+                            if (row.attendee && row.attendee.phone) {
+                                actions += '<button type="button" class="btn btn-outline-success send-invitation-btn" ' +
+                                          'title="Send Invitation SMS" data-ticket-id="' + row.id + '" ' +
+                                          'data-attendee-name="' + row.attendee.name + '" ' +
+                                          'data-attendee-phone="' + row.attendee.phone + '" ' +
+                                          'data-attendee-id="' + row.attendee.id + '" ' +
+                                          'data-ticket-type="' + row.type + '" ' +
+                                          'data-token="' + row.attendee.token + '" ' +
+                                          'onclick="prepareInvitation(this)">' +
+                                          '<i class="bi bi-envelope"></i></button>';
+                            } else {
+                                actions += '<button type="button" class="btn btn-outline-secondary" ' +
+                                          'title="No phone number available" disabled>' +
+                                          '<i class="bi bi-envelope"></i></button>';
+                            }
+                            
+                            // Share dropdown
+                            actions += '<button type="button" class="btn btn-outline-success" title="Share Ticket" ' +
+                                      'data-bs-toggle="dropdown" aria-expanded="false">' +
+                                      '<i class="bi bi-share"></i></button>';
+                            actions += '<ul class="dropdown-menu dropdown-menu-end">';
+                            actions += '<li><a class="dropdown-item" href="#" onclick="shareViaWhatsApp(\'' + 
+                                      row.event_name + '\', \'' + (row.attendee ? row.attendee.name : 'Unassigned') + 
+                                      '\', \'' + row.attendee.token + '\', \'' + row.event_date + '\', \'' + 
+                                      '{{ route("tickets.verify") }}/' + row.attendee.token + '\')">' +
+                                      '<i class="fab fa-whatsapp me-2"></i> WhatsApp</a></li>';
+                            actions += '<li><a class="dropdown-item" href="#" onclick="shareViaSMS(\'' + 
+                                      row.event_name + '\', \'' + (row.attendee ? row.attendee.name : 'Unassigned') + 
+                                      '\', \'' + row.attendee.token + '\', \'' + row.event_date + '\', \'' + 
+                                      '{{ route("tickets.verify") }}/' + row.attendee.token + '\')">' +
+                                      '<i class="fas fa-sms me-2"></i> SMS</a></li>';
+                            actions += '<li><a class="dropdown-item" href="#" onclick="copyTicketLink(\'' + 
+                                      '{{ route("tickets.verify") }}/' + row.attendee.token + '\')">' +
+                                      '<i class="fas fa-link me-2"></i> Copy Link</a></li>';
+                            actions += '<li><hr class="dropdown-divider"></li>';
+                            actions += '<li><a class="dropdown-item" href="' + data.export_url + '" target="_blank">' +
+                                      '<i class="bi bi-file-pdf me-2"></i> Download PDF</a></li>';
+                            actions += '</ul>';
+                            
+                            // Deactivate button
+                            if (data.deactivate_url) {
+                                actions += '<form action="' + data.deactivate_url + '" method="POST" class="d-inline" ' +
+                                          'onsubmit="return confirm(\'Are you sure you want to deactivate this ticket?\');">' +
+                                          '<input type="hidden" name="_token" value="{{ csrf_token() }}">' +
+                                          '<input type="hidden" name="_method" value="PATCH">' +
+                                          '<button type="submit" class="btn btn-outline-warning" title="Deactivate">' +
+                                          '<i class="bi bi-x-circle"></i></button></form>';
+                            }
+                            
+                            // Download JPG button
+                            actions += '<a href="' + data.download_jpg_url + '" class="btn btn-outline-warning" title="Download JPG">' +
+                                      '<i class="bi bi-file-image"></i></a>';
+                            
+                            actions += '</div>';
+                            return actions;
+                        }
+                    }
+                ],
                 dom: '<"row mb-2"<"col-sm-12 col-md-6"B><"col-sm-12 col-md-6"f>>' +
                      '<"row"<"col-sm-12"tr>>' +
                      '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
@@ -401,6 +472,43 @@
                     lengthMenu: "_MENU_ per page",
                     info: "Showing _START_ to _END_ of _TOTAL_ tickets"
                 }
+            });
+
+            // Initialize date range picker
+            $('#dateRangeFilter').daterangepicker({
+                autoUpdateInput: false,
+                locale: {
+                    cancelLabel: 'Clear'
+                }
+            });
+
+            $('#dateRangeFilter').on('apply.daterangepicker', function(ev, picker) {
+                $(this).val(picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY'));
+                table.ajax.reload();
+            });
+
+            $('#dateRangeFilter').on('cancel.daterangepicker', function(ev, picker) {
+                $(this).val('');
+                table.ajax.reload();
+            });
+
+            // Event handlers for filters
+            $('#searchInput').on('keyup', function() {
+                table.search(this.value).draw();
+            });
+
+            $('#ticketTypeFilter, #statusFilter').on('change', function() {
+                table.ajax.reload();
+            });
+
+            // Clear filters button
+            $('#clearFilters').on('click', function() {
+                $('#searchInput').val('');
+                $('#ticketTypeFilter').val('');
+                $('#statusFilter').val('');
+                $('#dateRangeFilter').val('');
+                table.search('').draw();
+                table.ajax.reload();
             });
         });
 

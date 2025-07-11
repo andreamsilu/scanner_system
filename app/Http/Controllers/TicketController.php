@@ -480,9 +480,13 @@ class TicketController extends Controller
                 'id' => $ticket->id,
                 'ticket_number' => $ticket->ticket_number,
                 'attendee' => $ticket->attendee ? [
+                    'id' => $ticket->attendee->id,
                     'token' => $ticket->attendee->token,
-                    'name' => $ticket->attendee->name
+                    'name' => $ticket->attendee->name,
+                    'phone' => $ticket->attendee->phone
                 ] : null,
+                'event_name' => $event->name,
+                'event_date' => $event->start_date->format('M d, Y'),
                 'type' => $ticket->type,
                 'status' => [
                     'value' => $ticket->status,
@@ -497,6 +501,8 @@ class TicketController extends Controller
                 'actions' => [
                     'view_url' => route('events.tickets.show', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
                     'print_url' => route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
+                    'export_url' => route('events.tickets.export', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
+                    'download_jpg_url' => route('events.tickets.download-jpg', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
                     'deactivate_url' => $ticket->status === 'active' ? 
                         route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]) : null
                 ]
