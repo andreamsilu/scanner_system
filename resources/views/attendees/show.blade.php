@@ -1,3 +1,7 @@
+@php
+use Illuminate\Support\Facades\Storage;
+@endphp
+
 <x-app-layout>
     <x-page-header 
         title="Attendee Details"

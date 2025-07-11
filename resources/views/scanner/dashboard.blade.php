@@ -1,3 +1,7 @@
+@php
+use Illuminate\Support\Facades\Auth;
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
         <div class="d-flex justify-content-between align-items-center">
