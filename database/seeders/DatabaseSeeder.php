@@ -60,12 +60,10 @@ class DatabaseSeeder extends Seeder
         // Create sample events
         $event1 = Event::create([
             'name' => 'Tech Conference 2024',
-            'description' => 'Annual technology conference featuring the latest innovations',
             'start_date' => now()->addDays(30),
             'end_date' => now()->addDays(32),
             'venue' => 'Convention Center',
             'status' => 'active',
-            'is_public' => true,
             'location' => '123 Tech Street, Silicon Valley',
             'capacity' => 500,
             'created_by' => $admin->id
@@ -73,12 +71,10 @@ class DatabaseSeeder extends Seeder
 
         $event2 = Event::create([
             'name' => 'Business Summit 2024',
-            'description' => 'Global business leaders gathering for networking and insights',
             'start_date' => now()->addDays(60),
             'end_date' => now()->addDays(62),
             'venue' => 'Grand Hotel',
             'status' => 'active',
-            'is_public' => true,
             'location' => '456 Business Avenue, Downtown',
             'capacity' => 300,
             'created_by' => $admin->id
