@@ -38,18 +38,23 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <h6 class="card-subtitle mb-0 text-muted small">SMS Credits</h6>
-                            @if(isset($balance))
+                            @php
+                                $hasBalanceData = isset($balance) && (isset($balance['credits']) || isset($balance['units']));
+                                $credits = (int) ($balance['credits'] ?? $balance['units'] ?? 0);
+                                $units = (int) ($balance['units'] ?? 0);
+                            @endphp
+                            @if($hasBalanceData)
                                 <h5 class="card-title mb-0">
-                                    {{ number_format($balance['credits']) }} credits
+                                    {{ number_format($credits) }} credits
                                 </h5>
-                                @if(isset($balance['units']) && $balance['units'] > 0)
-                                    <small class="text-muted small">{{ number_format($balance['units']) }} units</small>
+                                @if($units > 0)
+                                    <small class="text-muted small">{{ number_format($units) }} units</small>
                                 @else
-                                    <small class="text-muted small">{{ ucfirst($provider) }}</small>
+                                    <small class="text-muted small">{{ isset($provider) ? ucfirst($provider) : 'Provider unavailable' }}</small>
                                 @endif
                             @else
                                 <h5 class="card-title mb-0">N/A</h5>
-                                <small class="text-muted small">Unable to fetch credits</small>
+                                <small class="text-muted small">SMS provider not configured</small>
                             @endif
                         </div>
                         <div class="p-1 rounded-circle bg-success bg-opacity-10 text-success">
