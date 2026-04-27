@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Schema;
 
 class AdminUserSeeder extends Seeder
 {
@@ -18,19 +20,26 @@ class AdminUserSeeder extends Seeder
      */
     public function run(): void
     {
-        // Check if admin user already exists
-        if (!User::where('email', 'admin@gmail.com')->exists()) {
-            User::create([
+        // Create or update the default app admin user.
+        $adminUser = User::updateOrCreate(
+            ['email' => 'admin@gmail.com'],
+            [
                 'name' => 'System Administrator',
-                'email' => 'admin@gmail.com',
                 'password' => Hash::make('password'),
-                'role' => 'admin',
-                'email_verified_at' => now(), // Mark email as verified
-            ]);
+                'email_verified_at' => now(),
+            ]
+        );
 
-            $this->command->info('Admin user created successfully.');
-        } else {
-            $this->command->info('Admin user already exists.');
+        // Attach admin role through the pivot table when role tables exist.
+        if (Schema::hasTable('roles') && Schema::hasTable('role_user')) {
+            $adminRole = Role::firstOrCreate(
+                ['slug' => 'admin'],
+                ['name' => 'Administrator', 'description' => 'System Administrator with full access']
+            );
+
+            $adminUser->roles()->syncWithoutDetaching([$adminRole->id]);
         }
+
+        $this->command->info('Admin user is ready: admin@gmail.com / password');
     }
 } 

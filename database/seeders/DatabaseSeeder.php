@@ -18,44 +18,57 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        // Ensure both admin identities exist:
+        // 1) users-table admin for normal app auth
+        // 2) scanner_operators admin for scanner operator auth
+        $this->call([
+            AdminUserSeeder::class,
+            AdminSeeder::class,
+        ]);
+
         // Create roles
-        $adminRole = Role::create([
-            'name' => 'Administrator',
-            'slug' => 'admin',
-            'description' => 'System Administrator with full access'
-        ]);
+        $adminRole = Role::firstOrCreate(
+            ['slug' => 'admin'],
+            ['name' => 'Administrator', 'description' => 'System Administrator with full access']
+        );
 
-        $scannerRole = Role::create([
-            'name' => 'Scanner',
-            'slug' => 'scanner',
-            'description' => 'Event Scanner with limited access'
-        ]);
+        $scannerRole = Role::firstOrCreate(
+            ['slug' => 'scanner'],
+            ['name' => 'Scanner', 'description' => 'Event Scanner with limited access']
+        );
 
-        // Create admin user
-        $admin = User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $admin->roles()->attach($adminRole);
+        // Reuse the admin user created by AdminUserSeeder.
+        $admin = User::where('email', 'admin@gmail.com')->first();
+        if (!$admin) {
+            $admin = User::create([
+                'name' => 'System Administrator',
+                'email' => 'admin@gmail.com',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]);
+        }
+        $admin->roles()->syncWithoutDetaching([$adminRole->id]);
 
         // Create scanner users
-        $scanner1 = User::create([
-            'name' => 'Scanner One',
-            'email' => 'scanner1@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $scanner1->roles()->attach($scannerRole);
+        $scanner1 = User::firstOrCreate(
+            ['email' => 'scanner1@example.com'],
+            [
+                'name' => 'Scanner One',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $scanner1->roles()->syncWithoutDetaching([$scannerRole->id]);
 
-        $scanner2 = User::create([
-            'name' => 'Scanner Two',
-            'email' => 'scanner2@example.com',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
-        $scanner2->roles()->attach($scannerRole);
+        $scanner2 = User::firstOrCreate(
+            ['email' => 'scanner2@example.com'],
+            [
+                'name' => 'Scanner Two',
+                'password' => Hash::make('password'),
+                'email_verified_at' => now(),
+            ]
+        );
+        $scanner2->roles()->syncWithoutDetaching([$scannerRole->id]);
 
         // Create sample events
         $event1 = Event::create([
