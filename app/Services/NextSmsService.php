@@ -20,7 +20,6 @@ class NextSmsService extends BaseSmsService
     public function __construct()
     {
         parent::__construct();
-        $this->validateConfig();
         $this->baseUrl = $this->config['api_url'] ?? 'https://messaging-service.co.tz/api/sms/v1';
     }
 
@@ -36,6 +35,10 @@ class NextSmsService extends BaseSmsService
     public function send(string $to, string $message, array $options = []): array
     {
         try {
+            // Validate credentials at action time so UI pages can still load
+            // when SMS settings are not yet configured.
+            $this->validateConfig();
+
             if (!$this->isValidPhoneNumber($to)) {
                 throw new \InvalidArgumentException('Invalid phone number format');
             }
@@ -103,6 +106,8 @@ class NextSmsService extends BaseSmsService
     public function getBalance(): array
     {
         try {
+            $this->validateConfig();
+
             $response = Http::withHeaders($this->getDefaultHeaders())
                 ->get($this->baseUrl . '/balance');
 
@@ -140,6 +145,8 @@ class NextSmsService extends BaseSmsService
     public function getStatus(string $messageId): array
     {
         try {
+            $this->validateConfig();
+
             $response = Http::withHeaders($this->getDefaultHeaders())
                 ->get($this->baseUrl . '/status/' . $messageId);
 
