@@ -12,14 +12,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Make scan_key nullable and remove unique constraint
+        // Only attempt to modify the column if the table and column both exist.
+        if (!Schema::hasTable('scan_logs') || !Schema::hasColumn('scan_logs', 'scan_key')) {
+            return;
+        }
+
+        // Make scan_key nullable and remove unique constraint if present
         Schema::table('scan_logs', function (Blueprint $table) {
-            // Drop the unique constraint if it exists
             if (Schema::hasIndex('scan_logs', 'unique_scan_log')) {
                 $table->dropUnique('unique_scan_log');
             }
-            
-            // Modify scan_key to be nullable
+
             $table->string('scan_key', 32)->nullable()->change();
         });
     }
@@ -29,11 +32,12 @@ return new class extends Migration
      */
     public function down(): void
     {
+        if (!Schema::hasTable('scan_logs') || !Schema::hasColumn('scan_logs', 'scan_key')) {
+            return;
+        }
+
         Schema::table('scan_logs', function (Blueprint $table) {
-            // Make scan_key not nullable again
             $table->string('scan_key', 32)->nullable(false)->change();
-            
-            // Re-add the unique constraint
             $table->unique('scan_key', 'unique_scan_log');
         });
     }
