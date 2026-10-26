@@ -59,21 +59,4 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Broadcast Channels
-    |--------------------------------------------------------------------------
-    |
-    | Here you may define all of the broadcast channels that your application
-    | supports. The given channel authorization callbacks are used to check if
-    | an authenticated user can listen to the channel.
-    |
-    */
-
-    'channels' => [
-        'private-bulk-upload.{id}' => function ($user, $id) {
-            $bulkUpload = \App\Models\BulkUpload::find($id);
-            return $bulkUpload && $bulkUpload->user_id === $user->id;
-        },
-    ],
-]; 
+];

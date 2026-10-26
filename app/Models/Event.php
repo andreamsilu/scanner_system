@@ -37,7 +37,8 @@ class Event extends Model
         'end_date' => 'datetime',
         'capacity' => 'integer',
         'next_ticket_number' => 'integer',
-        'rsvp_enabled' => 'boolean'
+        'rsvp_enabled' => 'boolean',
+        'public_registration_enabled' => 'boolean',
     ];
 
     protected $appends = ['status_badge'];

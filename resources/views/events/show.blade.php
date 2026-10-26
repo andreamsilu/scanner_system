@@ -31,6 +31,32 @@
     @endif
 
     <div class="row g-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <h5 class="card-title">Public registration</h5>
+                    <p class="text-muted">Share a form where guests can register without an account and receive a single-entry QR ticket. Registration closes when the event ends or reaches capacity.</p>
+                    @if($event->public_registration_token)
+                        <span class="badge bg-{{ $event->public_registration_enabled ? 'success' : 'secondary' }} mb-3">{{ $event->public_registration_enabled ? 'Enabled' : 'Disabled' }}</span>
+                        <label class="form-label d-block" for="public-registration-link">Registration link</label>
+                        <div class="input-group mb-3" x-data="{ copied: false }">
+                            <input id="public-registration-link" class="form-control" type="text" readonly value="{{ route('public-registration.show', $event->public_registration_token) }}" x-ref="link" x-on:click="$el.select()">
+                            <button type="button" class="btn btn-outline-primary" x-on:click="try { if (window.isSecureContext &amp;&amp; navigator.clipboard) { await navigator.clipboard.writeText($refs.link.value); copied = true; } else { $refs.link.select(); copied = document.execCommand('copy'); } } catch (e) { $refs.link.select(); }" x-text="copied ? 'Copied!' : 'Copy link'">Copy link</button>
+                            @if($event->public_registration_enabled)<a href="{{ route('public-registration.show', $event->public_registration_token) }}" target="_blank" rel="noopener" class="btn btn-outline-secondary">Open form</a>@endif
+                        </div>
+                    @endif
+                    <form method="POST" action="{{ route('events.public-registration', $event) }}" class="d-flex flex-wrap gap-2">
+                        @csrf
+                        @if(!$event->public_registration_token)
+                            <button class="btn btn-primary" name="action" value="generate">Generate registration link</button>
+                        @else
+                            <button class="btn btn-{{ $event->public_registration_enabled ? 'outline-secondary' : 'primary' }}" name="action" value="{{ $event->public_registration_enabled ? 'disable' : 'enable' }}">{{ $event->public_registration_enabled ? 'Disable registration' : 'Enable registration' }}</button>
+                            <button class="btn btn-outline-primary" name="action" value="regenerate" onclick="return confirm('Replace the registration link? The previous link will stop working.');">Generate new link</button>
+                        @endif
+                    </form>
+                </div>
+            </div>
+        </div>
         <!-- Event Details Card - Full Width Row -->
         <div class="col-12">
             <div class="card shadow-sm">
@@ -683,4 +709,4 @@
         }
     </style>
     @endpush
-</x-app-layout> 
+</x-app-layout>

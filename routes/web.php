@@ -19,10 +19,17 @@ use App\Http\Controllers\SmsManagementController;
 use App\Http\Controllers\CardTemplateController;
 use App\Http\Controllers\EventCardController;
 use App\Http\Controllers\AdmissionController;
+use App\Http\Controllers\PublicRegistrationController;
 
 // Keep static paths such as users/export and attendees/bulk-upload out of numeric bindings.
 Route::pattern('id', '[0-9]+');
 Route::pattern('attendee', '[0-9]+');
+
+Route::prefix('register/event/{token}')->whereUuid('token')->middleware('cache.headers:no_store;private')->name('public-registration.')->group(function () {
+    Route::get('/', [PublicRegistrationController::class, 'show'])->name('show');
+    Route::post('/', [PublicRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('store');
+    Route::get('/complete', [PublicRegistrationController::class, 'complete'])->name('complete');
+});
 
 // Authentication Routes
 /* Removed (or commented out) the fallback route (or any route named 'welcome') so that if a user (or a seeder) tries to redirect to route('welcome') (or GET /) then a 404 (or a fallback) is returned (and no "Route [welcome] not defined" error is thrown). */
@@ -95,6 +102,7 @@ Route::middleware('auth')->group(function () {
                 Route::post('/', [EventController::class, 'store'])->name('store');
                 Route::get('/{event}', [EventController::class, 'show'])->name('show');
                 Route::get('/{event}/edit', [EventController::class, 'edit'])->name('edit');
+                Route::post('/{event}/public-registration', [PublicRegistrationController::class, 'manage'])->name('public-registration');
                 Route::match(['put', 'patch'], '/{event}', [EventController::class, 'update'])->name('update');
                 Route::delete('/{event}', [EventController::class, 'destroy'])->name('destroy');
                 

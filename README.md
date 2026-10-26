@@ -27,6 +27,14 @@ After updating, run `composer install`, `npm ci`, `npm run build` and `php artis
 - Staff must be active and assigned to the selected event, or be an administrator. Cancelled registrations/tickets and closed events are rejected.
 - Public ticket links display information; opening or previewing a link never admits anyone. Admission requires a signed-in staff POST request.
 
+## Public event registration
+
+Open an event as an administrator and select **Generate registration link** in the **Public registration** panel. Share the link with guests; no account is required. Guests provide their name, phone number and optional email, then receive a single-entry QR ticket with the event's next sequential ticket number. They can download the QR code from the confirmation page. This flow does not collect payment or send email/SMS automatically.
+
+Registration is disabled by default. Administrators can disable/re-enable a link or generate a replacement that invalidates the previous link. Ended/completed and fully booked events reject new registrations. Duplicate phone numbers or email addresses within an event are rejected. Confirmation pages require the registering browser's session.
+
+Deploy the new migration with `php artisan migrate --force`, rebuild frontend assets, and run `php artisan optimize` as the PHP-FPM user. Ensure `php artisan storage:link` has been run so guests can display/download their QR codes. Set `APP_URL` to the site's public address.
+
 ## Requirements
 
 - PHP 8.2+ and Composer; PDO MySQL, GD, mbstring, XML, fileinfo, OpenSSL and ZIP extensions.
