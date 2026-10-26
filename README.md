@@ -6,6 +6,8 @@ Laravel 12 application for events, attendee registration, QR tickets, scanner as
 
 The shared workspace has a responsive sidebar, keyboard-accessible navigation, and a persistent light/dark appearance switch. Sign-in, administrator/scanner overviews, ticket management and the scanner use the new design. Older administration forms retain scoped Bootstrap styles during the gradual migration.
 
+The shared layouts serve Inter font files and compatibility libraries from the app's own build. Modern pages omit jQuery, Bootstrap, DataTables and Toastr entirely. Older forms load local classic scripts in dependency order; the Vite static-copy plugin supplies the same paths in development and production. Deploy the complete `public/build` directory, including `legacy` and font assets. Some page-specific chart, date-picker and table-export extensions still use their existing CDN links.
+
 Ticket management uses the `TicketBrowser` Livewire component for event-scoped name/phone/number search, type/status filters, numeric sorting and pagination. It shows partial admissions and keeps print, export, sharing, deactivation and invitation actions. Every Livewire request rechecks administrator access.
 
 The scanner bundles its QR reader locally. Camera access starts only on request; manual entry remains available when a camera is unavailable. Results stay visible until the next result, and double-ticket choices retain single entry as the default focus.
@@ -37,6 +39,8 @@ QR codes are generated locally. SVG is used for stored QR images; JPEG tickets u
 ## Development setup
 
 Use Node and npm from the same operating system where you run Vite. In WSL, activate your Linux Node installation (for example, `nvm use 24`) and run `npm ci` inside `/mnt/d/msilu/scanner_system` before starting Vite. Windows and WSL cannot share an installed `node_modules` directory reliably: switching environments requires another `npm ci`, which replaces generated launchers and platform-specific binaries while keeping `package-lock.json` unchanged. If Vite reports `exec: node.exe: Permission denied` in WSL, run `npm ci` with Linux npm; changing file permissions is not the fix.
+
+If Windows resets the connection to `localhost:8000` while a request inside WSL succeeds, check `netsh interface portproxy show all` in Windows. A rule forwarding port 8000 to WSL's network address cannot reach PHP when it listens only on WSL's loopback address. Use an unused local port, for example `php artisan serve --host=127.0.0.1 --port=8001 --no-reload`, and open `http://127.0.0.1:8001/login`. This avoids changing existing Windows forwarding rules. Nginx deployments do not need `artisan serve`.
 
 ```sh
 composer install
@@ -91,6 +95,8 @@ php artisan up
 ```
 
 Set APP_ENV=production and APP_DEBUG=false. Use HTTPS, supervise the worker, monitor failed jobs and retain backups. Use separate migration credentials and restrict application access to the admission log table to SELECT/INSERT where supported. Application admission logs reject updates/deletes; scanned events must be retained rather than deleted.
+
+For slow pages, measure Laravel separately from browser downloads: `curl -sS -o /dev/null -w 'HTTP %{http_code}; first byte %{time_starttransfer}s; total %{time_total}s\n' http://127.0.0.1:8088/login` (adjust the port). A fast first byte with a slow browser load calls for checking asset requests in the browser Network panel. Build assets with `npm ci --include=dev` and `npm run build`; production should not contain `public/hot` or depend on `npm run dev`. After deploying, run `php artisan optimize` as the PHP-FPM user so configuration, routes and views are cached without creating root-owned runtime files. Nginx should serve `/build/` files directly, with compression enabled for CSS/JavaScript and long cache lifetimes restricted to fingerprinted assets. If PHP itself is slow, inspect PHP-FPM/OPcache, database timings and server CPU/memory before changing application behavior.
 
 Renumbering/admission tracking intentionally refuses automatic rollback. Restore the verified pre-upgrade backup if the data migration must be reversed; do not run migration resets on a populated deployment.
 

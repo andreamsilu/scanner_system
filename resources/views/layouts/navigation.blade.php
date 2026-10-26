@@ -8,7 +8,7 @@
     </div>
     <p class="eyebrow px-3 mb-1">Workspace</p>
     <flux:navlist variant="outline">
-        @if(auth()->user()->isAdmin())
+        @if($isAdmin)
             <flux:navlist.item icon="squares-2x2" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')">Overview</flux:navlist.item>
             <flux:navlist.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')">Events &amp; tickets</flux:navlist.item>
             <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')">Team</flux:navlist.item>
@@ -21,7 +21,7 @@
     </flux:navlist>
     <p class="eyebrow px-3 mt-6 mb-1">At the door</p>
     <flux:navlist variant="outline">
-        <flux:navlist.item icon="calendar" :href="route('scanner.events.index')" :current="request()->routeIs('scanner.events.*')">{{ auth()->user()->isAdmin() ? 'Select event' : 'My events' }}</flux:navlist.item>
+        <flux:navlist.item icon="calendar" :href="route('scanner.events.index')" :current="request()->routeIs('scanner.events.*')">{{ $isAdmin ? 'Select event' : 'My events' }}</flux:navlist.item>
         <flux:navlist.item icon="qr-code" :href="route('scanner.scan.index')" :current="request()->routeIs('scanner.scan.*', 'scanner.validate.*')">Scan tickets</flux:navlist.item>
         <flux:navlist.item icon="clock" :href="route('scanner.history')" :current="request()->routeIs('scanner.history', 'scanner.history.*')">Admission history</flux:navlist.item>
         <flux:navlist.item icon="user-group" :href="route('scanner.attendees.index')" :current="request()->routeIs('scanner.attendees.*')">Attendees</flux:navlist.item>
@@ -29,7 +29,7 @@
     <flux:spacer />
     <div class="mt-8 border-t border-zinc-200 dark:border-zinc-700 pt-4">
         <flux:navlist variant="outline">
-            @if(auth()->user()->isAdmin())
+            @if($isAdmin)
                 <flux:navlist.item icon="cog-6-tooth" :href="route('settings.index')" :current="request()->routeIs('settings.*')">Settings</flux:navlist.item>
             @endif
             <flux:navlist.item icon="user-circle" :href="route('profile.edit')" :current="request()->routeIs('profile.*')">My profile</flux:navlist.item>

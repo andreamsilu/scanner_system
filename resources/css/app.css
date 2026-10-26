@@ -1,5 +1,6 @@
 @layer theme, base, legacy, components, utilities;
 @import 'tailwindcss' source(none);
+@import '@fontsource-variable/inter/wght.css';
 @import '../../vendor/livewire/flux/dist/flux.css';
 @import './workspace.css';
 
@@ -11,7 +12,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
     --color-accent: var(--color-teal-700);
     --color-accent-content: var(--color-teal-700);
     --color-accent-foreground: var(--color-white);
