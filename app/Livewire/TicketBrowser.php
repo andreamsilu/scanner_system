@@ -4,7 +4,11 @@ namespace App\Livewire;
 
 use App\Models\Event;
 use App\Models\Ticket;
+use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -16,15 +20,32 @@ class TicketBrowser extends Component
     #[Locked]
     public Event $event;
 
+    #[Locked]
+    public ?int $selectedGuestId = null;
+
     public string $search = '';
     public string $status = '';
     public string $type = '';
     public string $sort = 'asc';
+    public string $name = '';
+    public string $phone = '';
+    public string $email = '';
+    public string $position = '';
+    public bool $createTicket = true;
+    public string $ticketType = 'single';
+    public string $notice = '';
 
     public function boot(): void
     {
-        // Livewire updates must recheck access after account or role changes.
         abort_unless(auth()->user()?->is_active && auth()->user()->isAdmin(), 403);
+    }
+
+    public function mount(Event $event): void
+    {
+        $this->event = $event;
+        if (request()->boolean('add')) {
+            $this->newGuest();
+        }
     }
 
     public function updated($property): void
@@ -40,37 +61,131 @@ class TicketBrowser extends Component
         $this->resetPage();
     }
 
+    public function newGuest(): void
+    {
+        $this->resetValidation();
+        $this->reset('selectedGuestId', 'name', 'phone', 'email', 'position', 'createTicket', 'ticketType');
+        Flux::modal('guest-details')->show();
+    }
+
+    public function editGuest(int $id, bool $issueTicket = false): void
+    {
+        $guest = $this->event->attendees()->findOrFail($id);
+        $this->resetValidation();
+        $this->selectedGuestId = $guest->id;
+        $this->name = $guest->name;
+        $this->phone = $guest->phone ?? '';
+        $this->email = $guest->email ?? '';
+        $this->position = $guest->position ?? '';
+        $this->createTicket = $issueTicket && ! $guest->ticket()->exists();
+        $this->ticketType = 'single';
+        Flux::modal('guest-details')->show();
+    }
+
+    public function saveGuest(): void
+    {
+        $this->name = trim($this->name);
+        $this->phone = trim($this->phone);
+        $this->email = strtolower(trim($this->email));
+        $validated = $this->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20',
+            'email' => ['nullable', 'email', 'max:255', Rule::unique('attendees', 'email')
+                ->where('event_id', $this->event->id)->whereNull('deleted_at')->ignore($this->selectedGuestId)],
+            'position' => 'nullable|string|max:255',
+            'createTicket' => 'boolean',
+            'ticketType' => 'required|in:single,double,regular,vip',
+        ]);
+
+        $wasNew = $this->selectedGuestId === null;
+        $savedGuestId = DB::transaction(function () use ($validated) {
+            $event = Event::whereKey($this->event->id)->lockForUpdate()->firstOrFail();
+            if ($validated['email'] && $event->attendees()->whereRaw('LOWER(email) = ?', [$validated['email']])
+                ->when($this->selectedGuestId, fn ($query) => $query->where('id', '!=', $this->selectedGuestId))->exists()) {
+                throw ValidationException::withMessages(['email' => 'A guest with this email is already registered for this event.']);
+            }
+            if (! $this->selectedGuestId && $event->attendees()->count() >= $event->capacity) {
+                throw ValidationException::withMessages(['name' => 'This event has reached its guest capacity.']);
+            }
+            $guest = $this->selectedGuestId
+                ? $event->attendees()->lockForUpdate()->findOrFail($this->selectedGuestId)
+                : $event->attendees()->make(['registration_status' => 'unchecked_in']);
+            $guest->fill([
+                'name' => trim($validated['name']), 'phone' => trim($validated['phone']),
+                'email' => $validated['email'] ?: null, 'position' => $validated['position'] ?: null,
+            ])->save();
+
+            if ($validated['createTicket'] && ! $guest->ticket()->exists()) {
+                if ($guest->registration_status === 'cancelled') {
+                    throw ValidationException::withMessages(['createTicket' => 'Cancelled guests cannot receive a new ticket.']);
+                }
+                Ticket::create([
+                    'event_id' => $event->id, 'attendee_id' => $guest->id, 'type' => $validated['ticketType'],
+                    'status' => 'active', 'token' => $guest->token,
+                ]);
+            }
+            return $guest->id;
+        }, 3);
+
+        $this->selectedGuestId = $savedGuestId;
+        $this->notice = $wasNew ? 'Guest added successfully.' : 'Guest details saved.';
+        Flux::modal('guest-details')->close();
+    }
+
+    public function cancelGuest(int $id): void
+    {
+        DB::transaction(function () use ($id) {
+            Event::whereKey($this->event->id)->lockForUpdate()->firstOrFail();
+            $guest = $this->event->attendees()->lockForUpdate()->findOrFail($id);
+            $guest->update(['registration_status' => 'cancelled']);
+            $guest->tickets()->update(['status' => 'cancelled', 'cancelled_at' => now()]);
+        }, 3);
+        $this->notice = 'Guest registration and tickets cancelled. Admission history has been kept.';
+        Flux::modal('guest-details')->close();
+    }
+
     public function render()
     {
-        $query = Ticket::query()->where('event_id', $this->event->id)
-            ->with('attendee')->withMax('scanLogs', 'created_at');
+        $query = $this->event->attendees()->with(['ticket' => fn ($query) => $query->withMax('scanLogs', 'created_at')]);
         $search = mb_substr(trim($this->search), 0, 200);
-
         if ($search !== '') {
             $query->where(function (Builder $query) use ($search) {
-                $query->where('ticket_number', $search)
-                    ->orWhereHas('attendee', fn (Builder $attendee) => $attendee
-                        ->where('name', 'like', '%'.$search.'%')
-                        ->orWhere('phone', 'like', '%'.$search.'%'));
+                $query->where('name', 'like', '%'.$search.'%')->orWhere('phone', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%')
+                    ->orWhereHas('ticket', fn (Builder $ticket) => $ticket->where('ticket_number', $search));
             });
         }
-
-        if (in_array($this->status, ['active', 'used', 'cancelled'], true)) {
-            $query->where('status', $this->status);
-        } elseif ($this->status === 'partial') {
-            $query->where('status', 'active')->where('entries_used', '>', 0);
+        if ($this->status === 'no_ticket') {
+            $query->whereDoesntHave('ticket');
+        } elseif ($this->status === 'checked_in') {
+            $query->where('registration_status', 'checked_in');
+        } elseif ($this->status === 'cancelled') {
+            $query->where(fn (Builder $query) => $query->where('registration_status', 'cancelled')
+                ->orWhereHas('ticket', fn (Builder $ticket) => $ticket->where('status', 'cancelled')));
+        } elseif (in_array($this->status, ['active', 'partial', 'used'], true)) {
+            $query->where('registration_status', '!=', 'cancelled')->whereHas('ticket', function (Builder $ticket) {
+                $ticket->where('status', $this->status === 'used' ? 'used' : 'active');
+                if ($this->status === 'partial') {
+                    $ticket->where('entries_used', '>', 0);
+                }
+            });
         }
-
         if (in_array($this->type, ['single', 'double', 'vip', 'regular'], true)) {
-            $query->where('type', $this->type);
+            $query->whereHas('ticket', fn (Builder $ticket) => $ticket->where('type', $this->type));
         }
 
-        $direction = $this->sort === 'desc' ? 'desc' : 'asc';
-        $tickets = $query->orderByRaw('CAST(ticket_number AS DECIMAL(20, 0)) '.$direction)->paginate(15);
-        $summary = Ticket::where('event_id', $this->event->id)->selectRaw(
-            "COUNT(*) as total, COALESCE(SUM(entries_used), 0) as admissions, SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active, SUM(CASE WHEN type = 'double' THEN 1 ELSE 0 END) as doubles"
-        )->first();
+        $number = Ticket::selectRaw('CAST(ticket_number AS DECIMAL(20, 0))')
+            ->whereColumn('attendee_id', 'attendees.id')->where('event_id', $this->event->id)->orderBy('id')->limit(1);
+        $guests = $query->withExists('ticket')->orderByDesc('ticket_exists')
+            ->orderBy($number, $this->sort === 'desc' ? 'desc' : 'asc')->orderBy('attendees.id')->paginate(15);
+        $summary = [
+            'guests' => $this->event->attendees()->count(),
+            'without_tickets' => $this->event->attendees()->whereDoesntHave('ticket')->count(),
+            'tickets' => $this->event->tickets()->count(),
+            'admissions' => $this->event->tickets()->sum('entries_used'),
+        ];
+        $selectedGuest = $this->selectedGuestId ? $this->event->attendees()->with('ticket')->findOrFail($this->selectedGuestId) : null;
 
-        return view('livewire.ticket-browser', compact('tickets', 'summary'));
+        return view('livewire.ticket-browser', compact('guests', 'summary', 'selectedGuest'));
     }
 }

@@ -41,7 +41,7 @@
                         <label class="form-label d-block" for="public-registration-link">Registration link</label>
                         <div class="input-group mb-3" x-data="{ copied: false }">
                             <input id="public-registration-link" class="form-control" type="text" readonly value="{{ route('public-registration.show', $event->public_registration_token) }}" x-ref="link" x-on:click="$el.select()">
-                            <button type="button" class="btn btn-outline-primary" x-on:click="try { if (window.isSecureContext &amp;&amp; navigator.clipboard) { await navigator.clipboard.writeText($refs.link.value); copied = true; } else { $refs.link.select(); copied = document.execCommand('copy'); } } catch (e) { $refs.link.select(); }" x-text="copied ? 'Copied!' : 'Copy link'">Copy link</button>
+                            <button type="button" class="btn btn-outline-primary" x-on:click="(async () => { try { if (window.isSecureContext &amp;&amp; navigator.clipboard) { await navigator.clipboard.writeText($refs.link.value); copied = true; } else { $refs.link.select(); copied = document.execCommand('copy'); } } catch (e) { $refs.link.select(); } })()" x-text="copied ? 'Copied!' : 'Copy link'">Copy link</button>
                             @if($event->public_registration_enabled)<a href="{{ route('public-registration.show', $event->public_registration_token) }}" target="_blank" rel="noopener" class="btn btn-outline-secondary">Open form</a>@endif
                         </div>
                     @endif
@@ -399,18 +399,18 @@
                 <div class="card-body">
                     <div class="row g-3">
                         <div class="col-md-3">
-                            <a href="{{ route('events.attendees.create', $event) }}" class="btn btn-outline-primary w-100">
-                                <i class="bi bi-person-plus me-2"></i>Add Attendee
+                            <a href="{{ route('events.guests.index', ['event' => $event, 'add' => 1]) }}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-person-plus me-2"></i>Add Guest
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ route('events.tickets.index', $event) }}" class="btn btn-outline-success w-100">
-                                <i class="bi bi-ticket-perforated me-2"></i>Manage Tickets
+                            <a href="{{ route('events.guests.index', $event) }}" class="btn btn-outline-success w-100">
+                                <i class="bi bi-people me-2"></i>Guests &amp; Tickets
                             </a>
                         </div>
                         <div class="col-md-3">
-                            <a href="{{ route('events.attendees.index', $event) }}" class="btn btn-outline-info w-100">
-                                <i class="bi bi-people me-2"></i>View Attendees
+                            <a href="{{ route('events.attendees.bulk-upload', $event) }}" class="btn btn-outline-info w-100">
+                                <i class="bi bi-upload me-2"></i>Import Guests
                             </a>
                         </div>
                         <div class="col-md-3">

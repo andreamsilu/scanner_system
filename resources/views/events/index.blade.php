@@ -68,15 +68,10 @@
                                            title="Edit Event">
                                             <i class="bi bi-pencil"></i>
                                         </a>
-                                        <a href="{{ route('events.attendees.index', $event) }}" 
-                                           class="btn btn-sm btn-outline-success" 
-                                           title="Manage Attendees">
+                                        <a href="{{ route('events.guests.index', $event) }}"
+                                           class="btn btn-sm btn-outline-success"
+                                           title="Manage Guests &amp; Tickets" aria-label="Manage guests and tickets for {{ $event->name }}">
                                             <i class="bi bi-people"></i>
-                                        </a>
-                                        <a href="{{ route('events.tickets.index', $event) }}" 
-                                           class="btn btn-sm btn-outline-primary" 
-                                           title="Manage Tickets">
-                                            <i class="bi bi-ticket-perforated"></i>
                                         </a>
                                         <form action="{{ route('events.destroy', $event) }}" 
                                               method="POST" 
@@ -148,4 +143,4 @@
         });
     </script>
     @endpush
-</x-app-layout> 
+</x-app-layout>

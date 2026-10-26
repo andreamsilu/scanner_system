@@ -1,6 +1,6 @@
 @php
     $isAdmin = auth()->user()->isAdmin();
-    $usesLegacyUi = ! request()->routeIs('admin.dashboard', 'scanner.dashboard', 'scanner.scan.*', 'scanner.events.index', 'events.tickets.index');
+    $usesLegacyUi = ! request()->routeIs('admin.dashboard', 'scanner.dashboard', 'scanner.scan.*', 'scanner.events.index', 'events.tickets.index', 'events.guests.index');
 @endphp
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">

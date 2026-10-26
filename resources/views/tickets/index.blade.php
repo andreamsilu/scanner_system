@@ -1,5 +1,5 @@
 <x-app-layout>
-    <x-page-header title="Tickets" :subtitle="$event->name.' · Manage invitations and admissions'" :breadcrumbs="['Events' => route('events.index'), $event->name => route('events.show', $event), 'Tickets' => null]">
+    <x-page-header :title="'Guests & Tickets'" :subtitle="$event->name.' · Guest details, invitations and entry in one place'" :breadcrumbs="['Events' => route('events.index'), $event->name => route('events.show', $event), 'Guests & Tickets' => null]">
         <x-slot name="actions">
             <flux:dropdown>
                 <flux:button icon="arrow-down-tray" icon:trailing="chevron-down">Export tickets</flux:button>
@@ -8,7 +8,6 @@
                     <flux:menu.item :href="route('events.tickets.export', ['event' => $event, 'format' => 'pdf'])">PDF document</flux:menu.item>
                 </flux:menu>
             </flux:dropdown>
-            <flux:button variant="primary" icon="users" :href="route('events.attendees.index', $event)">Manage attendees</flux:button>
         </x-slot>
     </x-page-header>
     <livewire:ticket-browser :event="$event" />

@@ -99,6 +99,7 @@ Route::middleware('auth')->group(function () {
             Route::prefix('events')->name('events.')->group(function () {
                 Route::get('/', [EventController::class, 'index'])->name('index');
                 Route::get('/create', [EventController::class, 'create'])->name('create');
+                Route::get('/{event}/guests', [TicketController::class, 'guests'])->name('guests.index');
                 Route::post('/', [EventController::class, 'store'])->name('store');
                 Route::get('/{event}', [EventController::class, 'show'])->name('show');
                 Route::get('/{event}/edit', [EventController::class, 'edit'])->name('edit');

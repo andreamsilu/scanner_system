@@ -27,7 +27,8 @@ class PublicRegistrationController extends Controller
             $locked->saveQuietly();
         });
 
-        return to_route('events.show', $event)->with('success', 'Public registration settings updated.');
+        return to_route($request->input('return_to') === 'guests' ? 'events.guests.index' : 'events.show', $event)
+            ->with('success', 'Public registration settings updated.');
     }
 
     private function event(string $token): Event

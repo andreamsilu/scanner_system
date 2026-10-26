@@ -44,6 +44,11 @@ class TicketController extends Controller
      */
     public function index(Event $event)
     {
+        return to_route('events.guests.index', $event);
+    }
+
+    public function guests(Event $event)
+    {
         return view('tickets.index', compact('event'));
     }
 
@@ -117,7 +122,7 @@ class TicketController extends Controller
             'cancelled_at' => now()
         ]);
 
-        return redirect()->route('events.tickets.index', $event)
+        return redirect()->route('events.guests.index', $event)
             ->with('success', 'Ticket has been deactivated successfully.');
     }
 

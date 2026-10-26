@@ -44,7 +44,7 @@ class AttendeeController extends Controller
     /**
      * Display a listing of the attendees.
      */
-    public function index(Event $event, Request $request): View|JsonResponse
+    public function index(Event $event, Request $request): RedirectResponse|JsonResponse
     {
         if ($request->ajax()) {
             $query = $event->attendees()->with(['event', 'ticket']);
@@ -123,8 +123,7 @@ class AttendeeController extends Controller
             ]);
         }
 
-        $events = Event::select('id', 'name')->orderBy('name')->get();
-        return view('attendees.index', compact('events', 'event'));
+        return to_route('events.guests.index', $event);
     }
 
     /**

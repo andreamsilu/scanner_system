@@ -10,7 +10,7 @@
     <flux:navlist variant="outline">
         @if($isAdmin)
             <flux:navlist.item icon="squares-2x2" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')">Overview</flux:navlist.item>
-            <flux:navlist.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')">Events &amp; tickets</flux:navlist.item>
+            <flux:navlist.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')">Events &amp; guests</flux:navlist.item>
             <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')">Team</flux:navlist.item>
             <flux:navlist.item icon="chat-bubble-left-right" :href="route('sms.management.index')" :current="request()->routeIs('sms.management.*')">SMS invitations</flux:navlist.item>
             <flux:navlist.item icon="identification" :href="route('card-templates.index')" :current="request()->routeIs('card-templates.*')">Card templates</flux:navlist.item>
