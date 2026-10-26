@@ -68,6 +68,7 @@ class PublicRegistrationController extends Controller
                 }
             }],
             'email' => 'nullable|email|max:255',
+            'whatsapp_consent' => 'boolean',
         ]);
         $validated['phone'] = preg_replace('/[^0-9]/', '', $validated['phone']);
         $validated['name'] = trim($validated['name']);
@@ -91,6 +92,7 @@ class PublicRegistrationController extends Controller
             }
 
             $attendee = $locked->attendees()->create($validated + ['registration_status' => 'unchecked_in']);
+            app(\App\Services\WhatsAppService::class)->setConsent($attendee, (bool) ($validated['whatsapp_consent'] ?? false), 'public_registration');
 
             // Public registrants cannot select privileged or double tickets.
             return Ticket::create([

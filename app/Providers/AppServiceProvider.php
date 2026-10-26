@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \Illuminate\Support\Facades\RateLimiter::for('whatsapp-invitations', fn () =>
+            \Illuminate\Cache\RateLimiting\Limit::perMinute(30)->by('whatsapp-invitations'));
     }
 }

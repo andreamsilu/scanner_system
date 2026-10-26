@@ -1,10 +1,18 @@
-<div>
+<div @if(config('services.whatsapp.enabled')) wire:poll.15s @endif>
     <div class="flex flex-wrap justify-end gap-2 mb-6">
         <flux:modal.trigger name="registration-link"><flux:button icon="link">Registration link</flux:button></flux:modal.trigger>
+        <flux:modal.trigger name="whatsapp-invitations"><flux:button icon="chat-bubble-left-right">WhatsApp invitations</flux:button></flux:modal.trigger>
         <flux:button icon="arrow-up-tray" :href="route('events.attendees.bulk-upload', $event)">Import guests</flux:button>
         <flux:button variant="primary" icon="user-plus" wire:click="newGuest">Add guest</flux:button>
     </div>
     @if($notice)<p class="scan-result mb-5 text-sm" data-status="success" role="status">{{ $notice }}</p>@endif
+    @error('whatsapp')<p class="scan-result mb-5 text-sm" data-status="danger" role="alert">{{ $message }}</p>@enderror
+    @if($whatsappStats->isNotEmpty())
+        <div class="ui-panel p-4 mb-5 text-sm flex flex-wrap gap-x-5 gap-y-2" aria-label="WhatsApp delivery summary">
+            <strong>WhatsApp invitations</strong>
+            @foreach($whatsappStats as $deliveryStatus => $total)<span class="ui-muted">{{ ucfirst($deliveryStatus) }}: {{ $total }}</span>@endforeach
+        </div>
+    @endif
     <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
         <div class="ui-panel ui-kpi"><span class="text-xs ui-muted">Total guests</span><strong>{{ number_format($summary['guests']) }}</strong></div>
         <div class="ui-panel ui-kpi"><span class="text-xs ui-muted">Tickets issued</span><strong>{{ number_format($summary['tickets']) }}</strong></div>
@@ -41,7 +49,7 @@
                         <tr wire:key="guest-row-{{ $guest->id }}">
                             <td><p class="font-semibold mb-1">{{ $guest->name }}</p><p class="ui-muted text-xs mb-1">{{ $guest->phone ?: 'No phone number' }}</p>@if($guest->email)<p class="ui-muted text-xs mb-0">{{ $guest->email }}</p>@endif</td>
                             <td>@if($guest->ticket)<p class="font-mono font-semibold mb-1">#{{ $guest->ticket->ticket_number }}</p><span class="text-xs ui-muted">{{ $guest->ticket->type === 'vip' ? 'VIP' : ucfirst($guest->ticket->type) }}</span>@else<flux:badge size="sm" color="zinc">No ticket</flux:badge>@endif</td>
-                            <td><x-guest-admission :guest="$guest" /></td>
+                            <td><x-guest-admission :guest="$guest" /><x-whatsapp-status :invitation="$guest->ticket?->whatsappInvitation" /></td>
                             <td class="ui-muted text-xs">{{ $guest->ticket?->scan_logs_max_created_at ? \Illuminate\Support\Carbon::parse($guest->ticket->scan_logs_max_created_at)->diffForHumans() : 'No scans yet' }}</td>
                             <td><flux:button wire:click="editGuest({{ $guest->id }})" variant="subtle" size="sm" aria-label="Manage {{ $guest->name }}">Manage guest</flux:button>@if(!$guest->ticket && $guest->registration_status !== 'cancelled')<flux:button wire:click="editGuest({{ $guest->id }}, true)" size="sm">Issue ticket</flux:button>@endif</td>
                         </tr>
@@ -54,6 +62,7 @@
                 <article class="p-4 space-y-3" wire:key="guest-card-{{ $guest->id }}" aria-label="{{ $guest->name }}">
                     <div><h2 class="font-semibold">{{ $guest->name }}</h2><p class="ui-muted text-sm break-all">{{ $guest->phone }}</p>@if($guest->email)<p class="ui-muted text-xs break-all">{{ $guest->email }}</p>@endif</div>
                     <div class="flex flex-wrap justify-between gap-3"><p class="text-sm">{{ $guest->ticket ? '#'.$guest->ticket->ticket_number.' · '.($guest->ticket->type === 'vip' ? 'VIP' : ucfirst($guest->ticket->type)) : 'No ticket' }}</p><x-guest-admission :guest="$guest" /></div>
+                    <x-whatsapp-status :invitation="$guest->ticket?->whatsappInvitation" />
                     <div class="flex flex-wrap gap-2"><flux:button wire:click="editGuest({{ $guest->id }})" size="sm">Manage guest</flux:button>@if(!$guest->ticket && $guest->registration_status !== 'cancelled')<flux:button wire:click="editGuest({{ $guest->id }}, true)" size="sm">Issue ticket</flux:button>@endif</div>
                 </article>
             @endforeach
@@ -76,9 +85,11 @@
         <p class="ui-muted text-sm mb-6">{{ $selectedGuestId ? 'Update contact details and manage this guest’s entry.' : 'Add a guest and optionally issue their ticket.' }}</p>
         <form wire:submit="saveGuest" class="space-y-5">
             <flux:input wire:model="name" label="Full name" required maxlength="255" />
-            <flux:input wire:model="phone" label="Phone number" type="tel" required maxlength="20" />
+            <flux:input wire:model.blur="phone" label="Phone number" type="tel" required maxlength="20" />
             <flux:input wire:model="email" label="Email (optional)" type="email" maxlength="255" />
             <flux:input wire:model="position" label="Position / organization (optional)" maxlength="255" />
+            <flux:checkbox wire:model.live="whatsappConsent" label="This guest agreed to receive WhatsApp invitations and ticket details for this event." />
+            <p class="ui-muted text-xs">Record permission before sending. Changing the phone number requires permission to be confirmed again.</p>
             @if(!$selectedGuest?->ticket && $selectedGuest?->registration_status !== 'cancelled')
                 <flux:checkbox wire:model.live="createTicket" label="Issue a ticket" />
                 @if($createTicket)<flux:select wire:model="ticketType" label="Ticket type"><option value="single">Single — 1 entry</option><option value="double">Double — 2 entries</option><option value="regular">Regular — 1 entry</option><option value="vip">VIP — 1 entry</option></flux:select>@endif
@@ -91,10 +102,29 @@
                 <x-guest-admission :guest="$selectedGuest" />
                 @if($selectedGuest->qr_code)<img src="{{ \Illuminate\Support\Facades\Storage::disk('public')->url($selectedGuest->qr_code) }}" width="200" height="200" class="bg-white p-3 rounded-xl mx-auto" alt="Admission QR for {{ $selectedGuest->name }}" />@endif
                 <x-guest-ticket-actions :event="$event" :ticket="$selectedGuest->ticket" :guest="$selectedGuest" />
+                <div class="space-y-3">
+                    <x-whatsapp-status :invitation="$selectedGuest->ticket->whatsappInvitation" />
+                    @php($canInvite = empty($whatsappIssues) && $selectedGuest->whatsapp_opted_in_at && $selectedGuest->registration_status !== 'cancelled' && $selectedGuest->ticket->status === 'active' && (!$selectedGuest->ticket->whatsappInvitation || $selectedGuest->ticket->whatsappInvitation->status === 'failed'))
+                    <flux:button wire:click="sendWhatsApp({{ $selectedGuest->id }})" wire:confirm="Send this guest their event invitation through WhatsApp Business?" :disabled="!$canInvite" size="sm" icon="chat-bubble-left-right">{{ $selectedGuest->ticket->whatsappInvitation?->status === 'failed' ? 'Retry WhatsApp invitation' : 'Send WhatsApp invitation' }}</flux:button>
+                    @if(!$selectedGuest->whatsapp_opted_in_at)<p class="ui-muted text-xs">Save the guest’s WhatsApp permission above before sending.</p>@endif
+                    @if($selectedGuest->ticket->whatsappInvitation?->error_message)<p class="ui-muted text-xs">{{ $selectedGuest->ticket->whatsappInvitation->error_message }} @if($selectedGuest->ticket->whatsappInvitation->error_code)Code: {{ $selectedGuest->ticket->whatsappInvitation->error_code }}@endif</p>@endif
+                </div>
             </section>
         @endif
         @if($selectedGuest && $selectedGuest->registration_status !== 'cancelled')
             <div class="border-t border-zinc-200 dark:border-zinc-700 mt-6 pt-6"><flux:button wire:click="cancelGuest({{ $selectedGuest->id }})" wire:confirm="Cancel this guest’s registration and tickets? They will no longer be admitted. Admission history will be kept." variant="danger" size="sm">Cancel registration</flux:button></div>
+        @endif
+    </flux:modal>
+    <flux:modal name="whatsapp-invitations" class="w-full sm:max-w-lg">
+        <h2 class="text-xl font-semibold mb-3">WhatsApp Business invitations</h2>
+        @if($whatsappIssues)
+            <p class="ui-muted text-sm mb-4">Complete the business connection before sending invitations.</p>
+            <ul class="list-disc ps-5 text-sm space-y-2">@foreach($whatsappIssues as $issue)<li>{{ $issue }}</li>@endforeach</ul>
+        @else
+            <p class="ui-muted text-sm mb-5">Send invitations to <strong>all eligible guests for {{ $event->name }}</strong>. Current search and filters do not limit this action.</p>
+            <p class="ui-muted text-sm mb-5">Only guests who agreed to WhatsApp messages and have an active ticket will be included. Already queued/sent invitations and cancelled registrations are skipped. Failed invitations can be retried individually.</p>
+            <p class="ui-muted text-xs mb-5">Your WhatsApp provider’s messaging charges apply. Guests can reply STOP to withdraw permission.</p>
+            <flux:button variant="primary" wire:click="sendBulkWhatsApp" wire:confirm="Queue WhatsApp invitations for all eligible, not-yet-invited guests in this event? Provider charges may apply.">Send unsent WhatsApp invitations</flux:button>
         @endif
     </flux:modal>
     <flux:modal name="registration-link" class="w-full sm:max-w-lg">

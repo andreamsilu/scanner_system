@@ -25,6 +25,9 @@ use App\Http\Controllers\PublicRegistrationController;
 Route::pattern('id', '[0-9]+');
 Route::pattern('attendee', '[0-9]+');
 
+Route::get('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'verify'])->name('whatsapp.webhook.verify');
+Route::post('/webhooks/whatsapp', [\App\Http\Controllers\WhatsAppWebhookController::class, 'receive'])->middleware('throttle:600,1')->name('whatsapp.webhook.receive');
+
 Route::prefix('register/event/{token}')->whereUuid('token')->middleware('cache.headers:no_store;private')->name('public-registration.')->group(function () {
     Route::get('/', [PublicRegistrationController::class, 'show'])->name('show');
     Route::post('/', [PublicRegistrationController::class, 'store'])->middleware('throttle:10,1')->name('store');

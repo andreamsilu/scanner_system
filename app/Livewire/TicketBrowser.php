@@ -4,6 +4,9 @@ namespace App\Livewire;
 
 use App\Models\Event;
 use App\Models\Ticket;
+use App\Models\WhatsAppInvitation;
+use App\Services\WhatsAppService;
+use App\Jobs\QueueWhatsAppInvitations;
 use Flux\Flux;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
@@ -34,6 +37,7 @@ class TicketBrowser extends Component
     public bool $createTicket = true;
     public string $ticketType = 'single';
     public string $notice = '';
+    public bool $whatsappConsent = false;
 
     public function boot(): void
     {
@@ -50,6 +54,9 @@ class TicketBrowser extends Component
 
     public function updated($property): void
     {
+        if ($property === 'phone') {
+            $this->whatsappConsent = false;
+        }
         if (in_array($property, ['search', 'status', 'type', 'sort'], true)) {
             $this->resetPage();
         }
@@ -64,7 +71,7 @@ class TicketBrowser extends Component
     public function newGuest(): void
     {
         $this->resetValidation();
-        $this->reset('selectedGuestId', 'name', 'phone', 'email', 'position', 'createTicket', 'ticketType');
+        $this->reset('selectedGuestId', 'name', 'phone', 'email', 'position', 'createTicket', 'ticketType', 'whatsappConsent');
         Flux::modal('guest-details')->show();
     }
 
@@ -79,6 +86,7 @@ class TicketBrowser extends Component
         $this->position = $guest->position ?? '';
         $this->createTicket = $issueTicket && ! $guest->ticket()->exists();
         $this->ticketType = 'single';
+        $this->whatsappConsent = (bool) $guest->whatsapp_opted_in_at;
         Flux::modal('guest-details')->show();
     }
 
@@ -95,6 +103,7 @@ class TicketBrowser extends Component
             'position' => 'nullable|string|max:255',
             'createTicket' => 'boolean',
             'ticketType' => 'required|in:single,double,regular,vip',
+            'whatsappConsent' => 'boolean',
         ]);
 
         $wasNew = $this->selectedGuestId === null;
@@ -114,6 +123,7 @@ class TicketBrowser extends Component
                 'name' => trim($validated['name']), 'phone' => trim($validated['phone']),
                 'email' => $validated['email'] ?: null, 'position' => $validated['position'] ?: null,
             ])->save();
+            app(WhatsAppService::class)->setConsent($guest, $validated['whatsappConsent'], 'admin:'.auth()->id());
 
             if ($validated['createTicket'] && ! $guest->ticket()->exists()) {
                 if ($guest->registration_status === 'cancelled') {
@@ -144,9 +154,35 @@ class TicketBrowser extends Component
         Flux::modal('guest-details')->close();
     }
 
+    public function sendWhatsApp(int $guestId): void
+    {
+        $guest = $this->event->attendees()->with('ticket')->findOrFail($guestId);
+        $service = app(WhatsAppService::class);
+        if ($service->setupIssues()) {
+            $this->addError('whatsapp', 'Finish the WhatsApp Business setup before sending.');
+            return;
+        }
+        if (! $guest->ticket || ! $service->eligible($guest->ticket)) {
+            $this->addError('whatsapp', 'Save the guest’s WhatsApp consent and check that their ticket and event are active.');
+            return;
+        }
+        $queued = $service->queue($guest->ticket, auth()->user());
+        $this->notice = $queued ? 'WhatsApp invitation queued.' : 'This invitation is already queued or sent. Check its status before sending again.';
+    }
+
+    public function sendBulkWhatsApp(): void
+    {
+        if (app(WhatsAppService::class)->setupIssues()) {
+            $this->addError('whatsapp', 'Finish the WhatsApp Business setup before sending.');
+            return;
+        }
+        QueueWhatsAppInvitations::dispatch($this->event->id, auth()->id())->afterCommit();
+        $this->notice = 'Bulk WhatsApp invitations scheduled for this event. Only consenting guests with active tickets who have not been invited will be queued.';
+    }
+
     public function render()
     {
-        $query = $this->event->attendees()->with(['ticket' => fn ($query) => $query->withMax('scanLogs', 'created_at')]);
+        $query = $this->event->attendees()->with(['ticket' => fn ($query) => $query->with('whatsappInvitation')->withMax('scanLogs', 'created_at')]);
         $search = mb_substr(trim($this->search), 0, 200);
         if ($search !== '') {
             $query->where(function (Builder $query) use ($search) {
@@ -184,8 +220,10 @@ class TicketBrowser extends Component
             'tickets' => $this->event->tickets()->count(),
             'admissions' => $this->event->tickets()->sum('entries_used'),
         ];
-        $selectedGuest = $this->selectedGuestId ? $this->event->attendees()->with('ticket')->findOrFail($this->selectedGuestId) : null;
+        $selectedGuest = $this->selectedGuestId ? $this->event->attendees()->with('ticket.whatsappInvitation')->findOrFail($this->selectedGuestId) : null;
+        $whatsappIssues = app(WhatsAppService::class)->setupIssues();
+        $whatsappStats = WhatsAppInvitation::where('event_id', $this->event->id)->selectRaw('status, COUNT(*) as total')->groupBy('status')->pluck('total', 'status');
 
-        return view('livewire.ticket-browser', compact('guests', 'summary', 'selectedGuest'));
+        return view('livewire.ticket-browser', compact('guests', 'summary', 'selectedGuest', 'whatsappIssues', 'whatsappStats'));
     }
 }

@@ -88,6 +88,11 @@ class Ticket extends Model
         return $this->hasMany(ScanLog::class);
     }
 
+    public function whatsappInvitation()
+    {
+        return $this->hasOne(WhatsAppInvitation::class);
+    }
+
     /**
      * Get the last scan for this ticket.
      */

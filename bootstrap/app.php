@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->validateCsrfTokens(except: ['webhooks/whatsapp']);
         $middleware->web(append: [
             \App\Http\Middleware\EnsureActiveUser::class,
             \Illuminate\Session\Middleware\StartSession::class,

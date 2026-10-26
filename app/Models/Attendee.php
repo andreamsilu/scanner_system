@@ -34,7 +34,8 @@ class Attendee extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
-        'email' => 'string'
+        'email' => 'string',
+        'whatsapp_opted_in_at' => 'datetime',
     ];
 
     /**
