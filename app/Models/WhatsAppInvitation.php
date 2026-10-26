@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class WhatsAppInvitation extends Model
 {
+    protected $table = 'whatsapp_invitations';
+
     protected $guarded = ['id'];
 
     protected $casts = ['attempted_at' => 'datetime'];

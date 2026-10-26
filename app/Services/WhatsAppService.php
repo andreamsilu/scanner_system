@@ -73,11 +73,9 @@ class WhatsAppService
         ])->saveQuietly();
     }
 
-    public function eligible(Ticket $ticket): bool
+    public function hasConsent(Attendee $guest): bool
     {
-        $guest = $ticket->attendee;
-        if (! $guest || $guest->trashed() || ! $guest->whatsapp_opted_in_at || $ticket->status !== 'active'
-            || $guest->registration_status === 'cancelled' || $ticket->event->status === 'completed' || $ticket->event->end_date->isPast()) {
+        if (! $guest->whatsapp_opted_in_at) {
             return false;
         }
         try {
@@ -85,6 +83,16 @@ class WhatsAppService
         } catch (ValidationException) {
             return false;
         }
+    }
+
+    public function eligible(Ticket $ticket): bool
+    {
+        $guest = $ticket->attendee;
+        if (! $guest || $guest->trashed() || ! $guest->whatsapp_opted_in_at || $ticket->status !== 'active'
+            || $guest->registration_status === 'cancelled' || $ticket->event->status === 'completed' || $ticket->event->end_date->isPast()) {
+            return false;
+        }
+        return $this->hasConsent($guest);
     }
 
     public function queue(Ticket $ticket, User $actor): bool
@@ -147,7 +155,7 @@ class WhatsAppService
 
         $ticket = $invitation->ticket;
         $event = $ticket->event;
-        $values = [$ticket->attendee->name, $event->name, $event->start_date->format('d M Y, H:i'),
+        $values = [$ticket->attendee->name, $event->name, $event->start_date->format('d M Y, H:i T'),
             trim($event->venue.' · '.$event->location, ' ·'), $ticket->ticket_number,
             rtrim(config('app.url'), '/').'/tickets/'.$ticket->attendee->token.'/verify'];
         try {

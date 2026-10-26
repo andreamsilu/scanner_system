@@ -38,8 +38,10 @@ class WhatsAppWebhookController extends Controller
                 }
                 foreach ((array) ($value['messages'] ?? []) as $message) {
                     $text = strtoupper(trim((string) ($message['text']['body'] ?? $message['button']['text'] ?? '')));
-                    if (in_array($text, ['STOP', 'UNSUBSCRIBE', 'SITISHA', 'ACHA'], true) && isset($message['from'])) {
-                        Attendee::where('whatsapp_phone', $message['from'])->update([
+                    if (in_array($text, ['STOP', 'UNSUBSCRIBE', 'SITISHA', 'ACHA'], true) && is_string($message['from'] ?? null)) {
+                        $stopTime = isset($message['timestamp']) && ctype_digit((string) $message['timestamp'])
+                            ? \Carbon\Carbon::createFromTimestamp((int) $message['timestamp'])->endOfSecond() : now();
+                        Attendee::where('whatsapp_phone', $message['from'])->where('whatsapp_opted_in_at', '<=', $stopTime)->update([
                             'whatsapp_opted_in_at' => null, 'whatsapp_opt_in_source' => 'whatsapp_stop',
                         ]);
                     }
@@ -68,7 +70,8 @@ class WhatsAppWebhookController extends Controller
             }
             $ranks = ['queued' => 0, 'sending' => 1, 'unknown' => 1, 'failed' => 1, 'accepted' => 2, 'sent' => 3, 'delivered' => 4, 'read' => 5];
             $current = $ranks[$invitation->status] ?? 0;
-            if (($next === 'failed' && $current >= 4) || ($next !== 'failed' && $ranks[$next] < $current)) {
+            if (($next === 'failed' && $current >= 4) || ($next !== 'failed' && $ranks[$next] < $current)
+                || ($invitation->status === 'failed' && $next === 'sent')) {
                 return;
             }
             $invitation->update([

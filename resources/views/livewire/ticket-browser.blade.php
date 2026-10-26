@@ -104,9 +104,10 @@
                 <x-guest-ticket-actions :event="$event" :ticket="$selectedGuest->ticket" :guest="$selectedGuest" />
                 <div class="space-y-3">
                     <x-whatsapp-status :invitation="$selectedGuest->ticket->whatsappInvitation" />
-                    @php($canInvite = empty($whatsappIssues) && $selectedGuest->whatsapp_opted_in_at && $selectedGuest->registration_status !== 'cancelled' && $selectedGuest->ticket->status === 'active' && (!$selectedGuest->ticket->whatsappInvitation || $selectedGuest->ticket->whatsappInvitation->status === 'failed'))
+                    @php($hasWhatsAppPermission = app(\App\Services\WhatsAppService::class)->hasConsent($selectedGuest))
+                    @php($canInvite = empty($whatsappIssues) && $hasWhatsAppPermission && $selectedGuest->registration_status !== 'cancelled' && $selectedGuest->ticket->status === 'active' && (!$selectedGuest->ticket->whatsappInvitation || $selectedGuest->ticket->whatsappInvitation->status === 'failed'))
                     <flux:button wire:click="sendWhatsApp({{ $selectedGuest->id }})" wire:confirm="Send this guest their event invitation through WhatsApp Business?" :disabled="!$canInvite" size="sm" icon="chat-bubble-left-right">{{ $selectedGuest->ticket->whatsappInvitation?->status === 'failed' ? 'Retry WhatsApp invitation' : 'Send WhatsApp invitation' }}</flux:button>
-                    @if(!$selectedGuest->whatsapp_opted_in_at)<p class="ui-muted text-xs">Save the guest’s WhatsApp permission above before sending.</p>@endif
+                    @if(!$hasWhatsAppPermission)<p class="ui-muted text-xs">Save the guest’s WhatsApp permission above before sending.</p>@endif
                     @if($selectedGuest->ticket->whatsappInvitation?->error_message)<p class="ui-muted text-xs">{{ $selectedGuest->ticket->whatsappInvitation->error_message }} @if($selectedGuest->ticket->whatsappInvitation->error_code)Code: {{ $selectedGuest->ticket->whatsappInvitation->error_code }}@endif</p>@endif
                 </div>
             </section>

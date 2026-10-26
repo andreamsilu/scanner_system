@@ -35,6 +35,41 @@ Registration is disabled by default. Administrators can disable/re-enable a link
 
 Deploy the new migration with `php artisan migrate --force`, rebuild frontend assets, and run `php artisan optimize` as the PHP-FPM user. Ensure `php artisan storage:link` has been run so guests can display/download their QR codes. Set `APP_URL` to the site's public address.
 
+## WhatsApp Business invitations
+
+Automatic invitations use Meta's WhatsApp Business Cloud API. In **Guests & Tickets**, open a guest, record their permission to receive WhatsApp invitations, save, then choose **Send WhatsApp invitation**. The **WhatsApp invitations** button offers an event-wide bulk send to consenting guests with active tickets who have not already been invited. Search and list filters do not restrict bulk sending. Public registration optionally collects consent when WhatsApp is enabled. Phone changes require new consent. Sending is explicitly requested by staff; opting in alone does not send a message.
+
+The event list shows queued, accepted, sent, delivered, read and failed updates. **Accepted by Meta** is not a delivery confirmation. Confirmed failures can be retried individually. Duplicate clicks/bulk jobs do not send another invitation for the same ticket. A timeout or server failure is marked **unknown** and is not automatically retried, because Meta might already have sent it. Signed delivery callbacks can resolve this state. Keep ticket links private.
+
+To activate on the VPS:
+
+1. Configure a public HTTPS site and set `APP_URL` to that address. In Meta, create/configure your WhatsApp Business account, business phone number and an access token with messaging access. Keep the token and app secret in the VPS `.env`; never put them in browser code or Git.
+2. Create an approved, text-only template named `event_invitation` (or set your own name) in the exact configured language. Use **six positional body parameters**, with no header/button parameters, in this order: guest name, event name, date/time with timezone, venue/location, ticket number, ticket URL. Suggested body:
+
+   ```text
+   Hello {{1}}, you are invited to {{2}}.
+   Date: {{3}}
+   Venue: {{4}}
+   Your ticket number is {{5}}.
+   Open your ticket and QR code: {{6}}
+   Reply STOP to stop WhatsApp invitations.
+   ```
+
+3. Set `WHATSAPP_ENABLED=true`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_APP_SECRET`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN`, `WHATSAPP_API_VERSION`, `WHATSAPP_TEMPLATE_NAME`, and `WHATSAPP_TEMPLATE_LANGUAGE`. The API version must be a currently supported `vNN.0` version shown in your Meta API setup; it is deliberately not hard-coded. The verify token is a random secret you choose. `WHATSAPP_DEFAULT_COUNTRY_CODE=255` supports Tanzania local mobile numbers as well as international-format numbers.
+4. In Meta, set the callback URL to `https://YOUR-DOMAIN/webhooks/whatsapp`, use the same verify token, and subscribe the connected WhatsApp Business account to **messages** events. GET verification checks the token; POST delivery/opt-out callbacks require the app-secret HMAC signature and the configured phone number ID. Incoming STOP, UNSUBSCRIBE, SITISHA or ACHA withdraws consent for that phone number. Replayed older STOP messages do not override later consent.
+5. Set `QUEUE_CONNECTION=database` (or another persistent queue) and use a process manager to keep the worker running. Build/deploy all changed files, then run:
+
+   ```sh
+   sudo -u www-data php artisan migrate --force
+   npm run build
+   sudo -u www-data php artisan optimize
+   sudo -u www-data php artisan queue:restart
+   ```
+
+   A worker command is `php artisan queue:work --timeout=330 --tries=3`. Keep the queue connection's `retry_after` greater than 330 seconds; the database default here is 360. Send jobs are limited to 30 per minute and recheck account permissions, consent, event dates and ticket status immediately before sending. Use a persistent shared cache for the limiter if you run multiple workers. Laravel's `sync`/`null` queue drivers are blocked for WhatsApp sending.
+
+Meta approval, permissions, delivery availability and messaging charges remain controlled by your WhatsApp Business account. Tests use fake HTTP responses and do not send live messages. Reference: [Meta's Cloud API collection](https://www.postman.com/meta/whatsapp-business-platform/collection/wlk6lh4/whatsapp-cloud-api), [Meta's webhook signature example](https://github.com/fbsamples/whatsapp-api-examples/blob/main/signature-validation-with-webhooks-payloads/app.py), and [WhatsApp Business onboarding](https://whatsappbusiness.com/resources/resource-library/api-onboarding/).
+
 ## Requirements
 
 - PHP 8.2+ and Composer; PDO MySQL, GD, mbstring, XML, fileinfo, OpenSSL and ZIP extensions.

@@ -86,7 +86,7 @@ class TicketBrowser extends Component
         $this->position = $guest->position ?? '';
         $this->createTicket = $issueTicket && ! $guest->ticket()->exists();
         $this->ticketType = 'single';
-        $this->whatsappConsent = (bool) $guest->whatsapp_opted_in_at;
+        $this->whatsappConsent = app(WhatsAppService::class)->hasConsent($guest);
         Flux::modal('guest-details')->show();
     }
 
