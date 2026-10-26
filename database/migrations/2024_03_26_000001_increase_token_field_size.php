@@ -13,12 +13,12 @@ return new class extends Migration
     {
         // Increase token field size in attendees table
         Schema::table('attendees', function (Blueprint $table) {
-            $table->string('token', 32)->change();
+            $table->string('token', 64)->change();
         });
 
         // Increase token field size in tickets table
         Schema::table('tickets', function (Blueprint $table) {
-            $table->string('token', 32)->change();
+            $table->string('token', 64)->change();
         });
     }
 
@@ -29,12 +29,12 @@ return new class extends Migration
     {
         // Revert token field size in attendees table
         Schema::table('attendees', function (Blueprint $table) {
-            $table->string('token', 7)->change();
+            $table->string('token', 64)->change();
         });
 
         // Revert token field size in tickets table
         Schema::table('tickets', function (Blueprint $table) {
-            $table->string('token', 7)->change();
+            $table->string('token', 64)->change();
         });
     }
-}; 
+};

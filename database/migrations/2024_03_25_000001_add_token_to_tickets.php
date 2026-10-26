@@ -13,20 +13,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tickets', function (Blueprint $table) {
-            // Drop the existing token column if it exists
-            if (Schema::hasColumn('tickets', 'token')) {
-                $table->dropColumn('token');
+            // Preserve credentials if this migration is applied to an existing table.
+            if (!Schema::hasColumn('tickets', 'token')) {
+                $table->string('token', 64)->nullable()->after('ticket_number');
             }
-            
-            // Add token column with 7 characters to match attendee tokens
-            $table->string('token', 7)->after('ticket_number');
         });
 
         // Copy tokens from attendees to tickets
-        DB::table('tickets')
-            ->join('attendees', 'tickets.attendee_id', '=', 'attendees.id')
-            ->whereNull('tickets.token')
-            ->update(['tickets.token' => DB::raw('attendees.token')]);
+        DB::table('tickets')->whereNull('token')->orderBy('id')->each(function ($ticket) {
+            DB::table('tickets')->where('id', $ticket->id)->update([
+                'token' => DB::table('attendees')->where('id', $ticket->attendee_id)->value('token'),
+            ]);
+        });
     }
 
     /**
@@ -38,4 +36,4 @@ return new class extends Migration
             $table->dropColumn('token');
         });
     }
-}; 
+};

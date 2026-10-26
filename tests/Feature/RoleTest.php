@@ -27,7 +27,7 @@ class RoleTest extends TestCase
         $this->seed();
 
         // Get admin user
-        $admin = User::where('email', 'admin@example.com')->first();
+        $admin = User::where('email', 'admin@gmail.com')->first();
         
         // Check if user exists and has admin role
         $this->assertNotNull($admin);
@@ -41,7 +41,7 @@ class RoleTest extends TestCase
         $this->seed();
 
         // Get scanner user
-        $scanner = User::where('email', 'scanner@gmail.com')->first();
+        $scanner = User::where('email', 'scanner1@example.com')->first();
         
         // Check if user exists and has scanner role
         $this->assertNotNull($scanner);
@@ -51,6 +51,7 @@ class RoleTest extends TestCase
 
     public function test_role_assignment(): void
     {
+        $this->seed(\Database\Seeders\RoleSeeder::class);
         // Create a new user
         $user = User::factory()->create();
         
@@ -66,4 +67,4 @@ class RoleTest extends TestCase
         $user->assignRole('scanner');
         $this->assertTrue($user->isScanner());
     }
-} 
+}

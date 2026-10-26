@@ -22,6 +22,8 @@ class BulkUpload extends Model
         'processed_records',
         'failed_records',
         'error_message',
+        'error_log',
+        'completed_at',
     ];
 
     /**
@@ -33,6 +35,7 @@ class BulkUpload extends Model
         'total_records' => 'integer',
         'processed_records' => 'integer',
         'failed_records' => 'integer',
+        'completed_at' => 'datetime',
     ];
 
     /**
@@ -58,4 +61,4 @@ class BulkUpload extends Model
     {
         return $this->hasMany(Attendee::class, 'bulk_upload_id');
     }
-} 
+}

@@ -11,13 +11,18 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\Auth\EmailVerificationRequest;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
 use Illuminate\Http\Request;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\BulkUploadController;
 use App\Http\Controllers\SmsManagementController;
 use App\Http\Controllers\CardTemplateController;
 use App\Http\Controllers\EventCardController;
+use App\Http\Controllers\AdmissionController;
+
+// Keep static paths such as users/export and attendees/bulk-upload out of numeric bindings.
+Route::pattern('id', '[0-9]+');
+Route::pattern('attendee', '[0-9]+');
 
 // Authentication Routes
 /* Removed (or commented out) the fallback route (or any route named 'welcome') so that if a user (or a seeder) tries to redirect to route('welcome') (or GET /) then a 404 (or a fallback) is returned (and no "Route [welcome] not defined" error is thrown). */
@@ -34,7 +39,7 @@ Route::get('/', function () {
 
 Route::middleware('guest')->group(function () {
     Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('login', [LoginController::class, 'login']);
+    Route::post('login', [LoginController::class, 'login'])->middleware('throttle:10,1');
 });
 
 Route::middleware('auth')->group(function () {
@@ -63,7 +68,7 @@ Route::middleware('auth')->group(function () {
         
         // QR Code Scanning Routes
         Route::get('/scan', [ScannerController::class, 'scan'])->name('scan.index');
-        Route::post('/scan/validate', [ScannerController::class, 'validateToken'])->name('scan.validate');
+        Route::post('/scan/validate', [AdmissionController::class, 'store'])->middleware('throttle:120,1')->name('scan.validate');
         
         // Manual Token Validation Routes - Redirect to scan page
         Route::get('/validate', [ScannerController::class, 'scan'])->name('validate.index');
@@ -102,7 +107,7 @@ Route::middleware('auth')->group(function () {
                     Route::get('/{ticket}', [TicketController::class, 'show'])->name('show');
                     Route::post('/generate', [TicketController::class, 'generate'])->name('generate');
                     Route::get('/{ticket}/print', [TicketController::class, 'print'])->name('print');
-                    Route::get('/{ticket}/export', [TicketController::class, 'exportTicket'])->name('export');
+                    Route::get('/{ticket}/export', [TicketController::class, 'exportTicket'])->name('export-ticket');
                     Route::patch('/{ticket}/deactivate', [TicketController::class, 'deactivate'])->name('deactivate');
                     Route::get('/{ticket}/download-jpg', [TicketController::class, 'downloadJpg'])->name('download-jpg');
                 });
@@ -121,7 +126,7 @@ Route::middleware('auth')->group(function () {
                     Route::get('/{attendee}/edit', [AttendeeController::class, 'edit'])->name('edit');
                     Route::put('/{attendee}', [AttendeeController::class, 'update'])->name('update');
                     Route::delete('/{attendee}', [AttendeeController::class, 'destroy'])->name('destroy');
-                    Route::post('/{attendee}/check-in', [AttendeeController::class, 'checkIn'])->name('check-in');
+                    Route::post('/{attendee}/check-in', [AdmissionController::class, 'prepare'])->name('check-in');
                     Route::post('/{attendee}/regenerate-qr', [AttendeeController::class, 'regenerateQrCode'])->name('regenerate-qr');
                     Route::patch('/{attendee}/cancel', [AttendeeController::class, 'cancel'])->name('cancel');
 
@@ -157,21 +162,6 @@ Route::middleware('auth')->group(function () {
             Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
         });
 
-        // Email Verification Routes
-        Route::get('/email/verify', function () {
-            return view('auth.verify-email');
-        })->name('verification.notice');
-
-        Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-            $request->fulfill();
-            return redirect('/')->with('status', 'email-verified');
-        })->middleware(['auth', 'signed'])->name('verification.verify');
-
-        Route::post('/email/verification-notification', function (Request $request) {
-            $request->user()->sendEmailVerificationNotification();
-            return back()->with('status', 'verification-link-sent');
-        })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
-
         // Settings Routes
         Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');
         Route::post('/settings/clear-cache', [SettingController::class, 'clearCache'])->name('settings.clear-cache');
@@ -199,23 +189,38 @@ Route::middleware('auth')->group(function () {
         Route::get('/events/{event}/attendees/bulk-upload/{bulkUpload}/status.json', [BulkUploadController::class, 'getStatus'])->name('events.attendees.bulk-upload.status.json');
     });
 
+    // Email Verification Routes
+    Route::get('/email/verify', function () {
+        return view('auth.verify-email');
+    })->name('verification.notice');
+
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return redirect('/')->with('status', 'email-verified');
+    })->middleware(['auth', 'signed'])->name('verification.verify');
+
+    Route::post('/email/verification-notification', function (Request $request) {
+        $request->user()->sendEmailVerificationNotification();
+        return back()->with('status', 'verification-link-sent');
+    })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
+
     // Template download route (accessible to all authenticated users)
     Route::get('/events/attendees/template/{event?}', [BulkUploadController::class, 'downloadTemplate'])->name('events.attendees.template');
 
     // Attendee validation route
-    Route::get('/attendees/validate/{token}', [App\Http\Controllers\AttendeeController::class, 'validateToken'])
+    Route::get('/attendees/validate/{token}', [AdmissionController::class, 'prepareToken'])
         ->name('attendees.validate');
 });
 
 // Public check-in route (no auth required)
-Route::get('/check-in/{token}', [ScanController::class, 'checkIn'])->name('scanner.check-in');
+Route::get('/check-in/{token}', [TicketController::class, 'verify'])->middleware('throttle:30,1')->name('scanner.check-in');
 
 // Ticket Verification Route (Public)
 Route::get('/tickets/{token}/verify', [App\Http\Controllers\TicketController::class, 'verify'])
     ->name('tickets.verify');
 
 // SMS Management Routes
-Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.management.')->group(function () {
+Route::middleware(['auth', 'verified', 'role:admin'])->prefix('sms/management')->name('sms.management.')->group(function () {
     Route::get('/', [App\Http\Controllers\SmsManagementController::class, 'index'])->name('index');
     Route::get('/logs', [App\Http\Controllers\SmsManagementController::class, 'logs'])->name('logs');
     Route::get('/refresh-balance', [App\Http\Controllers\SmsManagementController::class, 'refreshBalance'])->name('refresh-balance');
@@ -224,5 +229,3 @@ Route::middleware(['auth', 'verified'])->prefix('sms/management')->name('sms.man
     Route::post('/events/{event}/bulk-send', [App\Http\Controllers\SmsManagementController::class, 'bulkSend'])->name('event.bulk-send');
     Route::post('/events/{event}/send-attendee-invitation', [App\Http\Controllers\SmsManagementController::class, 'sendAttendeeInvitation'])->name('send-attendee-invitation');
 });
-
-

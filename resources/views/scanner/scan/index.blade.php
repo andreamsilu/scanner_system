@@ -1,554 +1,68 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-2">
-            <div class="d-flex align-items-center">
-                <a href="{{ route('scanner.dashboard') }}" class="btn btn-sm btn-link text-muted p-0 me-3">
-                    <i class="bi bi-arrow-left fs-4"></i>
-                </a>
-                <h2 class="h4 mb-0">QR Code Scanner</h2>
+    <x-page-header title="Scan tickets" subtitle="A smooth welcome starts here." :breadcrumbs="['Admissions' => route('scanner.events.index'), 'Scan tickets' => null]">
+        <x-slot name="actions"><flux:button icon="clock" :href="route('scanner.history')">Admission history</flux:button></x-slot>
+    </x-page-header>
+    <div id="scannerWorkspace" data-validate="{{ route('scanner.scan.validate') }}" data-start="{{ route('scanner.scan.start') }}" data-stop="{{ route('scanner.scan.stop') }}">
+        <div class="ui-panel p-4 sm:p-5 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center gap-4">
+                <span class="grid size-11 shrink-0 place-items-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300"><flux:icon.calendar-days class="size-6" /></span>
+                <div><p class="eyebrow mb-1">Selected event</p><h2 class="text-base font-semibold mb-1">{{ $event->name }}</h2><p class="text-xs ui-muted mb-0">{{ $event->start_date->format('d M Y') }} · {{ $event->location }}</p></div>
             </div>
+            <form action="{{ route('scanner.events.deselect', $event) }}" method="POST">@csrf @method('DELETE')<flux:button type="submit" variant="subtle" icon="arrows-right-left">Change event</flux:button></form>
         </div>
-    </x-slot>
-
-    <!-- Event Banner -->
-    @if(session('selected_event_id'))
-        <div class="alert alert-info alert-dismissible fade show mb-4 py-2" role="alert">
-            <div class="d-flex flex-column flex-sm-row justify-content-between align-items-start align-items-sm-center gap-2">
-                <div class="d-flex align-items-center">
-                    <i class="fas fa-calendar-check me-2"></i>
-                    <span class="fw-medium">{{ $event->name }}</span>
-                </div>
-                <form action="{{ route('scanner.events.deselect', $event) }}" method="POST" class="d-inline">
-                    @csrf
-                    @method('DELETE')
-                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                        <i class="fas fa-times me-1"></i>Deselect
-                    </button>
-                </form>
-            </div>
-        </div>
-    @endif
-
-    <!-- Page Content -->
-    <div class="row g-4">
-        <!-- Scanner Section -->
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-header">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <h5 class="card-title mb-0">QR Code Scanner</h5>
-                        @if($event)
-                            <button type="button" class="btn btn-sm btn-primary" onclick="startScanner()">
-                                <i class="fas fa-play me-1"></i>Start Scanning
-                            </button>
-                        @endif
+        <div class="grid xl:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
+            <section class="ui-panel" aria-label="Ticket scanner">
+                <div class="ui-panel-heading"><h2 class="font-semibold mb-0">Camera check-in</h2><span class="text-xs ui-muted" id="scannerStatus" role="status">Camera paused</span></div>
+                <div class="p-4 sm:p-6">
+                    <div class="scan-stage mb-4">
+                        <div id="cameraPlaceholder" class="scan-placeholder"><flux:icon.qr-code class="size-16! mx-auto mb-5 text-teal-300" /><p class="font-medium text-white mb-2">Ready for your next guest</p><p class="text-sm mb-0">Start your camera and scan their QR code.</p></div>
+                        <div id="reader"></div>
+                    </div>
+                    <div class="flex flex-wrap items-center gap-3 mb-5">
+                        <flux:button id="startCamera" variant="primary" class="min-h-12! w-full sm:w-auto">Start camera</flux:button>
+                        <flux:button id="stopCamera" hidden class="min-h-12! w-full sm:w-auto">Pause camera</flux:button>
+                        <span class="text-xs ui-muted">Use the rear camera for the clearest scan.</span>
+                    </div>
+                    <div id="scannerResult" class="scan-result mb-5" data-status="info" role="status" aria-live="polite" aria-atomic="true" hidden><h3 id="resultHeading" class="text-base font-semibold mb-1"></h3><p id="resultMessage" class="text-sm mb-0"></p></div>
+                    <div class="border-t border-zinc-100 dark:border-zinc-700 pt-5">
+                        <h2 class="text-sm font-semibold mb-1">Enter a ticket manually</h2><p class="text-xs ui-muted mb-4">Use the event ticket number or paste the ticket link.</p>
+                        <form id="manualEntryForm" class="flex flex-col sm:flex-row gap-3 items-end">
+                            <div class="flex-1 w-full"><flux:input id="manualToken" label="Ticket number or link" placeholder="e.g. 1" value="{{ request('ticket') }}" maxlength="2048" autocomplete="off" required /></div>
+                            <flux:button id="manualSubmit" type="submit" variant="primary" class="min-h-10! w-full sm:w-auto">Check ticket</flux:button>
+                        </form>
                     </div>
                 </div>
-                <div class="card-body">
-                    @if($event)
-                        <div class="scanner-container position-relative">
-                            <!-- Scanner Status -->
-                            <div class="scanner-status mb-3">
-                                <span class="badge bg-secondary" id="scannerStatus">Scanner Inactive</span>
-                            </div>
-
-                            <!-- Scanner View -->
-                            <div class="text-center mb-4">
-                                <div id="reader" class="scanner-view mx-auto" style="width: 100%; max-width: 400px; min-height: 300px; background: #000; position: relative;">
-                                    <!-- Camera feed will be inserted here -->
-                                </div>
-                            </div>
-
-                            <!-- Scanner Messages -->
-                            <div id="scannerMessage" class="alert d-none mb-4"></div>
-
-                            <!-- Manual Entry Form -->
-                            <div class="mt-4">
-                                <form id="manualEntryForm" class="mb-4">
-                                    @csrf
-                                    <div class="input-group">
-                                        <input type="text" 
-                                               class="form-control" 
-                                               id="manualToken" 
-                                               placeholder="Enter ticket token manually"
-                                               pattern="[0-9]{6}"
-                                               title="Please enter a valid 6-digit token"
-                                               required>
-                                        <button type="submit" class="btn btn-sm btn-primary">
-                                            <i class="bi bi-search me-1"></i>Validate
-                                        </button>
-                                    </div>
-                                    <div id="manualValidationResult" class="mt-3 d-none">
-                                        <div class="alert">
-                                            <i class="bi me-2"></i>
-                                            <strong class="alert-heading"></strong>
-                                            <p class="mb-0"></p>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    @else
-                        <div class="text-center py-5">
-                            <i class="fas fa-qrcode fa-3x text-muted mb-3"></i>
-                            <h5>No Event Selected</h5>
-                            <p class="text-muted">Please select an event to start scanning QR codes.</p>
-                            <a href="{{ route('scanner.events.index') }}" class="btn btn-sm btn-primary">
-                                <i class="fas fa-calendar me-1"></i> Select Event
-                            </a>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Scans -->
-        <div class="col-lg-4">
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Recent Scans</h5>
-                    <a href="{{ route('scanner.history') }}" class="btn btn-sm btn-link p-0">View All</a>
-                </div>
-                <div class="card-body">
-                    <div class="list-group list-group-flush">
+            </section>
+            <div class="space-y-5">
+                <section class="ui-panel" aria-label="Recent admissions">
+                    <div class="ui-panel-heading"><h2 class="font-semibold mb-0">Recent admissions</h2><flux:icon.clock class="size-4 ui-muted" /></div>
+                    <div id="recentAdmissions" class="px-5 pb-2 max-h-[540px] overflow-y-auto">
                         @forelse($recent_scans as $scan)
-                            <div class="list-group-item">
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="mb-1">{{ $scan['attendee'] }}</h6>
-                                        <small class="text-muted">{{ $scan['time'] }}</small>
-                                        <small class="d-block text-muted">Scanner: {{ $scan['scanner'] }}</small>
-                                    </div>
-                                    <span class="badge rounded-pill 
-                                        @if($scan['status_class'] === 'success') bg-success
-                                        @elseif($scan['status_class'] === 'warning') bg-warning
-                                        @else bg-danger @endif">
-                                        {{ ucfirst($scan['status']) }}
-                                            </span>
-                                </div>
-                            </div>
-                                @empty
-                            <div class="text-center py-4">
-                                <i class="bi bi-upc-scan display-4 text-muted mb-2"></i>
-                                <p class="text-muted mb-0">No recent scans</p>
-                            </div>
-                                @endforelse
+                            <div class="recent-admission"><div class="flex justify-between gap-3"><h3>{{ $scan['attendee'] }}</h3><span class="text-xs {{ $scan['status_class'] === 'success' ? 'text-teal-700 dark:text-teal-300' : 'text-amber-700 dark:text-amber-300' }}">{{ ucfirst($scan['status']) }}</span></div><p>{{ $scan['time'] }} · {{ $scan['scanner'] }}</p></div>
+                        @empty
+                            <div id="recentEmpty" class="text-center py-10"><flux:icon.ticket class="size-8 mx-auto text-zinc-400 mb-3" /><p class="text-sm font-medium mb-1">Your first guest is next</p><p class="text-xs ui-muted mb-0">Confirmed entries will appear here.</p></div>
+                        @endforelse
                     </div>
-                </div>
+                </section>
+                <aside class="rounded-2xl border border-teal-100 bg-teal-50 p-5 dark:border-teal-900 dark:bg-teal-950/40">
+                    <div class="flex items-center gap-2 text-teal-800 dark:text-teal-200 mb-3"><flux:icon.user-group class="size-5" /><h2 class="text-sm font-semibold mb-0">One guest or two?</h2></div>
+                    <p class="text-sm text-teal-900 dark:text-teal-100 mb-0 leading-relaxed">Double tickets ask how many people are entering. Choose <strong>Single entry</strong> for one guest now, or <strong>Double entry</strong> when both arrive together.</p>
+                </aside>
             </div>
         </div>
     </div>
-
-    @push('meta')
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    @endpush
-
-    @push('styles')
-    <style>
-        .scanner-container {
-            background: #f8f9fa;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            max-width: 800px;
-            margin: 0 auto;
-        }
-        .scanner-view {
-            border-radius: 0.5rem;
-            overflow: hidden;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-        #reader {
-            width: 100% !important;
-        }
-        #reader video {
-            width: 100% !important;
-            height: auto !important;
-            border-radius: 0.5rem;
-            object-fit: cover;
-            max-height: 300px;
-        }
-        .scanner-controls {
-            background: #fff;
-            padding: 1rem;
-            border-radius: 0.5rem;
-            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-        }
-        .scanner-status .badge {
-            font-size: 0.875rem;
-            padding: 0.5rem 1rem;
-        }
-        .scanner-buttons .btn {
-            min-width: 100px;
-            padding: 0.25rem 0.5rem;
-            font-size: 0.875rem;
-        }
-        .input-group .btn {
-            padding: 0.25rem 0.75rem;
-            font-size: 0.875rem;
-        }
-        .input-group .form-control {
-            font-size: 0.875rem;
-            padding: 0.25rem 0.75rem;
-        }
-        .list-group-item {
-            padding: 1rem;
-        }
-        .list-group-item:first-child {
-            border-top-left-radius: 0.5rem;
-            border-top-right-radius: 0.5rem;
-        }
-        .list-group-item:last-child {
-            border-bottom-left-radius: 0.5rem;
-            border-bottom-right-radius: 0.5rem;
-        }
-
-        /* iOS-specific styles */
-        @supports (-webkit-touch-callout: none) {
-            #reader {
-                -webkit-transform: translateZ(0);
-                transform: translateZ(0);
-            }
-            
-            #reader video {
-                -webkit-transform: translateZ(0);
-                transform: translateZ(0);
-                object-fit: cover;
-            }
-        }
-
-        /* Prevent iOS zoom on input focus */
-        input[type="text"],
-        input[type="email"],
-        input[type="tel"],
-        input[type="number"] {
-            font-size: 16px !important;
-        }
-
-        /* Prevent pull-to-refresh on iOS */
-        body {
-            overscroll-behavior-y: none;
-        }
-
-        /* Responsive adjustments */
-        @media (max-width: 768px) {
-            .scanner-container {
-                padding: 1rem;
-            }
-            .card-header {
-                padding: 0.75rem 1rem;
-            }
-            .card-body {
-                padding: 1rem;
-            }
-            .scanner-view {
-                min-height: 250px;
-            }
-            #reader video {
-                max-height: 250px;
-            }
-            .list-group-item {
-                padding: 0.75rem;
-            }
-        }
-        @media (max-width: 576px) {
-            .scanner-view {
-                min-height: 200px;
-            }
-            #reader video {
-                max-height: 200px;
-            }
-            .card-header h5 {
-                font-size: 1rem;
-            }
-            .btn-sm {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.75rem;
-            }
-        }
-
-        /* Event Banner Styles */
-        .alert-info {
-            background-color: #e8f4f8;
-            border-color: #bee5eb;
-            color: #0c5460;
-        }
-        .alert-info .btn-outline-danger {
-            color: #dc3545;
-            border-color: #dc3545;
-            background-color: transparent;
-        }
-        .alert-info .btn-outline-danger:hover {
-            color: #fff;
-            background-color: #dc3545;
-        }
-        @media (max-width: 576px) {
-            .alert {
-                padding: 0.5rem 0.75rem;
-            }
-            .alert .btn-sm {
-                padding: 0.25rem 0.5rem;
-                font-size: 0.75rem;
-            }
-            .alert .fw-medium {
-                font-size: 0.875rem;
-            }
-        }
-    </style>
-    @endpush
-
+    <dialog id="entryChoiceDialog" class="ui-dialog" aria-labelledby="entryChoiceTitle" aria-describedby="entryChoiceRemaining">
+        <span class="grid size-12 place-items-center rounded-xl bg-teal-50 text-teal-700 mb-5"><flux:icon.user-group class="size-6" /></span>
+        <p class="eyebrow mb-2">Double ticket</p><h2 id="entryChoiceTitle" class="text-xl font-semibold mb-3">How many people are entering?</h2>
+        <p id="entryChoiceName" class="font-medium mb-1"></p><p id="entryChoiceRemaining" class="ui-muted text-sm mb-6"></p>
+        <div class="grid gap-3">
+            <flux:button id="singleEntryButton" variant="primary" class="min-h-12! justify-start!">Single entry · 1 person</flux:button>
+            <flux:button id="doubleEntryButton" class="min-h-12! justify-start!">Double entry · 2 people</flux:button>
+            <flux:button id="cancelEntryButton" variant="subtle">Cancel</flux:button>
+        </div>
+    </dialog>
     @push('scripts')
-    <script src="https://unpkg.com/html5-qrcode"></script>
-    <script>
-    let html5QrcodeScanner = null;
-    let isScanning = false;
-
-    async function startScanner() {
-        try {
-            // Request camera permission explicitly
-            const stream = await navigator.mediaDevices.getUserMedia({ 
-                video: { 
-                    facingMode: "environment",
-                    width: { min: 320, ideal: 640, max: 1280 },
-                    height: { min: 240, ideal: 480, max: 720 }
-                } 
-            });
-            
-            // Stop the stream as we'll use it through the scanner
-            stream.getTracks().forEach(track => track.stop());
-
-            const response = await fetch('{{ route("scanner.scan.start") }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            const data = await response.json();
-            
-            if (data.success) {
-                // Update UI
-                document.getElementById('scannerStatus').className = 'badge bg-success';
-                document.getElementById('scannerStatus').textContent = 'Scanner Active';
-                
-                // Initialize scanner with built-in buttons
-                if (!html5QrcodeScanner) {
-                    html5QrcodeScanner = new Html5QrcodeScanner(
-                        "reader",
-                        {
-                            fps: 10,
-                            qrbox: { width: 250, height: 250 },
-                            aspectRatio: 1.0,
-                            videoConstraints: {
-                                facingMode: "environment",
-                                width: { min: 320, ideal: 640, max: 1280 },
-                                height: { min: 240, ideal: 480, max: 720 }
-                            },
-                            formatsToSupport: [ Html5QrcodeSupportedFormats.QR_CODE ],
-                            showTorchButtonIfSupported: true,
-                            showZoomSliderIfSupported: true,
-                            defaultZoomValueIfSupported: 1.5,
-                            rememberLastUsedCamera: true,
-                            showCameraSelectionIfSupported: true
-                        }
-                    );
-
-                    html5QrcodeScanner.render(onScanSuccess, onScanFailure);
-                }
-                
-                isScanning = true;
-                showMessage('Scanner started successfully.', 'success');
-            } else {
-                showMessage(data.message, 'danger');
-            }
-        } catch (error) {
-            console.error('Error starting scanner:', error);
-            let errorMessage = 'Failed to start scanner. ';
-            
-            if (error.name === 'NotAllowedError') {
-                errorMessage += 'Camera access was denied. Please allow camera access in your browser settings.';
-            } else if (error.name === 'NotFoundError') {
-                errorMessage += 'No camera found. Please ensure your device has a camera.';
-            } else if (error.name === 'NotReadableError') {
-                errorMessage += 'Camera is already in use by another application.';
-            } else if (error.name === 'SecurityError') {
-                errorMessage += 'Camera access is not allowed in this context. Please use HTTPS.';
-            }
-            
-            showMessage(errorMessage, 'danger');
-        }
-    }
-
-    function showMessage(message, type = 'info') {
-        const messageDiv = document.getElementById('scannerMessage');
-        messageDiv.className = `alert alert-${type} mb-3`;
-        messageDiv.textContent = message;
-        messageDiv.classList.remove('d-none');
-                    
-        // Hide message after 5 seconds
-                    setTimeout(() => {
-            messageDiv.classList.add('d-none');
-        }, 5000);
-                }
-
-    async function onScanSuccess(decodedText, decodedResult) {
-        if (!isScanning) return;
-
-        try {
-            const response = await fetch('{{ route("scanner.scan.validate") }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
-                    'Accept': 'application/json',
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ token: decodedText })
-            });
-
-            const data = await response.json();
-            
-            // Play sound based on result
-            const audio = new Audio(data.success ? 
-                '{{ asset("sounds/success.mp3") }}' : 
-                '{{ asset("sounds/error.mp3") }}'
-            );
-            audio.play();
-
-            showMessage(data.message, data.success ? 'success' : 'danger');
-                
-            // If successful, refresh the page after a short delay to update recent scans
-            if (data.success) {
-                setTimeout(() => {
-                    window.location.reload();
-                }, 2000);
-            }
-        } catch (error) {
-            console.error('Error processing scan:', error);
-            showMessage('An error occurred while processing the scan. Please try again.', 'danger');
-        }
-        }
-
-        function onScanFailure(error) {
-        // Handle scan failure silently
-        console.warn(`QR code scan failed: ${error}`);
-        }
-
-    // Check scanner status on page load
-    document.addEventListener('DOMContentLoaded', async function() {
-        try {
-            const response = await fetch('{{ route("scanner.scan.status") }}');
-            const data = await response.json();
-            
-            if (data.success && data.status === 'active') {
-                startScanner();
-            }
-        } catch (error) {
-            console.error('Error checking scanner status:', error);
-        }
-    });
-
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', async function() {
-        if (html5QrcodeScanner) {
-            await html5QrcodeScanner.clear();
-        }
-        if (isScanning) {
-            await stopScanner();
-        }
-        });
-
-    // Handle manual entry form
-    document.getElementById('manualEntryForm').addEventListener('submit', function(e) {
-        e.preventDefault();
-        const token = document.getElementById('manualToken').value.trim();
-        const resultDiv = document.getElementById('manualValidationResult');
-        
-        if (!token) {
-            showManualValidationResult('error', 'Please enter a token', 'No token provided');
-            return;
-        }
-
-        if (token.length !== 6 || !/^\d{6}$/.test(token)) {
-            showManualValidationResult('error', 'Invalid token format', 'Token must be exactly 6 digits');
-            return;
-        }
-
-        // Show processing state
-        showManualValidationResult('info', 'Processing...', 'Validating token...');
-        
-        // Send validation request
-        fetch('{{ route("scanner.scan.validate") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: JSON.stringify({ token: token })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                showManualValidationResult('success', 'Check-in Successful!', `${data.attendee.name} has been checked in.`);
-                // Play success sound if available
-                if (typeof playSound === 'function') {
-                    playSound('success');
-                }
-            } else {
-                const status = data.code === 'TICKET_USED' ? 'warning' : 'error';
-                showManualValidationResult(status, 'Check-in Failed', data.message);
-                // Play error sound if available
-                if (typeof playSound === 'function') {
-                    playSound('error');
-                }
-            }
-        })
-        .catch(error => {
-            console.error('Validation failed:', error);
-            showManualValidationResult('error', 'Validation Failed', 'An error occurred while validating the token. Please try again.');
-            // Play error sound if available
-            if (typeof playSound === 'function') {
-                playSound('error');
-            }
-        })
-        .finally(() => {
-            // Clear the form
-            this.reset();
-            // Hide the result after 3 seconds
-            setTimeout(() => {
-                resultDiv.classList.add('d-none');
-            }, 3000);
-        });
-    });
-
-    function showManualValidationResult(type, heading, message) {
-        const resultDiv = document.getElementById('manualValidationResult');
-        const icon = resultDiv.querySelector('.bi');
-        const headingEl = resultDiv.querySelector('.alert-heading');
-        const messageEl = resultDiv.querySelector('p');
-
-        // Remove all existing classes
-        resultDiv.classList.remove('d-none', 'alert-success', 'alert-danger', 'alert-warning', 'alert-info');
-        icon.classList.remove('bi-check-circle-fill', 'bi-x-circle-fill', 'bi-exclamation-triangle-fill', 'bi-info-circle-fill');
-
-        // Add appropriate classes based on type
-        resultDiv.classList.add('alert-' + type);
-        icon.classList.add(
-            type === 'success' ? 'bi-check-circle-fill' :
-            type === 'error' ? 'bi-x-circle-fill' :
-            type === 'warning' ? 'bi-exclamation-triangle-fill' :
-            'bi-info-circle-fill'
-        );
-
-        // Update content
-        headingEl.textContent = heading;
-        messageEl.textContent = message;
-
-        // Show the result
-        resultDiv.classList.remove('d-none');
-    }
-    </script>
+        <script src="{{ asset('js/admission.js') }}"></script>
+        @vite('resources/js/scanner.js')
     @endpush
-</x-app-layout> 
+</x-app-layout>

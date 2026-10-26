@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -35,6 +36,7 @@ class Event extends Model
         'start_date' => 'datetime',
         'end_date' => 'datetime',
         'capacity' => 'integer',
+        'next_ticket_number' => 'integer',
         'rsvp_enabled' => 'boolean'
     ];
 
@@ -272,7 +274,7 @@ class Event extends Model
     {
         return $this->belongsToMany(User::class, 'event_scanner', 'event_id', 'scanner_id')
             ->whereHas('roles', function ($query) {
-                $query->where('name', 'scanner');
+                $query->where('slug', 'scanner');
             })
             ->withTimestamps()
             ->withPivot(['assigned_at', 'assigned_by']);
@@ -413,4 +415,4 @@ class Event extends Model
 
         return "$start - $end";
     }
-} 
+}

@@ -1,211 +1,115 @@
-# Event Ticketing System
+# Event ticketing and admission system
 
-A robust web-based platform for managing events, attendees, and ticket verification using QR codes.
+Laravel 12 application for events, attendee registration, QR tickets, scanner assignments, admission history, CSV/XLSX imports, ticket exports and SMS notifications. The interface uses Blade, Livewire 4, Tailwind CSS 4 and the free Flux UI components; Vite builds the frontend assets.
 
-## 🚀 Features
+## Interface
 
-### Core Functionality
-- Role-based authentication (Admin, Scanner)
-- Event management and creation
-- Attendee registration (manual and bulk)
-- QR code ticket generation and management
-- Real-time ticket verification
-- Comprehensive analytics dashboard
-- Scan logging and reporting
+The shared workspace has a responsive sidebar, keyboard-accessible navigation, and a persistent light/dark appearance switch. Sign-in, administrator/scanner overviews, ticket management and the scanner use the new design. Older administration forms retain scoped Bootstrap styles during the gradual migration.
 
-### Security Features
-- Secure UUID-based ticket tokens
-- Role-based access control
-- Duplicate scan prevention
-- Immutable audit logs
+Ticket management uses the `TicketBrowser` Livewire component for event-scoped name/phone/number search, type/status filters, numeric sorting and pagination. It shows partial admissions and keeps print, export, sharing, deactivation and invitation actions. Every Livewire request rechecks administrator access.
 
-## 🏗️ System Architecture
+The scanner bundles its QR reader locally. Camera access starts only on request; manual entry remains available when a camera is unavailable. Results stay visible until the next result, and double-ticket choices retain single entry as the default focus.
 
-### Technology Stack
-- **Backend**: Laravel 10+
-- **Database**: MySQL 8+
-- **Frontend**: Bootstrap 5
-- **Hosting**: Laravel Forge/Vapor
-- **Storage**: Public/S3 for QR codes
+Shared design tokens and reusable styles live in `resources/css/app.css` and `workspace.css`. `legacy.css` is prefixed to `.legacy-ui` at build time so Bootstrap cannot override Flux navigation. New screens should use Flux and Tailwind, and be excluded from the legacy wrapper in `layouts/workspace.blade.php`. Livewire supplies Alpine; do not load another Alpine instance. No Flux Pro license is required.
 
-### MVC Architecture Implementation
-```
-app/
-├── Http/
-│   ├── Controllers/    # Application controllers
-│   ├── Middleware/     # HTTP middleware
-│   └── Requests/       # Form requests
-├── Models/             # Eloquent models
-├── Services/           # Business logic services
-├── Repositories/       # Data access layer
-└── View/              # View composers
-resources/
-├── views/             # Blade templates
-│   ├── admin/         # Admin views
-│   ├── scanner/       # Scanner views
-│   └── layouts/       # Layout templates
-├── js/                # JavaScript files
-└── css/               # CSS files
-database/
-├── migrations/        # Database migrations
-└── seeders/          # Database seeders
-routes/
-├── web.php           # Web routes
-└── api.php           # API routes
-```
+After updating, run `composer install`, `npm ci`, `npm run build` and `php artisan view:clear`. Serve the generated `public/build` assets and allow Laravel's Livewire and Flux asset/update routes through your web server. The modern UI requires browsers supported by Tailwind CSS 4 (Safari 16.4+, Chrome 111+, Firefox 128+). Production camera access requires HTTPS.
 
-## 👥 User Roles
+## Ticket numbering and entry rules
 
-### Admin
-- Full system access
-- Event management
-- Attendee registration
-- Analytics and reporting
-- Scanner assignment
+- Each event numbers its tickets **1, 2, 3, ...** independently. Deleting a ticket does not reuse its number. Internal database keys remain globally unique.
+- QR codes use a separate random credential. A visible ticket number is meaningful only within its event.
+- Single, regular and VIP tickets admit one person.
+- A double ticket prompts staff to choose **Single entry** (one person) or **Double entry** (two people). Single entry is focused by default. Cancelling the prompt consumes nothing.
+- After single entry on a double ticket, one admission remains and the ticket stays active. After both admissions are consumed, its status becomes used. Only single entry is available when one admission remains.
+- Admission is checked and recorded in one database transaction. Confirmations include the previously observed entry count, so simultaneous confirmations cannot spend the remaining admission accidentally.
+- Staff must be active and assigned to the selected event, or be an administrator. Cancelled registrations/tickets and closed events are rejected.
+- Public ticket links display information; opening or previewing a link never admits anyone. Admission requires a signed-in staff POST request.
 
-### Scanner
-- Event-specific access
-- Ticket verification
-- Basic analytics view
+## Requirements
 
-## 📋 Core Modules
+- PHP 8.2+ and Composer; PDO MySQL, GD, mbstring, XML, fileinfo, OpenSSL and ZIP extensions.
+- MySQL 8+ for deployment. PDO SQLite is required for the default isolated test suite.
+- Node.js 22.12+ and npm for frontend builds.
+- A queue worker, persistent storage, HTTPS and configured mail/SMS credentials for deployment.
 
-### Authentication & Roles
-- Secure login system
-- Role-based access control
-- Session management
+QR codes are generated locally. SVG is used for stored QR images; JPEG tickets use GD to render QR modules without sending credentials to an external image service.
 
-### Event Management
-- CRUD operations for events
-- Scanner assignment
-- Event configuration
+## Development setup
 
-### Attendee Management
-- Manual registration
-- Bulk upload functionality
-- QR code generation
+Use Node and npm from the same operating system where you run Vite. In WSL, activate your Linux Node installation (for example, `nvm use 24`) and run `npm ci` inside `/mnt/d/msilu/scanner_system` before starting Vite. Windows and WSL cannot share an installed `node_modules` directory reliably: switching environments requires another `npm ci`, which replaces generated launchers and platform-specific binaries while keeping `package-lock.json` unchanged. If Vite reports `exec: node.exe: Permission denied` in WSL, run `npm ci` with Linux npm; changing file permissions is not the fix.
 
-### Ticket Management
-- Unique QR code generation
-- Ticket re-generation
-- Export capabilities
-
-### Scanner Dashboard
-- QR code scanning
-- Manual verification
-- Real-time status updates
-
-### Analytics & Reporting
-- Attendance statistics
-- Check-in tracking
-- Export functionality
-
-## 🔄 Key User Flows
-
-### Admin Flow
-1. Login
-2. Create/Manage Events
-3. Register Attendees
-4. Generate/Distribute Tickets
-5. View Analytics
-
-### Scanner Flow
-1. Login
-2. Access Event Dashboard
-3. Scan/Verify Tickets
-4. View Status Updates
-
-## 🔮 Future Enhancements
-
-### Planned Features
-- Payment gateway integration
-- Email/SMS notifications
-- Mobile scanning application
-- Real-time statistics
-- Check-out functionality
-- Advanced role management
-
-## 🛠️ Development Setup
-
-### Prerequisites
-- PHP 8.1+
-- Composer
-- MySQL 8+
-- Node.js & NPM
-
-### Installation
-1. Clone the repository
-```bash
-git clone [repository-url]
-```
-
-2. Install dependencies
-```bash
+```sh
 composer install
-npm install
-```
-
-3. Configure environment
-```bash
+npm ci
 cp .env.example .env
 php artisan key:generate
 ```
 
-4. Run migrations
-```bash
-php artisan migrate
-```
+Configure APP_URL, the database, mail and SMS settings in `.env`, then run:
 
-5. Start development server
-```bash
+```sh
+php artisan migrate
+php artisan storage:link
+php artisan app:create-admin admin@example.com --name="Administrator"
+npm run build
 php artisan serve
 ```
 
-## 📊 Database Schema
+The administrator command asks for a private password and creates the admin/scanner roles. It refuses to overwrite an existing account. No shared initial password is required. Demo seeders are for local/testing environments and refuse to run in production.
 
-### Core Entities
-- Users
-- Events
-- Ticket Types
-- Attendees
-- Tickets
-- Scan Logs
+Run the worker in a separate terminal:
 
-### Key Relationships
-- One scanner per event
-- Event has many attendees
-- One ticket per attendee
+```sh
+php artisan queue:work --tries=3 --timeout=300
+```
 
-## 🔒 Security Measures
+Use QUEUE_CONNECTION=database. Its retry interval defaults to 360 seconds, longer than the import job timeout. Restart workers after deploying code changes. Bulk uploads are durable jobs, CSV rows are streamed, template heading annotations are accepted, and retries skip already imported rows from that upload. Uploads are limited to 10 MB and 10,000 rows; invalid rows are reported in the upload status page.
 
-- UUID-based ticket tokens
-- Role-based access control
-- Duplicate scan prevention
-- Immutable audit logs
-- Regular security updates
+Accounts are administered through user management. Public registration, password recovery and standalone password confirmation endpoints are currently closed. Signed-in users can change their own password and verify their email. Configure outbound mail before using email verification.
 
-## 🚀 Deployment
+## Upgrading an existing installation
 
-### Production Requirements
-- Laravel Forge or Vapor hosting
-- SSL certification
-- Regular backups
-- Monitoring setup
+Back up the database and storage, and rehearse the upgrade on a restored copy first. Stop admission traffic and pause/drain workers during the migration.
 
-### Maintenance
-- Regular security updates
-- Database optimization
-- Performance monitoring
-- Backup verification
+The 2026-10-25 migration renumbers existing tickets by database ID within each event, retains their former number in `legacy_ticket_number`, and preserves existing QR credentials. Existing used double tickets remain fully consumed; they do not gain another admission. Tell staff to use the new event ticket numbers for manual entry; old printed QR codes still work.
 
-## 📝 License
+The migration also adds entry counters, admission quantities, import status fields and foreign-key restrictions that prevent deleting admission history through cascading ticket/user deletion. Baseline migrations no longer erase existing event data. A database whose tables exist without matching migration history must be reconciled before migration rather than reset.
 
-[License Type] - See LICENSE file for details
+Typical deployment sequence, after taking and verifying a backup:
 
-## 👥 Contributing
+```sh
+php artisan down
+composer install --no-dev --prefer-dist --optimize-autoloader
+npm ci
+npm run build
+php artisan migrate --force
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+php artisan queue:restart
+php artisan up
+```
 
-Please read CONTRIBUTING.md for details on our code of conduct and the process for submitting pull requests.
+Set APP_ENV=production and APP_DEBUG=false. Use HTTPS, supervise the worker, monitor failed jobs and retain backups. Use separate migration credentials and restrict application access to the admission log table to SELECT/INSERT where supported. Application admission logs reject updates/deletes; scanned events must be retained rather than deleted.
 
-## 📞 Support
+Renumbering/admission tracking intentionally refuses automatic rollback. Restore the verified pre-upgrade backup if the data migration must be reversed; do not run migration resets on a populated deployment.
 
-For support, email [support-email] or create an issue in the repository.
+## Validation
+
+```sh
+composer validate --strict
+composer audit
+composer test
+npm test
+npm run build
+```
+
+The default PHP suite uses an in-memory SQLite database and a test-only encryption key; it does not use deployment data. It covers entry limits, double-entry choices, stale confirmations, permissions, account status, public read-only links, imports, exports, UI rendering, Livewire filters/access revocation and preservation of existing records during upgrade. Frontend tests cover the entry dialog, cancellation and repeated camera frames.
+
+Real concurrency tests require a disposable MySQL database whose name ends in `_test`. Configure its DB_* environment variables and run:
+
+```sh
+php vendor/bin/phpunit --testsuite=Integration
+```
+
+Those tests recreate that test database and launch independent PHP workers to race ticket issuance and admission. They skip on SQLite. The GitHub Actions workflow runs PHP 8.2/8.3 tests, frontend checks, dependency audits and the MySQL concurrency suite.

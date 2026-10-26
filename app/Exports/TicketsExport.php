@@ -47,7 +47,7 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
         return [
             '#',
             'Attendee Name',
-            'Token',
+            'Ticket Number',
             'Ticket Type'
         ];
     }
@@ -60,7 +60,7 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
         return [
             $index,
             $ticket->attendee_name ?? 'Unassigned',
-            $ticket->token,
+            $ticket->ticket_number,
             ucfirst($ticket->type)
         ];
     }
@@ -88,4 +88,4 @@ class TicketsExport implements FromCollection, WithHeadings, WithMapping, WithSt
             ]
         ];
     }
-} 
+}

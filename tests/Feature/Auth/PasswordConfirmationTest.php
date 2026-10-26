@@ -10,16 +10,16 @@ class PasswordConfirmationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_confirm_password_screen_can_be_rendered(): void
+    public function test_unused_password_confirmation_screen_is_closed(): void
     {
         $user = User::factory()->create();
 
         $response = $this->actingAs($user)->get('/confirm-password');
 
-        $response->assertStatus(200);
+        $response->assertNotFound();
     }
 
-    public function test_password_can_be_confirmed(): void
+    public function test_unused_confirmation_endpoint_cannot_confirm_a_password(): void
     {
         $user = User::factory()->create();
 
@@ -27,11 +27,11 @@ class PasswordConfirmationTest extends TestCase
             'password' => 'password',
         ]);
 
-        $response->assertRedirect();
-        $response->assertSessionHasNoErrors();
+        $response->assertNotFound();
+        $response->assertSessionMissing('auth.password_confirmed_at');
     }
 
-    public function test_password_is_not_confirmed_with_invalid_password(): void
+    public function test_invalid_password_cannot_set_confirmation_state(): void
     {
         $user = User::factory()->create();
 
@@ -39,6 +39,7 @@ class PasswordConfirmationTest extends TestCase
             'password' => 'wrong-password',
         ]);
 
-        $response->assertSessionHasErrors();
+        $response->assertNotFound();
+        $response->assertSessionMissing('auth.password_confirmed_at');
     }
 }

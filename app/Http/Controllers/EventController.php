@@ -120,6 +120,9 @@ class EventController extends Controller
 
     public function destroy(Event $event): RedirectResponse
     {
+        if ($event->scanLogs()->exists()) {
+            return back()->with('error', 'Events with admission history must be retained. Mark the event completed instead.');
+        }
         DB::transaction(function () use ($event) {
             $event->tickets()->delete();
             $event->attendees()->delete();

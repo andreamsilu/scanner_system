@@ -101,7 +101,6 @@ class SmsManagementController extends Controller
                 'created_at',
                 'metadata'
             ])
-            ->with(['metadata'])
             ->latest()
             ->take(10)
             ->get()
@@ -1109,4 +1108,4 @@ class SmsManagementController extends Controller
             ], 500);
         }
     }
-} 
+}

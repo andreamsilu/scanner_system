@@ -85,7 +85,7 @@
                     <div class="qr-code">
                         {!! QrCode::size(200)->generate(request()->url()) !!}
                     </div>
-                    <p class="text-muted mt-2">Scan this QR code to verify the ticket</p>
+                    <p class="text-muted mt-2">Show this QR code to event staff for admission.</p>
                 </div>
 
                 <div class="row">
@@ -95,11 +95,13 @@
                             <dt class="col-sm-4">Name:</dt>
                             <dd class="col-sm-8">{{ $attendee->name }}</dd>
 
+                            @if($canViewContact)
                             <dt class="col-sm-4">Email:</dt>
                             <dd class="col-sm-8">{{ $attendee->email }}</dd>
 
                             <dt class="col-sm-4">Phone:</dt>
                             <dd class="col-sm-8">{{ $attendee->phone }}</dd>
+                            @endif
 
                             @if($attendee->position)
                                 <dt class="col-sm-4">Position:</dt>
@@ -111,14 +113,16 @@
                         <h6 class="text-muted mb-3">Ticket Information</h6>
                         <dl class="row mb-0">
                             <dt class="col-sm-4">Ticket ID:</dt>
-                            <dd class="col-sm-8">{{ $ticket->token }}</dd>
+                            <dd class="col-sm-8">{{ $ticket->ticket_number }}</dd>
 
                             <dt class="col-sm-4">Status:</dt>
                             <dd class="col-sm-8">
-                                <span class="badge bg-{{ $ticket->is_valid ? 'success' : 'danger' }} status-badge">
-                                    {{ $ticket->is_valid ? 'Valid' : 'Invalid' }}
+                                <span class="badge bg-{{ $ticket->isActive() ? 'success' : 'danger' }} status-badge">
+                                    {{ ucfirst($ticket->status) }}
                                 </span>
                             </dd>
+                            <dt class="col-sm-4">Entries left:</dt>
+                            <dd class="col-sm-8">{{ $ticket->remaining_entries }}</dd>
 
                             <dt class="col-sm-4">Created:</dt>
                             <dd class="col-sm-8">{{ $ticket->created_at->format('M d, Y H:i') }}</dd>
@@ -174,4 +178,4 @@
     <!-- Bootstrap Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html> 
+</html>

@@ -1,272 +1,32 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <h2 class="h3 mb-0">Scanner Dashboard</h2>
-                <p class="text-muted mb-0">Welcome back, {{ auth()->user()->name }}</p>
-            </div>
-            <div>
-                <a href="{{ route('scanner.history') }}" class="btn btn-outline-primary">
-                    <i class="bi bi-clock-history me-2"></i>View History
-                </a>
-            </div>
-        </div>
-    </x-slot>
-
-    <!-- Event Selection Alert -->
+    <x-page-header title="Welcome desk" :subtitle="'Welcome back, '.auth()->user()->name.'. Choose an event and start welcoming guests.'" :breadcrumbs="['Overview' => null]">
+        <x-slot name="actions"><flux:button :href="route('scanner.history')" icon="clock">Admission history</flux:button></x-slot>
+    </x-page-header>
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+        @foreach(["Today's scans" => $stats['today_scans'], 'Confirmed scans today' => $stats['valid_scans'], 'Unsuccessful scans today' => $stats['invalid_scans'], 'Assigned events' => $stats['total_events']] as $label => $value)
+            <div class="ui-panel ui-kpi"><span class="text-xs ui-muted">{{ $label }}</span><strong>{{ number_format($value) }}</strong></div>
+        @endforeach
+    </div>
     @if(session('selected_event_id'))
-        @php
-            $selectedEvent = \App\Models\Event::find(session('selected_event_id'));
-        @endphp
-        @if($selectedEvent)
-            <div class="alert alert-info mb-4">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-info-circle-fill me-2 fs-4"></i>
-                    <div class="flex-grow-1">
-                        <strong>Currently Selected Event:</strong> {{ $selectedEvent->name }}
-                        <div class="small text-muted">
-                            {{ $selectedEvent->start_date->format('M d, Y h:i A') }} at {{ $selectedEvent->location }}
-                        </div>
-                    </div>
-                    <div>
-                        <form action="{{ route('scanner.events.select', ['event' => $selectedEvent->id]) }}" 
-                              method="POST" 
-                              class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-primary btn-sm">
-                            <i class="bi bi-upc-scan me-1"></i>Continue Scanning
-                            </button>
-                        </form>
-                        <form action="{{ route('scanner.events.deselect', ['event' => $selectedEvent->id]) }}" 
-                              method="POST" 
-                              class="d-inline"
-                              onsubmit="return confirm('Are you sure you want to deselect this event?');">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="btn btn-outline-secondary btn-sm ms-2">
-                                <i class="bi bi-x-circle me-1"></i>Deselect Event
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        @endif
-    @else
-        <div class="alert alert-warning mb-4">
-            <div class="d-flex align-items-center">
-                <i class="bi bi-exclamation-triangle-fill me-2 fs-4"></i>
-                <div class="flex-grow-1">
-                    <strong>No Event Selected</strong>
-                    <div class="small">Please select an event from the list below to start scanning.</div>
-                </div>
-            </div>
-        </div>
+        <div class="rounded-2xl bg-teal-950 text-white p-6 mb-6 flex flex-col sm:flex-row justify-between sm:items-center gap-4"><div><p class="text-teal-300 text-xs uppercase tracking-widest mb-2">Your welcome desk is ready</p><h2 class="text-xl font-semibold mb-0">Continue checking in your guests.</h2></div><flux:button :href="route('scanner.scan.index')" icon="qr-code" class="bg-white! text-teal-950! shrink-0">Open scanner</flux:button></div>
     @endif
-
-    <!-- Statistics Cards -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="avatar-circle bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-upc-scan fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle mb-1 text-muted">Today's Scans</h6>
-                            <h3 class="card-title mb-0">{{ $stats['today_scans'] }}</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <section class="mb-6">
+        <div class="flex justify-between items-center mb-4"><h2 class="text-base font-semibold mb-0">Your assigned events</h2><flux:button :href="route('scanner.events.index')" variant="subtle" size="sm">View all</flux:button></div>
+        <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            @forelse($assigned_events as $event)
+                <article class="ui-panel p-5 flex flex-col">
+                    <div class="flex justify-between gap-3 mb-5"><span class="grid size-11 place-items-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300"><flux:icon.calendar-days class="size-6" /></span><flux:badge :color="$event->status === 'active' ? 'teal' : 'zinc'" size="sm">{{ ucfirst($event->status) }}</flux:badge></div>
+                    <h3 class="text-base font-semibold mb-2">{{ $event->name }}</h3><p class="ui-muted text-xs mb-5">{{ $event->start_date->format('d M Y') }} · {{ $event->location }}</p>
+                    <div class="flex gap-6 text-xs mb-5"><div><span class="ui-muted block mb-1">Registered</span><strong>{{ $event->scan_stats['total_attendees'] }}</strong></div><div><span class="ui-muted block mb-1">Checked in</span><strong>{{ $event->scan_stats['scanned_count'] }}</strong></div><div><span class="ui-muted block mb-1">Not arrived</span><strong>{{ $event->scan_stats['pending_count'] }}</strong></div></div>
+                    <form action="{{ route('scanner.events.select', $event) }}" method="POST" class="mt-auto">@csrf<flux:button type="submit" variant="primary" icon="qr-code" class="w-full">Open check-in</flux:button></form>
+                </article>
+            @empty
+                <div class="ui-panel col-span-full text-center py-12 px-6"><flux:icon.calendar-days class="size-9 mx-auto text-zinc-400 mb-4" /><h3 class="text-base font-semibold mb-2">No events assigned yet</h3><p class="ui-muted text-sm mb-0">Your administrator will assign an event before you begin scanning.</p></div>
+            @endforelse
         </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="avatar-circle bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-check-circle fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle mb-1 text-muted">Valid Scans</h6>
-                            <h3 class="card-title mb-0">{{ $stats['valid_scans'] }}</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="avatar-circle bg-danger bg-opacity-10 text-danger">
-                                <i class="bi bi-x-circle fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle mb-1 text-muted">Invalid Scans</h6>
-                            <h3 class="card-title mb-0">{{ $stats['invalid_scans'] }}</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <div class="avatar-circle bg-info bg-opacity-10 text-info">
-                                <i class="bi bi-calendar-event fs-4"></i>
-                            </div>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <h6 class="card-subtitle mb-1 text-muted">Total Events</h6>
-                            <h3 class="card-title mb-0">{{ $stats['total_events'] }}</h3>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Assigned Events -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0">Your Assigned Events</h5>
-                </div>
-                <div class="card-body">
-                    @if($assigned_events->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Event Name</th>
-                                        <th>Status</th>
-                                        <th>Total Attendees</th>
-                                        <th>Scanned</th>
-                                        <th>Pending</th>
-                                        <th>Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($assigned_events as $event)
-                                        <tr>
-                                            <td>
-                                                <div class="d-flex align-items-center">
-                                                    <div class="avatar-sm me-2">
-                                                        <span class="avatar-title rounded-circle bg-primary bg-opacity-10 text-primary">
-                                                            {{ substr($event->name, 0, 1) }}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <h6 class="mb-0">{{ $event->name }}</h6>
-                                                        <small class="text-muted">Assigned {{ $event->pivot->assigned_at->diffForHumans() }}</small>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <span class="badge rounded-pill 
-                                                    @if($event->status === 'active') bg-success
-                                                    @elseif($event->status === 'completed') bg-primary
-                                                    @elseif($event->status === 'cancelled') bg-danger
-                                                    @else bg-warning @endif">
-                                                    {{ ucfirst($event->status) }}
-                                                </span>
-                                            </td>
-                                            <td>{{ $event->scan_stats['total_attendees'] }}</td>
-                                            <td>
-                                                <span class="badge bg-success">
-                                                    {{ $event->scan_stats['scanned_count'] }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <span class="badge bg-warning">
-                                                    {{ $event->scan_stats['pending_count'] }}
-                                                </span>
-                                            </td>
-                                            <td>
-                                                <form action="{{ route('scanner.events.select', ['event' => $event->id]) }}" 
-                                                      method="POST" 
-                                                      class="d-inline">
-                                                    @csrf
-                                                    <button type="submit" class="btn btn-primary btn-sm">
-                                                        <i class="bi bi-upc-scan me-1"></i>Start Scanning
-                                                    </button>
-                                                </form>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @else
-                        <div class="text-center py-4">
-                            <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
-                            <p class="text-muted mt-3">No events assigned to you yet</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="row">
-        <div class="col-12">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white py-3">
-                    <h5 class="card-title mb-0">Recent Activity</h5>
-                </div>
-                <div class="card-body">
-                    @if($recent_activity->count() > 0)
-                        <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>Time</th>
-                                        <th>Event</th>
-                                        <th>Attendee</th>
-                                        <th>Status</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($recent_activity as $scan)
-                                        <tr>
-                                            <td>{{ $scan['time'] }}</td>
-                                            <td>{{ $scan['event'] }}</td>
-                                            <td>{{ $scan['attendee'] }}</td>
-                                            <td>
-                                                <span class="badge bg-{{ $scan['status_class'] }}">
-                                                    {{ ucfirst($scan['status']) }}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    @else
-                        <div class="text-center py-4">
-                            <div class="avatar-circle bg-light mx-auto mb-3" style="width: 64px; height: 64px;">
-                                <i class="bi bi-clock-history fs-2 text-muted"></i>
-                            </div>
-                            <h5 class="text-muted mb-2">No Recent Activity</h5>
-                            <p class="text-muted mb-0">Your scan history will appear here.</p>
-                        </div>
-                    @endif
-                </div>
-            </div>
-        </div>
-    </div>
-</x-app-layout> 
+    </section>
+    <section class="ui-panel"><div class="ui-panel-heading"><h2 class="text-base font-semibold mb-0">Your recent activity</h2></div><div class="overflow-x-auto"><table class="ui-table"><thead><tr><th scope="col">Guest</th><th scope="col">Event</th><th scope="col">Status</th><th scope="col">Time</th></tr></thead><tbody>
+        @forelse($recent_activity as $activity)<tr><td class="font-medium">{{ $activity['attendee'] }}</td><td class="ui-muted">{{ $activity['event'] }}</td><td><flux:badge :color="$activity['status'] === 'success' ? 'teal' : 'amber'" size="sm">{{ ucfirst($activity['status']) }}</flux:badge></td><td class="ui-muted text-xs">{{ $activity['time'] }}</td></tr>
+        @empty<tr><td colspan="4" class="text-center! ui-muted py-10!">No admissions recorded yet.</td></tr>@endforelse
+    </tbody></table></div></section>
+</x-app-layout>

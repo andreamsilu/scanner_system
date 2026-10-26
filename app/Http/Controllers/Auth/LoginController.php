@@ -15,7 +15,7 @@ class LoginController extends Controller
         return view('auth.login');
     }
 
-    public function login(Request $request)
+    public function login(\App\Http\Requests\Auth\LoginRequest $request)
     {
         $credentials = $request->validate([
             'email' => ['required', 'email'],
@@ -27,7 +27,8 @@ class LoginController extends Controller
             'ip' => $request->ip()
         ]);
 
-        if (Auth::attempt($credentials)) {
+        $request->authenticate();
+        if (Auth::check()) {
             $user = Auth::user();
             Log::info('Login successful', [
                 'user_id' => $user->id,
@@ -41,6 +42,9 @@ class LoginController extends Controller
             } elseif ($user->hasRole('scanner')) {
                 return redirect()->intended(route('scanner.dashboard'));
             } else {
+                Auth::logout();
+                $request->session()->invalidate();
+                $request->session()->regenerateToken();
                 abort(403, 'Unauthorized action.');
             }
         }
@@ -62,4 +66,4 @@ class LoginController extends Controller
         $request->session()->regenerateToken();
         return redirect()->route('login');
     }
-} 
+}

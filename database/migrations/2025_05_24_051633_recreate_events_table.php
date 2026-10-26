@@ -12,6 +12,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // The baseline already creates this table. Never drop existing events on upgrade.
+        if (Schema::hasTable('events')) {
+            return;
+        }
         // Disable foreign key checks so that we can drop the events table even if it is referenced by foreign keys (e.g. from tickets).
         DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         // Drop the table if it exists
@@ -40,8 +44,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        Schema::dropIfExists('events');
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        // No-op: an existing events table was preserved by up().
     }
 };

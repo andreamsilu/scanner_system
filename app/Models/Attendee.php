@@ -55,33 +55,13 @@ class Attendee extends Model
         parent::boot();
 
         static::creating(function ($attendee) {
-            // Generate unique 6-digit token if not provided
+            // QR credentials are independent of the event's visible ticket number.
             if (empty($attendee->token)) {
-                do {
-                    // Generate a random 6-digit number
-                    $token = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
-                } while (static::where('token', $token)->exists());
-                
-                $attendee->token = $token;
+                $attendee->token = \App\Services\TicketToken::generate();
             }
 
-            // Generate QR code with check-in URL (using absolute URL)
-            $checkInUrl = route('scanner.check-in', ['token' => $attendee->token], true); // true to get absolute URL
-            $qrCode = QrCode::format('png')
-                ->size(300)
-                ->errorCorrection('H')
-                ->generate($checkInUrl);
-
-            // Sanitize name for filename (remove special characters, replace spaces with hyphens)
-            $sanitizedName = preg_replace('/[^a-zA-Z0-9-]/', '-', strtolower($attendee->name));
-            $sanitizedName = preg_replace('/-+/', '-', $sanitizedName); // Replace multiple hyphens with single hyphen
-            $sanitizedName = trim($sanitizedName, '-'); // Remove leading/trailing hyphens
-
-            // Store QR code image with attendee name in filename
-            $path = 'qr-codes/' . $sanitizedName . '-' . $attendee->token . '.png';
-            Storage::disk('public')->put($path, $qrCode);
-
-            $attendee->qr_code = $path;
+            $attendee->qr_code = $attendee->qr_code ?: app(\App\Services\QRCodeService::class)
+                ->generateQRCode($attendee->token, $attendee->name, '');
         });
 
         static::deleting(function ($attendee) {
@@ -163,31 +143,12 @@ class Attendee extends Model
      */
     public function regenerateQrCode()
     {
-        // Delete old QR code if exists
-        if ($this->qr_code) {
-            Storage::disk('public')->delete($this->qr_code);
+        $previous = $this->qr_code;
+        $path = app(\App\Services\QRCodeService::class)->generateForAttendee($this);
+        $this->update(['qr_code' => $path]);
+        if ($previous && $previous !== $path) {
+            Storage::disk('public')->delete($previous);
         }
-
-        // Generate new QR code with check-in URL (using absolute URL)
-        $checkInUrl = route('scanner.check-in', ['token' => $this->token], true);
-        $qrCode = QrCode::format('png')
-            ->size(300)
-            ->errorCorrection('H')
-            ->generate($checkInUrl);
-
-        // Sanitize name for filename
-        $sanitizedName = preg_replace('/[^a-zA-Z0-9-]/', '-', strtolower($this->name));
-        $sanitizedName = preg_replace('/-+/', '-', $sanitizedName);
-        $sanitizedName = trim($sanitizedName, '-');
-
-        // Store new QR code image with attendee name in filename
-        $path = 'qr-codes/' . $sanitizedName . '-' . $this->token . '.png';
-        Storage::disk('public')->put($path, $qrCode);
-
-        // Update attendee record
-        $this->qr_code = $path;
-        $this->save();
-
         return $this;
     }
 
@@ -316,20 +277,7 @@ class Attendee extends Model
      */
     public function generateQrCode(): string
     {
-        $data = [
-            'token' => $this->token,
-            'event_id' => $this->event_id
-        ];
-
-        $qrCode = QrCode::format('png')
-            ->size(300)
-            ->generate(json_encode($data));
-
-        $filename = "qr_codes/{$this->event_id}/{$this->token}.png";
-        Storage::put($filename, $qrCode);
-
-        $this->update(['qr_code' => $filename]);
-
-        return $filename;
+        return $this->regenerateQrCode()->qr_code;
     }
-} 
+
+}

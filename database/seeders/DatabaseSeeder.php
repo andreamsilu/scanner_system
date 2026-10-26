@@ -14,6 +14,9 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
+        if (app()->environment('production')) {
+            throw new \RuntimeException('Demo seeders are disabled in production. Use app:create-admin instead.');
+        }
         // Ensure both admin identities exist:
         // 1) users-table admin for normal app auth
         // 2) scanner_operators admin for scanner operator auth

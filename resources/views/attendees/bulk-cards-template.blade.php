@@ -42,7 +42,7 @@
                     'attendee_company' => $attendee->company,
                     'attendee_position' => $attendee->position,
                     'attendee_status' => $attendee->registration_status,
-                    'ticket_id' => $attendee->token
+                    'ticket_id' => $attendee->ticket?->ticket_number
                 ];
             @endphp
             
@@ -50,4 +50,4 @@
         </div>
     @endforeach
 </body>
-</html> 
+</html>

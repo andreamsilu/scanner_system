@@ -73,7 +73,7 @@ class DashboardController extends Controller
             ->withCount(['scanLogs' => function ($query) {
                 $query->whereDate('created_at', today());
             }])
-            ->having('scan_logs_count', '>', 0)
+            ->whereHas('scanLogs', fn ($query) => $query->whereDate('created_at', today()))
             ->orderByDesc('scan_logs_count')
             ->take(5)
             ->get();
@@ -158,4 +158,4 @@ class DashboardController extends Controller
 
         return view('dashboard.scanner', compact('stats', 'assigned_events', 'recent_activity'));
     }
-} 
+}

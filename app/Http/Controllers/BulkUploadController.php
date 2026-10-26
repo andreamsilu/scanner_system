@@ -49,7 +49,7 @@ class BulkUploadController extends Controller
         $eventName = $event ? $event->name : 'Event';
         $safeEventName = preg_replace('/[^a-zA-Z0-9\s-]/', '', $eventName);
         $safeEventName = str_replace(' ', '_', $safeEventName);
-        
+
         $headers = [
             'name (required)',
             'email (optional)',
@@ -128,40 +128,12 @@ class BulkUploadController extends Controller
                 'bulk-uploads',
                 $bulkUpload->id . '_' . time() . '.' . $extension
             );
-            
+
             if (!$path) {
                 throw new \Exception('Failed to store the uploaded file.');
             }
 
-            // Process the upload in the background
-            dispatch(function() use ($path, $bulkUpload, $event, $originalName, $mimeType) {
-                Log::info('Starting bulk upload process', [
-                    'event_id' => $event->id,
-                    'event_name' => $event->name,
-                    'user_id' => auth()->id(),
-                    'user_name' => auth()->user()->name,
-                    'file_name' => $originalName,
-                    'file_size' => Storage::size($path),
-                    'file_type' => $mimeType,
-                    'timestamp' => now()->toDateTimeString()
-                ]);
-
-                Log::info('Bulk upload record created', [
-                    'bulk_upload_id' => $bulkUpload->id,
-                    'event_id' => $event->id,
-                    'user_id' => auth()->id(),
-                    'timestamp' => now()->toDateTimeString()
-                ]);
-
-                Log::info('File stored successfully', [
-                    'bulk_upload_id' => $bulkUpload->id,
-                    'file_path' => $path,
-                    'storage_path' => Storage::path($path),
-                    'timestamp' => now()->toDateTimeString()
-                ]);
-
-                $this->processUpload($path, $bulkUpload, $event);
-            })->afterResponse();
+            \App\Jobs\ProcessBulkUpload::dispatch($bulkUpload->id, $path)->afterCommit();
 
             // Return success response
             if ($request->ajax()) {
@@ -183,7 +155,7 @@ class BulkUploadController extends Controller
                 'user_id' => auth()->id(),
                 'timestamp' => now()->toDateTimeString()
             ]);
-            
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -200,7 +172,7 @@ class BulkUploadController extends Controller
                 'user_id' => auth()->id(),
                 'timestamp' => now()->toDateTimeString()
             ]);
-            
+
             if ($request->ajax()) {
                 return response()->json([
                     'success' => false,
@@ -212,169 +184,7 @@ class BulkUploadController extends Controller
         }
     }
 
-    /**
-     * Process the uploaded file
-     */
-    protected function processUpload(string $path, BulkUpload $bulkUpload, Event $event)
-    {
-        try {
-            $errors = [];
-            $records = $this->getRecordsFromFile($path, pathinfo($path, PATHINFO_EXTENSION));
 
-            foreach ($records as $index => $record) {
-                try {
-                    DB::beginTransaction();
-
-                    // Validate required fields
-                    if (empty($record['name']) || empty($record['phone']) || empty($record['ticket_type'])) {
-                        throw new \Exception('Missing required fields: name, phone, or ticket_type');
-                    }
-
-                    // Validate ticket type
-                    $validTicketTypes = ['regular', 'vip', 'single', 'double'];
-                    if (!in_array(strtolower($record['ticket_type']), $validTicketTypes)) {
-                        throw new \Exception('Invalid ticket type. Must be one of: ' . implode(', ', $validTicketTypes));
-                    }
-
-                    // Check for duplicate phone number
-                    $existingAttendee = $event->attendees()
-                        ->where('phone', $record['phone'])
-                        ->first();
-
-                    if ($existingAttendee) {
-                        throw new \Exception('Duplicate phone number: ' . $record['phone'] . ' (Attendee: ' . $existingAttendee->name . ')');
-                    }
-
-                    // Create attendee
-                    $attendee = Attendee::create([
-                        'event_id' => $event->id,
-                        'name' => $record['name'],
-                        'email' => $record['email'] ?? null,
-                        'phone' => $record['phone'],
-                        'position' => $record['position'] ?? null,
-                        'bulk_upload_id' => $bulkUpload->id,
-                    ]);
-
-                    // Generate ticket number
-                    $ticketNumber = Ticket::generateTicketNumber();
-
-                    // Generate QR code
-                    $qrCode = $this->qrCodeService->generateForAttendee($attendee);
-
-                    // Create ticket with all required fields
-                    $ticket = Ticket::create([
-                        'event_id' => $event->id,
-                        'attendee_id' => $attendee->id,
-                        'type' => strtolower($record['ticket_type']),
-                        'status' => 'active',
-                        'ticket_number' => $ticketNumber,
-                        'qr_code' => $qrCode,
-                        'token' => $attendee->token
-                    ]);
-
-                    // Send SMS invitation if attendee has a phone number
-                    if ($attendee->phone) {
-                        try {
-                            // Dispatch SMS job to avoid blocking the response
-                            SendSingleSms::dispatch(
-                                $attendee->phone,
-                                $this->formatInvitationMessage($event, $ticket),
-                                'invitation',
-                                [
-                                    'event_id' => $event->id,
-                                    'attendee_id' => $attendee->id,
-                                    'ticket_id' => $ticket->id,
-                                    'attendee_name' => $attendee->name,
-                                    'attendee_phone' => $attendee->phone,
-                                    'ticket_number' => $ticket->ticket_number,
-                                    'ticket_type' => $ticket->type,
-                                    'event_name' => $event->name,
-                                    'event_date' => $event->date ? \Carbon\Carbon::parse($event->date)->toDateTimeString() : null,
-                                    'location' => $event->location,
-                                    'venue' => $event->venue,
-                                    'bulk_upload_id' => $bulkUpload->id
-                                ]
-                            );
-
-                            Log::info('Invitation SMS job dispatched for bulk upload', [
-                                'bulk_upload_id' => $bulkUpload->id,
-                                'attendee_id' => $attendee->id,
-                                'ticket_id' => $ticket->id,
-                                'phone' => $attendee->phone
-                            ]);
-                        } catch (\Exception $smsException) {
-                            Log::error('Failed to dispatch invitation SMS for bulk upload', [
-                                'bulk_upload_id' => $bulkUpload->id,
-                                'attendee_id' => $attendee->id,
-                                'ticket_id' => $ticket->id,
-                                'phone' => $attendee->phone,
-                                'error' => $smsException->getMessage()
-                            ]);
-                            // Don't fail the bulk upload if SMS fails
-                        }
-                    } else {
-                        Log::info('No phone number available for SMS invitation during bulk upload', [
-                            'bulk_upload_id' => $bulkUpload->id,
-                            'attendee_id' => $attendee->id,
-                            'ticket_id' => $ticket->id
-                        ]);
-                    }
-
-                    DB::commit();
-
-                    Log::info('Record processed successfully', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'record_index' => $index + 1,
-                        'attendee_id' => $attendee->id,
-                        'ticket_id' => $ticket->id,
-                        'ticket_number' => $ticketNumber,
-                        'ticket_type' => $ticket->type,
-                        'timestamp' => now()->toDateTimeString()
-                    ]);
-
-                } catch (\Exception $e) {
-                    DB::rollBack();
-                    $errors[] = [
-                        'row' => $index + 2,
-                        'error' => $e->getMessage(),
-                        'data' => $record
-                    ];
-
-                    Log::error('Record processing failed', [
-                        'bulk_upload_id' => $bulkUpload->id,
-                        'record_index' => $index + 1,
-                        'error' => $e->getMessage(),
-                        'record_data' => $record,
-                        'timestamp' => now()->toDateTimeString()
-                    ]);
-                }
-            }
-
-            // Update final status
-            $bulkUpload->update([
-                'status' => empty($errors) ? 'completed' : 'failed',
-                'error_log' => json_encode($errors),
-                'completed_at' => now()
-            ]);
-
-            // Clean up the uploaded file
-            Storage::delete($path);
-
-        } catch (\Exception $e) {
-            Log::error('Bulk upload processing failed', [
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-                'bulk_upload_id' => $bulkUpload->id,
-                'event_id' => $event->id,
-                'timestamp' => now()->toDateTimeString()
-            ]);
-            
-            $bulkUpload->update([
-                'status' => 'failed',
-                'error_log' => json_encode([['error' => $e->getMessage()]]),
-            ]);
-        }
-    }
 
     /**
      * Show upload status
@@ -421,79 +231,7 @@ class BulkUploadController extends Controller
         return 'Processing upload...';
     }
 
-    private function getRecordsFromFile($path, $extension)
-    {
-        if (in_array($extension, ['xlsx', 'xls'])) {
-            // Process Excel file
-            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load(Storage::path($path));
-            $worksheet = $spreadsheet->getActiveSheet();
-            $headers = [];
-            $firstRow = true;
-            $records = [];
 
-            foreach ($worksheet->getRowIterator() as $row) {
-                $cellIterator = $row->getCellIterator();
-                $cellIterator->setIterateOnlyExistingCells(false);
-                $rowData = [];
 
-                foreach ($cellIterator as $cell) {
-                    $value = $cell->getValue();
-                    if ($firstRow) {
-                        $headers[] = strtolower(trim($value));
-                    } else {
-                        $rowData[] = $value;
-                    }
-                }
 
-                if ($firstRow) {
-                    $firstRow = false;
-                    continue;
-                }
-
-                if (!empty(array_filter($rowData))) {
-                    $records[] = array_combine($headers, $rowData);
-                }
-            }
-        } else {
-            // Process CSV file
-            $csv = Reader::createFromPath(Storage::path($path), 'r');
-            $csv->setHeaderOffset(0);
-            $records = iterator_to_array($csv->getRecords());
-        }
-
-        return $records;
-    }
-
-    /**
-     * Format an invitation message for SMS
-     *
-     * @param Event $event The event
-     * @param Ticket $ticket The ticket
-     * @return string Formatted message
-     */
-    protected function formatInvitationMessage(Event $event, Ticket $ticket): string
-    {
-        $attendee = $ticket->attendee;
-        $eventDate = $event->date ? \Carbon\Carbon::parse($event->date) : null;
-        
-        if ($eventDate) {
-            $dayName = $eventDate->locale('sw')->isoFormat('dddd');
-            $formattedTime = $eventDate->format('g:i');
-            $period = $eventDate->format('A');
-            $dateString = $dayName . ' ' . $eventDate->toLocaleDateString('en-GB') . ' saa ' . $formattedTime . ' ' . $period;
-        } else {
-            $dateString = 'tarehe itakayotangazwa';
-        }
-
-        return sprintf(
-            "Ndugu %s, unakaribishwa kwenye %s itakayofanyika %s. Mahali: %s. Ukumbi: %s. Tiketi: %s (%s). Tafadhali wasilisha tiketi hii mlangoni. Maelezo: 0769289824",
-            $attendee->name,
-            $event->name,
-            $dateString,
-            $event->location,
-            $event->venue,
-            $ticket->ticket_number,
-            ucfirst($ticket->type)
-        );
-    }
-} 
+}

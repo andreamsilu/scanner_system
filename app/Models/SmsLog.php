@@ -29,7 +29,9 @@ class SmsLog extends Model
         'last_status_check',
         'status_check_count',
         'error',
-        'metadata'
+        'metadata',
+        'type',
+        'provider',
     ];
 
     /**
@@ -182,4 +184,4 @@ class SmsLog extends Model
             default => 'Unknown'
         };
     }
-} 
+}

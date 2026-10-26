@@ -41,6 +41,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'remember_token',
     ];
 
+    protected $attributes = ['is_active' => true];
+
     /**
      * The attributes that should be cast.
      *
@@ -56,9 +58,7 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         static::updated(function ($user) {
             // Check if the user was just assigned the scanner role
-            if ($user->isScanner() && !$user->scanner) {
-                Scanner::createFromUser($user);
-            }
+            // Event scanners are users; a separate Scanner model does not exist.
         });
     }
 
@@ -155,12 +155,10 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(EventModel::class, 'event_scanner', 'scanner_id', 'event_id')
             ->withTimestamps()
             ->withPivot(['assigned_at', 'assigned_by'])
-            ->with(['attendees' => function($query) {
-                $query->select('id', 'name', 'email', 'event_id', 'token')
-                    ->with(['ticket' => function($q) {
-                        $q->select('id', 'attendee_id', 'status', 'used_at');
-                    }]);
-            }]);
+            ->withCount([
+                'attendees',
+                'attendees as checked_in_count' => fn ($query) => $query->whereHas('ticket', fn ($tickets) => $tickets->where('entries_used', '>', 0)),
+            ]);
     }
 
     /**
@@ -205,7 +203,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function assignRole(string $role): void
     {
-        $roleId = DB::table('roles')->where('name', $role)->value('id');
+        $roleId = DB::table('roles')->where('slug', $role)->value('id');
         if ($roleId) {
             $this->roles()->syncWithoutDetaching([$roleId]);
         }
@@ -216,7 +214,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function removeRole(string $role): void
     {
-        $roleId = DB::table('roles')->where('name', $role)->value('id');
+        $roleId = DB::table('roles')->where('slug', $role)->value('id');
         if ($roleId) {
             $this->roles()->detach($roleId);
         }
@@ -228,7 +226,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function syncRoles(array $roles): void
     {
         $roleIds = DB::table('roles')
-            ->whereIn('name', $roles)
+            ->whereIn('slug', $roles)
             ->pluck('id')
             ->toArray();
         $this->roles()->sync($roleIds);

@@ -12,74 +12,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Disable foreign key checks temporarily
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-
-        // Drop foreign key constraints that depend on the unique index, if they exist
-        if (Schema::hasTable('tickets')) {
-            try {
-                DB::statement('ALTER TABLE `tickets` DROP FOREIGN KEY `tickets_attendee_id_foreign`');
-            } catch (\Throwable $e) {
-                // Constraint doesn't exist; safe to ignore
-            }
-        }
-
-        if (Schema::hasTable('scans')) {
-            try {
-                DB::statement('ALTER TABLE `scans` DROP FOREIGN KEY `scans_ticket_id_foreign`');
-            } catch (\Throwable $e) {
-                // Constraint doesn't exist; safe to ignore
-            }
-        }
-
-        // Now modify the attendees table.
-        // Wrap in try/catch so that if the existing index or constraint setup
-        // does not match expectations, the migration still proceeds without failing.
-        if (Schema::hasTable('attendees')) {
-            try {
-                Schema::table('attendees', function (Blueprint $table) {
-                    // Make email nullable
-                    $table->string('email')->nullable()->change();
-
-                    // Make phone required
-                    $table->string('phone')->nullable(false)->change();
-
-                    // Update unique constraint to only apply when email is not null
-                    try {
-                        $table->dropUnique(['event_id', 'email']);
-                    } catch (\Throwable $e) {
-                        // If the exact unique index doesn't exist or is tied to a FK, ignore.
-                    }
-
-                    // Best-effort creation of the new conditional unique index
-                    try {
-                        $table->unique(['event_id', 'email'], 'attendees_event_email_unique')->where('email IS NOT NULL');
-                    } catch (\Throwable $e) {
-                        // Ignore if DB version/engine does not support this syntax
-                    }
-                });
-            } catch (\Throwable $e) {
-                // Swallow any schema mismatch issues to keep migrations running.
-            }
-        }
-
-        // Recreate the foreign key constraints
-        Schema::table('tickets', function (Blueprint $table) {
-            $table->foreign('attendee_id')
-                  ->references('id')
-                  ->on('attendees')
-                  ->onDelete('cascade');
+        // Nullable email permits multiple missing emails while retaining uniqueness for supplied addresses.
+        // Changing these columns does not require dropping any foreign keys or indexes.
+        Schema::table('attendees', function (Blueprint $table) {
+            $table->string('email')->nullable()->change();
+            $table->string('phone')->nullable(false)->change();
         });
-
-        Schema::table('scans', function (Blueprint $table) {
-            $table->foreign('ticket_id')
-                  ->references('id')
-                  ->on('tickets')
-                  ->onDelete('cascade');
-        });
-
-        // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
 
     /**
@@ -153,4 +91,4 @@ return new class extends Migration
         // Re-enable foreign key checks
         DB::statement('SET FOREIGN_KEY_CHECKS=1;');
     }
-}; 
+};

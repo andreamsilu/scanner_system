@@ -1,367 +1,42 @@
-<!-- Top Navigation Bar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm fixed-top d-lg-none">
-    <div class="container-fluid">
-        <!-- Logo -->
-        <a class="navbar-brand" href="{{ route('dashboard') }}">
-            <img src="{{ asset('images/logo.png') }}" alt="Logo" height="40">
-            <span class="ms-2 fw-bold">Event Tickets</span>
+<flux:sidebar sticky collapsible="mobile" class="border-e border-zinc-200 bg-white dark:border-zinc-700 dark:bg-zinc-900">
+    <div class="flex items-center justify-between mb-6 mt-2 px-2">
+        <a href="{{ route('dashboard') }}" class="workspace-brand">
+            <span class="brand-symbol"><flux:icon.ticket class="size-6" /></span>
+            <span>Event Tickets<span class="block text-xs font-normal tracking-normal ui-muted mt-0.5">Every entry, accounted for.</span></span>
         </a>
-
-        <!-- Mobile Toggle Button -->
-        <button class="btn btn-link text-dark" type="button" id="sidebarToggle">
-            <i class="bi bi-list fs-4"></i>
-        </button>
+        <flux:sidebar.toggle class="lg:hidden" icon="x-mark" />
     </div>
-</nav>
-
-<!-- Sidebar -->
-<div class="sidebar-wrapper">
-    <!-- Overlay for mobile -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    
-    <!-- Sidebar -->
-    <div class="sidebar bg-white shadow-sm" id="sidebar">
-        <!-- Logo -->
-        <div class="px-3 py-4 border-bottom">
-            <a class="d-flex align-items-center text-decoration-none" href="{{ route('dashboard') }}">
-                <img src="{{ asset('images/logo.png') }}" alt="Logo" height="40">
-                <span class="ms-2 fw-bold">Event Tickets</span>
-            </a>
-        </div>
-        
-        <!-- User Info -->
-        @auth
-            <!-- <div class="d-flex align-items-center mb-4 px-3 py-3 border-bottom">
-                <div class="flex-shrink-0">
-                    <div class="avatar-circle bg-primary bg-opacity-10 text-primary">
-                        <i class="bi bi-person-circle fs-4"></i>
-                    </div>
-                </div>
-                <div class="flex-grow-1 ms-3">
-                    <h6 class="mb-0">{{ auth()->user()->name }}</h6>
-                    <small class="text-muted">{{ auth()->user()->roles->first()->name ?? 'User' }}</small>
-                </div>
-            </div> -->
-
-            <!-- Navigation Links -->
-            <div class="nav flex-column nav-pills">
-                <!-- Admin Menu Items (at the top) -->
-                @if(auth()->user()->isAdmin())
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('admin.dashboard') ? 'active' : '' }}" 
-                           href="{{ route('admin.dashboard') }}">
-                            <i class="bi bi-speedometer2 me-2"></i>Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('events.*') ? 'active' : '' }}" 
-                           href="{{ route('events.index') }}">
-                            <i class="bi bi-calendar-event me-2"></i> Events
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}" 
-                           href="{{ route('users.index') }}">
-                            <i class="bi bi-people me-2"></i> Users
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('sms.management.*') ? 'active' : '' }}" 
-                           href="{{ route('sms.management.index') }}">
-                            <i class="bi bi-chat-dots me-2"></i> SMS Management
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('card-templates.*') ? 'active' : '' }}" 
-                           href="{{ route('card-templates.index') }}">
-                            <i class="bi bi-id-card me-2"></i> Card Templates
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" 
-                           href="{{ route('reports.index') }}">
-                            <i class="bi bi-graph-up me-2"></i> Reports
-                        </a>
-                    </li>
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('settings.*') ? 'active' : '' }}" 
-                           href="{{ route('settings.index') }}">
-                            <i class="bi bi-gear me-2"></i> Settings
-                        </a>
-                    </li>
-                @endif
-
-                <!-- Scanner Menu Items -->
-                @if(auth()->user()->isScanner() || auth()->user()->isAdmin())
-                    @if(auth()->user()->isScanner())
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.dashboard') ? 'active' : '' }}" 
-                               href="{{ route('scanner.dashboard') }}">
-                                <i class="bi bi-speedometer2 me-2"></i> Scanner Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.events.*') ? 'active' : '' }}" 
-                               href="{{ route('scanner.events.index') }}">
-                                <i class="bi bi-calendar-event me-2"></i> My Events
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.scan.*') ? 'active' : '' }}"
-                               href="{{ route('scanner.scan.index') }}">
-                                <i class="bi bi-upc-scan me-2"></i> Validate Tickets
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.history.*') ? 'active' : '' }}" 
-                               href="{{ route('scanner.history') }}">
-                                <i class="bi bi-clock-history me-2"></i> Scan History
-                            </a>
-                        </li>
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanner.attendees.*') ? 'active' : '' }}" 
-                               href="{{ route('scanner.attendees.index') }}">
-                                <i class="bi bi-people-fill me-2"></i> Event Attendees
-                            </a>
-                        </li>
-                    @endif
-
-                    @if(auth()->user()->isAdmin())
-                        {{-- Temporarily disabled scanners management
-                        <li class="nav-item mb-2">
-                            <a class="nav-link {{ request()->routeIs('scanners.*') ? 'active' : '' }}" 
-                               href="{{ route('scanners.index') }}">
-                                <i class="bi bi-person-badge me-2"></i> Manage Scanners
-                                <small class="text-muted d-block">(Scanner Management)</small>
-                            </a>
-                        </li>
-                        --}}
-                    @endif
-                @endif
-
-                <!-- Common Menu Items -->
-                @if(auth()->user()->isAdmin())
-                    <li class="nav-item mb-2">
-                        <a class="nav-link {{ request()->routeIs('profile.*') ? 'active' : '' }}" 
-                           href="{{ route('profile.edit') }}">
-                            <i class="bi bi-person me-2"></i> Profile
-                        </a>
-                    </li>
-                @endif
-                <li class="nav-item">
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start">
-                            <i class="bi bi-box-arrow-right me-2"></i> Logout
-                        </button>
-                    </form>
-                </li>
-            </div>
-        @endauth
+    <p class="eyebrow px-3 mb-1">Workspace</p>
+    <flux:navlist variant="outline">
+        @if(auth()->user()->isAdmin())
+            <flux:navlist.item icon="squares-2x2" :href="route('admin.dashboard')" :current="request()->routeIs('admin.dashboard')">Overview</flux:navlist.item>
+            <flux:navlist.item icon="calendar-days" :href="route('events.index')" :current="request()->routeIs('events.*')">Events &amp; tickets</flux:navlist.item>
+            <flux:navlist.item icon="users" :href="route('users.index')" :current="request()->routeIs('users.*')">Team</flux:navlist.item>
+            <flux:navlist.item icon="chat-bubble-left-right" :href="route('sms.management.index')" :current="request()->routeIs('sms.management.*')">SMS invitations</flux:navlist.item>
+            <flux:navlist.item icon="identification" :href="route('card-templates.index')" :current="request()->routeIs('card-templates.*')">Card templates</flux:navlist.item>
+            <flux:navlist.item icon="chart-bar" :href="route('reports.index')" :current="request()->routeIs('reports.*')">Reports</flux:navlist.item>
+        @else
+            <flux:navlist.item icon="squares-2x2" :href="route('scanner.dashboard')" :current="request()->routeIs('scanner.dashboard')">Overview</flux:navlist.item>
+        @endif
+    </flux:navlist>
+    <p class="eyebrow px-3 mt-6 mb-1">At the door</p>
+    <flux:navlist variant="outline">
+        <flux:navlist.item icon="calendar" :href="route('scanner.events.index')" :current="request()->routeIs('scanner.events.*')">{{ auth()->user()->isAdmin() ? 'Select event' : 'My events' }}</flux:navlist.item>
+        <flux:navlist.item icon="qr-code" :href="route('scanner.scan.index')" :current="request()->routeIs('scanner.scan.*', 'scanner.validate.*')">Scan tickets</flux:navlist.item>
+        <flux:navlist.item icon="clock" :href="route('scanner.history')" :current="request()->routeIs('scanner.history', 'scanner.history.*')">Admission history</flux:navlist.item>
+        <flux:navlist.item icon="user-group" :href="route('scanner.attendees.index')" :current="request()->routeIs('scanner.attendees.*')">Attendees</flux:navlist.item>
+    </flux:navlist>
+    <flux:spacer />
+    <div class="mt-8 border-t border-zinc-200 dark:border-zinc-700 pt-4">
+        <flux:navlist variant="outline">
+            @if(auth()->user()->isAdmin())
+                <flux:navlist.item icon="cog-6-tooth" :href="route('settings.index')" :current="request()->routeIs('settings.*')">Settings</flux:navlist.item>
+            @endif
+            <flux:navlist.item icon="user-circle" :href="route('profile.edit')" :current="request()->routeIs('profile.*')">My profile</flux:navlist.item>
+        </flux:navlist>
+        <form action="{{ route('logout') }}" method="POST" class="mt-2">
+            @csrf
+            <flux:button type="submit" variant="subtle" icon="arrow-right-start-on-rectangle" class="w-full justify-start!">Sign out</flux:button>
+        </form>
     </div>
-</div>
-
-<!-- Add custom styles -->
-<style>
-    /* Top navbar styles */
-    .navbar {
-        height: 60px;
-        z-index: 1050; /* Increased z-index to be above sidebar */
-        background-color: #fff;
-        border-bottom: 1px solid #e9ecef;
-    }
-
-    .navbar .container-fluid {
-        padding-left: 1rem;
-        padding-right: 1rem;
-    }
-
-    .navbar-brand {
-        display: flex;
-        align-items: center;
-        margin-right: 0;
-    }
-
-    /* Sidebar styles */
-    .sidebar-wrapper {
-        position: relative;
-    }
-
-    .sidebar {
-        position: fixed;
-        top: 0;
-        left: 0;
-        height: 100vh;
-        width: 250px;
-        z-index: 1040; /* Below navbar but above overlay */
-        transition: transform 0.3s ease-in-out;
-        overflow-y: auto;
-        background-color: #fff;
-    }
-
-    .sidebar-overlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background-color: rgba(0, 0, 0, 0.5);
-        z-index: 1030; /* Below sidebar */
-        display: none;
-        opacity: 0;
-        transition: opacity 0.3s ease-in-out;
-    }
-
-    .sidebar-overlay.show {
-        display: block;
-        opacity: 1;
-    }
-
-    /* Nav link styles */
-    .nav-link {
-        color: #4a5568;
-        padding: 0.5rem 1rem;
-        border-radius: 0.375rem;
-        transition: all 0.2s ease-in-out;
-        white-space: nowrap;
-    }
-    
-    .nav-link:hover {
-        background-color: #f7fafc;
-    }
-    
-    .nav-link.active {
-        color: #2563eb;
-        background-color: #eff6ff;
-    }
-
-    /* User info styles */
-    .avatar-circle {
-        width: 40px;
-        height: 40px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Mobile styles */
-    @media (max-width: 991.98px) {
-        .sidebar {
-            transform: translateX(-100%);
-            top: 60px; /* Account for fixed navbar */
-            height: calc(100vh - 60px);
-        }
-
-        .sidebar.show {
-            transform: translateX(0);
-        }
-
-        /* Ensure top navbar stays above everything on mobile */
-        .navbar {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-
-        /* Adjust content spacing */
-        .content-wrapper {
-            margin-left: 0 !important;
-            padding-top: 60px; /* Account for fixed navbar */
-        }
-
-        body {
-            padding-top: 60px; /* Account for fixed navbar */
-        }
-
-        /* Ensure navbar content is visible */
-        .navbar .container-fluid {
-            position: relative;
-            z-index: 1051; /* Above navbar background */
-        }
-    }
-
-    /* Desktop styles */
-    @media (min-width: 992px) {
-        .navbar {
-            display: none;
-        }
-
-        .sidebar {
-            transform: none;
-            box-shadow: 1px 0 4px rgba(0,0,0,0.05);
-        }
-
-        .content-wrapper {
-            margin-left: 250px;
-            padding-top: 0;
-        }
-
-        body {
-            padding-top: 0;
-        }
-    }
-
-    /* Scrollbar styles */
-    .sidebar::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .sidebar::-webkit-scrollbar-track {
-        background: #f1f1f1;
-    }
-
-    .sidebar::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 3px;
-    }
-
-    .sidebar::-webkit-scrollbar-thumb:hover {
-        background: #555;
-    }
-</style>
-
-<!-- Add JavaScript for sidebar toggle -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const sidebarToggle = document.getElementById('sidebarToggle');
-    const sidebar = document.getElementById('sidebar');
-    const sidebarOverlay = document.getElementById('sidebarOverlay');
-    const body = document.body;
-
-    function toggleSidebar() {
-        sidebar.classList.toggle('show');
-        sidebarOverlay.classList.toggle('show');
-        body.style.overflow = sidebar.classList.contains('show') ? 'hidden' : '';
-    }
-
-    if (sidebarToggle) {
-        sidebarToggle.addEventListener('click', toggleSidebar);
-    }
-
-    if (sidebarOverlay) {
-        sidebarOverlay.addEventListener('click', toggleSidebar);
-    }
-
-    // Close sidebar when clicking a nav link on mobile
-    const navLinks = sidebar.querySelectorAll('.nav-link');
-    navLinks.forEach(link => {
-        link.addEventListener('click', () => {
-            if (window.innerWidth < 992) {
-                toggleSidebar();
-            }
-        });
-    });
-
-    // Handle window resize
-    window.addEventListener('resize', () => {
-        if (window.innerWidth >= 992) {
-            sidebar.classList.remove('show');
-            sidebarOverlay.classList.remove('show');
-            body.style.overflow = '';
-        }
-    });
-});
-</script>
+</flux:sidebar>

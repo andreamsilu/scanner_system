@@ -50,8 +50,8 @@ class AttendeeController extends Controller
             $query = $event->attendees()->with(['event', 'ticket']);
 
         // Apply filters
-            if ($request->search['value']) {
-                $searchValue = $request->search['value'];
+            if ($request->input('search.value')) {
+                $searchValue = $request->input('search.value');
                 $query->where(function($q) use ($searchValue) {
                     $q->where('name', 'like', '%' . $searchValue . '%')
                       ->orWhere('email', 'like', '%' . $searchValue . '%')
@@ -92,6 +92,7 @@ class AttendeeController extends Controller
                     'name' => $attendee->name,
                     'phone' => $attendee->phone,
                     'token' => $attendee->token,
+                    'ticket_number' => $attendee->ticket?->ticket_number,
                     'registration_status' => [
                         'status' => $attendee->registration_status,
                         'badge' => $attendee->registration_status === 'checked_in' ? 'success' : 
@@ -152,40 +153,21 @@ class AttendeeController extends Controller
         try {
             DB::beginTransaction();
 
-            // Set default email if none provided
-            if (empty($validated['email'])) {
-                $validated['email'] = 'admin@gmail.com';
-            }
+            $validated['email'] = $validated['email'] ?? null;
 
             // Check if attendee already exists for this event
             $existingAttendee = $event->attendees()
                 ->where('email', $validated['email'])
                 ->first();
 
-            if ($existingAttendee) {
+            if ($validated['email'] && $existingAttendee) {
                 throw new \Exception('An attendee with this email already exists for this event.');
             }
 
-            // Generate unique token (6 digits)
-            do {
-                $token = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
-            } while (Attendee::where('token', $token)->exists());
+            $token = \App\Services\TicketToken::generate();
 
-            // Generate QR code with check-in URL
-            $checkInUrl = route('scanner.check-in', ['token' => $token], true);
-            $qrCode = QrCode::format('png')
-                ->size(300)
-                ->errorCorrection('H')
-                ->generate($checkInUrl);
-
-            // Sanitize name for filename
-            $sanitizedName = preg_replace('/[^a-zA-Z0-9-]/', '-', strtolower($validated['name']));
-            $sanitizedName = preg_replace('/-+/', '-', $sanitizedName);
-            $sanitizedName = trim($sanitizedName, '-');
-
-            // Store QR code image with attendee name in filename
-            $qrPath = 'qr-codes/' . $sanitizedName . '-' . $token . '.png';
-            Storage::disk('public')->put($qrPath, $qrCode);
+            $qrPath = app(\App\Services\QRCodeService::class)
+                ->generateQRCode($token, $validated['name'], $event->name);
 
             // Create attendee with token and QR code
             $attendeeData = [
@@ -214,7 +196,7 @@ class AttendeeController extends Controller
             // Generate ticket if required
             if ($request->boolean('requires_ticket')) {
                 // Generate ticket number
-                $ticketNumber = 'TICKET-' . strtoupper(substr(md5(uniqid(mt_rand(), true)), 0, 8));
+                // Ticket::save allocates the next number under an event row lock.
 
                 // Create ticket for attendee
                 $ticketData = [
@@ -222,7 +204,6 @@ class AttendeeController extends Controller
                     'type' => $request->input('ticket_type'),
                     'status' => 'active',
                     'token' => $token,
-                    'ticket_number' => $ticketNumber,
                     'attendee_id' => $attendee->id,
                     'created_at' => now()
                 ];
@@ -561,110 +542,14 @@ class AttendeeController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    /**
-     * Check in an attendee.
-     */
     public function checkIn(Event $event, Attendee $attendee): RedirectResponse
     {
-        try {
-            DB::beginTransaction();
-
-            if (!$attendee->ticket) {
-                throw new \Exception('Attendee does not have a ticket.');
-            }
-
-            if ($attendee->registration_status === 'checked_in') {
-                throw new \Exception('Attendee has already been checked in.');
-            }
-
-            // Create scan log
-            $scan = \App\Models\Scan::create([
-                'ticket_id' => $attendee->ticket->id,
-                'event_id' => $event->id,
-                'scanner_id' => auth()->id(),
-                'scanned_at' => now(),
-                'status' => 'success'
-            ]);
-
-            // Update attendee status
-            $attendee->update([
-                'registration_status' => 'checked_in',
-                'checked_in_at' => now()
-            ]);
-
-            // Update ticket status
-            $attendee->ticket->update([
-                'status' => 'used',
-                'last_scanned_at' => now()
-            ]);
-
-            DB::commit();
-
-            return redirect()
-                ->route('events.attendees.index', $event)
-                ->with('success', 'Attendee checked in successfully.');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Attendee check-in failed', [
-                'error' => $e->getMessage(),
-                'attendee_id' => $attendee->id,
-                'event_id' => $event->id
-            ]);
-
-            return back()->with('error', $e->getMessage());
-        }
+        return app(AdmissionController::class)->prepare($event, $attendee);
     }
 
-    /**
-     * Validate an attendee by their token
-     */
     public function validateToken(string $token)
     {
-        $attendee = Attendee::where('token', $token)
-            ->with(['event', 'ticket'])
-            ->firstOrFail();
-
-        // Check if the attendee has a valid ticket
-        if (!$attendee->hasValidTicket()) {
-            return response()->json([
-                'status' => 'invalid',
-                'message' => 'Invalid or expired ticket',
-                'attendee' => $attendee->only(['name', 'email'])
-            ], 400);
-        }
-
-        // Check if the ticket has already been used
-        if ($attendee->ticket->status === 'used') {
-            return response()->json([
-                'status' => 'used',
-                'message' => 'Ticket has already been used',
-                'attendee' => $attendee->only(['name', 'email']),
-                'used_at' => $attendee->ticket->used_at
-            ], 400);
-        }
-
-        // Mark ticket as used
-        DB::transaction(function () use ($attendee) {
-            $attendee->ticket->update([
-                'status' => 'used',
-                'used_at' => now()
-            ]);
-
-            // Log the scan
-            ScanLog::create([
-                'scanner_id' => auth()->id(),
-                'ticket_id' => $attendee->ticket->id,
-                'scanned_at' => now(),
-                'status' => 'success'
-            ]);
-        });
-
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Ticket validated successfully',
-            'attendee' => $attendee->only(['name', 'email', 'position']),
-            'event' => $attendee->event->only(['name', 'venue', 'start_date'])
-        ]);
+        return app(AdmissionController::class)->prepareToken($token);
     }
 
     /**
@@ -673,29 +558,8 @@ class AttendeeController extends Controller
     public function regenerateQrCode(Event $event, Attendee $attendee): RedirectResponse
     {
         try {
-            // Delete old QR code if exists
-            if ($attendee->qr_code) {
-                Storage::disk('public')->delete($attendee->qr_code);
-            }
-
-            // Generate new QR code with check-in URL
-            $checkInUrl = route('scanner.check-in', ['token' => $attendee->token], true);
-            $qrCode = QrCode::format('png')
-                ->size(300)
-                ->errorCorrection('H')
-                ->generate($checkInUrl);
-
-            // Sanitize name for filename
-            $sanitizedName = preg_replace('/[^a-zA-Z0-9-]/', '-', strtolower($attendee->name));
-            $sanitizedName = preg_replace('/-+/', '-', $sanitizedName);
-            $sanitizedName = trim($sanitizedName, '-');
-
-            // Store QR code image with attendee name in filename
-            $path = 'qr-codes/' . $sanitizedName . '-' . $attendee->token . '.png';
-            Storage::disk('public')->put($path, $qrCode);
-
-            // Update attendee record
-            $attendee->update(['qr_code' => $path]);
+            abort_unless((int) $attendee->event_id === (int) $event->id, 404);
+            $attendee->regenerateQrCode();
 
             return redirect()
                 ->route('events.attendees.show', ['event' => $event, 'attendee' => $attendee])
@@ -799,7 +663,7 @@ class AttendeeController extends Controller
             $dateString,
             $event->location,
             $event->venue,
-            $ticket->token,
+            $ticket->ticket_number,
             ucfirst($ticket->type),
             $contactInfo
         );
@@ -811,4 +675,4 @@ class AttendeeController extends Controller
 
         return $baseMessage;
     }
-} 
+}

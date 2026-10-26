@@ -74,7 +74,7 @@
                             <tr>
                                 <th>Name</th>
                                 <th>Phone</th>
-                                <th>Token</th>
+                                <th>Ticket Number</th>
                                 <th>Registration Status</th>
                                 <th>Ticket Status</th>
                                 <th>Ticket Type</th>
@@ -268,8 +268,9 @@
                         name: 'phone'
                     },
                     { 
-                        data: 'token',
-                        name: 'token'
+                        data: 'ticket_number',
+                        name: 'ticket_number',
+                        orderable: false,
                     },
                     { 
                         data: 'registration_status',
@@ -496,4 +497,4 @@
         });
     </script>
     @endpush
-</x-app-layout> 
+</x-app-layout>

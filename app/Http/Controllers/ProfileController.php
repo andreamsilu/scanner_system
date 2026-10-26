@@ -40,7 +40,7 @@ class ProfileController extends Controller
 
     public function updatePassword(Request $request): RedirectResponse
     {
-        $validated = $request->validate([
+        $validated = $request->validateWithBag('updatePassword', [
             'current_password' => ['required', 'current_password'],
             'password' => ['required', 'min:8', 'confirmed'],
         ]);
@@ -62,6 +62,8 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        abort_if($user->scanLogs()->exists(), 409, 'Accounts with admission history must be deactivated by an administrator.');
 
         Auth::logout();
 

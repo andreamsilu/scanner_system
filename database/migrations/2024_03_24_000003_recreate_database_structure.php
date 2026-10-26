@@ -16,20 +16,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Disable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        // Drop all tables except 'migrations'
-        $tables = DB::select('SHOW TABLES');
-        $dbName = DB::getDatabaseName();
-        $key = 'Tables_in_' . $dbName;
-        foreach ($tables as $table) {
-            $tableName = $table->$key;
-            if ($tableName !== 'migrations') {
-                Schema::dropIfExists($tableName);
+        // A baseline must never erase a populated database.
+        foreach (['users', 'roles', 'events', 'attendees', 'tickets'] as $table) {
+            if (Schema::hasTable($table)) {
+                throw new RuntimeException('Baseline tables already exist. Reconcile migration history before continuing.');
             }
         }
-        // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         // Create tables in the order they are defined (i.e. follow the table structure)
         $this->createUsersTable();
@@ -49,20 +41,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        // Disable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        // Drop all tables except 'migrations'
-        $tables = DB::select('SHOW TABLES');
-        $dbName = DB::getDatabaseName();
-        $key = 'Tables_in_' . $dbName;
-        foreach ($tables as $table) {
-            $tableName = $table->$key;
-            if ($tableName !== 'migrations') {
-                Schema::dropIfExists($tableName);
-            }
-        }
-        // Re-enable foreign key checks
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
+        throw new RuntimeException('Restore a backup to reverse the database baseline.');
     }
 
     private function createUsersTable(): void
@@ -272,4 +251,4 @@ return new class extends Migration
             $table->timestamp('created_at')->nullable();
         });
     }
-}; 
+};

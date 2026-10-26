@@ -1,282 +1,49 @@
 <x-app-layout>
-    <x-page-header 
-        title="Admin Dashboard"
-        :breadcrumbs="['Admin Dashboard' => null]"
-    />
-
-    <!-- Stats Cards -->
-    <div class="row g-2 mb-4 mt-3">
-        <div class="col-md-3">
-            <div class="card border h-100 stat-card">
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-subtitle mb-0 text-muted small">Total Events</h6>
-                            <h5 class="card-title mb-0">{{ $stats['total_events'] }}</h5>
-                            <small class="text-muted small">All time</small>
-                        </div>
-                        <div class="p-1 rounded-circle bg-primary bg-opacity-10 text-primary">
-                            <i class="bi bi-calendar-event"></i>
-                        </div>
-                    </div>
-                </div>
+    <x-page-header title="Overview" :subtitle="'Welcome back, '.auth()->user()->name.'. Here is what is happening across your events.'" :breadcrumbs="['Overview' => null]">
+        <x-slot name="actions"><flux:button variant="primary" icon="plus" :href="route('events.create')">Create event</flux:button></x-slot>
+    </x-page-header>
+    <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+        @foreach([
+            ['label' => 'Total events', 'value' => $stats['total_events'], 'icon' => 'calendar-days'],
+            ['label' => 'Upcoming events', 'value' => $stats['upcoming_events'], 'icon' => 'arrow-up-right'],
+            ['label' => 'Completed events', 'value' => $stats['completed_events'], 'icon' => 'check-circle'],
+            ['label' => 'Assigned scanners · live events', 'value' => $stats['active_scanners'], 'icon' => 'qr-code'],
+        ] as $metric)
+            <div class="ui-panel ui-kpi"><div class="flex items-center justify-between gap-2"><span class="text-xs ui-muted">{{ $metric['label'] }}</span><flux:icon :name="$metric['icon']" class="size-4 text-teal-600" /></div><strong>{{ number_format($metric['value']) }}</strong></div>
+        @endforeach
+    </div>
+    <section class="mb-6 p-6 sm:p-8 bg-teal-950 rounded-2xl text-white flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+        <div><p class="text-teal-300 text-xs font-semibold uppercase tracking-widest mb-2">Make a great first impression</p><h2 class="text-xl font-semibold tracking-tight mb-2">Your next guest is one scan away.</h2><p class="text-sm text-teal-100/80 mb-0">Select an event to open the scanner and start welcoming guests.</p></div>
+        <flux:button :href="route('scanner.events.index')" icon="qr-code" class="shrink-0 bg-white! text-teal-950! border-transparent!">Open check-in</flux:button>
+    </section>
+    <div class="grid xl:grid-cols-[minmax(0,1fr)_340px] gap-6 items-start">
+        <section class="ui-panel">
+            <div class="ui-panel-heading"><h2 class="text-base font-semibold mb-0">Recent activity</h2><flux:button :href="route('reports.index')" variant="subtle" size="sm" icon:trailing="arrow-up-right">Reports</flux:button></div>
+            <div class="overflow-x-auto">
+                <table class="ui-table"><thead><tr><th scope="col">Guest / event</th><th scope="col">Scanner</th><th scope="col">Status</th><th scope="col">Time</th></tr></thead><tbody>
+                    @forelse($recent_activity as $activity)
+                        <tr><td><p class="font-medium mb-1">{{ $activity['attendee'] }}</p><p class="text-xs ui-muted mb-0">{{ $activity['event'] }}</p></td><td class="text-xs ui-muted">{{ $activity['scanner'] }}</td><td><flux:badge :color="$activity['status'] === 'success' ? 'teal' : 'amber'" size="sm">{{ ucfirst($activity['status']) }}</flux:badge></td><td class="text-xs ui-muted">{{ $activity['time'] }}</td></tr>
+                    @empty
+                        <tr><td colspan="4" class="text-center! py-14!"><flux:icon.clock class="size-9 mx-auto mb-3 text-zinc-400" /><p class="font-medium mb-1">All set for your first arrival</p><p class="ui-muted text-sm mb-0">Admissions will appear here as guests check in.</p></td></tr>
+                    @endforelse
+                </tbody></table>
             </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border h-100 stat-card">
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-subtitle mb-0 text-muted small">Completed Events</h6>
-                            <h5 class="card-title mb-0">{{ $stats['completed_events'] }}</h5>
-                            <small class="text-muted small">Past events</small>
-                        </div>
-                        <div class="p-1 rounded-circle bg-success bg-opacity-10 text-success">
-                            <i class="bi bi-check-circle"></i>
-                        </div>
-                    </div>
+        </section>
+        <div class="space-y-6">
+            <section class="ui-panel"><div class="ui-panel-heading"><h2 class="text-base font-semibold mb-0">Coming up</h2><flux:icon.calendar-days class="size-4 ui-muted" /></div>
+                <div class="px-5 py-2">
+                    @forelse($upcoming_events as $event)
+                        <a href="{{ route('events.show', $event) }}" class="flex items-center gap-3 py-4 no-underline text-inherit border-b border-zinc-100 last:border-0 dark:border-zinc-700">
+                            <span class="flex flex-col items-center justify-center rounded-xl bg-zinc-100 dark:bg-zinc-700 size-12 shrink-0"><span class="text-[10px] uppercase ui-muted">{{ $event->start_date->format('M') }}</span><span class="text-lg font-semibold">{{ $event->start_date->format('d') }}</span></span>
+                            <span class="min-w-0"><span class="block font-medium text-sm truncate">{{ $event->name }}</span><span class="ui-muted text-xs">{{ $event->location }}</span></span>
+                        </a>
+                    @empty<p class="ui-muted text-sm py-6 mb-0">No upcoming events. Create one when you are ready.</p>@endforelse
                 </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border h-100 stat-card">
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-subtitle mb-0 text-muted small">Upcoming Events</h6>
-                            <h5 class="card-title mb-0">{{ $stats['upcoming_events'] }}</h5>
-                            <small class="text-muted small">Pending events</small>
-                        </div>
-                        <div class="p-1 rounded-circle bg-warning bg-opacity-10 text-warning">
-                            <i class="bi bi-calendar-plus"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border h-100 stat-card">
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-subtitle mb-0 text-muted small">Active Scanners</h6>
-                            <h5 class="card-title mb-0">{{ $stats['active_scanners'] }}</h5>
-                            <small class="text-muted small">Currently assigned</small>
-                        </div>
-                        <div class="p-1 rounded-circle bg-info bg-opacity-10 text-info">
-                            <i class="bi bi-upc-scan"></i>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- SMS Stats Card -->
-        <div class="col-md-3">
-            <div class="card border h-100 stat-card">
-                <div class="card-body p-2">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <h6 class="card-subtitle mb-0 text-muted small">Total SMS Sent</h6>
-                            <h5 class="card-title mb-0">{{ \App\Models\SmsLog::count() }}</h5>
-                            <small class="text-muted small">All time</small>
-                        </div>
-                        <div class="p-1 rounded-circle bg-info bg-opacity-10 text-info">
-                            <i class="bi bi-chat-dots"></i>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-footer bg-transparent border-top-0 p-2">
-                    <a href="{{ route('sms.management.index') }}" class="btn btn-link btn-sm p-0 text-decoration-none">
-                        <i class="bi bi-arrow-right me-1"></i>Manage SMS
-                    </a>
-                </div>
-            </div>
+            </section>
+            <section class="ui-panel"><div class="ui-panel-heading"><h2 class="text-base font-semibold mb-0">Scanner activity today</h2></div><div class="px-5 py-2">
+                @forelse($scanner_performance as $scanner)<div class="flex justify-between gap-3 items-center py-3"><span class="text-sm">{{ $scanner->name }}</span><flux:badge color="teal" size="sm">{{ $scanner->scan_logs_count }} scans</flux:badge></div>
+                @empty<p class="ui-muted text-sm py-6 mb-0">No scanner activity yet today.</p>@endforelse
+            </div></section>
         </div>
     </div>
-
-    <div class="row g-4">
-        <!-- Recent Activity -->
-        <div class="col-md-8">
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Recent Activity</h5>
-                    <a href="{{ route('reports.index') }}" class="btn btn-primary btn-sm">
-                        <i class="bi bi-file-earmark-text me-2"></i>View Reports
-                    </a>
-                </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Time</th>
-                                    <th>Event</th>
-                                    <th>Scanner</th>
-                                    <th>Attendee</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($recent_activity as $activity)
-                                    <tr>
-                                        <td>{{ $activity['time'] }}</td>
-                                        <td>{{ $activity['event'] }}</td>
-                                        <td>{{ $activity['scanner'] }}</td>
-                                        <td>{{ $activity['attendee'] }}</td>
-                                        <td>
-                                            <span class="badge bg-{{ $activity['status_class'] }}">
-                                                {{ ucfirst($activity['status']) }}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                @empty
-                                    <tr>
-                                        <td colspan="5" class="text-center py-4">
-                                            <div class="text-muted">
-                                                <i class="bi bi-inbox fa-2x mb-2"></i>
-                                                <p class="mb-0">No recent activity</p>
-                                            </div>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Upcoming Events & Scanner Performance -->
-        <div class="col-md-4">
-            <!-- Upcoming Events -->
-            <div class="card border-0 shadow-sm mb-4">
-                <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">Upcoming Events</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        @forelse($upcoming_events as $event)
-                            <a href="{{ route('events.show', $event) }}" 
-                               class="list-group-item list-group-item-action">
-                                <div class="d-flex w-100 justify-content-between">
-                                    <h6 class="mb-1">{{ $event->name }}</h6>
-                                    <small class="text-muted">
-                                        {{ $event->start_date->format('M d') }}
-                                    </small>
-                                </div>
-                                <small class="text-muted">
-                                    <i class="bi bi-geo-alt me-1"></i>{{ $event->venue }}
-                                </small>
-                            </a>
-                        @empty
-                            <div class="list-group-item text-center py-4">
-                                <div class="text-muted">
-                                    <i class="bi bi-calendar-x fa-2x mb-2"></i>
-                                    <p class="mb-0">No upcoming events</p>
-                                </div>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-
-            <!-- Scanner Performance -->
-            <div class="card border-0 shadow-sm">
-                <div class="card-header bg-white">
-                    <h5 class="card-title mb-0">Top Scanners Today</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        @forelse($scanner_performance as $scanner)
-                            <div class="list-group-item">
-                                <div class="d-flex w-100 justify-content-between align-items-center">
-                                    <div>
-                                        <h6 class="mb-1">{{ $scanner->name }}</h6>
-                                        <small class="text-muted">{{ $scanner->email }}</small>
-                                    </div>
-                                    <span class="badge bg-primary rounded-pill">
-                                        {{ $scanner->scan_logs_count }} scans
-                                    </span>
-                                </div>
-                            </div>
-                        @empty
-                            <div class="list-group-item text-center py-4">
-                                <div class="text-muted">
-                                    <i class="bi bi-person-x fa-2x mb-2"></i>
-                                    <p class="mb-0">No scanner activity today</p>
-                                </div>
-                            </div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    @push('styles')
-    <style>
-        .stat-card {
-            transition: transform 0.2s;
-            border-color: #e9ecef !important;
-        }
-        .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-        }
-        .bi {
-            font-size: 1rem;
-        }
-        .rounded-circle {
-            width: 2rem;
-            height: 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .card-title {
-            font-size: 1.25rem;
-            line-height: 1.2;
-        }
-        .card-subtitle {
-            font-size: 0.75rem;
-            line-height: 1.2;
-        }
-        .text-muted.small {
-            font-size: 0.7rem;
-        }
-        
-        /* Breadcrumb styles */
-        .breadcrumb {
-            margin-bottom: 0;
-            padding: 0.5rem 0;
-        }
-        
-        .breadcrumb-item + .breadcrumb-item::before {
-            content: "›";
-            font-size: 1.2rem;
-            line-height: 1;
-            vertical-align: middle;
-        }
-        
-        .breadcrumb-item a {
-            color: #6c757d;
-            text-decoration: none;
-        }
-        
-        .breadcrumb-item a:hover {
-            color: #0d6efd;
-        }
-        
-        .breadcrumb-item.active {
-            color: #495057;
-        }
-
-        /* Header styles */
-        .h4 {
-            font-size: 1.25rem;
-            font-weight: 600;
-        }
-    </style>
-    @endpush
-</x-app-layout> 
+</x-app-layout>

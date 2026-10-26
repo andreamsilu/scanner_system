@@ -45,16 +45,7 @@ class UpdateSmsLogsTableStructure extends Migration
                 $table->integer('status_check_count')->default(0)->after('last_status_check');
             }
 
-            // Drop old columns if they exist
-            $columnsToDrop = [];
-            foreach (['type', 'provider'] as $col) {
-                if (Schema::hasColumn('sms_logs', $col)) {
-                    $columnsToDrop[] = $col;
-                }
-            }
-            if (!empty($columnsToDrop)) {
-                $table->dropColumn($columnsToDrop);
-            }
+            // Keep type and provider: the SMS services and reports still use them.
 
             // Note: index creation is safe here; dropping is handled via raw SQL below.
             try {

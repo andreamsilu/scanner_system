@@ -20,20 +20,12 @@ return new class extends Migration
         });
 
         // Update existing attendees based on their ticket status
-        DB::table('attendees')
-            ->join('tickets', 'attendees.id', '=', 'tickets.attendee_id')
-            ->where('tickets.status', 'used')
-            ->update([
-                'attendees.registration_status' => 'checked_in',
-                'attendees.checked_in_at' => DB::raw('tickets.used_at')
+        DB::table('tickets')->whereIn('status', ['used', 'cancelled'])->orderBy('id')->each(function ($ticket) {
+            DB::table('attendees')->where('id', $ticket->attendee_id)->update([
+                'registration_status' => $ticket->status === 'used' ? 'checked_in' : 'cancelled',
+                'checked_in_at' => $ticket->status === 'used' ? $ticket->used_at : null,
             ]);
-
-        DB::table('attendees')
-            ->join('tickets', 'attendees.id', '=', 'tickets.attendee_id')
-            ->where('tickets.status', 'cancelled')
-            ->update([
-                'attendees.registration_status' => 'cancelled'
-            ]);
+        });
     }
 
     /**
@@ -45,4 +37,4 @@ return new class extends Migration
             $table->dropColumn(['registration_status', 'checked_in_at']);
         });
     }
-}; 
+};

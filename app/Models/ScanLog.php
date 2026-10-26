@@ -20,6 +20,7 @@ class ScanLog extends Model
         'scanner_id',
         'status',
         'notes',
+        'entries_admitted',
     ];
 
     /**
@@ -28,6 +29,7 @@ class ScanLog extends Model
      * @var array<string, string>
      */
     protected $casts = [
+        'entries_admitted' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -95,10 +97,17 @@ class ScanLog extends Model
     {
         parent::boot();
 
+        static::updating(function () {
+            throw new \LogicException('Admission logs are append-only.');
+        });
+        static::deleting(function () {
+            throw new \LogicException('Admission logs are append-only.');
+        });
+
         static::creating(function ($scanLog) {
             if (empty($scanLog->scanned_at)) {
                 $scanLog->scanned_at = now();
             }
         });
     }
-} 
+}

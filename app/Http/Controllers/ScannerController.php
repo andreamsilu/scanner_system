@@ -39,10 +39,10 @@ class ScannerController extends Controller
     public function dashboard(): View
     {
         $user = auth()->user();
-        
+
         // Get scanner's statistics using a dedicated method
         $stats = $this->getScannerStats($user);
-        
+
         // Get all assigned events and ensure dates are Carbon instances
         $assigned_events = $user->events()
             ->orderBy('start_date', 'desc')
@@ -61,17 +61,13 @@ class ScannerController extends Controller
 
                 // Calculate scan statistics for each event
                 $event->scan_stats = [
-                    'total_attendees' => $event->attendees->count(),
-                    'scanned_count' => $event->attendees->filter(function ($attendee) {
-                        return $attendee->ticket && $attendee->ticket->status === 'used';
-                    })->count(),
-                    'pending_count' => $event->attendees->filter(function ($attendee) {
-                        return !$attendee->ticket || $attendee->ticket->status !== 'used';
-                    })->count()
+                    'total_attendees' => $event->attendees_count,
+                    'scanned_count' => $event->checked_in_count,
+                    'pending_count' => max(0, $event->attendees_count - $event->checked_in_count),
                 ];
                 return $event;
             });
-        
+
         // Get recent activity with optimized query
         $recent_activity = ScanLog::with(['ticket.attendee', 'ticket.event'])
             ->where('scanner_id', $user->id)
@@ -100,10 +96,10 @@ class ScannerController extends Controller
     private function getScannerStats(User $scanner): array
     {
         $today = now()->startOfDay();
-        
+
         // Get total assigned events count
         $totalAssignedEvents = $scanner->events()->count();
-        
+
         return [
             'today_scans' => ScanLog::where('scanner_id', $scanner->id)
                 ->whereDate('created_at', $today)
@@ -144,7 +140,7 @@ class ScannerController extends Controller
     public function selectEvent(Event $event): \Illuminate\View\View|\Illuminate\Http\RedirectResponse
     {
         $user = auth()->user();
-        
+
         // Check if user is authorized to scan this event
         if (!$user->hasRole('admin') && !$user->events()->where('events.id', $event->id)->exists()) {
             return redirect()->route('scanner.events.index')
@@ -153,7 +149,7 @@ class ScannerController extends Controller
 
         // Store selected event in session
         session(['selected_event_id' => $event->id]);
-        
+
         return redirect()->route('scanner.scan.index', ['event' => $event->id]);
     }
 
@@ -173,7 +169,7 @@ class ScannerController extends Controller
 
         // Clear the selected event from session
         session()->forget('selected_event_id');
-        
+
         return redirect()->route('scanner.dashboard')
             ->with('success', 'Event deselected. Please select a new event to start scanning.');
     }
@@ -211,7 +207,7 @@ class ScannerController extends Controller
     {
         $user = auth()->user();
         $eventId = session('selected_event_id');
-        
+
         // If no event is selected, redirect to events list
         if (!$eventId) {
             return redirect()->route('scanner.events.index')
@@ -267,7 +263,7 @@ class ScannerController extends Controller
     {
         $user = auth()->user();
         $eventId = session('selected_event_id');
-        
+
         // Get the selected event if any
         $event = null;
         if ($eventId) {
@@ -276,7 +272,7 @@ class ScannerController extends Controller
                 session()->forget('selected_event_id');
             }
         }
-        
+
         // Get all assigned events with their statistics
         $events = $user->events()
             ->withCount(['attendees' => function($query) {
@@ -317,464 +313,26 @@ class ScannerController extends Controller
         return view('scanner.validate.index', compact('events', 'event', 'recent_validations'));
     }
 
-    /**
-     * Extract token from URL or return as is
-     * 
-     * @param string $token
-     * @return string
-     */
-    private function extractToken(string $token): string
-    {
-        // If it's a URL, extract the last segment
-        if (filter_var($token, FILTER_VALIDATE_URL)) {
-            $path = parse_url($token, PHP_URL_PATH);
-            $segments = explode('/', trim($path, '/'));
-            return end($segments);
-        }
-        return $token;
-    }
 
-    /**
-     * Core validation logic shared between QR and manual validation
-     * 
-     * @param string $rawToken
-     * @param string $validationType 'qr' or 'manual'
-     * @return array ['success' => bool, 'data' => array|null, 'error' => array|null]
-     */
-    private function validateAttendeeToken(string $rawToken, string $validationType = 'qr'): array
-    {
-        $user = auth()->user();
-        $eventId = session('selected_event_id');
 
-        // Validate event selection
-        if (!$eventId) {
-            return [
-                'success' => false,
-                'data' => null,
-                'error' => [
-                    'message' => 'Please select an event first before scanning.',
-                    'code' => 'NO_EVENT_SELECTED',
-                    'redirect' => route('scanner.dashboard')
-                ]
-            ];
-        }
 
-        // Get the selected event
-        $event = Event::find($eventId);
-        if (!$event) {
-            session()->forget('selected_event_id');
-            return [
-                'success' => false,
-                'data' => null,
-                'error' => [
-                    'message' => 'Selected event no longer exists. Please select a new event.',
-                    'code' => 'EVENT_NOT_FOUND',
-                    'redirect' => route('scanner.dashboard')
-                ]
-            ];
-        }
 
-        // Extract the actual token from URL if needed
-        $token = $this->extractToken($rawToken);
 
-        // Debug logging for input values
-        Log::info("{$validationType} token validation attempt", [
-            'raw_token' => $rawToken,
-            'extracted_token' => $token,
-            'event_id' => $eventId,
-            'user_id' => $user->id
-        ]);
 
-        // First, validate only the attendee token existence
-        $attendee = Attendee::where(function($query) use ($token) {
-            // Check both token and ticket_number fields
-            $query->where('token', $token)
-                  ->orWhereHas('ticket', function($q) use ($token) {
-                      $q->where('ticket_number', $token);
-                  });
-        })
-        ->where('event_id', $eventId)
-        ->first();
-
-        // Debug logging for attendee lookup
-        Log::info("{$validationType} attendee lookup result", [
-            'raw_token' => $rawToken,
-            'extracted_token' => $token,
-            'event_id' => $eventId,
-            'attendee_found' => (bool)$attendee,
-            'attendee_id' => $attendee ? $attendee->id : null,
-            'attendee_token' => $attendee ? $attendee->token : null,
-            'attendee_ticket' => $attendee && $attendee->ticket ? [
-                'ticket_number' => $attendee->ticket->ticket_number,
-                'status' => $attendee->ticket->status
-            ] : null
-        ]);
-
-        if (!$attendee) {
-            // Log the failed validation attempt
-            Log::warning("Invalid {$validationType} token validation attempt", [
-                'raw_token' => $rawToken,
-                'extracted_token' => $token,
-                'event_id' => $eventId,
-                'user_id' => $user->id,
-                'sql_query' => Attendee::where('token', $token)
-                    ->where('event_id', $eventId)
-                    ->toSql()
-            ]);
-
-            return [
-                'success' => false,
-                'data' => null,
-                'error' => [
-                    'message' => 'Invalid token or token not for this event.',
-                    'code' => 'INVALID_TOKEN',
-                    'debug_info' => [
-                        'raw_token' => $rawToken,
-                        'extracted_token' => $token,
-                        'event_id' => $eventId
-                    ]
-                ]
-            ];
-        }
-
-        // Load the ticket relationship
-        $attendee->load(['ticket', 'event']);
-
-        // Debug logging for ticket status
-        Log::info('Ticket status check', [
-            'attendee_id' => $attendee->id,
-            'has_ticket' => (bool)$attendee->ticket,
-            'ticket_status' => $attendee->ticket ? $attendee->ticket->status : null,
-            'registration_status' => $attendee->registration_status
-        ]);
-
-        // Check if attendee has a ticket
-        if (!$attendee->ticket) {
-            return [
-                'success' => false,
-                'data' => [
-                    'attendee' => [
-                        'name' => $attendee->name,
-                        'email' => $attendee->email
-                    ]
-                ],
-                'error' => [
-                    'message' => 'No ticket found for this attendee.',
-                    'code' => 'NO_TICKET'
-                ]
-            ];
-        }
-
-        // Check current ticket status
-        if ($attendee->ticket->status === 'used') {
-            return [
-                'success' => false,
-                'data' => [
-                    'attendee' => [
-                        'name' => $attendee->name,
-                        'email' => $attendee->email,
-                        'checked_in_at' => $attendee->ticket->used_at
-                    ]
-                ],
-                'error' => [
-                    'message' => 'This ticket has already been used.',
-                    'code' => 'TICKET_USED'
-                ]
-            ];
-        }
-
-        // Check if attendee is already checked in
-        if ($attendee->registration_status === 'checked_in') {
-            return [
-                'success' => false,
-                'data' => [
-                    'attendee' => [
-                        'name' => $attendee->name,
-                        'email' => $attendee->email,
-                        'checked_in_at' => $attendee->checked_in_at
-                    ]
-                ],
-                'error' => [
-                    'message' => 'Attendee is already checked in.',
-                    'code' => 'ALREADY_CHECKED_IN'
-                ]
-            ];
-        }
-
-        return [
-            'success' => true,
-            'data' => [
-                'attendee' => $attendee,
-                'event' => $event,
-                'user' => $user
-            ],
-            'error' => null
-        ];
-    }
-
-    /**
-     * Process successful validation and update statuses
-     * 
-     * @param array $validationData
-     * @param string $validationType
-     * @return array
-     */
-    private function processSuccessfulValidation(array $validationData, string $validationType = 'qr'): array
-    {
-        $attendee = $validationData['attendee'];
-        $user = $validationData['user'];
-        $now = now();
-
-        DB::beginTransaction();
-        try {
-            // Update ticket status
-            $attendee->ticket->update([
-                'status' => 'used',
-                'used_at' => $now
-            ]);
-
-            // Update attendee registration status
-            $attendee->update([
-                'registration_status' => 'checked_in',
-                'checked_in_at' => $now
-            ]);
-
-            // Log the successful validation
-            ScanLog::create([
-                'ticket_id' => $attendee->ticket->id,
-                'scanner_id' => $user->id,
-                'status' => 'success',
-                'notes' => "{$validationType} validation"
-            ]);
-
-            // Log the successful check-in with previous status
-            Log::info("Attendee checked in via {$validationType}", [
-                'attendee_id' => $attendee->id,
-                'ticket_id' => $attendee->ticket->id,
-                'event_id' => $attendee->event_id,
-                'scanner_id' => $user->id,
-                'previous_status' => [
-                    'ticket' => $attendee->ticket->getOriginal('status'),
-                    'registration' => $attendee->getOriginal('registration_status')
-                ]
-            ]);
-
-            DB::commit();
-
-            // Send SMS notification if attendee has a phone number - outside transaction
-            if ($attendee->phone) {
-                // Log SMS attempt initiation
-                Log::info("SMS notification initiated for {$validationType} check-in", [
-                    'attendee_id' => $attendee->id,
-                    'phone' => $attendee->phone,
-                    'event' => $attendee->event->name,
-                    'ticket_id' => $attendee->ticket->id,
-                    'ticket_type' => $attendee->ticket->type,
-                    'entry_point' => 'Main Gate',
-                    'scanner_id' => $user->id,
-                    'validation_type' => $validationType,
-                    'timestamp' => now()->toIso8601String()
-                ]);
-
-                try {
-                    // Log message formatting
-                    $message = $this->formatTicketUsageMessage($attendee->event, $attendee->ticket, 'Main Gate');
-                    Log::info("SMS message formatted for {$validationType} check-in", [
-                        'attendee_id' => $attendee->id,
-                        'phone' => $attendee->phone,
-                        'message_length' => strlen($message),
-                        'message_preview' => substr($message, 0, 100) . '...',
-                        'timestamp' => now()->toIso8601String()
-                    ]);
-
-                    // Prepare metadata
-                    $metadata = [
-                            'event_id' => $attendee->event_id,
-                            'attendee_id' => $attendee->id,
-                            'ticket_id' => $attendee->ticket->id,
-                            'attendee_name' => $attendee->name,
-                            'attendee_phone' => $attendee->phone,
-                            'ticket_number' => $attendee->ticket->ticket_number,
-                            'ticket_type' => $attendee->ticket->type,
-                            'event_name' => $attendee->event->name,
-                            'entry_point' => 'Main Gate',
-                            'scanned_at' => $now->toDateTimeString(),
-                            'scanner_id' => $user->id,
-                            'validation_type' => $validationType
-                    ];
-
-                    // Log job dispatch attempt
-                    Log::info("Attempting to dispatch SMS job for {$validationType} check-in", [
-                        'attendee_id' => $attendee->id,
-                        'phone' => $attendee->phone,
-                        'event' => $attendee->event->name,
-                        'ticket_id' => $attendee->ticket->id,
-                        'job_class' => 'SendSingleSms',
-                        'message_type' => 'ticket_used',
-                        'metadata_keys' => array_keys($metadata),
-                        'timestamp' => now()->toIso8601String()
-                    ]);
-
-                    // Dispatch SMS job to avoid blocking the response
-                    SendSingleSms::dispatch(
-                        $attendee->phone,
-                        $message,
-                        'ticket_used',
-                        $metadata
-                    );
-
-                    // Log successful job dispatch
-                    Log::info("SMS job successfully dispatched for {$validationType} check-in", [
-                        'attendee_id' => $attendee->id,
-                        'phone' => $attendee->phone,
-                        'event' => $attendee->event->name,
-                        'ticket_id' => $attendee->ticket->id,
-                        'job_status' => 'queued',
-                        'queue_connection' => config('queue.default'),
-                        'timestamp' => now()->toIso8601String()
-                    ]);
-                
-                } catch (\Exception $e) {
-                    // Log SMS dispatch error
-                    Log::error("Failed to dispatch SMS job for {$validationType} check-in", [
-                        'attendee_id' => $attendee->id,
-                        'phone' => $attendee->phone,
-                        'event' => $attendee->event->name,
-                        'ticket_id' => $attendee->ticket->id,
-                        'error_message' => $e->getMessage(),
-                        'error_code' => $e->getCode(),
-                        'error_file' => $e->getFile(),
-                        'error_line' => $e->getLine(),
-                        'trace' => $e->getTraceAsString(),
-                        'timestamp' => now()->toIso8601String()
-                    ]);
-                }
-            } else {
-                // Log when SMS is skipped due to missing phone
-                Log::info("SMS notification skipped for {$validationType} check-in - no phone number", [
-                    'attendee_id' => $attendee->id,
-                    'attendee_name' => $attendee->name,
-                    'event' => $attendee->event->name,
-                    'ticket_id' => $attendee->ticket->id,
-                    'phone_available' => false,
-                    'timestamp' => now()->toIso8601String()
-                ]);
-            }
-
-            return [
-                'success' => true,
-                'message' => 'Check-in successful!',
-                'attendee' => [
-                    'name' => $attendee->name,
-                    'email' => $attendee->email,
-                    'checked_in_at' => $now->format('M d, Y h:i A')
-                ]
-            ];
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            throw $e;
-        }
-    }
-
-    /**
-     * Handle QR code scan validation.
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function validateToken(Request $request): JsonResponse
     {
-        try {
-            $rawToken = $request->input('token');
-            
-            // Validate the token
-            $validation = $this->validateAttendeeToken($rawToken, 'qr');
-            
-            if (!$validation['success']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $validation['error']['message'],
-                    'code' => $validation['error']['code'],
-                    'attendee' => $validation['data']['attendee'] ?? null,
-                    'debug_info' => $validation['error']['debug_info'] ?? null,
-                    'redirect' => $validation['error']['redirect'] ?? null
-                ], 422);
-            }
-
-            // Process successful validation
-            $result = $this->processSuccessfulValidation($validation['data'], 'qr');
-            return response()->json($result);
-
-        } catch (\Exception $e) {
-            Log::error('Error validating QR token', [
-                'raw_token' => $rawToken ?? null,
-                'error' => $e->getMessage(),
-                'error_type' => get_class($e),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while validating the ticket.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return app(AdmissionController::class)->store($request, app(\App\Services\CheckInService::class));
     }
 
-    /**
-     * Handle manual token validation.
-     * 
-     * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
     public function validateManualToken(Request $request): JsonResponse
     {
-        try {
-            $request->validate([
-                'token' => 'required|string'
-            ]);
-
-            $rawToken = $request->token;
-            
-            // Validate the token
-            $validation = $this->validateAttendeeToken($rawToken, 'manual');
-            
-            if (!$validation['success']) {
-                return response()->json([
-                    'success' => false,
-                    'message' => $validation['error']['message'],
-                    'code' => $validation['error']['code'],
-                    'attendee' => $validation['data']['attendee'] ?? null,
-                    'debug_info' => $validation['error']['debug_info'] ?? null,
-                    'redirect' => $validation['error']['redirect'] ?? null
-                ], 422);
-            }
-
-            // Process successful validation
-            $result = $this->processSuccessfulValidation($validation['data'], 'manual');
-            return response()->json($result);
-
-        } catch (\Exception $e) {
-            Log::error('Error in manual token validation', [
-                'raw_token' => $rawToken ?? null,
-                'error' => $e->getMessage(),
-                'error_type' => get_class($e),
-                'trace' => $e->getTraceAsString()
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'An error occurred while validating the ticket.',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return $this->validateToken($request);
     }
 
     public function history(Request $request): View
     {
         $user = auth()->user();
-        
+
         $query = ScanLog::with(['ticket.attendee', 'ticket.event'])
             ->where('scanner_id', $user->id)
             ->when($request->start_date, fn($q) => $q->whereDate('created_at', '>=', $request->start_date))
@@ -853,9 +411,16 @@ class ScannerController extends Controller
     public function events(): View
     {
         $user = auth()->user();
-        
-        // Get all assigned events with pagination
-        $events = $user->events()
+
+        // Administrators can open any event; scanners retain their assignments.
+        $query = $user->isAdmin()
+            ? Event::query()->withCount([
+                'attendees',
+                'attendees as checked_in_count' => fn ($query) => $query->whereHas('ticket', fn ($tickets) => $tickets->where('entries_used', '>', 0)),
+            ])
+            : $user->events();
+
+        $events = $query
             ->orderBy('start_date', 'desc')
             ->paginate(9) // Show 9 events per page (3x3 grid)
             ->through(function ($event) {
@@ -866,19 +431,15 @@ class ScannerController extends Controller
                 if (is_string($event->end_date)) {
                     $event->end_date = \Carbon\Carbon::parse($event->end_date);
                 }
-                if (is_string($event->pivot->assigned_at)) {
+                if ($event->pivot && is_string($event->pivot->assigned_at)) {
                     $event->pivot->assigned_at = \Carbon\Carbon::parse($event->pivot->assigned_at);
                 }
 
                 // Calculate scan statistics for each event
                 $event->scan_stats = [
-                    'total_attendees' => $event->attendees->count(),
-                    'scanned_count' => $event->attendees->filter(function ($attendee) {
-                        return $attendee->ticket && $attendee->ticket->status === 'used';
-                    })->count(),
-                    'pending_count' => $event->attendees->filter(function ($attendee) {
-                        return !$attendee->ticket || $attendee->ticket->status !== 'used';
-                    })->count()
+                    'total_attendees' => $event->attendees_count,
+                    'scanned_count' => $event->checked_in_count,
+                    'pending_count' => max(0, $event->attendees_count - $event->checked_in_count),
                 ];
                 return $event;
             });
@@ -1067,10 +628,10 @@ class ScannerController extends Controller
         DB::transaction(function() use ($scanner) {
             // Remove all event assignments
             $scanner->events()->detach();
-            
+
             // Remove scanner role
             $scanner->removeRole('scanner');
-            
+
             // Delete the user
             $scanner->delete();
         });
@@ -1085,7 +646,7 @@ class ScannerController extends Controller
     public function showEventAttendees(Event $event): View
     {
         $user = auth()->user();
-        
+
         // Check if user is authorized to view this event's attendees
         if (!$user->hasRole('admin') && !$user->events()->where('events.id', $event->id)->exists()) {
             abort(403, 'You are not authorized to view attendees for this event.');
@@ -1121,7 +682,7 @@ class ScannerController extends Controller
     public function attendeesIndex(): View
     {
         $user = auth()->user();
-        
+
         // Get all events assigned to the scanner with their attendees
         $events = $user->events()
             ->with(['attendees' => function($query) {
@@ -1150,10 +711,10 @@ class ScannerController extends Controller
         $events->getCollection()->transform(function ($event) {
             $event->attendees_count = $event->attendees->count();
             $event->scanned_count = $event->attendees->filter(function ($attendee) {
-                return $attendee->ticket && $attendee->ticket->status === 'used';
+                return $attendee->ticket && $attendee->ticket->entries_used > 0;
             })->count();
             $event->pending_count = $event->attendees->filter(function ($attendee) {
-                return !$attendee->ticket || $attendee->ticket->status !== 'used';
+                return !$attendee->ticket || $attendee->ticket->entries_used === 0;
             })->count();
             return $event;
         });
@@ -1318,4 +879,4 @@ class ScannerController extends Controller
             $event->name
         );
     }
-} 
+}

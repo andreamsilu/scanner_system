@@ -162,7 +162,7 @@
                     @endif
                 </div>
                 <div class="ticket-id" style="color: #D2691E; font-weight: bold;">
-                    Tiketi: {{ $ticket->token }}
+                    Tiketi: {{ $ticket->ticket_number }}
                 </div>
                 <div style="text-align: center; margin: 1em 0; color: #D2691E; font-weight: bold;">
                     Aina: {{ strtoupper($ticket->type) }}
@@ -187,4 +187,4 @@
         </button>
     </div>
 </body>
-</html> 
+</html>

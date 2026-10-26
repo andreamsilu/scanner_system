@@ -1,124 +1,28 @@
 <x-app-layout>
-    <x-page-header 
-        title="{{ auth()->user()->hasRole('admin') ? 'Available Events' : 'Your Assigned Events' }}"
-        :breadcrumbs="[
-            'Dashboard' => route('scanner.dashboard'),
-            'Events' => null
-        ]"
-    >
+    <x-page-header :title="auth()->user()->isAdmin() ? 'Choose an event' : 'Your events'" subtitle="Open an event to start welcoming guests at the door." :breadcrumbs="['Admissions' => null]">
         <x-slot name="actions">
-            <div class="d-flex gap-2">
-                <a href="{{ route('scanner.scan.index') }}" class="btn btn-primary">
-                    <i class="bi bi-upc-scan me-2"></i>Start Scanning
-                </a>
-                <a href="{{ route('scanner.scan.index') }}" class="btn btn-outline-secondary">
-                    <i class="bi bi-key-fill me-2"></i>Manual Validation
-                </a>
-            </div>
+            @if(session('selected_event_id'))
+                <flux:button :href="route('scanner.scan.index')" icon="qr-code" variant="primary">Continue scanning</flux:button>
+            @endif
         </x-slot>
     </x-page-header>
-
-    <!-- Events Grid -->
-    <div class="row g-4">
+    <div class="grid md:grid-cols-2 xl:grid-cols-3 gap-5">
         @forelse($events as $event)
-            <div class="col-md-6 col-lg-4">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="flex-shrink-0">
-                                <div class="rounded-circle bg-primary bg-opacity-10 d-flex align-items-center justify-content-center" style="width: 48px; height: 48px;">
-                                    <span class="h5 mb-0 text-primary">
-                                    {{ substr($event->name, 0, 1) }}
-                                </span>
-                                </div>
-                            </div>
-                            <div class="ms-3">
-                                <h5 class="card-title mb-1">{{ $event->name }}</h5>
-                                <p class="text-muted small mb-0">
-                                    Assigned {{ $event->pivot->assigned_at->diffForHumans() }}
-                                </p>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <div class="d-flex align-items-center text-muted mb-2">
-                            <i class="bi bi-calendar-event me-2"></i>
-                            {{ $event->start_date->format('M d, Y') }} - {{ $event->end_date->format('M d, Y') }}
-                            </div>
-                            <div class="d-flex align-items-center text-muted">
-                            <i class="bi bi-geo-alt me-2"></i>
-                            {{ $event->location }}
-                            </div>
-                        </div>
-
-                        <div class="row g-2 mb-3">
-                            <div class="col-4">
-                                <div class="bg-light rounded p-2 text-center">
-                                    <div class="small text-muted">Total</div>
-                                    <div class="h5 mb-0">{{ $event->scan_stats['total_attendees'] }}</div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="bg-success bg-opacity-10 rounded p-2 text-center">
-                                    <div class="small text-success">Scanned</div>
-                                    <div class="h5 mb-0 text-success">{{ $event->scan_stats['scanned_count'] }}</div>
-                                </div>
-                            </div>
-                            <div class="col-4">
-                                <div class="bg-warning bg-opacity-10 rounded p-2 text-center">
-                                    <div class="small text-warning">Pending</div>
-                                    <div class="h5 mb-0 text-warning">{{ $event->scan_stats['pending_count'] }}</div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="d-flex justify-content-between align-items-center pt-3 border-top">
-                            <span class="badge rounded-pill 
-                                @if($event->status === 'active') bg-success
-                                @elseif($event->status === 'completed') bg-primary
-                                @elseif($event->status === 'cancelled') bg-danger
-                                @else bg-warning @endif">
-                                {{ ucfirst($event->status) }}
-                            </span>
-                            <form action="{{ route('scanner.events.select', $event) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-sm btn-primary">
-                                    <i class="bi bi-upc-scan me-1"></i>Scan
-                                </button>
-                            </form>
-                        </div>
-                    </div>
+            <article class="ui-panel p-5 sm:p-6 flex flex-col">
+                <div class="flex justify-between items-center gap-3 mb-5"><span class="grid size-12 place-items-center rounded-xl bg-teal-50 text-teal-700 dark:bg-teal-950 dark:text-teal-300"><flux:icon.calendar-days class="size-6" /></span><flux:badge :color="$event->status === 'active' ? 'teal' : 'zinc'" size="sm">{{ ucfirst($event->status) }}</flux:badge></div>
+                <h2 class="font-semibold text-lg mb-3">{{ $event->name }}</h2>
+                <p class="ui-muted text-xs mb-2 flex items-center gap-2"><flux:icon.calendar class="size-4" />{{ $event->start_date->format('d M Y') }} – {{ $event->end_date->format('d M Y') }}</p>
+                <p class="ui-muted text-xs mb-6 flex items-center gap-2"><flux:icon.map-pin class="size-4" />{{ $event->location }}</p>
+                <div class="grid grid-cols-3 gap-3 py-4 border-y border-zinc-100 dark:border-zinc-700 mb-5 text-xs">
+                    <div><span class="ui-muted block mb-2">Registered</span><strong class="text-base">{{ $event->scan_stats['total_attendees'] }}</strong></div>
+                    <div><span class="ui-muted block mb-2">Checked in</span><strong class="text-base text-teal-700 dark:text-teal-300">{{ $event->scan_stats['scanned_count'] }}</strong></div>
+                    <div><span class="ui-muted block mb-2">Not arrived</span><strong class="text-base">{{ $event->scan_stats['pending_count'] }}</strong></div>
                 </div>
-            </div>
+                <form action="{{ route('scanner.events.select', $event) }}" method="POST" class="mt-auto">@csrf<flux:button type="submit" variant="primary" icon="qr-code" class="w-full">Open check-in</flux:button></form>
+            </article>
         @empty
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body text-center py-5">
-                        <i class="bi bi-calendar-x display-4 text-muted mb-3"></i>
-                        <h5 class="card-title">
-                                @if(auth()->user()->hasRole('admin'))
-                                    No Active Events
-                                @else
-                                    No Assigned Events
-                                @endif
-                            </h5>
-                        <p class="text-muted mb-0">
-                                @if(auth()->user()->hasRole('admin'))
-                                    There are no active events available at the moment.
-                                @else
-                                    You have not been assigned to any events yet. Please contact your administrator.
-                                @endif
-                            </p>
-                    </div>
-                </div>
-            </div>
+            <div class="ui-panel col-span-full text-center px-6 py-14"><flux:icon.calendar-days class="size-10 mx-auto text-zinc-400 mb-4" /><h2 class="font-semibold text-lg mb-2">{{ auth()->user()->isAdmin() ? 'No events yet' : 'No events assigned yet' }}</h2><p class="ui-muted text-sm mb-0">{{ auth()->user()->isAdmin() ? 'Create an event to prepare your welcome desk.' : 'Contact your administrator to get your event assignment.' }}</p></div>
         @endforelse
     </div>
-
-    <!-- Pagination -->
-    @if($events->hasPages())
-        <div class="mt-4">
-        {{ $events->links() }}
-    </div>
-    @endif
-</x-app-layout> 
+    @if($events->hasPages())<div class="mt-6">{{ $events->links() }}</div>@endif
+</x-app-layout>

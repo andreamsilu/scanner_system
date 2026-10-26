@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class Ticket extends Model
 {
@@ -24,6 +25,7 @@ class Ticket extends Model
     ];
 
     protected $casts = [
+        'entries_used' => 'integer',
         'used_at' => 'datetime',
         'cancelled_at' => 'datetime',
         'created_at' => 'datetime',
@@ -35,7 +37,31 @@ class Ticket extends Model
      */
     public function getTicketIdAttribute()
     {
-        return $this->attendee ? $this->attendee->token : null;
+        return $this->ticket_number;
+    }
+
+    public function getEntryLimitAttribute(): int
+    {
+        return $this->type === 'double' ? 2 : 1;
+    }
+
+    public function getRemainingEntriesAttribute(): int
+    {
+        return max(0, $this->entry_limit - (int) $this->entries_used);
+    }
+
+    public function save(array $options = [])
+    {
+        if ($this->exists) {
+            return parent::save($options);
+        }
+        return DB::transaction(function () use ($options) {
+            $event = Event::whereKey($this->event_id)->lockForUpdate()->firstOrFail();
+            $this->ticket_number = (string) $event->next_ticket_number;
+            $event->next_ticket_number++;
+            $event->saveQuietly();
+            return parent::save($options);
+        }, 3);
     }
 
     /**
@@ -51,7 +77,7 @@ class Ticket extends Model
      */
     public function attendee(): BelongsTo
     {
-        return $this->belongsTo(Attendee::class);
+        return $this->belongsTo(Attendee::class)->withTrashed();
     }
 
     /**
@@ -99,10 +125,7 @@ class Ticket extends Model
      */
     public function markAsUsed(): bool
     {
-        return $this->update([
-            'status' => 'used',
-            'used_at' => now()
-        ]);
+        throw new \LogicException('Use CheckInService to record admissions.');
     }
 
     /**
@@ -119,14 +142,6 @@ class Ticket extends Model
     /**
      * Generate a unique ticket number.
      */
-    public static function generateTicketNumber(): string
-    {
-        do {
-            $number = 'TICKET-' . strtoupper(Str::random(8));
-        } while (self::where('ticket_number', $number)->exists());
-
-        return $number;
-    }
 
     /**
      * Generate QR code data for the ticket.
@@ -153,19 +168,9 @@ class Ticket extends Model
         parent::boot();
 
         static::creating(function ($ticket) {
-            if (empty($ticket->ticket_number)) {
-                $ticket->ticket_number = self::generateTicketNumber();
-            }
-
-            // Generate unique 6-digit token if not provided
             if (empty($ticket->token)) {
-                do {
-                    // Generate a random 6-digit number
-                    $token = str_pad(mt_rand(0, 999999), 6, '0', STR_PAD_LEFT);
-                } while (static::where('token', $token)->exists());
-                
-                $ticket->token = $token;
+                $ticket->token = $ticket->attendee?->token ?? \App\Services\TicketToken::generate();
             }
         });
     }
-} 
+}

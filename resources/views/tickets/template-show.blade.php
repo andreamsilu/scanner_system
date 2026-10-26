@@ -36,7 +36,7 @@
             'attendee_company' => $ticket->attendee->company,
             'attendee_position' => $ticket->attendee->position,
             'attendee_status' => $ticket->attendee->registration_status,
-            'ticket_id' => $ticket->token
+            'ticket_id' => $ticket->ticket_number
         ]) !!}
     @else
         <!-- Fallback to default design if no template is assigned -->
@@ -46,7 +46,7 @@
             <p><strong>Attendee:</strong> {{ $ticket->attendee->name }}</p>
             <p><strong>Date:</strong> {{ $ticket->event->start_date->format('F j, Y g:i A') }}</p>
             <p><strong>Venue:</strong> {{ $ticket->event->venue }}</p>
-            <p><strong>Ticket ID:</strong> {{ $ticket->token }}</p>
+            <p><strong>Ticket ID:</strong> {{ $ticket->ticket_number }}</p>
             @if($ticket->attendee->qr_code)
                 <img src="{{ $ticket->attendee->qr_code_url }}" alt="QR Code" style="max-width: 140px; height: auto; margin-top: 1em;">
             @else
@@ -64,4 +64,4 @@
         </a>
     </div>
 </body>
-</html> 
+</html>

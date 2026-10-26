@@ -167,6 +167,9 @@ class UserController extends Controller
             if ($user->id === auth()->id()) {
                 return back()->with('error', 'You cannot delete your own account.');
             }
+            if ($user->scanLogs()->exists()) {
+                return back()->with('error', 'This user has admission history. Deactivate the account instead.');
+            }
 
             DB::beginTransaction();
             
@@ -245,4 +248,4 @@ class UserController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
-} 
+}

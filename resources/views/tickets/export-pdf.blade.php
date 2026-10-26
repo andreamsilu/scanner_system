@@ -68,7 +68,7 @@
             <tr>
                 <th style="width: 8%; text-align: center;">#</th>
                 <th>Attendee Name</th>
-                <th>Token</th>
+                <th>Ticket Number</th>
                 <th>Ticket Type</th>
             </tr>
         </thead>
@@ -77,7 +77,7 @@
                 <tr>
                     <td style="text-align: center; font-weight: bold;">{{ $index + 1 }}</td>
                     <td>{{ $ticket->attendee_name ?? 'Unassigned' }}</td>
-                    <td>{{ $ticket->token }}</td>
+                    <td>{{ $ticket->ticket_number }}</td>
                     <td>{{ ucfirst($ticket->type) }}</td>
                 </tr>
             @endforeach
@@ -89,4 +89,4 @@
         <p>This document was generated from the Scannable Event System</p>
     </div>
 </body>
-</html> 
+</html>

@@ -44,12 +44,7 @@ class TicketController extends Controller
      */
     public function index(Event $event)
     {
-        $tickets = Ticket::with(['event', 'attendee'])
-            ->where('event_id', $event->id)
-            ->latest()
-            ->paginate(20);
-
-        return view('tickets.index', compact('tickets', 'event'));
+        return view('tickets.index', compact('event'));
     }
 
     /**
@@ -131,7 +126,7 @@ class TicketController extends Controller
      */
     public function deactivateAll(Event $event)
     {
-        $event->tickets()->update(['status' => 'deactivated']);
+        $event->tickets()->update(['status' => 'cancelled', 'cancelled_at' => now()]);
         
         return redirect()
             ->back()
@@ -209,7 +204,6 @@ class TicketController extends Controller
             ]);
 
             // Generate ticket number
-            $ticketNumber = Ticket::generateTicketNumber();
 
             // Create ticket
             $ticket = Ticket::create([
@@ -217,7 +211,6 @@ class TicketController extends Controller
                 'attendee_id' => $attendee->id,
                 'type' => $validated['type'],
                 'status' => 'active',
-                'ticket_number' => $ticketNumber,
                 'token' => $attendee->token
             ]);
 
@@ -344,7 +337,10 @@ class TicketController extends Controller
         $event = $ticket->event;
         $attendee = $ticket->attendee;
 
-        return view('tickets.verify', compact('ticket', 'event', 'attendee'));
+        $canViewContact = auth()->check() && (auth()->user()->hasRole('admin')
+            || auth()->user()->events()->where('events.id', $event->id)->exists());
+
+        return view('tickets.verify', compact('ticket', 'event', 'attendee', 'canViewContact'));
     }
 
     /**
@@ -375,8 +371,8 @@ class TicketController extends Controller
             }]);
 
         // Handle search
-        if ($request->search['value']) {
-            $searchValue = $request->search['value'];
+        if ($request->input('search.value')) {
+            $searchValue = $request->input('search.value');
             $query->where(function($q) use ($searchValue) {
                 // Search in tickets table
                 $q->where('tickets.ticket_number', 'like', '%' . $searchValue . '%')
@@ -426,7 +422,7 @@ class TicketController extends Controller
 
         // Handle ordering
         $orderColumn = $request->order[0]['column'] ?? 6; // Default to created_at
-        $orderDir = $request->order[0]['dir'] ?? 'desc';
+        $orderDir = strtolower($request->order[0]['dir'] ?? 'desc') === 'asc' ? 'asc' : 'desc';
         $columns = array_keys($sortableColumns);
         
         if (isset($columns[$orderColumn])) {
@@ -434,7 +430,9 @@ class TicketController extends Controller
             $sortColumn = $sortableColumns[$column];
 
             // Handle special cases for relationships
-            if ($column === 'attendee') {
+            if ($column === 'ticket_number') {
+                $query->orderByRaw('CAST(tickets.ticket_number AS DECIMAL(20,0)) ' . $orderDir);
+            } elseif ($column === 'attendee') {
                 $query->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id')
                       ->orderBy($sortColumn, $orderDir)
                       ->select('tickets.*'); // Ensure we select only ticket columns
@@ -485,7 +483,7 @@ class TicketController extends Controller
                 'actions' => [
                     'view_url' => route('events.tickets.show', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
                     'print_url' => route('events.tickets.print', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
-                    'export_url' => route('events.tickets.export', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
+                    'export_url' => route('events.tickets.export-ticket', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
                     'download_jpg_url' => route('events.tickets.download-jpg', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]),
                     'deactivate_url' => $ticket->status === 'active' ? 
                         route('events.tickets.deactivate', ['event' => $event->id, 'ticket' => $ticket->attendee?->token]) : null
@@ -517,6 +515,7 @@ class TicketController extends Controller
                 ->leftJoin('attendees', 'tickets.attendee_id', '=', 'attendees.id')
                 ->where('tickets.event_id', $event->id)
                 ->select([
+                    'tickets.ticket_number',
                     'tickets.token',
                     'tickets.type',
                     'events.name as event_name',
@@ -565,4 +564,4 @@ class TicketController extends Controller
             ->header('Content-Type', 'image/jpeg')
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
-} 
+}

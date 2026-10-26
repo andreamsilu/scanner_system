@@ -68,7 +68,7 @@ class TicketJpgRenderer
 
     private function createBaseImage()
     {
-        return $this->manager->create(self::CANVAS_WIDTH, self::CANVAS_HEIGHT, '#ffffff');
+        return $this->manager->create(self::CANVAS_WIDTH, self::CANVAS_HEIGHT)->fill('#ffffff');
     }
 
     private function addBackground($image): void
@@ -81,15 +81,14 @@ class TicketJpgRenderer
 
         try {
             $bg = $this->manager->read($bgPath)->cover(self::CANVAS_WIDTH, self::CANVAS_HEIGHT);
-            $image->place($bg, 0, 0);
+            $image->place($bg, 'top-left', 0, 0);
 
             // Add semi-transparent overlay
             $overlay = $this->manager->create(
                 self::CANVAS_WIDTH, 
-                self::CANVAS_HEIGHT, 
-                'rgba(255,255,255,0.35)'
-            );
-            $image->place($overlay, 0, 0);
+                self::CANVAS_HEIGHT
+            )->fill('rgba(255,255,255,0.35)');
+            $image->place($overlay, 'top-left', 0, 0);
         } catch (\Exception $e) {
             Log::error('Failed to add background', ['error' => $e->getMessage()]);
         }
@@ -116,16 +115,16 @@ class TicketJpgRenderer
         $textRenderer->addText('ANITHA PAUL MSILU', $y, 30, '#D2691E', 40);
         
         // Dynamic event details
-        $eventDate = $event->formatted_date ?? 'Ijumaa, 11-07-2025';
-        $eventTime = $event->formatted_time ?? '12:00 jioni';
-        $venue = $event->venue ?? 'Destiny Hall, Kwa Mathias, Kibaha - Pwani';
+        $eventDate = $event->start_date->format('d-m-Y');
+        $eventTime = $event->start_date->format('H:i');
+        $venue = $event->venue;
         
         $textRenderer->addText("🗓 Tarehe: {$eventDate}", $y, 18, '#5A6B47', 24);
         $textRenderer->addText("⏰ Saa: {$eventTime}", $y, 18, '#5A6B47', 24);
         $textRenderer->addWrappedText("📍 Mahali: {$venue}", $y, 16, '#5A6B47', 34, self::CANVAS_WIDTH - 80);
         
         // Ticket details
-        $textRenderer->addText("🎫 Tiketi: {$ticket->token}", $y, 20, '#D2691E', 28);
+        $textRenderer->addText("🎫 Tiketi: {$ticket->ticket_number}", $y, 20, '#D2691E', 28);
         $textRenderer->addText('Aina ya Tiketi: ' . strtoupper($ticket->type), $y, 20, '#D2691E', 28);
         
         // Separator with better styling
@@ -136,33 +135,23 @@ class TicketJpgRenderer
     private function addQrCode($image, Ticket $ticket): void
     {
         try {
-            $qrCode = QrCode::format('png')
-                ->size(self::QR_SIZE)
-                ->errorCorrection('M')
-                ->margin(2)
-                ->generate(route('tickets.verify', $ticket->token));
-            
-            $tempQrPath = tempnam(sys_get_temp_dir(), 'qr_');
-            file_put_contents($tempQrPath, $qrCode);
-            
-            $qrImage = $this->manager->read($tempQrPath);
+            $qrCode = app(QRCodeService::class)->png($ticket->attendee->token, self::QR_SIZE);
+            $qrImage = $this->manager->read($qrCode);
             $qrX = (self::CANVAS_WIDTH - self::QR_SIZE) / 2;
             $qrY = 880; // Fixed position for QR code
             
-            $image->place($qrImage, $qrX, $qrY);
+            $image->place($qrImage, 'top-left', $qrX, $qrY);
             
             // Add QR code background for better visibility
             $qrBg = $this->manager->create(
                 self::QR_SIZE + 20, 
-                self::QR_SIZE + 20, 
-                'rgba(255,255,255,0.9)'
-            );
-            $image->place($qrBg, $qrX - 10, $qrY - 10);
-            $image->place($qrImage, $qrX, $qrY);
-            
-            unlink($tempQrPath);
+                self::QR_SIZE + 20
+            )->fill('rgba(255,255,255,0.9)');
+            $image->place($qrBg, 'top-left', $qrX - 10, $qrY - 10);
+            $image->place($qrImage, 'top-left', $qrX, $qrY);
         } catch (\Exception $e) {
             Log::error('QR code generation failed', ['error' => $e->getMessage()]);
+            throw $e;
         }
     }
 
@@ -175,7 +164,7 @@ class TicketJpgRenderer
 
         try {
             $frame = $this->manager->read($borderPath)->resize(self::CANVAS_WIDTH, self::CANVAS_HEIGHT);
-            $image->place($frame, 0, 0);
+            $image->place($frame, 'top-left', 0, 0);
         } catch (\Exception $e) {
             Log::error('Failed to add border', ['error' => $e->getMessage()]);
         }

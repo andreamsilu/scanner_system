@@ -81,7 +81,7 @@ class SendSingleSms implements ShouldQueue
      */
     public function handle(SmsService $smsService): void
     {
-        $jobId = $this->job->getJobId();
+        $jobId = $this->job?->getJobId() ?? 'sync';
         $attemptNumber = $this->attempts();
         
         try {
@@ -185,6 +185,7 @@ class SendSingleSms implements ShouldQueue
                         'entry_point' => $this->metadata['entry_point'] ?? null,
                         'timestamp' => now()->toIso8601String()
                     ]);
+                    throw new \RuntimeException($result['error'] ?? 'SMS sending failed');
                 } else {
                     // Log retry attempt
                     Log::info('SMS job will be retried', [
@@ -237,7 +238,7 @@ class SendSingleSms implements ShouldQueue
     public function failed(\Throwable $exception): void
     {
         Log::error('Single SMS job failed permanently', [
-            'job_id' => $this->job->getJobId(),
+            'job_id' => $this->job?->getJobId() ?? 'unavailable',
             'recipient' => $this->phone,
             'type' => $this->type,
             'error' => $exception->getMessage(),
@@ -245,4 +246,4 @@ class SendSingleSms implements ShouldQueue
             'attempts' => $this->attempts()
         ]);
     }
-} 
+}

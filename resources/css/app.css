@@ -1,3 +1,26 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@layer theme, base, legacy, components, utilities;
+@import 'tailwindcss' source(none);
+@import '../../vendor/livewire/flux/dist/flux.css';
+@import './workspace.css';
+
+@source '../views';
+@source '../js';
+@source '../../app/Livewire';
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views';
+@plugin '@tailwindcss/forms';
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+    --color-accent: var(--color-teal-700);
+    --color-accent-content: var(--color-teal-700);
+    --color-accent-foreground: var(--color-white);
+}
+
+@layer theme {
+    .dark {
+        --color-accent: var(--color-teal-400);
+        --color-accent-content: var(--color-teal-400);
+        --color-accent-foreground: var(--color-zinc-950);
+    }
+}
